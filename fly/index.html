@@ -74,16 +74,23 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .card.result .total{font-size:40px}
 .card.result .rows{font-size:13px;gap:2px 12px;padding:6px 0}
 @media (prefers-reduced-motion:reduce){.kg.pop,.banner{animation:none}}
-.ult{position:absolute;right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px));width:66px;height:66px;border-radius:50%;border:2px solid var(--ink);padding:0;background:conic-gradient(var(--gold) var(--fill,0%),var(--paper) 0);display:flex;align-items:center;justify-content:center}
-.ult span{width:50px;height:50px;border-radius:50%;background:var(--paper);border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:15px}
-.ult:disabled{opacity:.8;cursor:default}
-.ult.ready span{background:var(--gold)}
-.ult.ready{animation:glow 1.1s ease-in-out infinite}
+.ult{position:absolute;right:8px;bottom:calc(12px + env(safe-area-inset-bottom,0px));width:80px;height:90px;padding:0;border:0;background:none;display:block;-webkit-tap-highlight-color:transparent}
+.ult .ring{position:absolute;left:3px;top:0;width:74px;height:74px;border-radius:50%;border:2.5px solid var(--ink);background:conic-gradient(var(--gold) var(--fill,0%),#17324A 0);box-shadow:0 3px 0 rgba(16,41,61,.4)}
+.ult .disc{position:absolute;left:11.5px;top:8.5px;width:57px;height:57px;border-radius:50%;border:2.5px solid var(--ink);background:radial-gradient(circle at 34% 26%,#7CC6DF,#2C7FA6 72%);overflow:hidden;display:flex;align-items:center;justify-content:center}
+.ult .disc svg{width:54px;height:54px;transform:rotate(26deg);opacity:.5;filter:saturate(.45);transition:opacity .2s,filter .2s}
+.ult .tag{position:absolute;left:50%;bottom:0;transform:translateX(-50%);min-width:52px;padding:1px 9px;border-radius:999px;border:2px solid var(--ink);background:var(--paper);color:var(--ink);font-family:var(--display);font-weight:700;font-size:14px;line-height:1.35;white-space:nowrap}
+.ult:disabled{cursor:default}
+.ult.ready .disc{background:radial-gradient(circle at 34% 26%,#FFF6CF,#F4BB42 78%)}
+.ult.ready .disc svg{opacity:1;filter:none}
+.ult.ready .tag{background:var(--gold)}
+.ult.ready .ring{animation:ultPulse 1.1s ease-in-out infinite}
+.ult.ready:active .disc{transform:scale(.94)}
+@keyframes ultPulse{0%,100%{box-shadow:0 3px 0 rgba(16,41,61,.4),0 0 0 0 rgba(244,187,66,.8)}50%{box-shadow:0 3px 0 rgba(16,41,61,.4),0 0 0 11px rgba(244,187,66,0)}}
 .pick{display:flex;gap:6px;justify-content:center}
 .pick button{flex:1;border:2px solid var(--ink);border-radius:999px;background:transparent;padding:5px 8px;font-size:13px;font-weight:700}
 .pick button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
 #hearts{font-family:var(--body);font-size:15px;letter-spacing:1px;color:var(--coral);padding:4px 10px}
-@media (prefers-reduced-motion:reduce){.ult.ready{animation:none}}
+@media (prefers-reduced-motion:reduce){.ult.ready .ring{animation:none}}
 </style>
 
 </head>
@@ -99,7 +106,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
   </div>
   <div class="banner" id="banner" hidden></div>
   <div class="hint" id="hint" hidden>拖曳小鳶，風之羽會自動發射</div>
-  <button class="ult" id="ultBtn" hidden disabled aria-label="呼叫鯨鯊"><span>鯨鯊</span></button>
+  <button class="ult" id="ultBtn" hidden disabled aria-label="呼叫鯨鯊"><span class="ring"></span><span class="disc"><svg viewBox="0 0 64 64" aria-hidden="true"><g stroke="#402B20" stroke-width="2" stroke-linejoin="round"><path d="M21 23C13 25 8 31 6 38c7-1 13-3 18-6z" fill="#4E7FA0"/><path d="M43 23c8 2 13 8 15 15-7-1-13-3-18-6z" fill="#4E7FA0"/><path d="M32 49c-3 4-7 8-11 11 5 0 8-1 11-3 3 2 6 3 11 3-4-3-8-7-11-11z" fill="#4E7FA0"/><path d="M32 5c8 0 12 5 12 12 0 11-5 23-10 33l-2 4-2-4C25 40 20 28 20 17 20 10 24 5 32 5z" fill="#5E90B2"/></g><path d="M26 10.5h12" stroke="#402B20" stroke-width="1.6" stroke-linecap="round" fill="none"/><g fill="#402B20"><circle cx="23.6" cy="14.5" r="1.3"/><circle cx="40.4" cy="14.5" r="1.3"/></g><g fill="#F5FBFD"><circle cx="27" cy="18" r="1.4"/><circle cx="32" cy="16.5" r="1.4"/><circle cx="37" cy="18" r="1.4"/><circle cx="25" cy="24" r="1.3"/><circle cx="29.6" cy="23" r="1.4"/><circle cx="34.4" cy="23" r="1.4"/><circle cx="39" cy="24" r="1.3"/><circle cx="27" cy="30" r="1.3"/><circle cx="32" cy="29" r="1.4"/><circle cx="37" cy="30" r="1.3"/><circle cx="28.6" cy="36" r="1.2"/><circle cx="33" cy="35" r="1.3"/><circle cx="36.4" cy="37" r="1.1"/><circle cx="31" cy="41.5" r="1.1"/><circle cx="33.8" cy="43.5" r="1"/><circle cx="13" cy="33" r="1.1"/><circle cx="17.5" cy="29.5" r="1.1"/><circle cx="51" cy="33" r="1.1"/><circle cx="46.5" cy="29.5" r="1.1"/></g></svg></span><span class="tag" id="ultTag">鯨鯊</span></button>
 
   <div class="panel" id="startPanel">
     <div class="card">
@@ -121,7 +128,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
         <button type="button" data-level="normal" aria-pressed="true">標準（體力 5）</button>
       </div>
       <button class="btn" id="startBtn">開始</button>
-      <p class="note">原型 v0.4：暫用圖、不發點數</p>
+      <p class="note">原型 v0.5：暫用圖、不發點數</p>
     </div>
   </div>
 
@@ -156,7 +163,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.4',
+  version: '0.5',
   W: 360, H: 640,
   scroll: 70,                    // 背景捲動速度（每秒邏輯像素）
   kite: { hearts: 5, r: 12, safe: 1.6, followLift: 64, followSpeed: 16, minY: 130, maxY: 600 },   // r 是小鳶的碰撞半徑
@@ -204,7 +211,7 @@ const SPR = { can: ['can', 26, 26], bag: ['bag', 32, 32], butt: ['butt', 10, 24]
   goo: ['goo', 32, 32], chaser: ['goo', 30, 30], battery: ['battery', 31, 31], sprayer: ['sprayer', 40, 44], log: ['log', 0, 26], net: ['net', 60, 60], tangle: ['tangle', 60, 60], boss: ['boss', 120, 104] };
 
 const $ = (id) => document.getElementById(id);
-const stage = $('stage'), cv = $('world'), ctx = cv.getContext('2d');
+const stage = $('stage'), cv = $('world'); let ctx = cv.getContext('2d');      // ctx 用 let：畫底圖的離屏畫布時會暫時換掉
 const { W, H } = CONFIG, T = CONFIG.types;
 const PAL = { body: '#A66F45', wing: '#865B3D', cream: '#F5DDB7', gold: '#F4BB42', blush: '#F4AF91', line: '#402B20' };
 const calm = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -278,7 +285,7 @@ function reset() {
   stats = { spawned: 0, cleared: 0, leaked: 0, score: 0, hits: 0, hitBy: {}, rescued: 0, trapped: 0, lost: 0, trappedBy: { squid: 0, turtle: 0 }, lostBy: { squid: 0, turtle: 0 }, jerky: 0, powerUps: 0, gales: 0, maxPower: 1, ultUsed: 0, ultCleared: 0, combo: 0, comboT: 0, bestCombo: 0, blasts: 0, bestBlast: 0, chain: false, rescuedBy: { squid: 0, turtle: 0 }, shieldSaves: 0, bossCleared: false, dragPx: 0, byType: {} };
   for (const k in answers) delete answers[k];
   for (const b of document.querySelectorAll('.yn button')) b.setAttribute('aria-pressed', 'false');
-  drawHearts(); const ub = $('ultBtn'); ub.disabled = true; ub.classList.remove('ready'); ub.style.setProperty('--fill', '0%'); $('banner').hidden = true;
+  drawHearts(); const ub = $('ultBtn'); ub.disabled = true; ub.classList.remove('ready'); ub.style.setProperty('--fill', '0%'); $('ultTag').textContent = '鯨鯊'; $('banner').hidden = true;
 }
 function drawHearts() { $('hearts').textContent = '♥'.repeat(Math.max(0, kite.hearts)) + '♡'.repeat(Math.max(0, LV().hearts - kite.hearts)); }
 
@@ -496,7 +503,7 @@ function update(dt) {
   // 畫面資訊
   const total = CONFIG.boss.at + 14; $('stageBar').style.transform = 'scaleX(' + Math.min(1, t / total) + ')';
   $('stageText').textContent = boss ? '大垃圾團 ' + Math.max(0, Math.ceil(boss.hp)) + ' / ' + T.boss.hp : '清掉 ' + stats.cleared + (stats.combo >= 3 ? '　連清 ' + stats.combo : '');
-  const ub = $('ultBtn'), full = gauge >= CONFIG.ult.need; ub.disabled = !full || !!ult; ub.style.setProperty('--fill', Math.round(gauge / CONFIG.ult.need * 100) + '%'); ub.classList.toggle('ready', full && !ult);
+  const ub = $('ultBtn'), full = gauge >= CONFIG.ult.need; ub.disabled = !full || !!ult; ub.style.setProperty('--fill', Math.round(gauge / CONFIG.ult.need * 100) + '%'); ub.classList.toggle('ready', full && !ult); const tag = $('ultTag'), word = full && !ult ? '出動！' : '鯨鯊'; if (tag.textContent !== word) tag.textContent = word;
   if (full && !toldUlt && !ult) { toldUlt = true; banner('鯨鯊準備好了！按右下角'); jingle([659, 880], 120); }
   $('hint').hidden = firstMove || t > 8;
   // 結束條件：大垃圾團清掉或漂走、體力歸零；保險：事件表跑完且畫面清空
@@ -509,21 +516,145 @@ function ell(x, y, rx, ry, fill, stroke) { ctx.beginPath(); ctx.ellipse(x, y, rx
 function poly(pts, fill, stroke) { ctx.beginPath(); ctx.moveTo(pts[0], pts[1]); for (let i = 2; i < pts.length; i += 2) ctx.lineTo(pts[i], pts[i + 1]); ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.stroke(); } }
 function sprite(key, w, h) { const im = img[key]; if (!im) return false; ctx.drawImage(im, -w / 2, -h / 2, w, h); return true; }
 
+/* ====== 底圖：海面、岸壁、郵輪、漁船先畫在離屏畫布上（開局時畫一次），之後每一格只需要貼圖 ====== */
+const SEA = { deep: '#2877A0', base: '#2F88AF', lite: '#3D99BE', wave: '#A5D9E8', foam: '#E6F6F9' };
+const QUAY = { top: '#D9D0BE', curb: '#B5AA95', joint: '#B9AE99', line: '#F0B840' };
+const BG = { ready: false, fail: false };
+function lcg(s) { return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296; }
+function offscreen(w, h, paint) {      // 以 2 倍解析度畫一張離屏圖；畫的時候暫時把 ctx 換成它，ell、poly 等函式就能直接用
+  const k = 2, c = document.createElement('canvas'); c.width = w * k; c.height = h * k; const g = c.getContext('2d'); g.scale(k, k); g.lineJoin = 'round'; g.lineCap = 'round';
+  const keep = ctx; ctx = g; try { paint(); } finally { ctx = keep; } return c;
+}
+function rrect(x, y, w, h, r, fill, stroke, lw) {      // 圓角矩形（不用 roundRect，舊一點的手機也能畫）
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 1.5; ctx.stroke(); }
+}
+function blob(x, y, rx, ry, rr, fill) {      // 邊緣不規則的色塊
+  const n = 9, p = []; for (let i = 0; i < n; i++) { const a = i / n * 6.2832, k = 0.76 + rr() * 0.48; p.push([x + Math.cos(a) * rx * k, y + Math.sin(a) * ry * k]); }
+  ctx.beginPath(); for (let i = 0; i < n; i++) { const a = p[i], b = p[(i + 1) % n], mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2; if (i) ctx.quadraticCurveTo(a[0], a[1], mx, my); else ctx.moveTo(mx, my); }
+  ctx.quadraticCurveTo(p[0][0], p[0][1], (p[0][0] + p[1][0]) / 2, (p[0][1] + p[1][1]) / 2); ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+}
+function wavelet(x, y, w, fill) {      // 一道彎彎的浪紋（有厚度的色塊，不是線）
+  ctx.beginPath(); ctx.moveTo(x - w / 2, y); ctx.quadraticCurveTo(x, y - w * 0.36, x + w / 2, y); ctx.quadraticCurveTo(x, y - w * 0.17, x - w / 2, y); ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+}
+function buildBackground() {
+  BG.ready = true;
+  try {
+    // 海面下層：深淺不一的大色塊（上下可以無縫接起來）
+    BG.seaA = offscreen(W, H, () => {
+      const r = lcg(11); ctx.fillStyle = SEA.base; ctx.fillRect(0, 0, W, H);
+      for (let i = 0; i < 20; i++) { const x = r() * W, y = r() * H, rx = 38 + r() * 74, ry = 14 + r() * 26, dark = i % 3 === 0; ctx.globalAlpha = dark ? 0.6 : 0.55; for (const dy of [-H, 0, H]) blob(x, y + dy, rx, ry, lcg(100 + i), dark ? SEA.deep : SEA.lite); }
+      ctx.globalAlpha = 1;
+    });
+    // 海面上層：浪紋與零星的浪花（透明底，捲動得比下層快，看起來有深度）
+    BG.seaB = offscreen(W, H, () => {
+      const r = lcg(23);
+      for (let i = 0; i < 34; i++) { const x = 10 + r() * (W - 20), y = r() * H, w = 14 + r() * 22, twin = r() < 0.4; ctx.globalAlpha = 0.45 + r() * 0.35; for (const dy of [-H, 0, H]) { wavelet(x, y + dy, w, SEA.wave); if (twin) wavelet(x + w * 0.55, y + dy + 7, w * 0.6, SEA.wave); } }
+      for (let i = 0; i < 16; i++) { const x = r() * W, y = r() * H, a = r() * 6.28; ctx.globalAlpha = 0.55; for (const dy of [-H, 0, H]) { ell(x, y + dy, 1.8, 1.4, SEA.foam); ell(x + Math.cos(a) * 5, y + dy + Math.sin(a) * 4, 1.2, 1, SEA.foam); ell(x - Math.sin(a) * 4, y + dy + Math.cos(a) * 5, 1, 0.9, SEA.foam); } }
+      ctx.globalAlpha = 1;
+    });
+    // 岸壁（左側版本，右側鏡射）：水泥面、伸縮縫、黃色警戒線、邊石、橡膠碰墊、繫船柱，以及落在水面的影子
+    BG.quay = offscreen(34, 180, () => {
+      const r = lcg(5);
+      ctx.fillStyle = 'rgba(16,41,61,.26)'; ctx.fillRect(26, 0, 7, 180);
+      ctx.fillStyle = QUAY.top; ctx.fillRect(0, 0, 23, 180);
+      blob(8, 52, 9, 16, lcg(61), 'rgba(150,138,118,.22)'); blob(15, 150, 7, 12, lcg(62), 'rgba(150,138,118,.2)'); blob(5, 100, 5, 9, lcg(63), 'rgba(255,255,255,.3)');
+      for (let i = 0; i < 46; i++) { ctx.fillStyle = r() < 0.5 ? 'rgba(120,108,90,.3)' : 'rgba(255,255,255,.4)'; ctx.fillRect(r() * 21, r() * 178, 1 + r() * 1.6, 1 + r()); }
+      ctx.fillStyle = QUAY.line; ctx.fillRect(16.5, 0, 3.5, 180); ctx.fillStyle = QUAY.top; for (let i = 0; i < 6; i++) ctx.fillRect(16.5 + r() * 2, r() * 176, 1.6, 2 + r() * 3);
+      ctx.fillStyle = QUAY.curb; ctx.fillRect(23, 0, 4, 180);
+      ctx.strokeStyle = QUAY.joint; ctx.lineWidth = 1.2; for (const y of [0.6, 60, 120]) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(27, y); ctx.stroke(); }
+      ctx.strokeStyle = PAL.line; ctx.lineWidth = 1.6; ctx.lineCap = 'butt'; ctx.beginPath(); ctx.moveTo(27, 0); ctx.lineTo(27, 180); ctx.stroke(); ctx.lineCap = 'round';
+      for (const y of [76, 160]) { rrect(26.6, y - 11, 6, 22, 2.8, '#34343A', PAL.line, 1.3); ctx.fillStyle = '#5A5A62'; ctx.fillRect(28.4, y - 7, 1.4, 14); }
+      for (const y of [30, 120]) { ctx.lineWidth = 1.4; ell(10.5, y + 2.5, 6.5, 5.6, 'rgba(16,41,61,.28)'); ell(9, y, 6, 6, '#4E4A44', PAL.line); ell(9, y, 3.4, 3.4, '#7B766D', PAL.line); ell(8, y - 1, 1.2, 1.2, '#B1ACA2'); }
+    });
+    // 郵輪（俯視，船頭朝上）：船影、白色船身、柚木甲板、直升機坪、駕駛台、泳池與躺椅、煙囪、救生艇、繫在岸上的纜繩
+    BG.ship = offscreen(120, 480, () => {
+      ctx.translate(56, 240); const L = PAL.line;
+      const hull = (s) => { ctx.beginPath(); ctx.moveTo(0, -222 * s); ctx.bezierCurveTo(13 * s, -196 * s, 30 * s, -160 * s, 30 * s, -112 * s); ctx.lineTo(30 * s, 190 * s); ctx.bezierCurveTo(30 * s, 212 * s, 16 * s, 222 * s, 0, 222 * s); ctx.bezierCurveTo(-16 * s, 222 * s, -30 * s, 212 * s, -30 * s, 190 * s); ctx.lineTo(-30 * s, -112 * s); ctx.bezierCurveTo(-30 * s, -160 * s, -13 * s, -196 * s, 0, -222 * s); ctx.closePath(); };
+      ctx.strokeStyle = '#6E5A44'; ctx.lineWidth = 1.4; for (const p of [[-24, -158, -47, -132], [-29, 150, -47, 176]]) { ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(p[2], p[3]); ctx.stroke(); ctx.lineWidth = 1.3; ell(p[2], p[3], 4.2, 4.2, '#4E4A44', L); ell(p[2], p[3], 2, 2, '#7B766D'); ctx.strokeStyle = '#6E5A44'; ctx.lineWidth = 1.4; }
+      ctx.save(); ctx.translate(5, 7); hull(1); ctx.fillStyle = 'rgba(16,41,61,.28)'; ctx.fill(); ctx.restore();
+      hull(1); ctx.fillStyle = '#F7F3EA'; ctx.fill(); ctx.strokeStyle = L; ctx.lineWidth = 2; ctx.stroke();
+      hull(0.93); ctx.strokeStyle = '#17324A'; ctx.lineWidth = 2.2; ctx.stroke();
+      hull(0.86); ctx.fillStyle = '#E7D4AE'; ctx.fill();
+      ctx.save(); hull(0.86); ctx.clip(); ctx.strokeStyle = 'rgba(140,110,70,.28)'; ctx.lineWidth = 0.8; for (let x = -24; x <= 24; x += 5) { ctx.beginPath(); ctx.moveTo(x, -200); ctx.lineTo(x, 200); ctx.stroke(); } ctx.restore();
+      // 船頭：直升機坪與絞盤
+      ctx.lineWidth = 1.4; ell(0, -166, 11, 11, '#6FA08C', L); ctx.strokeStyle = '#F7F3EA'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(0, -166, 6.5, 0, 6.2832); ctx.moveTo(-3.5, -166); ctx.lineTo(3.5, -166); ctx.moveTo(0, -169.5); ctx.lineTo(0, -162.5); ctx.stroke();
+      rrect(-12, -147, 7, 7, 2, '#8D8A84', L, 1.2); rrect(5, -147, 7, 7, 2, '#8D8A84', L, 1.2);
+      // 駕駛台：兩側伸出去的翼橋、前緣一排窗、雷達罩
+      rrect(-34, -127, 68, 9, 4, '#FFFFFF', L); rrect(-27, -131, 54, 60, 8, '#FFFFFF', L); rrect(-22, -127, 44, 5.5, 2.5, '#5E9CC0', L, 1.1);
+      ctx.lineWidth = 1.3; ell(0, -102, 6.5, 6.5, '#F7F3EA', L); ell(-1.5, -103.5, 2, 2, '#FFFFFF'); ell(-15, -84, 3.6, 3.6, '#F7F3EA', L); ell(15, -84, 3.6, 3.6, '#F7F3EA', L);
+      // 中段：泳池、躺椅、兩個按摩池
+      rrect(-27, -64, 54, 114, 8, '#FDFBF5', L); rrect(-21, -57, 42, 100, 6, '#E7D4AE', 'rgba(64,43,32,.4)', 1);
+      rrect(-13.5, -46, 27, 48, 10, '#FFFFFF', L, 1.3); rrect(-11, -43.5, 22, 43, 8, '#55C1D6'); wavelet(-3, -30, 10, '#B4E8F0'); wavelet(4, -17, 9, '#B4E8F0'); wavelet(-2, -6, 8, '#B4E8F0');
+      const chair = ['#E8674A', '#F4BB42', '#FFFFFF']; let ci = 0; for (let y = -44; y <= -2; y += 8.4) for (const sx of [-1, 1]) rrect(sx * 17.3 - 1.7, y, 3.4, 6.2, 1.2, chair[ci++ % 3], 'rgba(64,43,32,.55)', 0.8);
+      ctx.lineWidth = 1.3; ell(-8, 20, 6, 6, '#FFFFFF', L); ell(-8, 20, 4.2, 4.2, '#55C1D6'); ell(9, 26, 6, 6, '#FFFFFF', L); ell(9, 26, 4.2, 4.2, '#55C1D6');
+      // 後段：天窗、煙囪（藍底橘頂）、通風口
+      rrect(-27, 58, 54, 84, 8, '#FFFFFF', L); rrect(-18, 64, 36, 7, 3, '#5E9CC0', L, 1.1);
+      ell(4, 104, 15, 21, 'rgba(16,41,61,.2)'); ctx.lineWidth = 1.6; ell(0, 99, 14, 20, '#17324A', L); ell(0, 97, 10.5, 15.5, '#E8674A', L); ell(0, 96, 5.5, 9, '#3A2A28', L);
+      ctx.lineWidth = 1.2; ell(-17, 130, 3, 3, '#C9D2D6', L); ell(17, 130, 3, 3, '#C9D2D6', L);
+      // 救生艇
+      for (let y = -50; y <= 130; y += 30) for (const sx of [-1, 1]) { rrect(sx * 30.5 - 3, y - 6.5, 6, 13, 3, '#F2983A', L, 1.2); ctx.fillStyle = '#FFD9A0'; ctx.fillRect(sx * 30.5 - 1, y - 3, 2, 6); }
+      // 船尾：球場與小旗
+      rrect(-15, 152, 30, 40, 5, '#7DB58F', L, 1.3); ctx.strokeStyle = '#F7F3EA'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-15, 172); ctx.lineTo(15, 172); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 172, 5, 0, 6.2832); ctx.stroke();
+      poly([0, 204, 0, 214, 8, 209], '#E8674A', L);
+      ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = 'rgba(47,136,175,.15)'; ctx.fillRect(-60, -240, 120, 480); ctx.globalCompositeOperation = 'source-over';      // 整艘船罩一層淡淡的海水色，讓它退到背景，不搶垃圾的辨識度
+    });
+    // 小卷漁船（俯視）：白色船舷、綠色甲板、紅色船頭、船尾駕駛室、一整排集魚燈
+    BG.boat = offscreen(44, 96, () => {
+      ctx.translate(22, 48); const L = PAL.line;
+      const hull = (s) => { ctx.beginPath(); ctx.moveTo(0, -40 * s); ctx.bezierCurveTo(8 * s, -30 * s, 11 * s, -16 * s, 11 * s, -2 * s); ctx.lineTo(11 * s, 30 * s); ctx.bezierCurveTo(11 * s, 37 * s, 6 * s, 40 * s, 0, 40 * s); ctx.bezierCurveTo(-6 * s, 40 * s, -11 * s, 37 * s, -11 * s, 30 * s); ctx.lineTo(-11 * s, -2 * s); ctx.bezierCurveTo(-11 * s, -16 * s, -8 * s, -30 * s, 0, -40 * s); ctx.closePath(); };
+      ctx.save(); ctx.translate(3, 4); hull(1); ctx.fillStyle = 'rgba(16,41,61,.26)'; ctx.fill(); ctx.restore();
+      hull(1); ctx.fillStyle = '#F4EFE2'; ctx.fill(); ctx.strokeStyle = L; ctx.lineWidth = 1.6; ctx.stroke();
+      hull(0.78); ctx.fillStyle = '#4FA796'; ctx.fill(); ctx.strokeStyle = 'rgba(64,43,32,.5)'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.save(); hull(0.78); ctx.clip(); ctx.fillStyle = '#D8492F'; ctx.fillRect(-12, -40, 24, 13); ctx.restore();
+      rrect(-7, 10, 14, 18, 3, '#FFFFFF', L, 1.3); rrect(-5, 12, 10, 4, 1.5, '#5E9CC0', L, 1); ctx.lineWidth = 1; ell(-5, 33, 1.8, 1.8, '#F2983A', L); ell(0, 34.5, 1.8, 1.8, '#F2983A', L); ell(5, 33, 1.8, 1.8, '#F2983A', L);
+      ctx.strokeStyle = '#5B5148'; ctx.lineWidth = 0.9; for (const x of [-4, 4]) { ctx.beginPath(); ctx.moveTo(x * 0.5, -30); ctx.lineTo(x, 8); ctx.stroke(); }
+      ctx.lineWidth = 0.9; for (let i = 0; i < 6; i++) for (const sx of [-1, 1]) { const k = i / 5, y = -24 + i * 6.2; ell(sx * (2.4 + 1.6 * k), y, 2.1, 2.1, '#FFE9A8', L); }
+      ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = 'rgba(47,136,175,.12)'; ctx.fillRect(-22, -48, 44, 96); ctx.globalCompositeOperation = 'source-over';
+    });
+    BG.shade = ctx.createLinearGradient(0, 0, 0, H); BG.shade.addColorStop(0, 'rgba(14,48,82,.26)'); BG.shade.addColorStop(0.5, 'rgba(14,48,82,0)');
+  } catch (e) { BG.fail = true; }
+}
+function beacon(x, y, col) {      // 岸壁盡頭的燈標（俯視）
+  ctx.lineWidth = 1.8; ell(x + 3, y + 4, 14, 13, 'rgba(16,41,61,.28)'); ell(x, y, 14, 14, '#EFE9DA', PAL.line); ell(x, y, 9.5, 9.5, col, PAL.line); ell(x, y, 4.6, 4.6, '#FFF8EA', PAL.line);
+  ctx.fillStyle = 'rgba(255,244,190,' + (0.35 + 0.35 * Math.sin(clock * 3 + x)) + ')'; ctx.beginPath(); ctx.arc(x, y, 3, 0, 6.2832); ctx.fill();
+}
+function buoy(x, y, col) {      // 航道浮標：一圈往外擴散的水紋、影子、浮標本體
+  const rp = (clock * 0.5 + x * 0.013) % 1; ctx.strokeStyle = 'rgba(230,246,249,' + 0.55 * (1 - rp) + ')'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(x, y, 11 + rp * 13, 0, 6.2832); ctx.stroke();
+  const b = Math.sin(clock * 2.2 + x) * 0.8; ctx.lineWidth = 1.5; ell(x + 2.5, y + 3.5, 10, 9, 'rgba(16,41,61,.26)'); ell(x + b, y, 10, 10, col, PAL.line); ell(x + b, y, 6.2, 6.2, '#FFF8EA', PAL.line); ell(x + b, y, 2.6, 2.6, col, PAL.line);
+}
 function drawBackground() {
-  const off = (clock * CONFIG.scroll) % 64, sy = t * CONFIG.scroll;
-  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#2C86AE'); g.addColorStop(1, '#3FA0C2'); ctx.fillStyle = g; ctx.fillRect(-10, -10, W + 20, H + 20);
-  ctx.strokeStyle = 'rgba(232,246,251,.28)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
-  for (let y = -64 + off; y < H + 64; y += 64) for (let x = 20; x < W; x += 90) { const xx = x + ((Math.floor((y - off) / 64) & 1) ? 45 : 0); ctx.beginPath(); ctx.arc(xx, y, 12, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke(); }
-  // 碼頭岸壁（開場到第 30 秒）：兩側水泥岸、黃線、繫船柱；左側停著一艘郵輪
-  const pierEnd = sy - 30 * CONFIG.scroll;     // 岸壁尾端在畫面上的 y：第 30 秒前在畫面上方之外，之後由上往下移出
+  if (!BG.ready) buildBackground();
+  const sy = t * CONFIG.scroll, flow = clock * CONFIG.scroll;
+  ctx.fillStyle = SEA.base; ctx.fillRect(-10, -10, W + 20, H + 20);
+  if (BG.fail) return;      // 離屏畫布畫不出來時（極舊的瀏覽器）只留純色海面，遊戲照常進行
+  const a = (flow * 0.55) % H, b = flow % H;
+  ctx.drawImage(BG.seaA, -6, a - H, W + 12, H); ctx.drawImage(BG.seaA, -6, a, W + 12, H);
+  ctx.drawImage(BG.seaB, -6, b - H, W + 12, H); ctx.drawImage(BG.seaB, -6, b, W + 12, H);
+  const out = Math.max(0, Math.min(1, (t - 30) / 10));      // 離開碼頭後海水顏色慢慢變深
+  if (out > 0) { ctx.fillStyle = 'rgba(16,58,100,' + 0.2 * out + ')'; ctx.fillRect(-10, -10, W + 20, H + 20); }
+  ctx.fillStyle = BG.shade; ctx.fillRect(-10, -10, W + 20, H + 20);
+  // 碼頭岸壁（開場到第 30 秒）：兩側岸壁與「東3」「東4」泊位標示；左側停著一艘郵輪
+  const pierEnd = sy - 30 * CONFIG.scroll;     // 岸壁盡頭在畫面上的 y：第 30 秒前在畫面上方之外，之後由上往下移出
   if (pierEnd < H + 40) {
-    const top = Math.max(-10, pierEnd);
-    for (const side of [0, 1]) { const x = side ? W - 26 : 0; ctx.fillStyle = '#D9D2C2'; ctx.fillRect(x, top, 26, H - top + 10); ctx.fillStyle = PAL.gold; ctx.fillRect(side ? W - 26 : 22, top, 4, H - top + 10); ctx.lineWidth = 1.5; for (let y = top + ((off * 1.4) % 90); y < H; y += 90) ell(x + 13, y + 20, 6, 6, '#56534D', PAL.line); }
-    const shipY = sy - 260;                    // 郵輪由畫面上方漂到下方
-    if (shipY > -460 && shipY < H + 40) { ctx.lineWidth = 2; ctx.save(); ctx.translate(58, shipY); poly([0, -40, 26, 0, 26, 380, 0, 420, -26, 380, -26, 0], '#FFFFFF', PAL.line); ctx.fillStyle = '#17324A'; ctx.fillRect(-14, 60, 28, 240); ctx.fillStyle = '#E8674A'; ctx.fillRect(-8, 150, 16, 26); ctx.fillStyle = '#BFE3F0'; for (let i = 0; i < 9; i++) { ctx.fillRect(-20, 30 + i * 38, 4, 14); ctx.fillRect(16, 30 + i * 38, 4, 14); } ctx.restore(); }
+    const top = Math.max(-10, pierEnd), o = sy % 180;
+    ctx.save(); ctx.beginPath(); ctx.rect(-10, top, W + 20, H + 20 - top); ctx.clip();
+    ctx.fillStyle = QUAY.top; ctx.fillRect(-10, top, 10, H + 20 - top); ctx.fillRect(W, top, 10, H + 20 - top);
+    for (let y = o - 180; y < H + 10; y += 180) { if (y + 180 < top) continue; ctx.drawImage(BG.quay, 0, y, 34, 180); ctx.save(); ctx.translate(W, 0); ctx.scale(-1, 1); ctx.drawImage(BG.quay, 0, y, 34, 180); ctx.restore(); }
+    ctx.fillStyle = 'rgba(64,43,32,.5)'; ctx.font = "700 10px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif"; ctx.textAlign = 'center';
+    for (const m of [[9, 252, '東', '3'], [W - 9, 72, '東', '4'], [9, 252 - 720, '東', '3'], [W - 9, 72 - 720, '東', '4']]) { const y = m[1] + sy; if (y > top - 30 && y < H + 20) { ctx.fillText(m[2], m[0], y); ctx.fillText(m[3], m[0], y + 12); } }
+    ctx.restore();
+    const cy = sy - 70;                        // 郵輪船身中心的 y（由畫面上方漂到下方）
+    if (cy > -260 && cy < H + 260) ctx.drawImage(BG.ship, 62 - 56, cy - 240, 120, 480);
   }
-  if (pierEnd > -60 && pierEnd < H + 80) { ctx.lineWidth = 2; ctx.save(); ctx.translate(W - 30, pierEnd - 6); ell(0, 0, 20, 20, '#E9E3D2', PAL.line); ell(0, 0, 11, 11, '#E8674A', PAL.line); ell(0, 0, 5, 5, '#FFF8EA', PAL.line); ctx.restore(); }
-  if (t > 30) for (let i = 0; i < 3; i++) { const by = ((sy + i * 330) % 990) - 60, bx = i % 2 ? 54 : W - 54; ctx.lineWidth = 1.5; ell(bx, by, 9, 9, i % 2 ? '#E8674A' : '#3D9C6B', PAL.line); ell(bx, by, 3, 3, '#FFF8EA'); }
+  if (pierEnd > -60 && pierEnd < H + 80) {      // 岸壁盡頭：圓角收尾，兩側各一座燈標
+    for (const side of [0, 1]) { ctx.save(); if (side) { ctx.translate(W, 0); ctx.scale(-1, 1); } ctx.fillStyle = 'rgba(16,41,61,.26)'; ctx.beginPath(); ctx.arc(15, pierEnd + 4, 18, Math.PI, 0); ctx.fill(); ctx.fillStyle = QUAY.top; ctx.strokeStyle = PAL.line; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(-10, pierEnd + 1); ctx.lineTo(-10, pierEnd - 6); ctx.arcTo(27, pierEnd - 6, 27, pierEnd + 1, 12); ctx.lineTo(27, pierEnd + 1); ctx.fill(); ctx.stroke(); ctx.restore(); }
+    beacon(13, pierEnd + 14, '#3D9C6B'); beacon(W - 13, pierEnd + 14, '#E8674A');
+  }
+  if (t > 28) {      // 出了碼頭：航道浮標、停著作業的小卷漁船
+    for (const p of [[322, 36, 0.1], [38, 55, -0.14]]) { const y = (t - p[1]) * CONFIG.scroll - 60; if (y > -70 && y < H + 70) { ctx.save(); ctx.translate(p[0], y + Math.sin(clock * 1.3 + p[0]) * 1.5); ctx.rotate(p[2] + Math.sin(clock * 0.9 + p[0]) * 0.02); ctx.drawImage(BG.boat, -22, -48, 44, 96); ctx.restore(); } }
+    for (let i = 0; i < 3; i++) { const by = ((sy + i * 330) % 990) - 60, bx = i % 2 ? 54 : W - 54; buoy(bx, by, i % 2 ? '#E8674A' : '#3D9C6B'); }
+  }
 }
 function drawKite() {
   const k = kite;
