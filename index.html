@@ -62,7 +62,14 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 @keyframes glow{50%{transform:scale(1.035);box-shadow:0 0 0 4px rgba(244,187,66,.35)}}
 .rank{align-self:center;font-family:var(--display);font-weight:700;font-size:18px;background:var(--gold);border:2px solid var(--ink);border-radius:999px;padding:0 14px}
 .fact{font-size:13px;text-align:left;background:#fff;border:1px dashed var(--muted);border-radius:10px;padding:6px 9px;color:var(--ink)}
-.card.result{gap:9px;padding:14px 16px;max-width:312px}
+.headline{display:flex;align-items:center;justify-content:center;gap:10px}
+.seal{align-self:center;font-size:12px;font-weight:700;color:var(--coral);border:2px solid var(--coral);border-radius:8px;padding:0 8px;transform:rotate(-3deg)}
+.dex{display:flex;flex-wrap:wrap;gap:4px;justify-content:center}
+.dex button{border:1.5px solid var(--ink);border-radius:999px;background:#fff;padding:1px 8px;font-size:12px}
+.dex button.fresh{background:var(--gold)}
+.dex button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.dex button:disabled{border-style:dashed;opacity:.55;cursor:default}
+.card.result{gap:8px;padding:14px 16px;max-width:312px}
 .card.result h2{font-size:18px}
 .card.result .total{font-size:40px}
 .card.result .rows{font-size:13px;gap:2px 12px;padding:6px 0}
@@ -89,13 +96,13 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
       <p>60 秒內，看你能幫小鳶抓到幾公斤。</p>
       <ul class="how">
         <li><b>點魚</b><span>點水裡的魚，小鳶會俯衝下去抓</span></li>
-        <li><b>六種魚</b><span>越深越重。小卷成群，白帶魚扭著游</span></li>
+        <li><b>六種漁獲</b><span>越深越重。小卷成群，白帶魚扭著游</span></li>
         <li><b>連抓</b><span>連續抓到 3 條起，每條多 0.2 公斤</span></li>
         <li><b>垃圾</b><span>抓到會暈一下，要避開</span></li>
         <li><b>鯨鯊</b><span>牠是朋友，出現時公斤數加倍</span></li>
       </ul>
       <button class="btn" id="startBtn">開始</button>
-      <p class="note">原型 v0.4：暫用素材、不發點數</p>
+      <p class="note">原型 v0.5：暫用素材、不發點數</p>
     </div>
   </div>
 
@@ -109,10 +116,11 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 
   <div class="panel" id="resultPanel" hidden>
     <div class="card result">
-      <h2>時間到</h2>
-      <div class="rank" id="rank"></div>
+      <div class="headline"><h2>時間到</h2><div class="rank" id="rank"></div></div>
+      <div class="seal" id="seal" hidden>六種漁獲收藏章</div>
       <div class="total"><span id="totalKg">0.0</span> <small>公斤</small></div>
       <div class="rows" id="rows"></div>
+      <div class="dex" id="dex" aria-label="港邊圖鑑冊"></div>
       <p class="fact" id="fact"></p>
       <div class="ask" id="ask">
         <div><span>一看就知道怎麼玩</span><span class="yn" data-q="easy"><button aria-pressed="false">是</button><button aria-pressed="false">否</button></span></div>
@@ -122,7 +130,6 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
       <button class="btn" id="againBtn">再玩一局</button>
       <button class="btn quiet" id="copyBtn">複製測試紀錄</button>
       <textarea id="log" readonly hidden aria-label="測試紀錄"></textarea>
-      <p class="note">原型不發點數；公斤數只作為本局成績。</p>
     </div>
   </div>
 </div>
@@ -132,20 +139,20 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.4',
+  version: '0.5',
   duration: 60,                 // 一局秒數
   W: 360, H: 640,               // 邏輯畫布尺寸
   surfaceY: 200,                // 海面高度
   skyY: 128,                    // 小鳶巡航高度
   kite: { patrolSpeed: 70, diveSpeed: 820, riseSpeed: 620, cooldown: 0.12, hitPad: 16, stun: 1.0 },
-  // 魚種：kg 重量、speed 速度範圍、r 命中半徑、depth 出現深度、sprite 素材檔名（沒有檔案時用程式畫的佔位圖）、sw/sh 顯示尺寸
+  // 漁獲（小卷是頭足類不是魚，程式裡為了方便統稱 fish）：kg 重量、speed 速度範圍、r 命中半徑、depth 出現深度、sprite 素材檔名（沒有檔案時用程式畫的佔位圖）、sw/sh 顯示尺寸
   fish: {
-    saba:     { name: '鯖魚',   kg: 0.3, speed: [38, 58],   r: 12, depth: [235, 330], sprite: 'fish_small',    sw: 35, sh: 22, color: '#DCEBF2', fin: '#9FC3D6', fact: '台語叫「花飛」，是八斗子漁港常見的漁獲。' },
-    squid:    { name: '小卷',   kg: 0.2, speed: [46, 62],   r: 11, depth: [240, 350], sprite: 'fish_squid',    sw: 38, sh: 20, school: [4, 5], move: 'jet', fact: '又叫鎖管，喜歡成群行動。八斗子的鎖管產量是全台第一。' },
-    grunt:    { name: '黃雞魚', kg: 1.0, speed: [80, 110],  r: 16, depth: [300, 460], sprite: 'fish_mid',      sw: 46, sh: 29, color: '#F6D873', fin: '#D9A93A', fact: '小時候身上有三條線，長大後線條會慢慢變淡。' },
-    hairtail: { name: '白帶魚', kg: 1.5, speed: [105, 135], r: 15, depth: [330, 500], sprite: 'fish_hairtail', sw: 84, sh: 20, move: 'wave', fact: '身體像一條銀色的帶子，沒有魚鱗。' },
-    bream:    { name: '赤鯮',   kg: 3.0, speed: [140, 180], r: 22, depth: [430, 590], sprite: 'fish_big',      sw: 64, sh: 40, color: '#F08C5A', fin: '#C65B32', fact: '全身紅通通，住在比較深的地方，游得很快。' },
-    amber:    { name: '紅魽',   kg: 5.0, speed: [185, 215], r: 24, depth: [470, 585], sprite: 'fish_amber',    sw: 84, sh: 44, rare: true, fact: '游得很快的大型魚，也是八斗子漁港的代表漁獲。' }
+    saba:     { name: '鯖魚',   kg: 0.3, speed: [38, 58],   r: 12, depth: [235, 330], sprite: 'fish_small',    sw: 35, sh: 22, color: '#DCEBF2', fin: '#9FC3D6', fact: '花腹鯖也叫「花飛」，是八斗子地區常見的漁獲。' },
+    squid:    { name: '小卷',   kg: 0.2, speed: [46, 62],   r: 11, depth: [240, 350], sprite: 'fish_squid',    sw: 38, sh: 20, school: [4, 5], move: 'jet', fact: '小卷屬於鎖管類，會被光吸引，是八斗子地區棒受網的主要漁獲。' },
+    grunt:    { name: '黃雞魚', kg: 1.0, speed: [80, 110],  r: 16, depth: [300, 460], sprite: 'fish_mid',      sw: 46, sh: 29, color: '#F6D873', fin: '#D9A93A', fact: '幼魚身上有三條暗色縱帶，長大後會變得不明顯。' },
+    hairtail: { name: '白帶魚', kg: 1.5, speed: [105, 135], r: 15, depth: [330, 500], sprite: 'fish_hairtail', sw: 84, sh: 20, move: 'wave', fact: '身體銀白、細長像帶子，魚鱗已經退化。' },
+    bream:    { name: '赤鯮',   kg: 3.0, speed: [140, 180], r: 22, depth: [430, 590], sprite: 'fish_big',      sw: 64, sh: 40, color: '#F08C5A', fin: '#C65B32', fact: '背部偏紅、腹部較淡，身側有黃色斑，常棲息在較深的砂泥底海域。' },
+    amber:    { name: '紅魽',   kg: 5.0, speed: [185, 215], r: 24, depth: [470, 585], sprite: 'fish_amber',    sw: 84, sh: 44, rare: true, fact: '紅魽也叫「紅甘」，體側常有一條黃色縱帶，是基隆在地漁獲之一。' }
   },
   trash: { name: '漂流垃圾', speed: [18, 30], r: 14, depth: [240, 440] },
   // 各時段：每隔幾秒出現一個（小卷一次來一群）、各類型的機率權重、速度倍率
@@ -158,13 +165,13 @@ const CONFIG = {
   ],
   rare: { type: 'amber', at: [24, 50] },     // 大物：固定在這幾秒各出現一條
   event: { from: 45, to: 55, mult: 2 },      // 鯨鯊事件：這段時間公斤數乘以 mult
+  flash: 0.45,                               // 鯨鯊登場閃光的最高不透明度（0 到 1）；手機開啟減少動態效果時最多 0.2
   combo: { from: 3, bonus: 0.2 },            // 連抓：連續命中第 from 條起，每條多 bonus 公斤（不乘鯨鯊倍率）
   ranks: [[0, '港邊新手'], [15, '海風學徒'], [30, '俯衝好手'], [50, '基隆鳶王']],  // 結算稱號：達到幾公斤
   diveSpriteAngle: 35           // kite_dive.png 本身朝右下的角度（度），繪製時扣回，讓喙對準目標
 };
-/* 正式素材：把同名 PNG 放進 assets/ 並在這裡加一行，就會取代佔位圖（全部朝右、透明背景）
-   待 ChatGPT 交付後加入：fish_squid.png、fish_hairtail.png、fish_amber.png */
-const ASSET_FILES = { kite_glide: 'kite_glide.png', kite_dive: 'kite_dive.png', fish_small: 'fish_small.png', fish_mid: 'fish_mid.png', fish_big: 'fish_big.png', trash: 'trash.png', whaleshark: 'whaleshark.png', bg: 'bg.jpg' };
+/* 素材：assets/ 裡的同名檔案。拿掉其中一行，那一項就會退回程式畫的佔位圖（全部朝右、透明背景） */
+const ASSET_FILES = { kite_glide: 'kite_glide.png', kite_dive: 'kite_dive.png', fish_small: 'fish_small.png', fish_mid: 'fish_mid.png', fish_big: 'fish_big.png', trash: 'trash.png', whaleshark: 'whaleshark.png', bg: 'bg.jpg', fish_squid: 'fish_squid.png', fish_hairtail: 'fish_hairtail.png', fish_amber: 'fish_amber.png' };
 
 const $ = (id) => document.getElementById(id);
 const stage = $('stage'), cv = $('world'), ctx = cv.getContext('2d');
@@ -232,11 +239,11 @@ function spawn(p, forced) {
     const n = Math.round(rand(def.school[0], def.school[1])), ph = rand(0, 6.28);
     for (let i = 0; i < n; i++) addFish(type, dir, sp, Math.max(def.depth[0], Math.min(def.depth[1], y + rand(-18, 18))), i * 26 + rand(-4, 4), ph + rand(0, 0.5));
   } else addFish(type, dir, sp, y);
-  if (def.rare) { say('大物！' + def.name, dir > 0 ? 70 : W - 70, y - 26, '#FFE08A'); jingle([392, 523, 784], 70); }
+  if (def.rare) { say('大物！' + def.name, dir > 0 ? 70 : W - 70, y - 26, '#FFE08A', true); jingle([392, 523, 784], 70); }
 }
 
 /* ====== 特效粒子 ====== */
-function say(text, x, y, color) { floats.push({ text, x: Math.max(48, Math.min(W - 48, x)), y, life: 1, color: color || '#fff' }); }
+function say(text, x, y, color, slow) { floats.push({ text, x: Math.max(48, Math.min(W - 48, x)), y, life: 1, color: color || '#fff', rate: slow ? 0.5 : 0.9, rise: slow ? 12 : 26 }); }   // slow：停留久一點（約 2 秒）
 function part(kind, x, y, o) { parts.push(Object.assign({ kind, x, y, vx: 0, vy: 0, life: 1, fade: 1.6, size: 3, rot: rand(0, 6.28) }, o)); }
 function splash(x) { const s = CONFIG.surfaceY; rings.push({ x, y: s, life: 1, flat: true }); for (let i = 0; i < 7; i++) part('drop', x + rand(-8, 8), s, { vx: rand(-70, 70), vy: rand(-170, -70), g: 520, fade: 1.8, size: rand(1.5, 2.8) }); }
 function bubbles(x, y, n) { for (let i = 0; i < n; i++) part('bubble', x + rand(-10, 10), y + rand(-6, 6), { vy: rand(-46, -22), fade: rand(0.9, 1.4), size: rand(1.5, 3.2) }); }
@@ -284,6 +291,9 @@ function update(dt) {
     flash = 1; jingle([392, 523, 659, 784, 1047], 85); stars(40, 520, calm ? 6 : 18, 150);
   }
   if (shark) shark.x += shark.vx * dt;
+  if (shark && !inEvent && !shark.bye) {           // 鯨鯊道別：加倍結束時說再見
+    shark.bye = true; say('鯨鯊游走了，下次見', W - 90, shark.y - 44, '#FFE08A', true); hearts(W - 60, shark.y - 20); bubbles(W - 40, shark.y, 8); jingle([784, 659, 523], 110);
+  }
   for (const o of things) {
     if (o.move === 'jet') o.x += o.vx * (0.35 + 1.3 * Math.max(0, Math.sin(clock * 5 + o.ph))) * dt;
     else o.x += o.vx * dt;
@@ -297,7 +307,7 @@ function update(dt) {
     for (const o of things) if (o.type === CONFIG.rare.type) part('star', o.x - Math.sign(o.vx) * rand(10, 40), o.y + rand(-10, 10), { fade: 2, size: rand(2.5, 4.5) });
     if (Math.random() < 0.25 && things.length) { const o = things[Math.floor(Math.random() * things.length)]; if (o.type !== 'trash') part('bubble', o.x, o.y - o.r * 0.5, { vy: rand(-30, -18), fade: 0.8, size: rand(1.2, 2.2) }); }
   }
-  for (const f of floats) { f.y -= 26 * dt; f.life -= dt * 0.9; } floats = floats.filter((f) => f.life > 0);
+  for (const f of floats) { f.y -= f.rise * dt; f.life -= dt * f.rate; } floats = floats.filter((f) => f.life > 0);
   for (const r of rings) r.life -= dt * 2.2; rings = rings.filter((r) => r.life > 0);
   for (const q of parts) { q.x += q.vx * dt; q.y += q.vy * dt; if (q.g) q.vy += q.g * dt; if (q.kind === 'ink') q.size += 16 * dt; if (q.kind === 'bubble' && q.y < CONFIG.surfaceY + 4) q.life = 0; q.life -= dt * q.fade; }
   parts = parts.filter((q) => q.life > 0);
@@ -491,7 +501,7 @@ function draw() {
   if (kite.state === 'dive') { ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.arc(kite.tx, kite.ty, 14, 0, 6.2832); ctx.stroke(); ctx.setLineDash([]); }
   drawKite();
   drawParts(true);
-  if (flash > 0) { ctx.fillStyle = 'rgba(255,248,220,' + flash * (calm ? 0.25 : 0.8) + ')'; ctx.fillRect(0, 0, W, H); }
+  if (flash > 0) { ctx.fillStyle = 'rgba(255,248,220,' + flash * (calm ? Math.min(0.2, CONFIG.flash) : CONFIG.flash) + ')'; ctx.fillRect(0, 0, W, H); }
   ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.font = "700 16px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif";
   for (const f of floats) { ctx.globalAlpha = Math.min(1, f.life * 1.6); ctx.lineWidth = 4; ctx.strokeStyle = '#10293D'; ctx.strokeText(f.text, f.x, f.y); ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y); }
   ctx.globalAlpha = 1;
@@ -511,7 +521,7 @@ function resume() { if (mode !== 'pause') return; mode = 'play'; show(null); }
 function rankOf(v) { let name = CONFIG.ranks[0][1]; for (const r of CONFIG.ranks) if (v >= r[0]) name = r[1]; return name; }
 function record() {
   const acc = stats.dives ? Math.round(stats.hits / stats.dives * 100) : 0;
-  return { game: '小鳶捕魚原型', version: CONFIG.version, time: new Date().toISOString(), totalKg: +kg.toFixed(1), rank: rankOf(kg), kgInEvent: +stats.kgInEvent.toFixed(1), comboBonus: +stats.comboBonus.toFixed(1), bestCombo: stats.bestCombo, counts: stats.counts,
+  return { game: '小鳶捕魚原型', version: CONFIG.version, time: new Date().toISOString(), totalKg: +kg.toFixed(1), rank: rankOf(kg), dex: SPECIES.filter((k) => dex[k]).length, kgInEvent: +stats.kgInEvent.toFixed(1), comboBonus: +stats.comboBonus.toFixed(1), bestCombo: stats.bestCombo, counts: stats.counts,
     taps: stats.taps, dives: stats.dives, hits: stats.hits, misses: stats.misses, hitRate: acc, tapsDuringCooldown: stats.blocked, tapsOnSky: stats.skyTaps, trash: stats.trash, tapsOnWhaleShark: stats.sharkTaps,
     answers, assets: Object.keys(img), screen: innerWidth + 'x' + innerHeight, ua: navigator.userAgent };
 }
@@ -523,8 +533,16 @@ function finish() {
   for (const k of SPECIES) if (stats.counts[k]) add(CONFIG.fish[k].name + '（' + CONFIG.fish[k].kg + ' kg）', stats.counts[k] + (k === 'squid' ? ' 隻' : ' 條'), stats.newDex.includes(k));
   if (!stats.hits) add('這局沒有抓到魚', '0 條');
   add('鯨鯊加倍時段', stats.kgInEvent.toFixed(1) + ' kg'); add('連抓加成（最多連 ' + stats.bestCombo + '）', '+' + stats.comboBonus.toFixed(1) + ' kg'); add('命中率', acc + '%（' + stats.hits + '/' + stats.dives + '）'); add('抓到垃圾', stats.trash + ' 次');
-  const got = SPECIES.filter((k) => dex[k]).length, missing = SPECIES.filter((k) => !dex[k]).map((k) => CONFIG.fish[k].name), fact = $('fact'), nk = stats.newDex[stats.newDex.length - 1];
-  fact.textContent = '圖鑑 ' + got + ' / ' + SPECIES.length + '。' + (nk ? CONFIG.fish[nk].name + '：' + CONFIG.fish[nk].fact : missing.length ? '還沒抓過：' + missing.join('、') + '。' : '六種都抓過了。');
+  // 港邊圖鑑冊：六種漁獲的小卡，抓過的可以點開看小知識；這局新抓到的標成金色
+  const got = SPECIES.filter((k) => dex[k]).length, box = $('dex'), fact = $('fact'); box.textContent = '';
+  const tell = (k, b) => { fact.textContent = CONFIG.fish[k].name + '：' + CONFIG.fish[k].fact; for (const x of box.children) x.setAttribute('aria-pressed', String(x === b)); };
+  for (const k of SPECIES) {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = dex[k] ? CONFIG.fish[k].name : '？？'; b.disabled = !dex[k]; b.setAttribute('aria-pressed', 'false');
+    if (stats.newDex.includes(k)) b.className = 'fresh'; b.onclick = () => tell(k, b); box.appendChild(b);
+  }
+  const nk = stats.newDex[stats.newDex.length - 1];
+  if (nk) tell(nk, box.children[SPECIES.indexOf(nk)]); else fact.textContent = '圖鑑 ' + got + ' / ' + SPECIES.length + '。點上面的漁獲看小知識。';
+  $('seal').hidden = got < SPECIES.length;
   $('log').hidden = true; $('copyBtn').textContent = '複製測試紀錄'; show('resultPanel');
 }
 
