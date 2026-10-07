@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>html{color-scheme:light}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>小鳶來港介面原型</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@700&display=swap">
+<style>
+/* Layout: three columns on desktop (page list, one handset, notes); on a phone the handset comes first and the lists follow.
+   The handset is the product under review, so its colours are fixed; only the review chrome around it follows the viewer's theme. */
+:root{
+  /* review chrome */
+  --bg:#E6EFF1; --fg:#17324A; --panel:#FFFFFF; --rule:#C7D6DB; --muted:#587084; --chip:#D5E4E8; --focus:#C98A00;
+  /* product palette, taken from the mascot art and the harbour */
+  --ink:#402B20; --navy:#17324A; --paper:#FFF8EA; --foam:#DCEFEC; --gold:#F4BB42; --coral:#D9553A; --sea:#2F7FA8; --ok:#2C8C6B; --line:#06C755; --soft:#7A6658; --edge:#E4D6BC;
+  --display:'LXGW WenKai TC','Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;
+  --body:'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0E2233;--fg:#E8F1F3;--panel:#17324A;--rule:#2D4C63;--muted:#9DB4C2;--chip:#234459;--focus:#F4BB42;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0E2233;--fg:#E8F1F3;--panel:#17324A;--rule:#2D4C63;--muted:#9DB4C2;--chip:#234459;--focus:#F4BB42;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.6;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.app{max-width:1120px;margin:0 auto;padding-inline:16px;padding-block:18px 40px;display:flex;flex-direction:column;gap:16px}
+
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 24px}
+.top h1{font-family:var(--display);font-size:26px;line-height:1.2;margin:0}
+.top p{margin:0;color:var(--muted);font-size:13px;max-width:52ch}
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tabs button{border:2px solid var(--fg);background:transparent;border-radius:999px;padding:6px 16px;font-weight:700;font-size:15px}
+.tabs button[aria-selected="true"]{background:var(--fg);color:var(--bg)}
+
+.work{display:grid;grid-template-columns:230px minmax(0,360px) minmax(0,1fr);gap:24px;align-items:start}
+.pages,.notes{min-width:0;background:var(--panel);border:1px solid var(--rule);border-radius:14px;padding:14px}
+.pages h2,.notes h2{font-size:13px;margin:0 0 6px;color:var(--muted);font-weight:700}
+.pages ol{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-direction:column;gap:2px}
+.pages ol:last-child{margin-bottom:0}
+.pages button{width:100%;text-align:left;border:0;background:transparent;border-radius:8px;padding:5px 8px;font-size:14px;display:flex;gap:8px;align-items:baseline}
+.pages button:hover{background:var(--chip)}
+.pages button[aria-current="true"]{background:var(--fg);color:var(--bg);font-weight:700}
+.pages .dev{flex:none;font-size:11px;border:1px solid currentColor;border-radius:4px;padding:0 4px;line-height:1.5;opacity:.8}
+
+.device{min-width:0;display:flex;flex-direction:column;gap:10px;align-items:stretch}
+.who{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:700;font-size:14px}
+.who span:last-child{font-weight:400;color:var(--muted);font-size:12px}
+.phone{background:var(--navy);border-radius:30px;padding:10px;border:1px solid var(--rule)}
+.screen{background:var(--foam);color:var(--ink);border-radius:22px;height:620px;overflow:hidden;display:flex;flex-direction:column}
+.handoff{border:2px dashed var(--muted);border-radius:12px;padding:8px 12px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:13px}
+.handoff span{flex:1 1 180px;min-width:0}
+.handoff b{font-size:12px;color:var(--muted);flex-basis:100%}
+.handoff button{border:2px solid var(--fg);background:var(--fg);color:var(--bg);border-radius:999px;padding:5px 14px;font-weight:700;font-size:14px}
+.resetrow{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted)}
+.resetrow button{border:0;background:transparent;text-decoration:underline;padding:0;font-size:12px;color:var(--muted)}
+
+.notes ul{margin:0 0 14px;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.notes ul:last-child{margin-bottom:0}
+.notes h3{font-family:var(--display);font-size:20px;margin:0 0 8px;line-height:1.3}
+.notes .tag{display:inline-block;font-size:12px;font-weight:700;border-radius:4px;padding:0 6px;background:var(--chip);margin-bottom:8px}
+
+/* ---------- inside the handset ---------- */
+.bar{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 14px;font-size:13px;font-weight:700;background:var(--paper);border-bottom:2px solid var(--ink)}
+.bar.staff{background:var(--navy);color:var(--paper);border-bottom-color:var(--navy)}
+.bar small{font-weight:400;opacity:.8}
+.scr{flex:1;min-height:0;overflow:auto;padding:18px 16px 20px;display:flex;flex-direction:column;gap:14px}
+.scr.staff{background:#F3F5F6}
+.scr.center{text-align:center;align-items:stretch}
+.scr h2{font-family:var(--display);font-size:25px;line-height:1.25;margin:0;text-wrap:balance}
+.scr p{margin:0;font-size:14px;color:var(--soft)}
+.scr p.lead{color:var(--ink);font-size:15px}
+.art{width:120px;height:120px;align-self:center;flex:none}
+.spacer{flex:1}
+.btn{display:block;width:100%;border:2px solid var(--ink);border-radius:14px;background:var(--gold);color:var(--ink);padding:11px 14px;font-weight:700;font-size:16px;box-shadow:0 3px 0 var(--ink);transition:transform .06s,box-shadow .06s}
+.btn:active{transform:translateY(3px);box-shadow:0 0 0 var(--ink)}
+.btn:disabled{opacity:.45;box-shadow:none;cursor:not-allowed}
+.btn.line{background:var(--line);color:#fff}
+.btn.plain{background:var(--paper)}
+.btn.warn{background:var(--paper);color:var(--coral)}
+.btn.text{border:0;box-shadow:none;background:transparent;font-weight:400;font-size:14px;text-decoration:underline;padding:4px}
+.box{background:var(--paper);border:2px solid var(--ink);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px;text-align:left}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px;margin:0}
+.kv dt{color:var(--soft)}
+.kv dd{margin:0;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.num{font-family:var(--display);font-size:44px;line-height:1;font-variant-numeric:tabular-nums}
+.num small{font-size:17px;margin-left:4px}
+.pill{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--ink);border-radius:999px;padding:1px 10px;font-size:13px;font-weight:700;background:var(--paper);white-space:nowrap}
+.pill::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--gold);border:1.5px solid var(--ink)}
+.pill.claim::before{background:var(--sea)} .pill.done::before{background:var(--ok)} .pill.bad::before{background:var(--coral)}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px;text-align:left}
+.check input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--navy);flex:none}
+.card-art{aspect-ratio:3/4;width:168px;align-self:center;border:2px solid var(--ink);border-radius:14px;background:linear-gradient(var(--sea) 0 58%,var(--navy) 58%);display:flex;align-items:flex-end;justify-content:center;padding:10px;color:var(--paper);font-size:12px;text-align:center;position:relative;overflow:hidden}
+.card-art img{position:absolute;width:112px;height:112px;left:50%;top:36%;transform:translate(-50%,-50%)}
+.member{background:var(--navy);color:var(--paper);border:2px solid var(--ink);border-radius:16px;padding:14px;display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:end}
+.member .name{font-size:13px;opacity:.85}
+.member .num{grid-row:span 2;align-self:center;color:var(--gold)}
+.member .title{font-family:var(--display);font-size:18px}
+.stamps{display:flex;gap:8px;flex-wrap:wrap}
+.stamp{width:52px;height:52px;border-radius:50%;border:2px dashed var(--soft);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--soft)}
+.stamp.on{border:2.5px solid var(--coral);color:var(--coral);font-family:var(--display);font-size:20px;transform:rotate(-8deg)}
+.menu{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.menu button{border:2px solid var(--ink);border-radius:12px;background:var(--paper);padding:8px 2px;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.menu i{font-style:normal;font-family:var(--display);font-size:18px;width:34px;height:34px;border-radius:9px;background:var(--foam);border:1.5px solid var(--ink);display:flex;align-items:center;justify-content:center}
+.qr{align-self:center;width:176px;height:176px;background:#fff;border:2px solid var(--ink);border-radius:12px;padding:10px;position:relative}
+.qr svg{width:100%;height:100%;display:block}
+.qr.off svg{opacity:.15}
+.qr.off::after{content:attr(data-off);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--coral);font-size:18px}
+.cap{font-size:12px;color:var(--soft);text-align:center}
+.amount{background:#fff;border:2px solid var(--ink);border-radius:14px;padding:10px 14px;text-align:right;font-family:var(--display);font-size:40px;line-height:1.1;font-variant-numeric:tabular-nums;min-height:66px}
+.amount small{font-size:16px;float:left;margin-top:14px;font-family:var(--body);color:var(--soft)}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.keys button{border:2px solid var(--ink);border-radius:12px;background:#fff;padding:9px 0;font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+.keys button:active{background:var(--foam)}
+.chest{align-self:center;width:160px;height:160px;border:0;background:transparent;padding:0;position:relative;flex:none}
+.chest img{width:160px;height:160px;display:block}
+.chest.shut{animation:nudge 1.6s ease-in-out infinite}
+@keyframes nudge{0%,70%,100%{transform:rotate(0)}78%{transform:rotate(-3deg)}86%{transform:rotate(3deg)}}
+.gain{align-self:center;font-family:var(--display);font-size:38px;line-height:1;color:var(--ink);animation:rise .45s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes rise{from{transform:translateY(18px) scale(.6);opacity:0}}
+.gift{display:grid;grid-template-columns:54px 1fr auto;gap:10px;align-items:center;border:2px solid var(--ink);border-radius:14px;background:var(--paper);padding:8px 10px;width:100%;text-align:left;font-size:14px}
+.gift .pic,.pic{width:54px;height:54px;border-radius:10px;border:2px solid var(--ink);background:var(--foam);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:22px;flex:none}
+.gift b{display:block;font-size:15px}
+.gift span{color:var(--soft);font-size:12px}
+.gift em{font-style:normal;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.gift.out{opacity:.6}
+.code{font-family:var(--display);font-size:34px;letter-spacing:.12em;text-align:center;font-variant-numeric:tabular-nums}
+.cam{aspect-ratio:1;width:200px;align-self:center;border-radius:16px;background:var(--navy);position:relative}
+.cam::after{content:"";position:absolute;inset:26px;border:3px solid var(--gold);border-radius:10px}
+.field{width:100%;border:2px solid var(--ink);border-radius:12px;padding:9px 12px;font:inherit;font-size:22px;text-align:center;letter-spacing:.2em;font-variant-numeric:tabular-nums;background:#fff;color:var(--ink)}
+.err{color:var(--coral);font-weight:700;font-size:14px}
+.row{display:flex;gap:8px}
+.row .btn{flex:1}
+.list{display:flex;flex-direction:column;gap:8px}
+.list .box{gap:6px}
+.list .head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:700;font-variant-numeric:tabular-nums}
+.toast{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);border-radius:999px;padding:8px 16px;font-size:14px;max-width:calc(100% - 32px);z-index:5}
+
+@media (max-width:900px){
+  .work{grid-template-columns:minmax(0,1fr)}
+  .device{max-width:380px;width:100%;margin:0 auto;order:1}
+  .notes{order:2} .pages{order:3}
+  .top h1{font-size:22px}
+}
+@media (prefers-reduced-motion:reduce){.chest.shut,.gain{animation:none}.btn{transition:none}}
+</style>
+
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div>
+      <h1>小鳶來港介面原型 v0.1</h1>
+      <p>三條路徑都能點著走。畫面裡的店家、金額、贈品與點數都是示範值，素材為暫用。</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="路徑" id="tabs"></div>
+  </header>
+
+  <main class="work">
+    <nav class="pages" aria-label="頁面清單" id="pages"></nav>
+
+    <section class="device" aria-label="手機畫面">
+      <div class="who"><span id="who"></span><span id="pageno"></span></div>
+      <div class="handoff" id="handoff" hidden></div>
+      <div class="phone"><div class="screen" id="screen"></div></div>
+      <div class="resetrow"><span>框線外的按鈕是原型操作，不是產品畫面。</span><button type="button" id="reset">這條路徑重來</button></div>
+    </section>
+
+    <aside class="notes" aria-label="這一頁的說明" id="notes"></aside>
+  </main>
+</div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+(() => {
+const $ = (s) => document.querySelector(s);
+const A = 'assets/';
+const img = (n, cls, alt) => `<img class="${cls === undefined ? 'art' : cls}" src="${A}${n}.png" alt="${alt || ''}">`;
+
+/* ---------- demo data (all values are examples) ---------- */
+const STORE = '示範專櫃 A';
+const GIFTS = [
+  { id: 'g1', name: '小鳶貼紙', pts: 10, stock: 24, ch: '貼' },
+  { id: 'g2', name: '小鳶帆布袋', pts: 30, stock: 8, ch: '袋' },
+  { id: 'g3', name: '港灣野餐墊', pts: 100, stock: 0, ch: '墊' },
+];
+const gift = (id) => GIFTS.find((g) => g.id === id);
+const fresh = () => ({ member: false, points: 0, stamps: 0, card: false, agree: false, mkt: false, amount: '', tx: null, chest: false, stampDup: false, pick: 'g1', voucher: null, tries: 0, codeErr: false, ctx: 'a' });
+let S = fresh();
+let cur = 'a1';
+let timer = 0;
+const newTx = (amount, status, re) => ({ id: 'T-1007-0042', amount, pts: Math.floor(amount / 100), status: status || 'scan', re: re || 0, at: '15:46' });
+const money = (n) => 'NT$ ' + Number(n).toLocaleString('en-US');
+const VOUCHER_CODE = '482913';
+
+/* ---------- small render helpers ---------- */
+const guestBar = () => `<div class="bar"><span>小鳶來港</span><small>LINE 內開啟</small></div>`;
+const staffBar = (who) => `<div class="bar staff"><span>${who}</span><small>工作機</small></div>`;
+const shopBar = () => staffBar(STORE);
+const deskBar = () => staffBar('旅客服務台');
+const wrap = (bar, body, cls) => `${bar}<div class="scr ${cls || ''}">${body}</div>`;
+const btn = (label, act, cls, extra) => `<button type="button" class="btn ${cls || ''}" data-act="${act}" ${extra || ''}>${label}</button>`;
+function qr(seed) {
+  let s = seed || 7, out = '';
+  const rnd = () => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  const finder = (x, y) => (x < 7 && y < 7) || (x > 13 && y < 7) || (x < 7 && y > 13);
+  for (let y = 0; y < 21; y++) for (let x = 0; x < 21; x++) {
+    let on;
+    if (finder(x, y)) { const fx = x > 13 ? x - 14 : x, fy = y > 13 ? y - 14 : y; on = fx === 0 || fx === 6 || fy === 0 || fy === 6 || (fx > 1 && fx < 5 && fy > 1 && fy < 5); }
+    else on = rnd() > 0.52;
+    if (on) out += `<rect x="${x}" y="${y}" width="1.02" height="1.02"/>`;
+  }
+  return `<svg viewBox="0 0 21 21" fill="#402B20" role="img" aria-label="示意用 QR">${out}</svg>`;
+}
+const memberCard = () => `<div class="member"><span class="name">示範會員</span><span class="num">${S.points}<small>點</small></span><span class="title">初次靠港</span></div>`;
+const stampRow = () => `<div class="stamps">${[0, 1, 2, 3, 4].map((i) => `<span class="stamp ${i < S.stamps ? 'on' : ''}">${i < S.stamps ? '章' : '未蓋'}</span>`).join('')}</div>`;
+const nextGoal = () => { const g = GIFTS.find((x) => x.pts > S.points && x.stock > 0); return g ? `再 ${g.pts - S.points} 點可以換「${g.name}」` : '點數已經可以兌換贈品'; };
+
+/* ---------- screens ---------- */
+/* dev: guest 客人手機 / shop 專櫃工作機 / desk 服務台工作機. kind: main 正常路徑 / ex 例外畫面. */
+const SC = {
+  /* ===== A：DP 入會 ===== */
+  a1: { path: 'a', dev: 'guest', kind: 'main', name: '活動頁', pre: () => fresh(),
+    notes: ['掃 DP 上的 QR 就到這裡。不登入也看得到活動內容。', '掃 QR 只代表進站，不當作已到場的證明。', '領紀念卡才需要加入會員。'], assets: ['kite_hello（暫用）'],
+    html: () => wrap(guestBar(), `${img('kite_hello', 'art', '小鳶招手')}<h2>歡迎來到基隆港</h2><p class="lead">我是小鳶。加入會員，送你一張今天的港灣紀念卡。</p><div class="box"><dl class="kv"><dt>活動</dt><dd>小鳶來港</dd><dt>地點</dt><dd>東岸旅客中心</dd><dt>紀念卡</dt><dd>每人 1 張</dd></dl></div><div class="spacer"></div>${btn('用 LINE 登入，領紀念卡', 'a-login', 'line')}${btn('先看逛港資訊', 'todo', 'text')}`, 'center') },
+  a2: { path: 'a', dev: 'guest', kind: 'main', name: 'LINE 登入', pre: () => fresh(),
+    notes: ['這一頁是 LINE 自己的授權畫面，樣式由 LINE 決定，這裡只是示意。', 'LINE 登入、加好友、同意會員條款是三件事，分開記錄。'], assets: [],
+    html: () => loginScreen() },
+  a3: { path: 'a', dev: 'guest', kind: 'main', name: '同意會員條款', pre: () => fresh(),
+    notes: ['按下同意才建立會員。', '行銷訊息預設不勾，不勾也能入會、集點、兌換。', '生日等資料入會後再邀請填寫，不擋在這裡。'], assets: [],
+    html: () => termsScreen() },
+  a4: { path: 'a', dev: 'guest', kind: 'main', name: '領紀念卡', pre: () => Object.assign(fresh(), { member: true }),
+    notes: ['紀念卡以「活動版本＋點位」判定，每人每個任務 1 張。', 'DP 任務不給點數。', '紀念卡插圖還沒交付，先用色塊加小鳶佔位。'], assets: ['kite_happy（暫用）', '紀念卡插圖：佔位'],
+    html: () => wrap(guestBar(), `<h2>入會完成</h2><p class="lead">這張是你的第一張港灣紀念卡。</p><div class="card-art">${img('kite_happy', '', '')}<span>小鳶來港 東岸旅客中心</span></div><div class="spacer"></div>${btn('收下紀念卡', 'a-card')}`, 'center') },
+  a5: { path: 'a', dev: 'guest', kind: 'main', name: '會員首頁', pre: () => Object.assign(fresh(), { member: true, card: true }),
+    notes: ['入會後的落點。下方六格對應 LINE 圖文選單。', '六個圖示還沒交付，先用單字佔位。', '稱號「初次靠港」是首發少量稱號的示範。'], assets: ['六個圖示：佔位', '印章：佔位'],
+    html: () => homeScreen() },
+  ax1: { path: 'a', dev: 'guest', kind: 'ex', name: '沒有完成入會', pre: () => fresh(),
+    notes: ['取消登入或不同意條款：不建立會員、不發紀念卡。', '下次可以從頭再來。'], assets: ['kite_sorry（暫用）'],
+    html: () => wrap(guestBar(), `${img('kite_sorry', 'art', '')}<h2>還沒加入會員</h2><p class="lead">沒有同意條款，所以這次沒有建立會員，紀念卡也還沒發。</p><p>活動內容和逛港資訊不用入會也能看。想領卡時再回來就可以。</p><div class="spacer"></div>${btn('重新加入', 'a-login')}${btn('先看逛港資訊', 'todo', 'text')}`, 'center') },
+  ax2: { path: 'a', dev: 'guest', kind: 'ex', name: '這張卡領過了', pre: () => Object.assign(fresh(), { member: true, card: true }),
+    notes: ['同一個任務再掃一次：顯示已收藏的卡，不重複發。', '新活動是新的任務，不會被舊卡擋下。'], assets: ['紀念卡插圖：佔位'],
+    html: () => wrap(guestBar(), `<h2>這張卡你已經有了</h2><p class="lead">10 月 7 日領取，收在「我的收藏」。</p><div class="card-art">${img('kite_hello', '', '')}<span>小鳶來港 東岸旅客中心</span></div><div class="spacer"></div>${btn('看我的會員卡', 'home')}`, 'center') },
+  ax3: { path: 'a', dev: 'guest', kind: 'ex', name: '活動已結束', pre: () => fresh(),
+    notes: ['活動結束或名額用完：說明原因，導向目前的活動與集點說明。'], assets: ['kite_sorry（暫用）'],
+    html: () => wrap(guestBar(), `${img('kite_sorry', 'art', '')}<h2>這個活動已經結束</h2><p class="lead">這張紀念卡的領取時間過了。</p><p>消費集點和兌換照常進行。</p><div class="spacer"></div>${btn('看現在的活動', 'todo')}${btn('集點怎麼用', 'todo', 'text')}`, 'center') },
+
+  /* ===== B：消費領點 ===== */
+  b1: { path: 'b', dev: 'shop', kind: 'main', name: '輸入金額', pre: () => Object.assign(fresh(), { amount: '480' }),
+    notes: ['店員在工作機輸入這筆消費金額，不接 POS。', '每 100 元 1 點是建議值，未滿不計。', '單筆金額上限待定。'], assets: [],
+    html: () => { const n = Number(S.amount || 0); return wrap(shopBar(), `<h2>這筆消費多少錢</h2><div class="amount"><small>NT$</small>${n ? n.toLocaleString('en-US') : '0'}</div><p>客人可得 ${Math.floor(n / 100)} 點</p><div class="keys">${[1, 2, 3, 4, 5, 6, 7, 8, 9, '清除', 0, '退格'].map((k) => `<button type="button" data-key="${k}">${k}</button>`).join('')}</div><div class="spacer"></div>${btn('產生 QR', 'b-make', '', n > 0 ? '' : 'disabled')}${btn('待領清單', 'go:b8', 'text')}`, 'staff'); } },
+  b2: { path: 'b', dev: 'shop', kind: 'main', name: '出示 QR', pre: () => Object.assign(fresh(), { amount: '480', tx: newTx(480) }),
+    hand: () => S.tx && S.tx.status === 'scan' ? ['下一步在客人手機上：掃這個 QR。', '換到客人手機', 'go:b3'] : null,
+    notes: ['QR 一次性，產生後 3 分鐘內要完成認領。倒數是真的在跑。', '逾時可對同一筆交易重新出碼，金額不變、不會變成兩筆。', '客人按下領取後，這裡會變成「客人登入中」；入帳後變成「已入帳」。'], assets: [],
+    html: () => { const t = S.tx; return wrap(shopBar(), `<div class="list"><div class="head"><span>${money(t.amount)}</span><span class="pill" id="txpill">等客人掃碼</span></div></div><div class="qr" id="qrbox" data-off="已逾時">${qr(7 + t.re * 13)}</div><p class="cap">請客人掃碼　剩 <b id="cd">3:00</b>　<span>示意圖，不能真的掃</span></p><div class="box"><dl class="kv"><dt>交易編號</dt><dd>${t.id}</dd><dt>可得點數</dt><dd>${t.pts} 點</dd><dt>已重新出碼</dt><dd>${t.re} / 3 次</dd></dl></div><div class="spacer"></div><div class="row">${btn('重新出碼', 'b-reissue', 'plain')}${btn('取消這筆', 'b-cancel', 'warn')}</div>`, 'staff'); } },
+  b3: { path: 'b', dev: 'guest', kind: 'main', name: '確認店家與金額', pre: () => Object.assign(fresh(), { tx: newTx(480) }),
+    notes: ['頁面載入不會動到交易。按下「領取這筆點數」才送出認領，所以連結預覽和預先載入都不會把 QR 用掉。', '已是會員：按下就入帳。還不是會員：先登入、同意條款，回來自動入帳，不用再按一次。', '「只按一次」是建議，待核定。'], assets: [],
+    html: () => { const t = S.tx; return wrap(guestBar(), `<h2>要領這筆點數嗎</h2><div class="box"><dl class="kv"><dt>店家</dt><dd>${STORE}</dd><dt>消費金額</dt><dd>${money(t.amount)}</dd><dt>可以拿到</dt><dd>${t.pts} 點</dd></dl></div><p>金額不對的話先不要按，請店員取消這筆重新輸入。</p><div class="spacer"></div>${btn('領取這筆點數', 'b-claim')}${S.member ? '' : '<p class="cap">還不是會員？按下後會先請你用 LINE 登入。</p>'}`, 'center'); } },
+  b4: { path: 'b', dev: 'guest', kind: 'main', name: '登入（還不是會員時）', pre: () => Object.assign(fresh(), { ctx: 'b', tx: newTx(480, 'claim') }),
+    notes: ['客人按下領取後，這筆交易進入「待領」，保留到今天營業結束。', '客人可以慢慢登入，不受 3 分鐘限制。', '用相機掃碼開在外部瀏覽器、登入時跳進 LINE，也要能接回這筆交易。'], assets: [],
+    html: () => loginScreen() },
+  b5: { path: 'b', dev: 'guest', kind: 'main', name: '同意條款（還不是會員時）', pre: () => Object.assign(fresh(), { ctx: 'b', tx: newTx(480, 'claim') }),
+    notes: ['同意後建立會員，伺服器用待領憑證找回原交易並入帳。', '會員身分以登入結果為準，不採信頁面自己回報的編號。'], assets: [],
+    html: () => termsScreen() },
+  b6: { path: 'b', dev: 'guest', kind: 'main', name: '港灣寶箱', pre: () => Object.assign(fresh(), { member: true, points: 4, stamps: 1, tx: newTx(480, 'done') }),
+    hand: () => ['同一時間，專櫃工作機會顯示已入帳。', '換到專櫃工作機', 'go:b7'],
+    notes: ['到這一頁時伺服器已經入帳。寶箱只是呈現，不點開點數也在。', '點寶箱會打開，顯示點數、印章、下一個目標。', '寶箱兩張圖用同一個畫布切換，不個別裁切，所以開蓋時不會跳。'], assets: ['chest_closed、chest_open（暫用）', '印章：佔位'],
+    html: () => chestScreen() },
+  b7: { path: 'b', dev: 'shop', kind: 'main', name: '工作機顯示已入帳', pre: () => Object.assign(fresh(), { member: true, points: 4, stamps: 1, tx: newTx(480, 'done') }),
+    notes: ['店員看到「已入帳」就能處理下一筆，不用等客人看完寶箱。', '入帳後不能直接取消，只能走更正流程並留下理由。'], assets: [],
+    html: () => { const t = S.tx; return wrap(shopBar(), `<div class="list"><div class="head"><span>${money(t.amount)}</span><span class="pill done">已入帳</span></div></div><div class="box"><dl class="kv"><dt>交易編號</dt><dd>${t.id}</dd><dt>入帳點數</dt><dd>${t.pts} 點</dd><dt>入帳時間</dt><dd>今天 15:47</dd></dl></div><p>這筆完成了。金額輸入錯誤請按「更正這筆」。</p><div class="spacer"></div>${btn('下一筆', 'b-next')}${btn('更正這筆', 'todo', 'text')}`, 'staff'); } },
+  b8: { path: 'b', dev: 'shop', kind: 'main', name: '待領清單', pre: () => fresh(),
+    notes: ['只列本店、今天、客人已按領取但還沒入帳的交易。', '客人換了手機或接不回來時，店員在這裡重新出碼。', '每筆最多 3 次（建議值），超過轉服務台。'], assets: [],
+    html: () => wrap(shopBar(), `<h2>待領清單</h2><p>今天已掃碼、還沒入帳的交易。</p><div class="list"><div class="box"><div class="head"><span>14:02　${money(320)}</span><span class="pill claim">待領</span></div><dl class="kv"><dt>已重新出碼</dt><dd>1 / 3 次</dd></dl>${btn('重新出碼', 'b-list-re', 'plain')}</div><div class="box"><div class="head"><span>13:47　${money(1250)}</span><span class="pill claim">待領</span></div><dl class="kv"><dt>已重新出碼</dt><dd>3 / 3 次</dd></dl>${btn('重新出碼', 'go:bx8', 'plain')}</div></div><div class="spacer"></div>${btn('回到輸入金額', 'b-next', 'text')}`, 'staff') },
+  bx0: { path: 'b', dev: 'guest', kind: 'ex', name: '登入中斷，點數先留著', pre: () => Object.assign(fresh(), { ctx: 'b', tx: newTx(480, 'claim') }),
+    notes: ['客人取消登入或不同意條款：不建立會員，交易留在「待領」。', '今天營業結束前，同一支手機回來都能接著領。'], assets: ['kite_sorry（暫用）'],
+    html: () => wrap(guestBar(), `${img('kite_sorry', 'art', '')}<h2>點數還沒領到</h2><p class="lead">登入沒有完成，所以還沒入帳。這 ${S.tx.pts} 點幫你留到今天營業結束。</p><div class="box"><dl class="kv"><dt>店家</dt><dd>${STORE}</dd><dt>消費金額</dt><dd>${money(S.tx.amount)}</dd></dl></div><div class="spacer"></div>${btn('繼續登入領點', 'go:b4', 'line')}`, 'center') },
+  bx1: { path: 'b', dev: 'guest', kind: 'ex', name: 'QR 逾時', pre: () => Object.assign(fresh(), { member: true, tx: newTx(480) }),
+    notes: ['超過 3 分鐘才按領取：不入帳，交易仍是「待掃」。', '店員重新出碼後再掃一次即可。'], assets: ['kite_sorry（暫用）'],
+    html: () => exGuest('這個 QR 過期了', 'QR 產生後 3 分鐘內要掃。這筆還沒入帳。', '請店員按「重新出碼」，再掃一次新的 QR。') },
+  bx2: { path: 'b', dev: 'guest', kind: 'ex', name: 'QR 已被掃過', pre: () => Object.assign(fresh(), { member: true }),
+    notes: ['一個 QR 只有第一個按下領取的人有效。', '兩個人同時按，也只有一人成功，交易只入帳一次。'], assets: ['kite_sorry（暫用）'],
+    html: () => exGuest('這個 QR 已經有人掃過', '每個 QR 只能領一次，這筆點數不在你的帳戶裡。', '如果是你自己的消費，請回櫃台請店員查看這筆交易。') },
+  bx3: { path: 'b', dev: 'guest', kind: 'ex', name: '這筆已經領過', pre: () => Object.assign(fresh(), { member: true, points: 4, stamps: 1 }),
+    notes: ['同一筆交易重掃、重送或網路重試，只入帳一次。', '畫面以伺服器的紀錄為準。'], assets: ['kite_happy（暫用）'],
+    html: () => wrap(guestBar(), `${img('kite_happy', 'art', '')}<h2>這筆你已經領過了</h2><p class="lead">今天 15:47 已入帳 4 點，不會重複計算。</p>${memberCard()}<div class="spacer"></div>${btn('看我的會員卡', 'home')}`, 'center') },
+  bx4: { path: 'b', dev: 'guest', kind: 'ex', name: 'QR 已更新', pre: () => Object.assign(fresh(), { tx: newTx(480, 'scan', 1) }),
+    notes: ['店員重新出碼後，舊的 QR 和舊的待領憑證同時作廢。', '客人拿舊憑證登入回來：不入帳，請他掃新的。'], assets: ['kite_sorry（暫用）'],
+    html: () => exGuest('店員已經換了新的 QR', '你手上這個是舊的，不能再用。這筆還沒入帳。', '請掃櫃台工作機上現在顯示的 QR。') },
+  bx5: { path: 'b', dev: 'guest', kind: 'ex', name: '今天已有這家店的印章', pre: () => Object.assign(fresh(), { member: true, points: 9, stamps: 1, stampDup: true, chest: true, tx: newTx(520, 'done') }),
+    notes: ['每店每天 1 枚印章（建議值）。同一天再消費，點數照算，印章不重複蓋。'], assets: ['chest_open（暫用）'],
+    html: () => chestScreen() },
+  bx6: { path: 'b', dev: 'guest', kind: 'ex', name: '交易已逾期', pre: () => Object.assign(fresh(), { tx: newTx(480, 'late') }),
+    notes: ['到營業結束仍未入帳的交易標為「已逾期」，專櫃不能再處理。', '客人到服務台做「交易恢復」：用發票或收據比對原交易，本人現場登入。', '受理期限待 Dari 核定，所以畫面上先不寫天數。'], assets: ['kite_sorry（暫用）'],
+    html: () => exGuest('這筆超過領取時間了', '點數要在消費當天領。這筆還沒入帳。', '請帶發票或收據到旅客服務台，服務人員會幫你查這筆交易。') },
+  bx7: { path: 'b', dev: 'guest', kind: 'ex', name: '接不回這筆交易', pre: () => fresh(),
+    notes: ['換了裝置、清除瀏覽器資料或憑證遺失時，頁面接不回原交易。', '店員從待領清單對同一筆交易重新出碼。'], assets: ['kite_sorry（暫用）'],
+    html: () => exGuest('找不到你剛剛那筆', '這支手機上沒有那筆消費的紀錄，可能是換了瀏覽器或資料被清掉。', '請回櫃台，請店員重新出碼再掃一次。') },
+  bx8: { path: 'b', dev: 'shop', kind: 'ex', name: '重新出碼達上限', pre: () => Object.assign(fresh(), { tx: newTx(1250, 'claim', 3) }),
+    notes: ['每筆最多重新出碼 3 次（建議值）。', '超過後專櫃不能再處理，轉服務台。'], assets: [],
+    html: () => wrap(shopBar(), `<h2>這筆不能再重新出碼</h2><p class="lead">已經重新出碼 3 次。</p><div class="box"><dl class="kv"><dt>交易編號</dt><dd>T-1007-0031</dd><dt>金額</dt><dd>${money(1250)}</dd><dt>狀態</dt><dd>待領</dd></dl></div><p>請客人帶發票或收據到旅客服務台處理。</p><div class="spacer"></div>${btn('回待領清單', 'go:b8', 'plain')}`, 'staff') },
+  bx9: { path: 'b', dev: 'shop', kind: 'ex', name: '金額偏高，再確認', pre: () => Object.assign(fresh(), { amount: '48000' }),
+    notes: ['防止多按一個 0。單筆上限的數字待定，依各專櫃最高客單價設定。'], assets: [],
+    html: () => wrap(shopBar(), `<h2>金額比平常高，確定嗎</h2><div class="amount"><small>NT$</small>48,000</div><p class="lead">客人可得 480 點。</p><p>輸入錯誤請按「回去修改」。</p><div class="spacer"></div><div class="row">${btn('回去修改', 'go:b1', 'plain')}${btn('金額沒錯', 'b-make')}</div>`, 'staff') },
+
+  /* ===== C：服務台核銷 ===== */
+  c1: { path: 'c', dev: 'guest', kind: 'main', name: '兌換中心', pre: () => Object.assign(fresh(), { member: true, points: 12, stamps: 2 }),
+    notes: ['三項贈品與門檻是示範，回饋率與預算待核定。', '點數不夠或缺貨的品項也列出來，但不能兌換。'], assets: ['贈品圖：佔位'],
+    html: () => wrap(guestBar(), `<h2>兌換中心</h2>${memberCard()}<div class="list">${GIFTS.map((g) => `<button type="button" class="gift ${g.stock ? '' : 'out'}" data-act="c-pick:${g.id}"><span class="pic">${g.ch}</span><span><b>${g.name}</b><span>${g.stock ? (S.points >= g.pts ? '可以兌換' : `還差 ${g.pts - S.points} 點`) : '已換完'}</span></span><em>${g.pts} 點</em></button>`).join('')}</div>`) },
+  c2: { path: 'c', dev: 'guest', kind: 'main', name: '確認兌換', pre: () => Object.assign(fresh(), { member: true, points: 12, stamps: 2 }),
+    notes: ['扣點與保留庫存必須同時成功，其中一個失敗就兩邊都還原。', '兌換券保留 14 天是建議值。'], assets: [],
+    html: () => { const g = gift(S.pick); return wrap(guestBar(), `<h2>要換這個嗎</h2><div class="box"><div class="row" style="align-items:center"><span class="pic">${g.ch}</span><b style="font-size:17px">${g.name}</b></div><dl class="kv"><dt>需要</dt><dd>${g.pts} 點</dd><dt>兌換後剩下</dt><dd>${S.points - g.pts} 點</dd><dt>領取地點</dt><dd>旅客服務台</dd><dt>領取期限</dt><dd>14 天內</dd></dl></div><p>按下後會先扣點並幫你保留一份，到服務台出示兌換券領取。</p><div class="spacer"></div>${btn(`確認兌換，扣 ${g.pts} 點`, 'c-confirm')}${btn('先不要', 'go:c1', 'text')}`); } },
+  c3: { path: 'c', dev: 'guest', kind: 'main', name: '兌換券', pre: () => Object.assign(fresh(), { member: true, points: 2, stamps: 2, voucher: { g: 'g1', status: 'ready' } }),
+    hand: () => S.voucher && S.voucher.status === 'ready' ? ['下一步在服務台工作機上：掃這張券。', '換到服務台工作機', 'go:c4'] : null,
+    notes: ['QR 和 6 碼短碼指向同一張券。工作機相機不能用時改輸入短碼。', '截圖沒有用：核銷時以伺服器上這張券的狀態為準，用過就失效。'], assets: [],
+    html: () => { const g = gift(S.voucher.g); return wrap(guestBar(), `<h2>${g.name}</h2><p class="lead">到旅客服務台出示這個畫面。</p><div class="qr">${qr(31)}</div><div class="code">482 913</div><p class="cap">掃不到時，請服務人員輸入這 6 碼</p><div class="box"><dl class="kv"><dt>狀態</dt><dd>尚未領取</dd><dt>領取期限</dt><dd>10 月 21 日</dd></dl></div>`, 'center'); } },
+  c4: { path: 'c', dev: 'desk', kind: 'main', name: '掃描兌換券', pre: () => Object.assign(fresh(), { member: true, points: 2, voucher: { g: 'g1', status: 'ready' } }),
+    notes: ['服務台帳號可核銷贈品；專櫃帳號只能核銷本店優惠券。', '短碼有嘗試次數限制，示範值是 5 次。可以輸入 482913 試試，或故意輸錯。'], assets: [],
+    html: () => wrap(deskBar(), `<h2>掃客人的兌換券</h2><div class="cam" aria-hidden="true"></div>${btn('模擬掃到兌換券', 'c-scan')}<p>相機不能用時輸入 6 碼短碼</p><input class="field" id="codein" inputmode="numeric" maxlength="6" placeholder="6 碼" aria-label="6 碼短碼" autocomplete="off">${S.codeErr ? `<p class="err">短碼不對，還可以再試 ${5 - S.tries} 次。</p>` : ''}${btn('用短碼查詢', 'c-code', 'plain')}`, 'staff center') },
+  c5: { path: 'c', dev: 'desk', kind: 'main', name: '核對品項', pre: () => Object.assign(fresh(), { member: true, points: 2, voucher: { g: 'g1', status: 'ready' } }),
+    notes: ['先看到品項圖和狀態，再交付實體贈品。', '按下「確認交付」才算核銷，按之前離開不會扣掉這張券。'], assets: ['贈品圖：佔位'],
+    html: () => { const g = gift(S.voucher.g); return wrap(deskBar(), `<div class="list"><div class="head"><span>兌換券 482 913</span><span class="pill done">可以核銷</span></div></div><div class="box"><div class="row" style="align-items:center"><span class="pic">${g.ch}</span><b style="font-size:17px">${g.name}</b></div><dl class="kv"><dt>會員</dt><dd>示範會員</dd><dt>數量</dt><dd>1 份</dd><dt>領取期限</dt><dd>10 月 21 日</dd></dl></div><p>把贈品交給客人後再按下面的按鈕。</p><div class="spacer"></div>${btn('確認交付，核銷這張券', 'c-redeem')}${btn('不是這位客人，回上一頁', 'go:c4', 'text')}`, 'staff'); } },
+  c6: { path: 'c', dev: 'desk', kind: 'main', name: '核銷完成', pre: () => Object.assign(fresh(), { member: true, points: 2, voucher: { g: 'g1', status: 'used' } }),
+    hand: () => ['客人手機上的兌換券會同步變成已領取。', '換到客人手機', 'go:c7'],
+    notes: ['核銷後這張券不能再用，庫存正式扣除。'], assets: [],
+    html: () => wrap(deskBar(), `<div class="list"><div class="head"><span>兌換券 482 913</span><span class="pill done">已核銷</span></div></div><h2>已交付</h2><div class="box"><dl class="kv"><dt>品項</dt><dd>${gift(S.voucher.g).name}</dd><dt>核銷時間</dt><dd>今天 15:52</dd><dt>經手</dt><dd>服務台 01</dd></dl></div><div class="spacer"></div>${btn('下一位', 'go:c4')}`, 'staff') },
+  c7: { path: 'c', dev: 'guest', kind: 'main', name: '已領取', pre: () => Object.assign(fresh(), { member: true, points: 2, stamps: 2, voucher: { g: 'g1', status: 'used' } }),
+    notes: ['伺服器確認核銷後，客人這邊才顯示完成和開心的小鳶。'], assets: ['kite_happy（暫用）'],
+    html: () => wrap(guestBar(), `${img('kite_happy', 'art', '')}<h2>領到了</h2><p class="lead">${gift(S.voucher.g).name} 已在今天 15:52 領取。</p>${memberCard()}<p>${nextGoal()}</p><div class="spacer"></div>${btn('回兌換中心', 'go:c1', 'plain')}`, 'center') },
+  cx1: { path: 'c', dev: 'guest', kind: 'ex', name: '點數不夠', pre: () => Object.assign(fresh(), { member: true, points: 12, stamps: 2, pick: 'g2' }),
+    notes: ['不能兌換，直接說還差多少。'], assets: ['kite_sorry（暫用）'],
+    html: () => { const g = gift(S.pick); return wrap(guestBar(), `${img('kite_sorry', 'art', '')}<h2>還差 ${g.pts - S.points} 點</h2><p class="lead">「${g.name}」要 ${g.pts} 點，你現在有 ${S.points} 點。</p><p>在合作專櫃消費，每 100 元可以拿 1 點。</p><div class="spacer"></div>${btn('回兌換中心', 'go:c1', 'plain')}`, 'center'); } },
+  cx2: { path: 'c', dev: 'guest', kind: 'ex', name: '已換完', pre: () => Object.assign(fresh(), { member: true, points: 12, stamps: 2, pick: 'g3' }),
+    notes: ['缺貨不能兌換，也不扣點。'], assets: ['kite_sorry（暫用）'],
+    html: () => wrap(guestBar(), `${img('kite_sorry', 'art', '')}<h2>這個已經換完了</h2><p class="lead">「${gift(S.pick).name}」目前沒有庫存，點數沒有被扣。</p><div class="spacer"></div>${btn('看其他贈品', 'go:c1', 'plain')}`, 'center') },
+  cx3: { path: 'c', dev: 'desk', kind: 'ex', name: '這張券用過了', pre: () => Object.assign(fresh(), { voucher: { g: 'g1', status: 'used' } }),
+    notes: ['顯示上次核銷的時間與經手人，不能再交付。'], assets: [],
+    html: () => wrap(deskBar(), `<div class="list"><div class="head"><span>兌換券 482 913</span><span class="pill bad">已核銷</span></div></div><h2>這張券已經用過</h2><div class="box"><dl class="kv"><dt>品項</dt><dd>小鳶貼紙</dd><dt>核銷時間</dt><dd>今天 15:52</dd><dt>經手</dt><dd>服務台 01</dd></dl></div><p>不要再交付贈品。客人有疑問時，請管理員查詢這筆紀錄。</p><div class="spacer"></div>${btn('回掃描', 'go:c4', 'plain')}`, 'staff') },
+  cx4: { path: 'c', dev: 'guest', kind: 'ex', name: '兌換券過期', pre: () => Object.assign(fresh(), { member: true, points: 12, stamps: 2 }),
+    notes: ['逾期後庫存釋回。點數是退回還是作廢待核定；這個畫面先照建議值「退點」寫。'], assets: ['kite_sorry（暫用）'],
+    html: () => wrap(guestBar(), `${img('kite_sorry', 'art', '')}<h2>這張兌換券過期了</h2><p class="lead">領取期限是 10 月 21 日。10 點已經退回你的帳戶。</p>${memberCard()}<div class="spacer"></div>${btn('重新兌換', 'go:c1', 'plain')}`, 'center') },
+  cx5: { path: 'c', dev: 'desk', kind: 'ex', name: '短碼試太多次', pre: () => Object.assign(fresh(), { tries: 5, codeErr: true }),
+    notes: ['短碼只有 6 碼，所以限制嘗試次數，避免用猜的。次數與鎖定時間待定。'], assets: [],
+    html: () => wrap(deskBar(), `<h2>短碼輸入錯誤太多次</h2><p class="lead">這台工作機暫時不能用短碼查詢。</p><p>請客人重新打開兌換券，改用相機掃 QR；或請管理員協助。</p><div class="spacer"></div>${btn('改用相機掃描', 'c-unlock', 'plain')}`, 'staff') },
+  cx6: { path: 'c', dev: 'shop', kind: 'ex', name: '這個帳號不能核銷', pre: () => Object.assign(fresh(), { voucher: { g: 'g1', status: 'ready' } }),
+    notes: ['專櫃帳號只能核銷本店的優惠券，贈品要到服務台領。', '券的狀態不變，客人到服務台仍可使用。'], assets: [],
+    html: () => wrap(shopBar(), `<div class="list"><div class="head"><span>兌換券 482 913</span><span class="pill bad">不能核銷</span></div></div><h2>這張券要到服務台領</h2><p class="lead">這是贈品兌換券，專櫃帳號只能核銷本店的優惠券。</p><p>這張券沒有被用掉，請客人到旅客服務台。</p><div class="spacer"></div>${btn('知道了', 'go:b1', 'plain')}`, 'staff') },
+};
+
+function loginScreen() {
+  return wrap(`<div class="bar"><span>LINE</span><small>授權畫面示意</small></div>`, `<h2>小鳶來港想取得以下資料</h2><div class="box"><dl class="kv"><dt>顯示名稱</dt><dd>必要</dd><dt>大頭貼</dt><dd>必要</dd><dt>加入官方帳號好友</dt><dd>可不勾</dd></dl></div><p>這一頁由 LINE 提供，實際樣式以 LINE 為準。</p><div class="spacer"></div>${btn('允許', 'login-ok', 'line')}${btn('取消', 'login-no', 'text')}`, 'center');
+}
+function termsScreen() {
+  return wrap(guestBar(), `<h2>加入會員前，請先看過</h2><div class="box" style="max-height:150px;overflow:auto"><p>會員條款與個人資料告知事項（內容待法務提供）。這裡會放完整條文，可以往下捲動閱讀。</p><p>我們只在你同意的範圍內使用 LINE 顯示名稱與會員紀錄。</p></div><label class="check"><input type="checkbox" id="agree" ${S.agree ? 'checked' : ''}><span>我已閱讀並同意會員條款與個人資料告知事項</span></label><label class="check"><input type="checkbox" id="mkt" ${S.mkt ? 'checked' : ''}><span>我願意收到活動與優惠訊息（可以不勾，之後也能改）</span></label><div class="spacer"></div>${btn('同意並加入會員', 'terms-ok', '', S.agree ? '' : 'disabled')}${btn('先不要', 'login-no', 'text')}`);
+}
+function homeScreen() {
+  const m = [['掃', '掃碼集點'], ['卡', '我的會員卡'], ['玩', '小鳶遊樂園'], ['禮', '兌換中心'], ['港', '逛港資訊'], ['P', '停車繳費']];
+  return wrap(guestBar(), `${memberCard()}<div class="box"><b>美食護照</b>${stampRow()}<p>${S.stamps ? `已蓋 ${S.stamps} 枚` : '在合作專櫃消費就會蓋章'}</p></div><p class="lead">${nextGoal()}</p>${S.card ? '<p>紀念卡 1 張，收在「我的會員卡」。</p>' : ''}<div class="spacer"></div><div class="menu">${m.map(([c, t]) => `<button type="button" data-act="${t === '兌換中心' ? 'go:c1' : 'todo'}"><i>${c}</i>${t}</button>`).join('')}</div>`);
+}
+function chestScreen() {
+  const t = S.tx;
+  if (!S.chest) return wrap(guestBar(), `<h2>${t.pts} 點已入帳</h2><p class="lead">${STORE}　${money(t.amount)}</p><div class="spacer"></div><button type="button" class="chest shut" data-act="b-open" aria-label="打開港灣寶箱">${img('chest_closed', '', '關著的港灣寶箱')}</button><p class="lead">點一下寶箱打開</p><div class="spacer"></div>${btn('直接看我的會員卡', 'home', 'text')}`, 'center');
+  return wrap(guestBar(), `<span class="gain">+${t.pts} 點</span><div class="chest">${img('chest_open', '', '打開的港灣寶箱')}</div><div class="box"><dl class="kv"><dt>目前點數</dt><dd>${S.points} 點</dd><dt>${STORE}印章</dt><dd>${S.stampDup ? '今天已蓋過' : '蓋章 1 枚'}</dd></dl>${S.stampDup ? '<p>同一家店每天蓋 1 枚，點數照算。</p>' : ''}</div><p class="lead">${nextGoal()}</p><div class="spacer"></div>${btn('看我的會員卡', 'home')}`, 'center');
+}
+function exGuest(title, what, how) {
+  return wrap(guestBar(), `${img('kite_sorry', 'art', '')}<h2>${title}</h2><p class="lead">${what}</p><div class="box"><b>接下來</b><p>${how}</p></div><div class="spacer"></div>${S.member ? btn('看我的會員卡', 'home', 'plain') : ''}`, 'center');
+}
+
+/* ---------- actions ---------- */
+function credit() { const t = S.tx; t.status = 'done'; S.points += t.pts; S.stamps = Math.min(5, S.stamps + 1); S.chest = false; }
+const ACT = {
+  todo: () => toast('這一頁不在這次原型的範圍內'),
+  home: () => show(S.member ? 'a5' : 'a1'),
+  'a-login': () => { S.ctx = 'a'; show('a2'); },
+  'login-ok': () => show(S.ctx === 'b' ? 'b5' : 'a3'),
+  'login-no': () => show(S.ctx === 'b' ? 'bx0' : 'ax1'),
+  'terms-ok': () => { S.member = true; if (S.ctx === 'b') { credit(); show('b6'); } else show('a4'); },
+  'a-card': () => { S.card = true; show('a5'); toast('紀念卡已收進「我的會員卡」'); },
+  'b-make': () => { const n = Number(S.amount || 0); if (cur === 'b1' && n >= 10000) return show('bx9'); S.tx = newTx(n); show('b2'); },
+  'b-reissue': () => { if (S.tx.re >= 3) return show('bx8'); S.tx.re++; S.tx.status = 'scan'; show('b2'); toast('已重新出碼，舊的 QR 作廢'); },
+  'b-cancel': () => { S.tx = null; S.amount = ''; show('b1'); toast('這筆已取消，沒有入帳'); },
+  'b-claim': () => { S.tx.status = 'claim'; if (S.member) { credit(); show('b6'); } else { S.ctx = 'b'; show('b4'); } },
+  'b-open': () => { S.chest = true; render(); },
+  'b-next': () => { S.amount = ''; S.tx = null; show('b1'); },
+  'b-list-re': () => { S.tx = newTx(320, 'scan', 2); S.tx.id = 'T-1007-0038'; show('b2'); toast('已重新出碼，舊的 QR 作廢'); },
+  'c-pick': (id) => { S.pick = id; const g = gift(id); show(!g.stock ? 'cx2' : S.points < g.pts ? 'cx1' : 'c2'); },
+  'c-confirm': () => { const g = gift(S.pick); S.points -= g.pts; S.voucher = { g: g.id, status: 'ready' }; show('c3'); toast(`已扣 ${g.pts} 點，並保留 1 份`); },
+  'c-scan': () => { if (!S.voucher) S.voucher = { g: 'g1', status: 'ready' }; show(S.voucher.status === 'used' ? 'cx3' : 'c5'); },
+  'c-code': () => { const v = ($('#codein').value || '').replace(/\D/g, ''); if (v === VOUCHER_CODE) { S.codeErr = false; S.tries = 0; return ACT['c-scan'](); } S.tries++; S.codeErr = true; if (S.tries >= 5) return show('cx5'); render(); },
+  'c-unlock': () => { S.tries = 0; S.codeErr = false; show('c4'); },
+  'c-redeem': () => { S.voucher.status = 'used'; show('c6'); },
+};
+function run(act) {
+  if (act.startsWith('go:')) return show(act.slice(3));
+  const [name, arg] = act.split(':'); if (ACT[name]) ACT[name](arg);
+}
+
+/* ---------- chrome ---------- */
+const PATHS = { a: 'A　DP 入會', b: 'B　消費領點', c: 'C　服務台核銷' };
+const FIRST = { a: 'a1', b: 'b1', c: 'c1' };
+const DEV = { guest: ['客人手機', '客'], shop: ['專櫃工作機', '櫃'], desk: ['服務台工作機', '台'] };
+function show(id, jump) {
+  if (!SC[id]) return;
+  if (jump) S = SC[id].pre();
+  if (id === 'b6' && jump) S.chest = false;
+  cur = id; render();
+  try { history.replaceState(null, '', '#' + id); } catch (e) {}
+}
+function render() {
+  clearInterval(timer);
+  const sc = SC[cur];
+  $('#screen').innerHTML = sc.html();
+  $('#who').textContent = '現在看的是：' + DEV[sc.dev][0];
+  const ids = Object.keys(SC).filter((k) => SC[k].path === sc.path);
+  $('#pageno').textContent = `${sc.kind === 'ex' ? '例外畫面' : '正常路徑'}　${ids.indexOf(cur) + 1} / ${ids.length}`;
+  $('#tabs').innerHTML = Object.keys(PATHS).map((p) => `<button type="button" role="tab" aria-selected="${p === sc.path}" data-path="${p}">${PATHS[p]}</button>`).join('');
+  const item = (k) => `<li><button type="button" data-go="${k}" aria-current="${k === cur}"><span class="dev">${DEV[SC[k].dev][1]}</span><span>${SC[k].name}</span></button></li>`;
+  $('#pages').innerHTML = `<h2>正常路徑</h2><ol>${ids.filter((k) => SC[k].kind === 'main').map(item).join('')}</ol><h2>例外畫面</h2><ol>${ids.filter((k) => SC[k].kind === 'ex').map(item).join('')}</ol>`;
+  $('#notes').innerHTML = `<span class="tag">${DEV[sc.dev][0]}</span><h3>${sc.name}</h3><h2>規則重點</h2><ul>${sc.notes.map((n) => `<li>${n}</li>`).join('')}</ul>${sc.assets.length ? `<h2>這一頁用到的素材</h2><ul>${sc.assets.map((n) => `<li>${n}</li>`).join('')}</ul>` : ''}`;
+  const h = sc.hand && sc.hand(); const hb = $('#handoff');
+  hb.hidden = !h; if (h) hb.innerHTML = `<b>原型操作</b><span>${h[0]}</span><button type="button" data-act="${h[2]}">${h[1]}</button>`;
+  if (cur === 'b2') countdown();
+}
+function countdown() {
+  let left = 180; const cd = $('#cd');
+  timer = setInterval(() => {
+    left--; if (!cd.isConnected) return clearInterval(timer);
+    cd.textContent = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
+    if (left <= 0) { clearInterval(timer); $('#qrbox').classList.add('off'); const p = $('#txpill'); p.textContent = '已逾時'; p.classList.add('bad'); }
+  }, 1000);
+}
+let toastT = 0;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 2400); }
+
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.act) return run(b.dataset.act);
+  if (b.dataset.go) return show(b.dataset.go, true);
+  if (b.dataset.path) return show(FIRST[b.dataset.path], true);
+  if (b.dataset.key !== undefined) {
+    const k = b.dataset.key;
+    if (k === '清除') S.amount = ''; else if (k === '退格') S.amount = S.amount.slice(0, -1); else if (S.amount.length < 6) S.amount = String(Number(S.amount + k));
+    if (S.amount === '0') S.amount = '';
+    return render();
+  }
+  if (b.id === 'reset') return show(FIRST[SC[cur].path], true);
+});
+document.addEventListener('change', (e) => {
+  if (e.target.id === 'agree') { S.agree = e.target.checked; render(); }
+  if (e.target.id === 'mkt') S.mkt = e.target.checked;
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.id === 'codein') run('c-code'); });
+
+const start = (location.hash || '').slice(1);
+show(SC[start] ? start : 'a1', true);
+window.__proto = { show, state: () => S, ids: () => Object.keys(SC) };
+})();
+</script>
+</body>
+</html>
