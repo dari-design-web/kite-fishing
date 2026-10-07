@@ -76,12 +76,13 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){.kg.pop,.banner{animation:none}}
 .ult{position:absolute;right:8px;bottom:calc(12px + env(safe-area-inset-bottom,0px));width:80px;height:90px;padding:0;border:0;background:none;display:block;-webkit-tap-highlight-color:transparent}
 .ult .ring{position:absolute;left:3px;top:0;width:74px;height:74px;border-radius:50%;border:2.5px solid var(--ink);background:conic-gradient(var(--gold) var(--fill,0%),#17324A 0);box-shadow:0 3px 0 rgba(16,41,61,.4)}
-.ult .disc{position:absolute;left:11.5px;top:8.5px;width:57px;height:57px;border-radius:50%;border:2.5px solid var(--ink);background:radial-gradient(circle at 34% 26%,#7CC6DF,#2C7FA6 72%);overflow:hidden;display:flex;align-items:center;justify-content:center}
-.ult .disc svg{width:54px;height:54px;transform:rotate(26deg);opacity:.5;filter:saturate(.45);transition:opacity .2s,filter .2s}
+.ult .disc{position:absolute;left:11.5px;top:8.5px;width:57px;height:57px;border-radius:50%;border:2.5px solid var(--ink);background:radial-gradient(circle at 34% 26%,#EAF6FA,#A9D5E4 78%);overflow:hidden;display:flex;align-items:center;justify-content:center}
+.ult .disc img,.ult .disc svg{width:54px;height:54px;flex:none;transform:rotate(24deg);opacity:.62;filter:grayscale(.55);transition:opacity .2s,filter .2s}
+.ult .disc img+svg{display:none}
 .ult .tag{position:absolute;left:50%;bottom:0;transform:translateX(-50%);min-width:52px;padding:1px 9px;border-radius:999px;border:2px solid var(--ink);background:var(--paper);color:var(--ink);font-family:var(--display);font-weight:700;font-size:14px;line-height:1.35;white-space:nowrap}
 .ult:disabled{cursor:default}
 .ult.ready .disc{background:radial-gradient(circle at 34% 26%,#FFF6CF,#F4BB42 78%)}
-.ult.ready .disc svg{opacity:1;filter:none}
+.ult.ready .disc img,.ult.ready .disc svg{opacity:1;filter:none}
 .ult.ready .tag{background:var(--gold)}
 .ult.ready .ring{animation:ultPulse 1.1s ease-in-out infinite}
 .ult.ready:active .disc{transform:scale(.94)}
@@ -106,7 +107,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
   </div>
   <div class="banner" id="banner" hidden></div>
   <div class="hint" id="hint" hidden>拖曳小鳶，風之羽會自動發射</div>
-  <button class="ult" id="ultBtn" hidden disabled aria-label="呼叫鯨鯊"><span class="ring"></span><span class="disc"><svg viewBox="0 0 64 64" aria-hidden="true"><g stroke="#402B20" stroke-width="2" stroke-linejoin="round"><path d="M21 23C13 25 8 31 6 38c7-1 13-3 18-6z" fill="#4E7FA0"/><path d="M43 23c8 2 13 8 15 15-7-1-13-3-18-6z" fill="#4E7FA0"/><path d="M32 49c-3 4-7 8-11 11 5 0 8-1 11-3 3 2 6 3 11 3-4-3-8-7-11-11z" fill="#4E7FA0"/><path d="M32 5c8 0 12 5 12 12 0 11-5 23-10 33l-2 4-2-4C25 40 20 28 20 17 20 10 24 5 32 5z" fill="#5E90B2"/></g><path d="M26 10.5h12" stroke="#402B20" stroke-width="1.6" stroke-linecap="round" fill="none"/><g fill="#402B20"><circle cx="23.6" cy="14.5" r="1.3"/><circle cx="40.4" cy="14.5" r="1.3"/></g><g fill="#F5FBFD"><circle cx="27" cy="18" r="1.4"/><circle cx="32" cy="16.5" r="1.4"/><circle cx="37" cy="18" r="1.4"/><circle cx="25" cy="24" r="1.3"/><circle cx="29.6" cy="23" r="1.4"/><circle cx="34.4" cy="23" r="1.4"/><circle cx="39" cy="24" r="1.3"/><circle cx="27" cy="30" r="1.3"/><circle cx="32" cy="29" r="1.4"/><circle cx="37" cy="30" r="1.3"/><circle cx="28.6" cy="36" r="1.2"/><circle cx="33" cy="35" r="1.3"/><circle cx="36.4" cy="37" r="1.1"/><circle cx="31" cy="41.5" r="1.1"/><circle cx="33.8" cy="43.5" r="1"/><circle cx="13" cy="33" r="1.1"/><circle cx="17.5" cy="29.5" r="1.1"/><circle cx="51" cy="33" r="1.1"/><circle cx="46.5" cy="29.5" r="1.1"/></g></svg></span><span class="tag" id="ultTag">鯨鯊</span></button>
+  <button class="ult" id="ultBtn" hidden disabled aria-label="呼叫鯨鯊"><span class="ring"></span><span class="disc"><img src="assets/whaleshark_top.png" alt="" onerror="this.remove()"><svg viewBox="0 0 64 64" aria-hidden="true"><g stroke="#402B20" stroke-width="2" stroke-linejoin="round"><path d="M21 23C13 25 8 31 6 38c7-1 13-3 18-6z" fill="#4E7FA0"/><path d="M43 23c8 2 13 8 15 15-7-1-13-3-18-6z" fill="#4E7FA0"/><path d="M32 49c-3 4-7 8-11 11 5 0 8-1 11-3 3 2 6 3 11 3-4-3-8-7-11-11z" fill="#4E7FA0"/><path d="M32 5c8 0 12 5 12 12 0 11-5 23-10 33l-2 4-2-4C25 40 20 28 20 17 20 10 24 5 32 5z" fill="#5E90B2"/></g><path d="M26 10.5h12" stroke="#402B20" stroke-width="1.6" stroke-linecap="round" fill="none"/><g fill="#402B20"><circle cx="23.6" cy="14.5" r="1.3"/><circle cx="40.4" cy="14.5" r="1.3"/></g><g fill="#F5FBFD"><circle cx="27" cy="18" r="1.4"/><circle cx="32" cy="16.5" r="1.4"/><circle cx="37" cy="18" r="1.4"/><circle cx="25" cy="24" r="1.3"/><circle cx="29.6" cy="23" r="1.4"/><circle cx="34.4" cy="23" r="1.4"/><circle cx="39" cy="24" r="1.3"/><circle cx="27" cy="30" r="1.3"/><circle cx="32" cy="29" r="1.4"/><circle cx="37" cy="30" r="1.3"/><circle cx="28.6" cy="36" r="1.2"/><circle cx="33" cy="35" r="1.3"/><circle cx="36.4" cy="37" r="1.1"/><circle cx="31" cy="41.5" r="1.1"/><circle cx="33.8" cy="43.5" r="1"/><circle cx="13" cy="33" r="1.1"/><circle cx="17.5" cy="29.5" r="1.1"/><circle cx="51" cy="33" r="1.1"/><circle cx="46.5" cy="29.5" r="1.1"/></g></svg></span><span class="tag" id="ultTag">鯨鯊</span></button>
 
   <div class="panel" id="startPanel">
     <div class="card">
@@ -128,7 +129,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
         <button type="button" data-level="normal" aria-pressed="true">標準（體力 5）</button>
       </div>
       <button class="btn" id="startBtn">開始</button>
-      <p class="note">原型 v0.5：暫用圖、不發點數</p>
+      <p class="note">原型 v0.6：暫用圖、不發點數</p>
     </div>
   </div>
 
@@ -163,7 +164,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.5',
+  version: '0.6',
   W: 360, H: 640,
   scroll: 70,                    // 背景捲動速度（每秒邏輯像素）
   kite: { hearts: 5, r: 12, safe: 1.6, followLift: 64, followSpeed: 16, minY: 130, maxY: 600 },   // r 是小鳶的碰撞半徑
@@ -201,7 +202,7 @@ const CONFIG = {
   ranks: [[0, '港邊新手'], [45, '清潔小隊'], [65, '港灣守護者'], [85, '基隆鳶王']]   // 稱號：乾淨度達到幾 %
 };
 // 素材檔（assets/ 內，全部暫用）。前四張沿用捕魚原型，其餘 21 張是飛行素材 v1 的縮小版
-const ASSET_FILES = { trash: 'trash.png', fish_small: 'fish_small.png', fish_squid: 'fish_squid.png', whaleshark: 'whaleshark.png',
+const ASSET_FILES = { trash: 'trash.png', fish_small: 'fish_small.png', fish_squid: 'fish_squid.png', whaleshark: 'whaleshark.png', shark_top: 'whaleshark_top.png',
   kite_a: 'kite_top_a.png', kite_b: 'kite_top_b.png', feather: 'feather.png', turtle: 'turtle_top.png',
   can: 'foe_can.png', bag: 'foe_bag.png', butt: 'foe_butt.png', foam: 'foe_foam.png', barrel: 'foe_barrel.png', tire: 'foe_tire.png', oil: 'foe_oil.png', goo: 'foe_goo.png',
   battery: 'foe_battery.png', sprayer: 'foe_sprayer.png', log: 'foe_log.png', net: 'foe_net.png', tangle: 'foe_tangle.png', boss: 'foe_boss.png',
@@ -219,7 +220,7 @@ const img = {};
 for (const k in ASSET_FILES) { const im = new Image(); im.onload = () => { img[k] = im; }; im.src = 'assets/' + ASSET_FILES[k]; }
 
 let mode = 'start', control = 'relative', level = 'normal', t = 0, last = 0, clock = 0, soundOn = true, ac = null, seed = 1;
-let kite, foes, shots, picks, parts, floats, friends, pals, rings, warns, script, si, stats, fireAcc, gauge, ult, flash, shake, boss, endTimer, firstMove, toldUlt, toldBarrel, toldGate, guide, won;
+let kite, foes, shots, picks, parts, floats, friends, pals, rings, warns, script, si, stats, fireAcc, gauge, ult, flash, shake, boss, endTimer, firstMove, toldUlt, toldBarrel, toldGate, toldRing, guide, won;
 const answers = {}, keys = {};
 const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
 const R = (a, b) => a + rnd() * (b - a), rand = (a, b) => a + Math.random() * (b - a);
@@ -256,7 +257,7 @@ function buildScript() {
   const vee = (time, type) => [[180, 0], [120, 0.4], [240, 0.4], [60, 0.8], [300, 0.8]].forEach((p) => add(time + p[1], type, p[0]));   // V 字
   const snake = (time, x, n, flip) => { for (let i = 0; i < n; i++) add(time + i * 0.16, 'butt', x, { ph: flip ? 3.14 : 0 }); };       // 蛇形長隊
   const diag = (time, type, fromLeft, n) => { for (let i = 0; i < n; i++) add(time + i * 0.32, type, fromLeft ? -20 : W + 20, { vx: fromLeft ? 78 : -78, y: 70 }); };   // 從側邊斜著進場
-  const ringOf = (time, x, type, n) => { add(time, 'barrel', x, { speed: 58, y: -74 }); for (let i = 0; i < n; i++) { const a = i / n * 6.2832; add(time, type, x + Math.cos(a) * 46, { y: -74 + Math.sin(a) * 46, speed: 58 }); } };   // 油桶在中間、垃圾圍一圈
+  const ringOf = (time, x, type, n) => { add(time, 'barrel', x, { speed: 58, y: -74, ring: true }); for (let i = 0; i < n; i++) { const a = i / n * 6.2832; add(time, type, x + Math.cos(a) * 46, { y: -74 + Math.sin(a) * 46, speed: 58 }); } };   // 油桶在中間、垃圾圍一圈
   const gate = (time, gapX) => add(time, 'gate', gapX);                                                              // 兩根漂流木中間留一個缺口
   const side = (time, fromLeft, n) => add(time, 'side', 0, { fromLeft, n });                                         // 從側邊橫衝過來（先警示）
   const wall = (time, type, barrelAt) => { for (let i = 0; i < 6; i++) add(time, i === barrelAt ? 'barrel' : type, 35 + i * 58, { speed: 60 }); };   // 一整排牆，其中一個是油桶
@@ -279,7 +280,7 @@ function buildScript() {
 }
 
 function reset() {
-  seed = CONFIG.seed; t = 0; si = 0; fireAcc = 0; gauge = 0; ult = null; flash = 0; shake = 0; boss = null; endTimer = 0; firstMove = false; toldUlt = false; toldBarrel = false; toldGate = false; guide = null; won = false;
+  seed = CONFIG.seed; t = 0; si = 0; fireAcc = 0; gauge = 0; ult = null; flash = 0; shake = 0; boss = null; endTimer = 0; firstMove = false; toldUlt = false; toldBarrel = false; toldGate = false; toldRing = false; guide = null; won = false;
   kite = { x: W / 2, y: 520, tx: W / 2, ty: 520, hearts: LV().hearts, safe: 0, power: 1, powerT: 0, galeT: 0, shield: false, drag: false, lx: 0, ly: 0 };
   foes = []; shots = []; picks = []; parts = []; floats = []; friends = []; pals = []; rings = []; warns = []; script = buildScript();
   stats = { spawned: 0, cleared: 0, leaked: 0, score: 0, hits: 0, hitBy: {}, rescued: 0, trapped: 0, lost: 0, trappedBy: { squid: 0, turtle: 0 }, lostBy: { squid: 0, turtle: 0 }, jerky: 0, powerUps: 0, gales: 0, maxPower: 1, ultUsed: 0, ultCleared: 0, combo: 0, comboT: 0, bestCombo: 0, blasts: 0, bestBlast: 0, chain: false, rescuedBy: { squid: 0, turtle: 0 }, shieldSaves: 0, bossCleared: false, dragPx: 0, byType: {} };
@@ -303,6 +304,7 @@ function spawn(e) {
   if (e.ph !== undefined) f.ph = e.ph; if (e.speed) f.vy = e.speed; if (e.slow) f.vy *= e.slow; if (e.vx) { f.vx = e.vx; f.vy = 95; }
   if (e.type === 'boss') { f.y = -70; f.enter = true; f.dropAcc = 0; f.ringAcc = 2; f.barrelAcc = 3; f.born = t; boss = f; banner('大垃圾團來了！'); jingle([330, 262, 196], 130); }
   if (e.tell && !toldBarrel) { toldBarrel = true; banner('油桶會爆炸，離遠一點再打'); }
+  if (e.ring && !toldRing) { toldRing = true; banner('瞄準中間的油桶，一次炸掉一圈'); }
 }
 function banner(text) { const b = $('banner'); b.textContent = text; b.hidden = false; clearTimeout(banner.t); banner.t = setTimeout(() => { b.hidden = true; }, 2400); }
 function say(text, x, y, color, big) { const half = text.length * (big ? 12.5 : 8) + 6; floats.push({ text, x: Math.max(half, Math.min(W - half, x)), y, life: 1, color: color || '#fff', big: !!big }); }
@@ -363,7 +365,7 @@ function hurt(by) {
 }
 function useUlt() {
   if (mode !== 'play' || gauge < CONFIG.ult.need || ult || endTimer > 0) return;
-  gauge = 0; stats.ultUsed++; ult = { t: 0, count: 0, hitBoss: false, sx: -170, sy: 470, waveY: H + 60, ringAcc: 0, told: false };
+  gauge = 0; stats.ultUsed++; ult = { t: 0, count: 0, hitBoss: false, sx: -170, sy: 470, hd: -0.6, waveY: H + 60, ringAcc: 0, told: false };
   flash = 1; $('banner').hidden = true; beep(90, 1.1, 'sine', 0.09, 260); jingle([392, 523, 659, 784, 1047, 1319], 90);
   rings.push({ x: kite.x, y: kite.y, r: 10, max: 420, life: 1, color: '255,236,160' });
 }
@@ -486,9 +488,9 @@ function update(dt) {
     const u = ult; u.t += real;
     if (u.t >= 0.5) {
       const p = Math.min(1, (u.t - 0.5) / 1.7), e = p * p * (3 - 2 * p);
-      u.sx = -170 + e * (W + 340); u.sy = 480 - e * 250 - Math.sin(p * Math.PI) * 50; u.waveY = H + 60 - e * (H + 200);
+      const ox = u.sx, oy = u.sy; u.sx = -170 + e * (W + 340); u.sy = 480 - e * 250 - Math.sin(p * Math.PI) * 50; if (u.sx - ox > 0.5) u.hd = Math.atan2(u.sy - oy, u.sx - ox);   /* hd：鯨鯊前進的方向 */ u.waveY = H + 60 - e * (H + 200);
       if (p < 0.7) shake = Math.max(shake, 0.12);
-      for (const f of foes.slice()) if (f.y > u.waveY) { if (T[f.type].solid) { foes.splice(foes.indexOf(f), 1); bubbles(f.x, f.y, 6); continue; } if (f.type === 'boss') { if (!u.hitBoss) { u.hitBoss = true; f.hp -= CONFIG.ult.bossDamage; burst(f.x, f.y, 20, '#FFE08A', 160); say('鯨鯊撞散了一大塊！', f.x, f.y + 74, '#FFE08A'); } } else clearFoe(f, 'ult'); }
+      for (const f of foes.slice()) if (f.y > u.waveY) { if (T[f.type].solid) { foes.splice(foes.indexOf(f), 1); bubbles(f.x, f.y, 6); guide = null; continue; } if (f.type === 'boss') { if (!u.hitBoss) { u.hitBoss = true; f.hp -= CONFIG.ult.bossDamage; burst(f.x, f.y, 20, '#FFE08A', 160); say('鯨鯊撞散了一大塊！', f.x, f.y + 74, '#FFE08A'); } } else clearFoe(f, 'ult'); }
       u.ringAcc += real; if (u.ringAcc > 0.22 && p < 1) { u.ringAcc = 0; rings.push({ x: u.sx, y: u.sy, r: 20, max: 150, life: 1, color: '255,236,160' }); }
       if (!calm && p < 1) for (let i = 0; i < 3; i++) { part('star', u.sx - rand(40, 150), u.sy + rand(-40, 40), { vx: rand(-60, -10), vy: rand(-20, 30), size: rand(3, 8), color: Math.random() < 0.4 ? '#FFFFFF' : '#FFE08A', fade: 1.4 }); part('bubble', rand(0, W), u.waveY + rand(0, 40), { vy: rand(-90, -40), size: rand(2, 5), fade: 1.1 }); }
       if (p >= 1 && !u.told) { u.told = true; say('鯨鯊清掉 ' + u.count + ' 件！', W / 2, 330, '#FFE08A', true); hearts(W / 2, 350, 6); jingle([784, 988, 1175, 1568], 70); }
@@ -597,7 +599,7 @@ function buildBackground() {
       // 船尾：球場與小旗
       rrect(-15, 152, 30, 40, 5, '#7DB58F', L, 1.3); ctx.strokeStyle = '#F7F3EA'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-15, 172); ctx.lineTo(15, 172); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 172, 5, 0, 6.2832); ctx.stroke();
       poly([0, 204, 0, 214, 8, 209], '#E8674A', L);
-      ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = 'rgba(47,136,175,.15)'; ctx.fillRect(-60, -240, 120, 480); ctx.globalCompositeOperation = 'source-over';      // 整艘船罩一層淡淡的海水色，讓它退到背景，不搶垃圾的辨識度
+      ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = 'rgba(47,136,175,.27)'; ctx.fillRect(-60, -240, 120, 480); ctx.globalCompositeOperation = 'source-over';      // 整艘船罩一層淡淡的海水色，讓它退到背景，不搶垃圾的辨識度
     });
     // 小卷漁船（俯視）：白色船舷、綠色甲板、紅色船頭、船尾駕駛室、一整排集魚燈
     BG.boat = offscreen(44, 96, () => {
@@ -794,7 +796,8 @@ function drawUlt() {
     const foam = 'rgba(255,255,255,' + 0.9 * a + ')'; for (let x = 6; x < W; x += 22) ell(x + Math.sin(clock * 7 + x) * 4, u.waveY - 8 + Math.sin(x * 0.4 + clock * 11) * 6, 3, 3, foam);
   }
   const g2 = ctx.createRadialGradient(u.sx, u.sy, 10, u.sx, u.sy, 190); g2.addColorStop(0, 'rgba(255,240,170,' + 0.75 * a + ')'); g2.addColorStop(0.5, 'rgba(255,236,160,' + 0.28 * a + ')'); g2.addColorStop(1, 'rgba(255,236,160,0)'); ctx.fillStyle = g2; ctx.fillRect(u.sx - 190, u.sy - 190, 380, 380);
-  ctx.save(); ctx.translate(u.sx, u.sy + Math.sin(clock * 6) * 4); ctx.rotate(-0.42 + Math.sin(clock * 5) * 0.04); ctx.lineWidth = 2; if (!sprite('whaleshark', 290, 116)) ell(0, 0, 130, 44, '#6F9BBB', PAL.line); ctx.restore();
+  ctx.save(); ctx.translate(u.sx, u.sy + Math.sin(clock * 6) * 4); ctx.lineWidth = 2; if (img.shark_top) { ctx.rotate(u.hd + 1.5708 + Math.sin(clock * 7) * 0.06); sprite('shark_top', 250, 250); ctx.restore(); return; }      // 俯視鯨鯊：頭朝前進方向，尾巴輕輕擺
+  ctx.rotate(-0.42 + Math.sin(clock * 5) * 0.04); if (!sprite('whaleshark', 290, 116)) ell(0, 0, 130, 44, '#6F9BBB', PAL.line); ctx.restore();
 }
 function hazard(x, y, w, h) {      // 紅區：紅底加斜紋，疊在藍色海面上仍然看得出是紅色
   const a = 0.75 + 0.25 * Math.sin(clock * 20);
@@ -886,7 +889,7 @@ $('copyBtn').onclick = () => {
   const fallback = () => { log.value = text; log.hidden = false; log.focus(); log.select(); $('copyBtn').textContent = '請長按上方文字複製'; };
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
 };
-window.__flyGame = { CONFIG, state: () => ({ mode, t, control, level, kite, gauge, foes: foes.map((f) => ({ type: f.type, x: f.x, y: f.y, r: f.r, hp: f.hp, vx: f.vx, w: f.w || 0, cross: !!f.cross, tired: !!f.tired, aimed: !!f.aimed })), warns: warns.map((w) => ({ y: w.y, t: w.t })), slam: boss && boss.slam ? { s: boss.slam, x: boss.slamX } : null, picks: picks.map((p) => ({ kind: p.kind, x: p.x, y: p.y })), pals: pals.length, stats, boss: !!boss, ult: ult ? ult.t : -1 }), fillGauge: () => { gauge = CONFIG.ult.need; }, record, skipTo: (sec) => { t = sec; while (si < script.length && script[si].t < sec) si++; }, hurtOff: () => { kite.safe = 1e9; }, test: { hearts: (n) => { kite.hearts = n; kite.safe = 0; drawHearts(); }, warn: (sec) => { warns.push({ y: kite.y, fromLeft: true, n: 3, t: sec }); }, friends: () => friends.map((c) => ({ kind: c.kind, x: Math.round(c.x), y: Math.round(c.y) })), won: () => won, logs: () => foes.filter((f) => f.type === 'log').map((f) => ({ x: Math.round(f.x), y: Math.round(f.y), w: Math.round(f.w) })) }, testWin: (sq, tu) => { stats.rescuedBy.squid = sq; stats.rescuedBy.turtle = tu; stats.rescued = sq + tu; stats.trapped = Math.max(stats.trapped, sq + tu); if (boss) boss.hp = 0; }, setControl: (c) => { control = c; } };
+window.__flyGame = { CONFIG, state: () => ({ mode, t, control, level, kite, gauge, foes: foes.map((f) => ({ type: f.type, x: f.x, y: f.y, r: f.r, hp: f.hp, vx: f.vx, w: f.w || 0, cross: !!f.cross, tired: !!f.tired, aimed: !!f.aimed })), warns: warns.map((w) => ({ y: w.y, t: w.t })), slam: boss && boss.slam ? { s: boss.slam, x: boss.slamX } : null, picks: picks.map((p) => ({ kind: p.kind, x: p.x, y: p.y })), pals: pals.length, stats, boss: !!boss, ult: ult ? ult.t : -1 }), fillGauge: () => { gauge = CONFIG.ult.need; }, record, skipTo: (sec) => { t = sec; while (si < script.length && script[si].t < sec) si++; }, hurtOff: () => { kite.safe = 1e9; }, test: { spawn: (type, x, y) => { const f = mk(type, x, y); f.vy = CONFIG.scroll; return true; }, hearts: (n) => { kite.hearts = n; kite.safe = 0; drawHearts(); }, warn: (sec) => { warns.push({ y: kite.y, fromLeft: true, n: 3, t: sec }); }, friends: () => friends.map((c) => ({ kind: c.kind, x: Math.round(c.x), y: Math.round(c.y) })), won: () => won, logs: () => foes.filter((f) => f.type === 'log').map((f) => ({ x: Math.round(f.x), y: Math.round(f.y), w: Math.round(f.w) })) }, testWin: (sq, tu) => { stats.rescuedBy.squid = sq; stats.rescuedBy.turtle = tu; stats.rescued = sq + tu; stats.trapped = Math.max(stats.trapped, sq + tu); if (boss) boss.hp = 0; }, setControl: (c) => { control = c; } };
 reset(); requestAnimationFrame(frame);
 })();
 </script>
