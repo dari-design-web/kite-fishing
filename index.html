@@ -56,7 +56,17 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .yn button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
 #log{width:100%;height:70px;font:12px/1.4 ui-monospace,Consolas,monospace;border:1px solid var(--line);border-radius:8px;padding:6px;background:#fff;color:var(--ink);resize:none;-webkit-user-select:text;user-select:text}
 .note{font-size:12px;color:var(--muted)}
-@media (prefers-reduced-motion:reduce){.kg.pop{animation:none}}
+.kg.x2{background:var(--gold)}
+.kg.x2::after{content:" ×2";font-size:14px}
+.banner{animation:glow 1.1s ease-in-out infinite}
+@keyframes glow{50%{transform:scale(1.035);box-shadow:0 0 0 4px rgba(244,187,66,.35)}}
+.rank{align-self:center;font-family:var(--display);font-weight:700;font-size:18px;background:var(--gold);border:2px solid var(--ink);border-radius:999px;padding:0 14px}
+.fact{font-size:13px;text-align:left;background:#fff;border:1px dashed var(--muted);border-radius:10px;padding:6px 9px;color:var(--ink)}
+.card.result{gap:9px;padding:14px 16px;max-width:312px}
+.card.result h2{font-size:18px}
+.card.result .total{font-size:40px}
+.card.result .rows{font-size:13px;gap:2px 12px;padding:6px 0}
+@media (prefers-reduced-motion:reduce){.kg.pop,.banner{animation:none}}
 </style>
 
 </head>
@@ -79,12 +89,13 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
       <p>60 秒內，看你能幫小鳶抓到幾公斤。</p>
       <ul class="how">
         <li><b>點魚</b><span>點水裡的魚，小鳶會俯衝下去抓</span></li>
-        <li><b>大魚</b><span>游得快、比較重，要抓準提前量</span></li>
+        <li><b>六種魚</b><span>越深越重。小卷成群，白帶魚扭著游</span></li>
+        <li><b>連抓</b><span>連續抓到 3 條起，每條多 0.2 公斤</span></li>
         <li><b>垃圾</b><span>抓到會暈一下，要避開</span></li>
         <li><b>鯨鯊</b><span>牠是朋友，出現時公斤數加倍</span></li>
       </ul>
       <button class="btn" id="startBtn">開始</button>
-      <p class="note">原型 v0.3：暫用素材、不發點數</p>
+      <p class="note">原型 v0.4：暫用素材、不發點數</p>
     </div>
   </div>
 
@@ -97,10 +108,12 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
   </div>
 
   <div class="panel" id="resultPanel" hidden>
-    <div class="card">
+    <div class="card result">
       <h2>時間到</h2>
+      <div class="rank" id="rank"></div>
       <div class="total"><span id="totalKg">0.0</span> <small>公斤</small></div>
       <div class="rows" id="rows"></div>
+      <p class="fact" id="fact"></p>
       <div class="ask" id="ask">
         <div><span>一看就知道怎麼玩</span><span class="yn" data-q="easy"><button aria-pressed="false">是</button><button aria-pressed="false">否</button></span></div>
         <div><span>知道為什麼得分</span><span class="yn" data-q="clear"><button aria-pressed="false">是</button><button aria-pressed="false">否</button></span></div>
@@ -119,43 +132,53 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.3',
+  version: '0.4',
   duration: 60,                 // 一局秒數
   W: 360, H: 640,               // 邏輯畫布尺寸
   surfaceY: 200,                // 海面高度
   skyY: 128,                    // 小鳶巡航高度
   kite: { patrolSpeed: 70, diveSpeed: 820, riseSpeed: 620, cooldown: 0.12, hitPad: 16, stun: 1.0 },
+  // 魚種：kg 重量、speed 速度範圍、r 命中半徑、depth 出現深度、sprite 素材檔名（沒有檔案時用程式畫的佔位圖）、sw/sh 顯示尺寸
   fish: {
-    small: { name: '小魚', kg: 0.3, speed: [38, 58],   r: 12, depth: [235, 330], color: '#DCEBF2', fin: '#9FC3D6' },
-    mid:   { name: '中魚', kg: 1.0, speed: [80, 110],  r: 16, depth: [300, 460], color: '#F6D873', fin: '#D9A93A' },
-    big:   { name: '大魚', kg: 3.0, speed: [140, 180], r: 22, depth: [430, 590], color: '#F08C5A', fin: '#C65B32' }
+    saba:     { name: '鯖魚',   kg: 0.3, speed: [38, 58],   r: 12, depth: [235, 330], sprite: 'fish_small',    sw: 35, sh: 22, color: '#DCEBF2', fin: '#9FC3D6', fact: '台語叫「花飛」，是八斗子漁港常見的漁獲。' },
+    squid:    { name: '小卷',   kg: 0.2, speed: [46, 62],   r: 11, depth: [240, 350], sprite: 'fish_squid',    sw: 38, sh: 20, school: [4, 5], move: 'jet', fact: '又叫鎖管，喜歡成群行動。八斗子的鎖管產量是全台第一。' },
+    grunt:    { name: '黃雞魚', kg: 1.0, speed: [80, 110],  r: 16, depth: [300, 460], sprite: 'fish_mid',      sw: 46, sh: 29, color: '#F6D873', fin: '#D9A93A', fact: '小時候身上有三條線，長大後線條會慢慢變淡。' },
+    hairtail: { name: '白帶魚', kg: 1.5, speed: [105, 135], r: 15, depth: [330, 500], sprite: 'fish_hairtail', sw: 84, sh: 20, move: 'wave', fact: '身體像一條銀色的帶子，沒有魚鱗。' },
+    bream:    { name: '赤鯮',   kg: 3.0, speed: [140, 180], r: 22, depth: [430, 590], sprite: 'fish_big',      sw: 64, sh: 40, color: '#F08C5A', fin: '#C65B32', fact: '全身紅通通，住在比較深的地方，游得很快。' },
+    amber:    { name: '紅魽',   kg: 5.0, speed: [185, 215], r: 24, depth: [470, 585], sprite: 'fish_amber',    sw: 84, sh: 44, rare: true, fact: '游得很快的大型魚，也是八斗子漁港的代表漁獲。' }
   },
   trash: { name: '漂流垃圾', speed: [18, 30], r: 14, depth: [240, 440] },
-  // 各時段：每隔幾秒出現一個、各類型的機率權重、速度倍率
+  // 各時段：每隔幾秒出現一個（小卷一次來一群）、各類型的機率權重、速度倍率
   phases: [
-    { from: 0,  to: 10, every: 1.10, speedMul: 0.8, w: { small: 1 } },
-    { from: 10, to: 30, every: 0.80, speedMul: 1.0, w: { small: 5, mid: 4, big: 1 } },
-    { from: 30, to: 45, every: 0.70, speedMul: 1.0, w: { small: 3.5, mid: 3.5, big: 1.5, trash: 1.5 } },
-    { from: 45, to: 55, every: 0.45, speedMul: 1.0, w: { small: 4, mid: 4, big: 2 } },
-    { from: 55, to: 60, every: 0.70, speedMul: 1.0, w: { small: 4, mid: 4, big: 2 } }
+    { from: 0,  to: 10, every: 1.10, speedMul: 0.8, w: { saba: 1 } },
+    { from: 10, to: 30, every: 0.85, speedMul: 1.0, w: { saba: 4, squid: 1.2, grunt: 4, hairtail: 1.5, bream: 1 } },
+    { from: 30, to: 45, every: 0.75, speedMul: 1.0, w: { saba: 3, squid: 1.2, grunt: 3, hairtail: 2, bream: 1.5, trash: 1.5 } },
+    { from: 45, to: 55, every: 0.50, speedMul: 1.0, w: { saba: 3, squid: 1.2, grunt: 3.5, hairtail: 2, bream: 2 } },
+    { from: 55, to: 60, every: 0.75, speedMul: 1.0, w: { saba: 3, squid: 1.2, grunt: 3.5, hairtail: 2, bream: 2 } }
   ],
-  event: { from: 45, to: 55, mult: 2 },  // 鯨鯊事件：這段時間公斤數乘以 mult
+  rare: { type: 'amber', at: [24, 50] },     // 大物：固定在這幾秒各出現一條
+  event: { from: 45, to: 55, mult: 2 },      // 鯨鯊事件：這段時間公斤數乘以 mult
+  combo: { from: 3, bonus: 0.2 },            // 連抓：連續命中第 from 條起，每條多 bonus 公斤（不乘鯨鯊倍率）
+  ranks: [[0, '港邊新手'], [6, '海風學徒'], [14, '俯衝好手'], [24, '基隆鳶王']],  // 結算稱號：達到幾公斤
   diveSpriteAngle: 35           // kite_dive.png 本身朝右下的角度（度），繪製時扣回，讓喙對準目標
 };
-/* 正式素材：把同名 PNG 放進 assets/ 資料夾就會取代佔位圖（全部朝右、透明背景） */
+/* 正式素材：把同名 PNG 放進 assets/ 並在這裡加一行，就會取代佔位圖（全部朝右、透明背景）
+   待 ChatGPT 交付後加入：fish_squid.png、fish_hairtail.png、fish_amber.png */
 const ASSET_FILES = { kite_glide: 'kite_glide.png', kite_dive: 'kite_dive.png', fish_small: 'fish_small.png', fish_mid: 'fish_mid.png', fish_big: 'fish_big.png', trash: 'trash.png', whaleshark: 'whaleshark.png', bg: 'bg.jpg' };
 
 const $ = (id) => document.getElementById(id);
 const stage = $('stage'), cv = $('world'), ctx = cv.getContext('2d');
 const { W, H } = CONFIG;
+const SPECIES = Object.keys(CONFIG.fish);
 const PAL = { body: '#A66F45', wing: '#865B3D', cream: '#F5DDB7', gold: '#F4BB42', tip: '#56534D', blush: '#F4AF91', line: '#402B20' };
 const rand = (a, b) => a + Math.random() * (b - a);
+const calm = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 const img = {};
 if (window.USE_ASSETS !== false) for (const k in ASSET_FILES) { const im = new Image(); im.onload = () => { img[k] = im; }; im.src = 'assets/' + ASSET_FILES[k]; }
 
 let mode = 'start', t = 0, last = 0, clock = 0, spawnAcc = 0, kg = 0, soundOn = true, ac = null;
-let things = [], floats = [], rings = [], shark = null, kite, stats, firstCatchDone = false;
-let dex = {}; try { dex = JSON.parse(localStorage.getItem('kiteFishingDex') || '{}'); } catch (e) {}
+let things = [], floats = [], rings = [], parts = [], shark = null, kite, stats, firstCatchDone = false, rareIdx = 0, flash = 0, sparkAcc = 0, prevKiteY = 0;
+let dex = {}; try { dex = JSON.parse(localStorage.getItem('kiteFishingDex2') || '{}'); } catch (e) {}
 const answers = {};
 
 function fit() {
@@ -179,45 +202,73 @@ function beep(f, d, type, g, slide) {
     o.connect(a); a.connect(ac.destination); o.start(n); o.stop(n + d);
   } catch (e) {}
 }
+function jingle(notes, gap) { notes.forEach((f, i) => setTimeout(() => beep(f, 0.22, 'triangle', 0.07), i * (gap || 90))); }
 
 function reset() {
-  t = 0; spawnAcc = 0; kg = 0; things = []; floats = []; rings = []; shark = null; firstCatchDone = false;
+  t = 0; spawnAcc = 0; kg = 0; things = []; floats = []; rings = []; parts = []; shark = null; firstCatchDone = false; rareIdx = 0; flash = 0; sparkAcc = 0;
   kite = { x: 80, y: CONFIG.skyY, face: 1, state: 'glide', tx: 0, ty: 0, wait: 0, carry: null, stunNext: false };
-  stats = { taps: 0, dives: 0, hits: 0, misses: 0, blocked: 0, skyTaps: 0, trash: 0, sharkTaps: 0, counts: { small: 0, mid: 0, big: 0 }, kgInEvent: 0, newDex: [] };
-  $('kg').textContent = '0.0 kg';
+  prevKiteY = kite.y;
+  stats = { taps: 0, dives: 0, hits: 0, misses: 0, blocked: 0, skyTaps: 0, trash: 0, sharkTaps: 0, counts: {}, kgInEvent: 0, combo: 0, bestCombo: 0, comboBonus: 0, newDex: [] };
+  for (const k of SPECIES) stats.counts[k] = 0;
+  $('kg').textContent = '0.0 kg'; $('kg').classList.remove('x2');
   for (const k in answers) delete answers[k];
   for (const b of document.querySelectorAll('.yn button')) b.setAttribute('aria-pressed', 'false');
 }
 
+/* ====== 出現 ====== */
 function phaseAt(time) { return CONFIG.phases.find((p) => time >= p.from && time < p.to) || CONFIG.phases[CONFIG.phases.length - 1]; }
-function spawn(p) {
+function addFish(type, dir, speed, y, back, ph) {
+  const def = CONFIG.fish[type];
+  things.push({ type, x: (dir > 0 ? -40 : W + 40) - dir * (back || 0), y, y0: y, vx: dir * speed, r: def.r, ph: ph === undefined ? rand(0, 6.28) : ph, move: def.move || '' });
+}
+function spawn(p, forced) {
   const keys = Object.keys(p.w); let roll = Math.random() * keys.reduce((s, k) => s + p.w[k], 0), type = keys[0];
   for (const k of keys) { roll -= p.w[k]; if (roll <= 0) { type = k; break; } }
-  const def = type === 'trash' ? CONFIG.trash : CONFIG.fish[type];
-  const dir = Math.random() < 0.5 ? 1 : -1, sp = rand(def.speed[0], def.speed[1]) * p.speedMul;
-  things.push({ type, x: dir > 0 ? -30 : W + 30, y: rand(def.depth[0], def.depth[1]), vx: dir * sp, r: def.r, ph: rand(0, 6.28) });
+  if (forced) type = forced;
+  const dir = Math.random() < 0.5 ? 1 : -1;
+  if (type === 'trash') { const d = CONFIG.trash; things.push({ type, x: dir > 0 ? -30 : W + 30, y: rand(d.depth[0], d.depth[1]), vx: dir * rand(d.speed[0], d.speed[1]) * p.speedMul, r: d.r, ph: rand(0, 6.28), move: '' }); return; }
+  const def = CONFIG.fish[type], sp = rand(def.speed[0], def.speed[1]) * p.speedMul, y = rand(def.depth[0], def.depth[1]);
+  if (def.school) {            // 小卷：一次來一群，同步一縮一放地前進
+    const n = Math.round(rand(def.school[0], def.school[1])), ph = rand(0, 6.28);
+    for (let i = 0; i < n; i++) addFish(type, dir, sp, Math.max(def.depth[0], Math.min(def.depth[1], y + rand(-18, 18))), i * 26 + rand(-4, 4), ph + rand(0, 0.5));
+  } else addFish(type, dir, sp, y);
+  if (def.rare) { say('大物！' + def.name, dir > 0 ? 70 : W - 70, y - 26, '#FFE08A'); jingle([392, 523, 784], 70); }
 }
 
-function say(text, x, y, color) { floats.push({ text, x: Math.max(40, Math.min(W - 40, x)), y, life: 1, color: color || '#fff' }); }
+/* ====== 特效粒子 ====== */
+function say(text, x, y, color) { floats.push({ text, x: Math.max(48, Math.min(W - 48, x)), y, life: 1, color: color || '#fff' }); }
+function part(kind, x, y, o) { parts.push(Object.assign({ kind, x, y, vx: 0, vy: 0, life: 1, fade: 1.6, size: 3, rot: rand(0, 6.28) }, o)); }
+function splash(x) { const s = CONFIG.surfaceY; rings.push({ x, y: s, life: 1, flat: true }); for (let i = 0; i < 7; i++) part('drop', x + rand(-8, 8), s, { vx: rand(-70, 70), vy: rand(-170, -70), g: 520, fade: 1.8, size: rand(1.5, 2.8) }); }
+function bubbles(x, y, n) { for (let i = 0; i < n; i++) part('bubble', x + rand(-10, 10), y + rand(-6, 6), { vy: rand(-46, -22), fade: rand(0.9, 1.4), size: rand(1.5, 3.2) }); }
+function stars(x, y, n, spread, color) { for (let i = 0; i < n; i++) { const a = rand(0, 6.28), v = rand(20, spread); part('star', x, y, { vx: Math.cos(a) * v, vy: Math.sin(a) * v, fade: rand(1.3, 2.2), size: rand(3, 6), color: color || '#FFE08A' }); } }
+function ink(x, y) { for (let i = 0; i < 5; i++) part('ink', x + rand(-6, 6), y + rand(-5, 5), { vx: rand(-14, 14), vy: rand(-10, 6), fade: 1.1, size: rand(5, 9) }); }
+function hearts(x, y) { for (let i = 0; i < 3; i++) part('heart', x + rand(-16, 16), y + rand(-6, 6), { vy: rand(-40, -24), fade: 1.0, size: rand(5, 7) }); }
 
+/* ====== 俯衝結果 ====== */
 function resolveDive() {
   const { tx, ty } = kite; let best = null, bd = 1e9;
   for (const o of things) { const d = Math.hypot(o.x - tx, o.y - ty); if (d < o.r + CONFIG.kite.hitPad && d < bd) { best = o; bd = d; } }
   rings.push({ x: tx, y: ty, life: 1 });
   if (best && best.type === 'trash') {
-    things.splice(things.indexOf(best), 1); stats.trash++; kite.stunNext = true; kite.carry = 'trash';
+    things.splice(things.indexOf(best), 1); stats.trash++; stats.combo = 0; kite.stunNext = true; kite.carry = 'trash';
     say('抓到垃圾，暈一下', tx, ty - 18, '#FFD0C4'); beep(140, 0.25, 'square', 0.05, -60);
   } else if (best) {
     things.splice(things.indexOf(best), 1);
-    const inEvent = t >= CONFIG.event.from && t < CONFIG.event.to, mult = inEvent ? CONFIG.event.mult : 1, gain = CONFIG.fish[best.type].kg * mult;
+    const def = CONFIG.fish[best.type], inEvent = t >= CONFIG.event.from && t < CONFIG.event.to, mult = inEvent ? CONFIG.event.mult : 1, gain = def.kg * mult;
     kg += gain; stats.hits++; stats.counts[best.type]++; if (inEvent) stats.kgInEvent += gain; kite.carry = best.type; firstCatchDone = true;
-    if (!dex[best.type]) { dex[best.type] = true; stats.newDex.push(best.type); try { localStorage.setItem('kiteFishingDex', JSON.stringify(dex)); } catch (e) {} }
-    say('+' + gain.toFixed(1) + ' kg' + (mult > 1 ? ' ×' + mult : ''), tx, ty - 18, mult > 1 ? '#FFE08A' : '#fff');
+    stats.combo++; stats.bestCombo = Math.max(stats.bestCombo, stats.combo);
+    if (!dex[best.type]) { dex[best.type] = true; stats.newDex.push(best.type); try { localStorage.setItem('kiteFishingDex2', JSON.stringify(dex)); } catch (e) {} }
+    say(def.name + ' +' + gain.toFixed(1) + (mult > 1 ? ' ×' + mult : ''), tx, ty - 18, mult > 1 || def.rare ? '#FFE08A' : '#fff');
+    if (stats.combo >= CONFIG.combo.from) { kg += CONFIG.combo.bonus; stats.comboBonus += CONFIG.combo.bonus; say('連抓 ' + stats.combo + '！+' + CONFIG.combo.bonus.toFixed(1), tx, ty - 40, '#BFF0D0'); }
+    bubbles(tx, ty, 5);
+    if (best.type === 'squid') ink(tx, ty);
+    if (inEvent || def.rare) stars(tx, ty, def.rare ? 14 : 7, def.rare ? 110 : 70);
+    if (def.rare) { flash = Math.max(flash, 0.45); jingle([523, 659, 784, 1047], 80); }
     const el = $('kg'); el.textContent = kg.toFixed(1) + ' kg'; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
-    beep(best.type === 'big' ? 880 : best.type === 'mid' ? 740 : 620, 0.16, 'triangle', 0.08, 220);
+    beep(Math.min(1320, 560 + def.kg * 90 + Math.min(stats.combo, 8) * 45), 0.16, 'triangle', 0.08, 220);
   } else if (shark && Math.abs(tx - shark.x) < 80 && Math.abs(ty - shark.y) < 30) {
-    stats.sharkTaps++; say('鯨鯊是朋友', tx, ty - 34, '#FFE08A'); beep(520, 0.2, 'sine', 0.05, 80);
-  } else { stats.misses++; say('沒抓到', tx, ty - 18, '#CFE6F2'); beep(220, 0.1, 'sine', 0.04, -40); }
+    stats.sharkTaps++; say('鯨鯊是朋友', tx, ty - 34, '#FFE08A'); hearts(tx, ty - 10); beep(520, 0.2, 'sine', 0.05, 80);
+  } else { stats.misses++; stats.combo = 0; say('沒抓到', tx, ty - 18, '#CFE6F2'); beep(220, 0.1, 'sine', 0.04, -40); }
   kite.state = 'rise';
 }
 
@@ -226,12 +277,31 @@ function update(dt) {
   if (t >= CONFIG.duration) { t = CONFIG.duration; return finish(); }
   const p = phaseAt(t); spawnAcc += dt;
   while (spawnAcc >= p.every) { spawnAcc -= p.every; spawn(p); }
-  if (!shark && t >= CONFIG.event.from) { shark = { x: -110, y: 520, vx: (W + 220) / (CONFIG.event.to - CONFIG.event.from) }; beep(392, 0.5, 'sine', 0.06, 200); }
+  if (rareIdx < CONFIG.rare.at.length && t >= CONFIG.rare.at[rareIdx]) { rareIdx++; spawn(p, CONFIG.rare.type); }
+  const inEvent = t >= CONFIG.event.from && t < CONFIG.event.to;
+  if (!shark && t >= CONFIG.event.from) {          // 鯨鯊登場：一次閃光、音效、星光
+    shark = { x: -110, y: 520, vx: (W + 220) / (CONFIG.event.to - CONFIG.event.from) };
+    flash = 1; jingle([392, 523, 659, 784, 1047], 85); stars(40, 520, calm ? 6 : 18, 150);
+  }
   if (shark) shark.x += shark.vx * dt;
-  for (const o of things) o.x += o.vx * dt;
-  things = things.filter((o) => o.x > -50 && o.x < W + 50);
+  for (const o of things) {
+    if (o.move === 'jet') o.x += o.vx * (0.35 + 1.3 * Math.max(0, Math.sin(clock * 5 + o.ph))) * dt;
+    else o.x += o.vx * dt;
+    if (o.move === 'wave') o.y = o.y0 + Math.sin(clock * 3 + o.ph) * 12;
+  }
+  things = things.filter((o) => o.x > -180 && o.x < W + 180);
+  sparkAcc += dt;
+  if (sparkAcc > (calm ? 0.3 : 0.07)) {
+    sparkAcc = 0;
+    if (inEvent && shark) for (let i = 0; i < (calm ? 1 : 2); i++) part('star', shark.x + rand(-100, 100), shark.y + rand(-42, 42), { vy: rand(-18, -6), fade: rand(1.0, 1.8), size: rand(3.5, 7), color: Math.random() < 0.3 ? '#FFFFFF' : '#FFE08A' });
+    for (const o of things) if (o.type === CONFIG.rare.type) part('star', o.x - Math.sign(o.vx) * rand(10, 40), o.y + rand(-10, 10), { fade: 2, size: rand(2.5, 4.5) });
+    if (Math.random() < 0.25 && things.length) { const o = things[Math.floor(Math.random() * things.length)]; if (o.type !== 'trash') part('bubble', o.x, o.y - o.r * 0.5, { vy: rand(-30, -18), fade: 0.8, size: rand(1.2, 2.2) }); }
+  }
   for (const f of floats) { f.y -= 26 * dt; f.life -= dt * 0.9; } floats = floats.filter((f) => f.life > 0);
   for (const r of rings) r.life -= dt * 2.2; rings = rings.filter((r) => r.life > 0);
+  for (const q of parts) { q.x += q.vx * dt; q.y += q.vy * dt; if (q.g) q.vy += q.g * dt; if (q.kind === 'ink') q.size += 16 * dt; if (q.kind === 'bubble' && q.y < CONFIG.surfaceY + 4) q.life = 0; q.life -= dt * q.fade; }
+  parts = parts.filter((q) => q.life > 0);
+  if (flash > 0) flash = Math.max(0, flash - dt * 2.4);
 
   const K = CONFIG.kite;
   if (kite.state === 'glide') {
@@ -247,11 +317,12 @@ function update(dt) {
     if (d <= step) { kite.x = hx; kite.y = CONFIG.skyY; kite.carry = null; if (kite.stunNext) { kite.stunNext = false; kite.state = 'stun'; kite.wait = K.stun; } else { kite.state = 'glide'; kite.wait = K.cooldown; } }
     else { kite.x += dx / d * step; kite.y += dy / d * step; }
   } else if (kite.state === 'stun') { kite.wait -= dt; if (kite.wait <= 0) { kite.state = 'glide'; kite.wait = 0; } }
+  const s = CONFIG.surfaceY; if ((prevKiteY < s) !== (kite.y < s)) { splash(kite.x); beep(300, 0.08, 'sine', 0.03, 200); } prevKiteY = kite.y;
 
   const left = Math.ceil(CONFIG.duration - t);
   $('timeText').textContent = '剩 ' + left + ' 秒';
   const bar = $('timeBar'); bar.style.transform = 'scaleX(' + (1 - t / CONFIG.duration) + ')'; bar.classList.toggle('low', left <= 5);
-  $('banner').hidden = !(t >= CONFIG.event.from && t < CONFIG.event.to);
+  $('banner').hidden = !inEvent; $('kg').classList.toggle('x2', inEvent);
   $('hint').hidden = firstCatchDone || t > 12;
 }
 
@@ -278,20 +349,62 @@ function drawBackground() {
   poly([22, s - 6, 26, s - 46, 34, s - 46, 38, s - 6], '#E8674A', '#17324A'); ctx.fillStyle = '#FFF8EA'; ctx.fillRect(25, s - 30, 10, 6);
   const bands = ['#5DB3D2', '#3F97BF', '#2F7FA8', '#236A93', '#1B557A'], bh = (H - s) / bands.length;
   bands.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(0, s + i * bh, W, bh + 1); });
-  ctx.fillStyle = '#17405E'; poly([0, H, 0, H - 22, 70, H - 34, 150, H - 20, 230, H - 38, 300, H - 24, 360, H - 32, 360, H], '#17405E');
+  poly([0, H, 0, H - 22, 70, H - 34, 150, H - 20, 230, H - 38, 300, H - 24, 360, H - 32, 360, H], '#17405E');
   drawSurface();
   ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(232,246,251,.35)';
   for (let i = 1; i < 5; i++) { ctx.beginPath(); for (let x = 0; x <= W; x += 8) { const y = s + i * bh + Math.sin(x * 0.05 + clock * 1.2 + i) * 2; x ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke(); }
 }
+/* 鯨鯊時段：海面灑下的光束與鯨鯊身邊的光暈。a 是 0 到 1 的淡入淡出 */
+function drawEventLight(a) {
+  const s = CONFIG.surfaceY;
+  ctx.fillStyle = 'rgba(255,232,150,' + (0.10 * a) + ')';
+  for (let i = 0; i < 5; i++) { const x = 30 + i * 78 + Math.sin(clock * 0.7 + i * 1.7) * 16, w = 26 + (i % 2) * 14, lean = 70; poly([x, s, x + w, s, x + w + lean + 30, H, x + lean - 10, H], ctx.fillStyle); }
+  if (!shark) return;
+  const sy = shark.y + Math.sin(clock * 1.4) * 4, r = 132 + Math.sin(clock * 3) * 10, g = ctx.createRadialGradient(shark.x, sy, 10, shark.x, sy, r);
+  g.addColorStop(0, 'rgba(255,236,160,' + (0.62 * a) + ')'); g.addColorStop(0.45, 'rgba(255,236,160,' + (0.22 * a) + ')'); g.addColorStop(1, 'rgba(255,236,160,0)');
+  ctx.fillStyle = g; ctx.fillRect(shark.x - r, sy - r, r * 2, r * 2);
+}
 
-function drawFish(type, r) {
+/* 佔位魚：朝右。有同名素材時不會用到 */
+const PLACE = {
+  basic(d) {
+    const r = d.r;
+    poly([-r * 1.0, 0, -r * 1.75, -r * 0.6, -r * 1.55, 0, -r * 1.75, r * 0.6], d.fin, PAL.line);
+    ell(0, 0, r * 1.2, r * 0.7, d.color, PAL.line);
+    poly([-r * 0.1, -r * 0.66, r * 0.35, -r * 1.05, r * 0.5, -r * 0.6], d.fin, PAL.line);
+    ell(r * 0.68, -r * 0.12, r * 0.16, r * 0.16, PAL.line);
+  },
+  squid(d, ph) {            // 小卷：尖端朝右，觸手拖在左邊
+    const pulse = Math.max(0, Math.sin(clock * 5 + ph));
+    ctx.strokeStyle = PAL.line; ctx.lineCap = 'round';
+    for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(-10, i * 1.8); ctx.quadraticCurveTo(-15, i * 3.2 * (1 - pulse * 0.6), -19 - pulse * 5, i * 2.6 * (1 - pulse * 0.7)); ctx.stroke(); }
+    poly([19, 0, 9, -8.5, 3, -5, 3, 5, 9, 8.5], '#F2B19C', PAL.line);
+    ell(1, 0, 13, 6.4, '#F9DDD0', PAL.line);
+    ctx.fillStyle = '#D9826B'; for (const s of [[-2, -2.5], [4, 1.5], [8, -1.5], [-5, 2]]) { ctx.beginPath(); ctx.arc(s[0], s[1], 1, 0, 6.2832); ctx.fill(); }
+    ell(-8, -1.5, 2.3, 2.3, '#fff', PAL.line); ell(-8.3, -1.5, 1.1, 1.1, PAL.line);
+  },
+  hairtail(d, ph) {         // 白帶魚：長長一條，身體像波浪
+    const N = 12, top = [47, 0.5], bot = [];
+    for (let i = 0; i <= N; i++) { const u = i / N, x = 40 - u * 82, y = Math.sin(u * 5 - clock * 9 + ph) * 5 * u, h = 1 + 6.5 * Math.pow(1 - u, 0.7) * Math.min(1, 0.55 + u * 4); top.push(x, y - h); bot.unshift(y + h); bot.unshift(x); }
+    poly(top.concat(bot), '#E9F1F5', PAL.line);
+    ctx.strokeStyle = '#8FB3C7'; ctx.beginPath(); for (let i = 0; i <= N; i++) { const u = i / N, x = 36 - u * 76, y = Math.sin(u * 5 - clock * 9 + ph) * 5 * u - (1 + 4.2 * Math.pow(1 - u, 0.7)); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke();
+    ctx.strokeStyle = '#fff'; ctx.beginPath(); ctx.moveTo(22, 1.5); ctx.lineTo(4, 1.8); ctx.stroke();
+    ell(34, -1.2, 2.6, 2.6, '#fff', PAL.line); ell(34.5, -1.2, 1.2, 1.2, PAL.line);
+  },
+  amber() {                 // 紅魽：大型、流線、身側一條金線
+    poly([-30, 0, -46, -17, -39, 0, -46, 17], '#B9806A', PAL.line);
+    poly([-6, -15, 10, -25, 18, -14], '#B9806A', PAL.line);
+    ell(0, 0, 36, 16.5, '#DDB09C', PAL.line);
+    ctx.save(); ctx.beginPath(); ctx.ellipse(0, 0, 35, 15.5, 0, 0, 6.2832); ctx.clip(); ell(0, 14, 40, 12, '#FBEFE3'); ctx.fillStyle = PAL.gold; ctx.fillRect(-36, -2.2, 72, 3.2); ctx.restore();
+    poly([4, 6, 14, 15, 16, 6], '#B9806A', PAL.line);
+    ell(25, -3.5, 3.4, 3.4, '#fff', PAL.line); ell(25.6, -3.5, 1.6, 1.6, PAL.line);
+  }
+};
+function drawFish(type, ph) {
   const d = CONFIG.fish[type];
-  if (sprite('fish_' + type, r * 2.9, r * 1.8)) return;
-  ctx.lineWidth = 1.5;
-  poly([-r * 1.0, 0, -r * 1.75, -r * 0.6, -r * 1.55, 0, -r * 1.75, r * 0.6], d.fin, PAL.line);
-  ell(0, 0, r * 1.2, r * 0.7, d.color, PAL.line);
-  poly([-r * 0.1, -r * 0.66, r * 0.35, -r * 1.05, r * 0.5, -r * 0.6], d.fin, PAL.line);
-  ell(r * 0.68, -r * 0.12, r * 0.16, r * 0.16, PAL.line);
+  if (sprite(d.sprite, d.sw, d.sh)) return;
+  ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
+  (PLACE[type] || PLACE.basic)(d, ph || 0);
 }
 function drawTrash(r) {
   if (sprite('trash', r * 2, r * 2)) return;
@@ -334,22 +447,52 @@ function drawKite() {
     poly([24, -8, 31, -5, 24, -2], PAL.gold, PAL.line); poly([28, -6.4, 32.5, -4.4, 28.5, -3.2], PAL.tip);
     if (k.state === 'stun') { ctx.strokeStyle = PAL.gold; ctx.beginPath(); ctx.arc(14, -24, 6, clock * 8, clock * 8 + 4.2); ctx.stroke(); }
   }
-  if (k.carry) { ctx.translate(2, 24); if (k.carry === 'trash') drawTrash(9); else drawFish(k.carry, 9); }
+  if (k.carry) {            // 抓到的魚掛在爪下，會掙扎晃動
+    ctx.translate(2, 24);
+    if (k.carry === 'trash') drawTrash(9);
+    else { const d = CONFIG.fish[k.carry], s = Math.min(0.75, 30 / d.sw); ctx.rotate(Math.sin(clock * 22) * 0.22); ctx.scale(s, s); drawFish(k.carry, 0); }
+  }
   ctx.restore();
+}
+function drawParts(front) {
+  for (const q of parts) {
+    const isFront = q.kind === 'star' || q.kind === 'heart' || q.kind === 'drop'; if (isFront !== front) continue;
+    const a = Math.max(0, Math.min(1, q.life * 1.5));
+    if (q.kind === 'drop') { ctx.fillStyle = 'rgba(240,250,255,' + a + ')'; ctx.beginPath(); ctx.arc(q.x, q.y, q.size, 0, 6.2832); ctx.fill(); }
+    else if (q.kind === 'bubble') { ctx.strokeStyle = 'rgba(232,246,251,' + a * 0.8 + ')'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(q.x + Math.sin(clock * 6 + q.rot) * 2, q.y, q.size, 0, 6.2832); ctx.stroke(); }
+    else if (q.kind === 'ink') { ctx.fillStyle = 'rgba(40,30,48,' + a * 0.55 + ')'; ctx.beginPath(); ctx.arc(q.x, q.y, q.size, 0, 6.2832); ctx.fill(); }
+    else if (q.kind === 'star') {
+      const s = q.size * (0.6 + 0.4 * Math.sin(clock * 12 + q.rot)); ctx.save(); ctx.translate(q.x, q.y); ctx.globalAlpha = a; ctx.fillStyle = q.color;
+      ctx.beginPath(); ctx.moveTo(0, -s); ctx.quadraticCurveTo(0, 0, s, 0); ctx.quadraticCurveTo(0, 0, 0, s); ctx.quadraticCurveTo(0, 0, -s, 0); ctx.quadraticCurveTo(0, 0, 0, -s); ctx.fill(); ctx.restore();
+    } else if (q.kind === 'heart') {
+      const s = q.size; ctx.save(); ctx.translate(q.x, q.y); ctx.globalAlpha = a; ctx.fillStyle = '#FF9C8A';
+      ctx.beginPath(); ctx.moveTo(0, s * 0.9); ctx.bezierCurveTo(-s * 1.4, -s * 0.2, -s * 0.6, -s * 1.1, 0, -s * 0.35); ctx.bezierCurveTo(s * 0.6, -s * 1.1, s * 1.4, -s * 0.2, 0, s * 0.9); ctx.fill(); ctx.restore();
+    }
+  }
+  ctx.globalAlpha = 1;
 }
 
 function draw() {
   drawBackground();
+  const ev = CONFIG.event, a = mode === 'start' ? 0 : Math.max(0, Math.min(1, (t - ev.from) / 0.6, (ev.to - t) / 0.6));
+  if (a > 0) drawEventLight(a);
   if (shark) drawShark();
+  drawParts(false);
   for (const o of things) {
-    ctx.save(); ctx.translate(o.x, o.y + Math.sin(clock * 2.4 + o.ph) * 3);
-    if (o.type === 'trash') { ctx.rotate(Math.sin(clock + o.ph) * 0.3); drawTrash(o.r); } else { if (o.vx < 0) ctx.scale(-1, 1); drawFish(o.type, o.r); }
+    ctx.save(); ctx.translate(o.x, o.y + (o.move === 'wave' ? 0 : Math.sin(clock * 2.4 + o.ph) * 3));
+    if (o.type === 'trash') { ctx.rotate(Math.sin(clock + o.ph) * 0.3); drawTrash(o.r); } else { if (o.vx < 0) ctx.scale(-1, 1); drawFish(o.type, o.ph); }
     ctx.restore();
   }
-  for (const r of rings) { ctx.strokeStyle = 'rgba(255,255,255,' + r.life + ')'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(r.x, r.y, 8 + (1 - r.life) * 22, 0, 6.2832); ctx.stroke(); }
+  for (const r of rings) {
+    ctx.strokeStyle = 'rgba(255,255,255,' + r.life + ')'; ctx.lineWidth = 2; ctx.beginPath();
+    if (r.flat) ctx.ellipse(r.x, r.y, 8 + (1 - r.life) * 30, 2 + (1 - r.life) * 5, 0, 0, 6.2832); else ctx.arc(r.x, r.y, 8 + (1 - r.life) * 22, 0, 6.2832);
+    ctx.stroke();
+  }
   if (kite.state === 'dive') { ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.arc(kite.tx, kite.ty, 14, 0, 6.2832); ctx.stroke(); ctx.setLineDash([]); }
   drawKite();
-  ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.font = "700 17px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif";
+  drawParts(true);
+  if (flash > 0) { ctx.fillStyle = 'rgba(255,248,220,' + flash * (calm ? 0.25 : 0.8) + ')'; ctx.fillRect(0, 0, W, H); }
+  ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.font = "700 16px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif";
   for (const f of floats) { ctx.globalAlpha = Math.min(1, f.life * 1.6); ctx.lineWidth = 4; ctx.strokeStyle = '#10293D'; ctx.strokeText(f.text, f.x, f.y); ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y); }
   ctx.globalAlpha = 1;
 }
@@ -365,19 +508,23 @@ function show(id) { for (const p of ['startPanel', 'pausePanel', 'resultPanel'])
 function start() { reset(); mode = 'play'; show(null); $('hud').hidden = false; $('hint').hidden = false; beep(523, 0.12, 'triangle', 0.06, 260); }
 function pause() { if (mode !== 'play') return; mode = 'pause'; show('pausePanel'); }
 function resume() { if (mode !== 'pause') return; mode = 'play'; show(null); }
+function rankOf(v) { let name = CONFIG.ranks[0][1]; for (const r of CONFIG.ranks) if (v >= r[0]) name = r[1]; return name; }
 function record() {
   const acc = stats.dives ? Math.round(stats.hits / stats.dives * 100) : 0;
-  return { game: '小鳶捕魚原型', version: CONFIG.version, time: new Date().toISOString(), totalKg: +kg.toFixed(1), kgInEvent: +stats.kgInEvent.toFixed(1), counts: stats.counts,
+  return { game: '小鳶捕魚原型', version: CONFIG.version, time: new Date().toISOString(), totalKg: +kg.toFixed(1), rank: rankOf(kg), kgInEvent: +stats.kgInEvent.toFixed(1), comboBonus: +stats.comboBonus.toFixed(1), bestCombo: stats.bestCombo, counts: stats.counts,
     taps: stats.taps, dives: stats.dives, hits: stats.hits, misses: stats.misses, hitRate: acc, tapsDuringCooldown: stats.blocked, tapsOnSky: stats.skyTaps, trash: stats.trash, tapsOnWhaleShark: stats.sharkTaps,
     answers, assets: Object.keys(img), screen: innerWidth + 'x' + innerHeight, ua: navigator.userAgent };
 }
 function finish() {
-  mode = 'result'; $('hud').hidden = true; $('banner').hidden = true; $('hint').hidden = true; beep(659, 0.4, 'triangle', 0.07, 330);
-  $('totalKg').textContent = kg.toFixed(1);
+  mode = 'result'; $('hud').hidden = true; $('banner').hidden = true; $('hint').hidden = true; jingle([523, 659, 784], 110);
+  $('totalKg').textContent = kg.toFixed(1); $('rank').textContent = rankOf(kg);
   const acc = stats.dives ? Math.round(stats.hits / stats.dives * 100) : 0, rows = $('rows'); rows.textContent = '';
   const add = (a, b, isNew) => { const l = document.createElement('span'); l.textContent = a; if (isNew) { const n = document.createElement('span'); n.className = 'new'; n.textContent = '新圖鑑'; l.appendChild(n); } const r = document.createElement('span'); r.textContent = b; rows.append(l, r); };
-  for (const k of ['small', 'mid', 'big']) add(CONFIG.fish[k].name + '（' + CONFIG.fish[k].kg + ' kg）', stats.counts[k] + ' 條', stats.newDex.includes(k));
-  add('鯨鯊加倍時段', stats.kgInEvent.toFixed(1) + ' kg'); add('命中率', acc + '%（' + stats.hits + '/' + stats.dives + '）'); add('抓到垃圾', stats.trash + ' 次');
+  for (const k of SPECIES) if (stats.counts[k]) add(CONFIG.fish[k].name + '（' + CONFIG.fish[k].kg + ' kg）', stats.counts[k] + (k === 'squid' ? ' 隻' : ' 條'), stats.newDex.includes(k));
+  if (!stats.hits) add('這局沒有抓到魚', '0 條');
+  add('鯨鯊加倍時段', stats.kgInEvent.toFixed(1) + ' kg'); add('連抓加成（最多連 ' + stats.bestCombo + '）', '+' + stats.comboBonus.toFixed(1) + ' kg'); add('命中率', acc + '%（' + stats.hits + '/' + stats.dives + '）'); add('抓到垃圾', stats.trash + ' 次');
+  const got = SPECIES.filter((k) => dex[k]).length, missing = SPECIES.filter((k) => !dex[k]).map((k) => CONFIG.fish[k].name), fact = $('fact'), nk = stats.newDex[stats.newDex.length - 1];
+  fact.textContent = '圖鑑 ' + got + ' / ' + SPECIES.length + '。' + (nk ? CONFIG.fish[nk].name + '：' + CONFIG.fish[nk].fact : missing.length ? '還沒抓過：' + missing.join('、') + '。' : '六種都抓過了。');
   $('log').hidden = true; $('copyBtn').textContent = '複製測試紀錄'; show('resultPanel');
 }
 
@@ -401,7 +548,7 @@ $('copyBtn').onclick = () => {
   const fallback = () => { log.value = text; log.hidden = false; log.focus(); log.select(); $('copyBtn').textContent = '請長按上方文字複製'; };
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
 };
-window.__kiteGame = { CONFIG, state: () => ({ mode, t, kg, kite, things: things.map((o) => ({ type: o.type, x: o.x, y: o.y, vx: o.vx })), stats, shark: !!shark }), skip: (s) => { t = s; } };
+window.__kiteGame = { CONFIG, state: () => ({ mode, t, kg, kite, things: things.map((o) => ({ type: o.type, x: o.x, y: o.y, vx: o.vx, move: o.move })), stats, shark: !!shark, flash }), skip: (s) => { t = s; } };
 reset(); requestAnimationFrame(frame);
 })();
 </script>
