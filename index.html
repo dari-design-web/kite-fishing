@@ -59,7 +59,6 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){.kg.pop{animation:none}}
 </style>
 
-<script>window.USE_ASSETS = true;</script>
 </head>
 <body>
 <div id="stage">
@@ -85,7 +84,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
         <li><b>鯨鯊</b><span>牠是朋友，出現時公斤數加倍</span></li>
       </ul>
       <button class="btn" id="startBtn">開始</button>
-      <p class="note">原型 v0.1：佔位圖、不發點數</p>
+      <p class="note">原型 v0.2：暫用素材、不發點數</p>
     </div>
   </div>
 
@@ -120,7 +119,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.1',
+  version: '0.2',
   duration: 60,                 // 一局秒數
   W: 360, H: 640,               // 邏輯畫布尺寸
   surfaceY: 200,                // 海面高度
@@ -140,10 +139,11 @@ const CONFIG = {
     { from: 45, to: 55, every: 0.45, speedMul: 1.0, w: { small: 4, mid: 4, big: 2 } },
     { from: 55, to: 60, every: 0.70, speedMul: 1.0, w: { small: 4, mid: 4, big: 2 } }
   ],
-  event: { from: 45, to: 55, mult: 2 }   // 鯨鯊事件：這段時間公斤數乘以 mult
+  event: { from: 45, to: 55, mult: 2 },  // 鯨鯊事件：這段時間公斤數乘以 mult
+  diveSpriteAngle: 35           // kite_dive.png 本身朝右下的角度（度），繪製時扣回，讓喙對準目標
 };
 /* 正式素材：把同名 PNG 放進 assets/ 資料夾就會取代佔位圖（全部朝右、透明背景） */
-const ASSET_FILES = { kite_glide: 'kite_glide.png', kite_dive: 'kite_dive.png', fish_small: 'fish_small.png', fish_mid: 'fish_mid.png', fish_big: 'fish_big.png', trash: 'trash.png', whaleshark: 'whaleshark.png', bg: 'bg.png' };
+const ASSET_FILES = { kite_glide: 'kite_glide.png', kite_dive: 'kite_dive.png', fish_small: 'fish_small.png', fish_mid: 'fish_mid.png', fish_big: 'fish_big.png', trash: 'trash.png', whaleshark: 'whaleshark.png', bg: 'bg.jpg' };
 
 const $ = (id) => document.getElementById(id);
 const stage = $('stage'), cv = $('world'), ctx = cv.getContext('2d');
@@ -151,7 +151,7 @@ const { W, H } = CONFIG;
 const PAL = { body: '#A66F45', wing: '#865B3D', cream: '#F5DDB7', gold: '#F4BB42', tip: '#56534D', blush: '#F4AF91', line: '#402B20' };
 const rand = (a, b) => a + Math.random() * (b - a);
 const img = {};
-if (window.USE_ASSETS) for (const k in ASSET_FILES) { const im = new Image(); im.onload = () => { img[k] = im; }; im.src = 'assets/' + ASSET_FILES[k]; }
+if (window.USE_ASSETS !== false) for (const k in ASSET_FILES) { const im = new Image(); im.onload = () => { img[k] = im; }; im.src = 'assets/' + ASSET_FILES[k]; }
 
 let mode = 'start', t = 0, last = 0, clock = 0, spawnAcc = 0, kg = 0, soundOn = true, ac = null;
 let things = [], floats = [], rings = [], shark = null, kite, stats, firstCatchDone = false;
@@ -185,6 +185,8 @@ function reset() {
   kite = { x: 80, y: CONFIG.skyY, face: 1, state: 'glide', tx: 0, ty: 0, wait: 0, carry: null, stunNext: false };
   stats = { taps: 0, dives: 0, hits: 0, misses: 0, blocked: 0, skyTaps: 0, trash: 0, sharkTaps: 0, counts: { small: 0, mid: 0, big: 0 }, kgInEvent: 0, newDex: [] };
   $('kg').textContent = '0.0 kg';
+  for (const k in answers) delete answers[k];
+  for (const b of document.querySelectorAll('.yn button')) b.setAttribute('aria-pressed', 'false');
 }
 
 function phaseAt(time) { return CONFIG.phases.find((p) => time >= p.from && time < p.to) || CONFIG.phases[CONFIG.phases.length - 1]; }
@@ -258,8 +260,12 @@ function sprite(key, w, h) { const im = img[key]; if (!im) return false; ctx.dra
 function ell(x, y, rx, ry, fill, stroke) { ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, 6.2832); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.stroke(); } }
 function poly(pts, fill, stroke) { ctx.beginPath(); ctx.moveTo(pts[0], pts[1]); for (let i = 2; i < pts.length; i += 2) ctx.lineTo(pts[i], pts[i + 1]); ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.stroke(); } }
 
+function drawSurface() {
+  const s = CONFIG.surfaceY; ctx.strokeStyle = '#E8F6FB'; ctx.lineWidth = 2; ctx.beginPath();
+  for (let x = 0; x <= W; x += 6) { const y = s + Math.sin(x * 0.06 + clock * 2) * 2.4; x ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke();
+}
 function drawBackground() {
-  if (img.bg) { ctx.drawImage(img.bg, 0, 0, W, H); return; }
+  if (img.bg) { ctx.drawImage(img.bg, 0, 0, W, H); drawSurface(); return; }
   const s = CONFIG.surfaceY;
   ctx.fillStyle = '#BFE3F0'; ctx.fillRect(0, 0, W, s);
   ell(300, 52, 22, 22, '#FFF3C4');
@@ -273,8 +279,7 @@ function drawBackground() {
   const bands = ['#5DB3D2', '#3F97BF', '#2F7FA8', '#236A93', '#1B557A'], bh = (H - s) / bands.length;
   bands.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(0, s + i * bh, W, bh + 1); });
   ctx.fillStyle = '#17405E'; poly([0, H, 0, H - 22, 70, H - 34, 150, H - 20, 230, H - 38, 300, H - 24, 360, H - 32, 360, H], '#17405E');
-  ctx.strokeStyle = '#E8F6FB'; ctx.lineWidth = 2; ctx.beginPath();
-  for (let x = 0; x <= W; x += 6) { const y = s + Math.sin(x * 0.06 + clock * 2) * 2.4; x ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke();
+  drawSurface();
   ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(232,246,251,.35)';
   for (let i = 1; i < 5; i++) { ctx.beginPath(); for (let x = 0; x <= W; x += 8) { const y = s + i * bh + Math.sin(x * 0.05 + clock * 1.2 + i) * 2; x ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke(); }
 }
@@ -314,7 +319,9 @@ function drawKite() {
   const diving = k.state === 'dive';
   if (diving) { const a = Math.atan2(k.ty - k.y, k.tx - k.x); ctx.rotate(a); if (Math.cos(a) < 0) ctx.scale(1, -1); }
   else { if (k.state === 'stun') ctx.rotate(Math.sin(clock * 30) * 0.16); ctx.scale(k.state === 'rise' ? (k.x < W / 2 ? 1 : -1) : k.face, 1); }
-  if (!sprite(diving ? 'kite_dive' : 'kite_glide', 60, 50)) {
+  const key = diving ? 'kite_dive' : 'kite_glide';
+  if (img[key]) { ctx.save(); if (diving) ctx.rotate(-CONFIG.diveSpriteAngle * Math.PI / 180); sprite(key, 60, 50); ctx.restore(); }
+  else {
     poly([-16, 2, -34, -5, -27, 3, -34, 11, -16, 9], PAL.wing, PAL.line);
     ell(0, 3, 18, 14, PAL.body, PAL.line); ell(5, 8, 11, 8, PAL.cream);
     ctx.save();
@@ -362,7 +369,7 @@ function record() {
   const acc = stats.dives ? Math.round(stats.hits / stats.dives * 100) : 0;
   return { game: '小鳶捕魚原型', version: CONFIG.version, time: new Date().toISOString(), totalKg: +kg.toFixed(1), kgInEvent: +stats.kgInEvent.toFixed(1), counts: stats.counts,
     taps: stats.taps, dives: stats.dives, hits: stats.hits, misses: stats.misses, hitRate: acc, tapsDuringCooldown: stats.blocked, tapsOnSky: stats.skyTaps, trash: stats.trash, tapsOnWhaleShark: stats.sharkTaps,
-    answers, screen: innerWidth + 'x' + innerHeight, ua: navigator.userAgent };
+    answers, assets: Object.keys(img), screen: innerWidth + 'x' + innerHeight, ua: navigator.userAgent };
 }
 function finish() {
   mode = 'result'; $('hud').hidden = true; $('banner').hidden = true; $('hint').hidden = true; beep(659, 0.4, 'triangle', 0.07, 330);
