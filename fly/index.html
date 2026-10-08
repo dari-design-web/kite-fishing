@@ -127,7 +127,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
     <canvas class="mapfx" id="mapFx" aria-hidden="true"></canvas>
     <h1 class="maptitle">小鳶飛行冒險</h1>
     <div id="stageButtons"></div>
-    <p class="mapnote">原型 v0.16：暫用圖、不發點數。測試期間四關都開放</p>
+    <p class="mapnote">原型 v0.17：暫用圖、不發點數。測試期間四關都開放</p>
   </div>
 
   <div class="panel" id="startPanel" hidden>
@@ -152,7 +152,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
       </div>
       <button class="btn" id="startBtn">開始</button>
       <button class="btn quiet" id="mapBtn">回關卡地圖</button>
-      <p class="note">原型 v0.16：暫用圖、不發點數</p>
+      <p class="note">原型 v0.17：暫用圖、不發點數</p>
     </div>
   </div>
 
@@ -189,7 +189,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.16',
+  version: '0.17',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -261,12 +261,15 @@ const ASSET_FILES = { trash: 'trash.png', fish_small: 'fish_small.png', fish_squ
   kite_a: 'kite_top_a.png', kite_b: 'kite_top_b.png', feather: 'feather.png', turtle: 'turtle_top.png',
   can: 'foe_can.png', bag: 'foe_bag.png', butt: 'foe_butt.png', foam: 'foe_foam.png', barrel: 'foe_barrel.png', tire: 'foe_tire.png', oil: 'foe_oil.png', goo: 'foe_goo.png',
   battery: 'foe_battery.png', sprayer: 'foe_sprayer.png', log: 'foe_log.png', net: 'foe_net.png', tangle: 'foe_tangle.png', boss: 'foe_boss.png',
-  jerky: 'pick_jerky.png', power: 'pick_power.png', gale: 'pick_gale.png', m_tofu: 'm_tofu.png', m_ele: 'm_ele.png',
+  jerky: 'pick_jerky.png', power: 'pick_power.png', gale: 'pick_gale.png', m_tofu: /[?&]helmet=1/.test(location.search) ? 'm_tofu_helmet.png' : 'm_tofu.png', m_ele: 'm_ele.png',      // 網址加 ?helmet=1 換成戴礦工帽的豆腐君（給 Dari 比較，U-24）
   // G-31 第 2 關角色（ChatGPT，暫用）與兩關整張底圖（ChatGPT，暫用）
   n_shark: 'n_shark.png', n_sausage: 'n_sausage.png', n_head: 'n_head.png', n_dragon: 'n_dragon.png', n_jelly: 'n_jelly.png', n_ice: 'n_ice.png', n_ice_s: 'n_ice_s.png', n_puff: 'n_puff.png', n_crab: 'n_crab.png', n_sand: 'n_sand.png', n_sand_h: 'n_sand_h.png',
   n_guard: 'n_guard.png', n_lamp_s: 'n_lamp_s.png', fx_lamp: 'fx_lamp.png', fx_fire: 'fx_fire.png', f_oden: 'f_oden.png', f_jelly: 'f_jelly.png', f_rice: 'f_rice.png', f_ring: 'f_ring.png', boss_idle: 'boss_idle.png', boss_open: 'boss_open.png',
   // G-33 第 3 關正濱漁港（ChatGPT，暫用）
   p_snake_head: 'p_snake_head.png', p_snake: 'p_snake_body.png', p_crab: 'p_crab.png', p_ray: 'p_ray.png', p_ghost: 'p_ghost.png', p_snail: 'p_snail.png', p_shell: 'p_shell.png', p_oil: 'p_oil.png', p_cat: 'p_cat.png', p_bird: 'p_bird.png', p_otter: 'p_otter.png', p_boss: 'p_boss.png', p_boss_ram: 'p_boss_ram.png', p_boat: 'p_boat.png', p_rope: 'p_rope.png', bg_pier_a: 'bg_pier_a.jpg', bg_pier_b: 'bg_pier_b.jpg', bg_pier_c: 'bg_pier_c.jpg',
+  // G-34 第 4 關深澳（ChatGPT，暫用）。河豚車、山野君、河豚車按鈕等 Dari 確認車款與第三位角色後再換（m_forest、m_puffer、m_puffer_full、ult_icon_rail）
+  bg_rail_a: 'bg_rail_a.jpg', bg_rail_b: 'bg_rail_b.jpg', bg_rail_c: 'bg_rail_c.jpg', r_hedge: 'r_hedge.png', r_jelly: 'r_jelly.png', r_coal: 'r_coal.png', r_slag: 'r_slag.png', r_dust: 'r_dust.png', r_crab: 'r_crab.png', r_shriek: 'r_shriek.png',
+  r_boss: 'r_boss.png', r_boss_cast: 'r_boss_cast.png', r_beam: 'r_beam.png', r_cart: 'r_cart.png', fx_keel: 'fx_keel.png', fx_blade: 'fx_blade.png', fx_ring: 'fx_tunnel_ring.png',
   bg_harbor: 'bg_harbor.jpg', bg_sea: 'bg_sea.jpg', bg_mkt_a: 'bg_mkt_a.jpg', bg_mkt_b: 'bg_mkt_b.jpg', bg_mkt_c: 'bg_mkt_c.jpg' };
 // 每種垃圾用哪張圖、畫多大（邏輯像素）。碎片沿用保麗龍、小油滴沿用油污、追人的污水泡沿用污水泡
 const SPR = { can: ['can', 26, 26], bag: ['bag', 32, 32], butt: ['butt', 10, 24], foam: ['foam', 40, 36], chip: ['foam', 19, 17], barrel: ['barrel', 38, 38], tire: ['tire', 44, 44], oil: ['oil', 54, 54], drop: ['oil', 23, 23],
@@ -1070,8 +1073,9 @@ function drawMirrorUlt() {
   if (u.t > 0.5 && u.t < 1.3 && !calm) { ctx.strokeStyle = 'rgba(255,255,255,' + 0.8 * a + ')'; ctx.lineWidth = 2; ctx.beginPath(); for (let i = 0; i < 6; i++) { const x = (i * 71.7 + 30) % W, y = H * 0.4 + (i * 53) % 200; ctx.moveTo(x, y); ctx.lineTo(x + 30, y - 40); ctx.lineTo(x + 52, y - 20); } ctx.stroke(); }      // 鏡面出現裂痕
   if (u.waveY < H + 40) {
     const y0 = u.waveY;
-    for (let i = 0; i < 5; i++) { const x = 30 + i * 75, h = 120 + (i % 2) * 60; ctx.save(); ctx.translate(x, y0 + 40); ctx.globalAlpha = 0.55 * a; ctx.strokeStyle = '#3E3A44'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -h); ctx.stroke(); for (let k = 1; k < 5; k++) { ctx.beginPath(); ctx.moveTo(0, -k * h / 5); ctx.quadraticCurveTo(-22, -k * h / 5 + 8, -18, -k * h / 5 + 22); ctx.moveTo(0, -k * h / 5); ctx.quadraticCurveTo(22, -k * h / 5 + 8, 18, -k * h / 5 + 22); ctx.stroke(); } if (i % 2) { ctx.beginPath(); ctx.moveTo(0, -h); ctx.lineTo(40, -h - 30); ctx.lineTo(40, -h + 10); ctx.stroke(); } ctx.restore(); }      // 龍骨與吊臂幻影
-    for (let i = 0; i < 18; i++) { const x = (i * 41.3 + clock * 60) % (W + 40) - 20, y = y0 - 20 - (i * 37) % 160; ctx.fillStyle = cols[i % cols.length]; ctx.globalAlpha = 0.85 * a; poly([x, y, x + 6, y - 26, x + 12, y], cols[i % cols.length]); } ctx.globalAlpha = 1;      // 光刃
+    if (img.fx_keel) for (let i = 0; i < 5; i++) { const x = 30 + i * 75, h = 120 + (i % 2) * 60; ctx.save(); ctx.translate(x, y0 + 40 - h / 2); ctx.globalAlpha = 0.55 * a; if (i % 2) ctx.scale(-1, 1); sprite('fx_keel', h / 2, h); ctx.restore(); }      // 龍骨與吊臂幻影（ChatGPT 的圖，透明度由程式控制）
+    else for (let i = 0; i < 5; i++) { const x = 30 + i * 75, h = 120 + (i % 2) * 60; ctx.save(); ctx.translate(x, y0 + 40); ctx.globalAlpha = 0.55 * a; ctx.strokeStyle = '#3E3A44'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -h); ctx.stroke(); for (let k = 1; k < 5; k++) { ctx.beginPath(); ctx.moveTo(0, -k * h / 5); ctx.quadraticCurveTo(-22, -k * h / 5 + 8, -18, -k * h / 5 + 22); ctx.moveTo(0, -k * h / 5); ctx.quadraticCurveTo(22, -k * h / 5 + 8, 18, -k * h / 5 + 22); ctx.stroke(); } if (i % 2) { ctx.beginPath(); ctx.moveTo(0, -h); ctx.lineTo(40, -h - 30); ctx.lineTo(40, -h + 10); ctx.stroke(); } ctx.restore(); }      // 龍骨與吊臂幻影
+    for (let i = 0; i < 18; i++) { const x = (i * 41.3 + clock * 60) % (W + 40) - 20, y = y0 - 20 - (i * 37) % 160; ctx.globalAlpha = 0.85 * a; if (img.fx_blade) { ctx.save(); ctx.translate(x + 6, y - 13); ctx.rotate(Math.sin(i * 1.7) * 0.5); sprite('fx_blade', 12, 28); ctx.restore(); } else { ctx.fillStyle = cols[i % cols.length]; poly([x, y, x + 6, y - 26, x + 12, y], cols[i % cols.length]); } } ctx.globalAlpha = 1;      // 光刃
     const g = ctx.createLinearGradient(0, y0, 0, y0 + 140); g.addColorStop(0, 'rgba(120,140,150,' + 0.7 * a + ')'); g.addColorStop(1, 'rgba(120,140,150,0)'); ctx.fillStyle = g; ctx.fillRect(-10, y0, W + 20, 140);      // 濁浪
     ctx.strokeStyle = 'rgba(255,255,255,' + a + ')'; ctx.lineWidth = 5; ctx.beginPath(); for (let x = -10; x <= W + 10; x += 8) { const y = y0 + Math.sin(x * 0.07 + clock * 10) * 8; x > -10 ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke();
   }
@@ -1286,6 +1290,16 @@ function drawRail() {
   if (stY > -120 && stY < H + 40) { rrect(cx + 66, stY - 90, 90, 180, 6, '#D8CDBB', PAL.line, 2); rrect(cx + 80, stY - 30, 60, 26, 4, '#E8674A', PAL.line, 1.5); }
   const m = ctx.createLinearGradient(0, 0, 0, H); m.addColorStop(0, 'rgba(255,150,110,.28)'); m.addColorStop(0.6, 'rgba(255,150,110,0)'); ctx.fillStyle = m; ctx.fillRect(-10, -10, W + 20, H + 20);      // 黃昏
 }
+function drawRailImg() {      // 深澳：八斗子海岸鐵道 → 光隧道（大約第 33 到 44 秒整張在畫面上，配合變暗的時間）→ 深澳站；相鄰兩張交疊淡接。海在左、山在右，所以不翻面
+  const sp = BGS(), sy = t * sp, seg = H - CONFIG.bg.blend, keyOf = (k) => (k < 3 ? 'bg_rail_a' : k < 5 ? 'bg_rail_b' : 'bg_rail_c');
+  ctx.fillStyle = '#3B3A48'; ctx.fillRect(-10, -10, W + 20, H + 20);
+  const k0 = Math.max(0, Math.floor((sy - H) / seg)), k1 = Math.floor((sy + H) / seg) + 1;
+  for (let k = k0; k <= k1; k++) {
+    const y = sy - k * seg; if (y > H || y + H < 0) continue;
+    const key = keyOf(k), pic = k === 0 ? img[key] : (fadedBottom(key) || img[key]);
+    ctx.drawImage(pic, 0, y, W, H);
+  }
+}
 function drawTunnelDark() {      // 光隧道：四周變暗，只看得到小鳶附近；隧道光影母的光會亂閃
   if (!inTunnel()) return; const k = Math.min(1, (t - CONFIG.rail.tunnel[0]) / 1, (CONFIG.rail.tunnel[1] - t) / 1);
   const R0 = CONFIG.rail.sight, g = ctx.createRadialGradient(kite.x, kite.y, R0 * 0.55, kite.x, kite.y, R0 * 1.6);
@@ -1349,7 +1363,7 @@ function drawRailFoe(f) {
     ell(0, 0, 9, 9, '#B07A52', PAL.line); ctx.rotate(-(clock * 5 + f.ph)); eyes(2, 2.4, true); return true;
   }
   if (ty === 'bag') {      // 隧道光影母：發光水母，顏色一直變
-    if (K && img[K]) { sprite(K, 32, 40); return true; }
+    if (K && img[K]) { ctx.globalAlpha *= 0.8; sprite(K, 32, 40); ctx.globalAlpha /= 0.8; return true; }      // 圖本身不透明，用程式讓牠透出背景（ChatGPT 建議 0.75～0.85）
     const hue = ['#FF9CD6', '#9CE3FF', '#FFE38A'][Math.floor(clock * 3 + f.ph) % 3]; ctx.globalAlpha *= 0.9; ell(0, -2, 15, 12, hue, PAL.line); ctx.globalAlpha = 1;
     ctx.strokeStyle = hue; ctx.lineWidth = 2; for (const x of [-8, -3, 3, 8]) { ctx.beginPath(); ctx.moveTo(x, 8); ctx.quadraticCurveTo(x + Math.sin(clock * 5 + x) * 5, 16, x, 24); ctx.stroke(); } ctx.lineWidth = 1.5; eyes(0, 3, true); return true;
   }
@@ -1425,8 +1439,8 @@ function drawJianjiZones() {
   const f = boss; if (!f || f.type !== 'boss' || !RM() || !f.atk) return; const C = CONFIG.jianji;
   if (f.atk === 'storm') { const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, 'rgba(80,60,160,.25)'); g.addColorStop(1, 'rgba(80,60,160,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     for (const s of f.stars) { if (s.t < C.starWarn) { ctx.save(); ctx.beginPath(); ctx.arc(s.x, s.y, C.starR, 0, 6.2832); ctx.clip(); hazard(s.x - C.starR, s.y - C.starR, C.starR * 2, C.starR * 2); ctx.restore(); const p = s.t / C.starWarn; ctx.strokeStyle = 'rgba(' + s.c + ',.95)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(s.x - 60 * (1 - p), s.y - 220 * (1 - p)); ctx.lineTo(s.x - 60 * (1 - p) + 8, s.y - 220 * (1 - p) + 28); ctx.stroke(); } } }
-  if (f.atk === 'sweep') for (const b of f.beams) { if (b.t < C.sweepWarn) { hazard(0, b.y - C.beamHalf, W, C.beamHalf * 2); continue; } rrect(b.x - C.beamLen / 2, b.y - C.beamHalf + 4, C.beamLen, C.beamHalf * 2 - 8, 3, '#7A6A5E', PAL.line, 2); ctx.strokeStyle = '#6E8A58'; ctx.lineWidth = 2; ctx.beginPath(); for (let x = b.x - C.beamLen / 2 + 10; x < b.x + C.beamLen / 2; x += 30) { ctx.moveTo(x, b.y - 6); ctx.lineTo(x + 14, b.y + 6); } ctx.stroke(); }
-  if (f.atk === 'carts') for (const l of f.lanes) { if (l.t < C.cartWarn) { hazard(l.x - C.cartHalf, 0, C.cartHalf * 2, H); continue; } ctx.strokeStyle = 'rgba(80,70,60,.6)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(l.x, 0); ctx.lineTo(l.x, l.y - 20); ctx.stroke(); rrect(l.x - 18, l.y - 18, 36, 36, 4, '#5A4A3E', PAL.line, 2); ell(l.x, l.y - 4, 12, 8, '#2B292C'); }
+  if (f.atk === 'sweep') for (const b of f.beams) { if (b.t < C.sweepWarn) { hazard(0, b.y - C.beamHalf, W, C.beamHalf * 2); continue; } if (img.r_beam) { ctx.save(); ctx.translate(b.x, b.y); if (!b.fromLeft) ctx.scale(-1, 1); sprite('r_beam', C.beamLen, C.beamHalf * 2); ctx.restore(); continue; } rrect(b.x - C.beamLen / 2, b.y - C.beamHalf + 4, C.beamLen, C.beamHalf * 2 - 8, 3, '#7A6A5E', PAL.line, 2); ctx.strokeStyle = '#6E8A58'; ctx.lineWidth = 2; ctx.beginPath(); for (let x = b.x - C.beamLen / 2 + 10; x < b.x + C.beamLen / 2; x += 30) { ctx.moveTo(x, b.y - 6); ctx.lineTo(x + 14, b.y + 6); } ctx.stroke(); }
+  if (f.atk === 'carts') for (const l of f.lanes) { if (l.t < C.cartWarn) { hazard(l.x - C.cartHalf, 0, C.cartHalf * 2, H); continue; } ctx.strokeStyle = 'rgba(80,70,60,.6)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(l.x, 0); ctx.lineTo(l.x, l.y - 20); ctx.stroke(); if (img.r_cart) { ctx.save(); ctx.translate(l.x, l.y); sprite('r_cart', 36, 36); ctx.restore(); continue; } rrect(l.x - 18, l.y - 18, 36, 36, 4, '#5A4A3E', PAL.line, 2); ell(l.x, l.y - 4, 12, 8, '#2B292C'); }
 }
 const SEA = { deep: '#2877A0', base: '#2F88AF', lite: '#3D99BE', wave: '#A5D9E8', foam: '#E6F6F9' };
 const QUAY = { top: '#D9D0BE', curb: '#B5AA95', joint: '#B9AE99', line: '#F0B840' };
@@ -1535,7 +1549,7 @@ function buoy(x, y, col) {      // 航道浮標：一圈往外擴散的水紋、
   const b = Math.sin(clock * 2.2 + x) * 0.8; ctx.lineWidth = 1.5; ell(x + 2.5, y + 3.5, 10, 9, 'rgba(16,41,61,.26)'); ell(x + b, y, 10, 10, col, PAL.line); ell(x + b, y, 6.2, 6.2, '#FFF8EA', PAL.line); ell(x + b, y, 2.6, 2.6, col, PAL.line);
 }
 function drawBackground() {
-  if (ST().theme === 'rail') return drawRail();
+  if (ST().theme === 'rail') return img.bg_rail_a && img.bg_rail_b && img.bg_rail_c ? drawRailImg() : drawRail();
   if (ST().theme === 'pier') return img.bg_pier_a && img.bg_pier_b && img.bg_pier_c ? drawPierImg() : drawPier();
   if (ST().theme === 'market') return img.bg_mkt_a && img.bg_mkt_b && img.bg_mkt_c ? drawMarketImg() : drawMarket();
   if (img.bg_harbor && img.bg_sea) return drawHarborImg();
@@ -1720,6 +1734,12 @@ function drawParts() {
   }
 }
 /* 鯨鯊大招的畫面：海水變暗、金色光束、三層大浪、帶著光暈與星光的鯨鯊 */
+const RINGS = {};
+function tintRing(hue) {      // 光隧道霓虹環：把 ChatGPT 的白色光環染成 12 種顏色，各畫一次存起來
+  if (!img.fx_ring) return null; const h = Math.floor(hue / 30) % 12; if (RINGS[h] !== undefined) return RINGS[h];
+  try { const im = img.fx_ring, c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0); g.globalCompositeOperation = 'source-atop'; g.fillStyle = 'hsla(' + h * 30 + ',95%,62%,.7)'; g.fillRect(0, 0, c.width, c.height); RINGS[h] = c; } catch (e) { RINGS[h] = null; }
+  return RINGS[h];
+}
 function drawUlt() {
   if (PM()) return drawMirrorUlt();
   const u = ult, a = Math.min(1, u.t / 0.4) * Math.min(1, Math.max(0, (3.1 - u.t) / 0.5));
@@ -1737,7 +1757,7 @@ function drawUlt() {
   ctx.save(); ctx.translate(u.sx, u.sy + Math.sin(clock * 6) * 4); ctx.lineWidth = 2;
   if (RM()) {      // 第 4 關：河豚自行車從光隧道衝出來，身後一圈圈霓虹光環往外擴、灑亮片
     ctx.restore();
-    for (let i = 0; i < 6; i++) { const k = ((u.t * 1.6 + i / 6) % 1), rr = 30 + k * 380; ctx.strokeStyle = 'hsla(' + ((i * 60 + clock * 200) % 360) + ',95%,65%,' + (1 - k) * a + ')'; ctx.lineWidth = 6 * (1 - k) + 2; ctx.beginPath(); ctx.ellipse(u.sx, u.sy + 40, rr, rr * 0.45, 0, 0, 6.2832); ctx.stroke(); }
+    for (let i = 0; i < 6; i++) { const k = ((u.t * 1.6 + i / 6) % 1), rr = 30 + k * 380, hue = (i * 60 + clock * 200) % 360, ring = tintRing(hue); if (ring) { ctx.globalAlpha = (1 - k) * a; ctx.drawImage(ring, u.sx - rr, u.sy + 40 - rr * 0.467, rr * 2, rr * 0.933); ctx.globalAlpha = 1; continue; } ctx.strokeStyle = 'hsla(' + hue + ',95%,65%,' + (1 - k) * a + ')'; ctx.lineWidth = 6 * (1 - k) + 2; ctx.beginPath(); ctx.ellipse(u.sx, u.sy + 40, rr, rr * 0.45, 0, 0, 6.2832); ctx.stroke(); }
     if (!calm) for (let i = 0; i < 4; i++) part('star', u.sx + rand(-120, 120), u.sy + rand(0, 140), { vx: rand(-80, 80), vy: rand(20, 90), size: rand(3, 6), color: 'hsl(' + Math.floor(rand(0, 360)) + ',95%,70%)', fade: 1.6 });
     ctx.save(); ctx.translate(u.sx, u.sy + Math.sin(clock * 6) * 4); drawPuffer(1.8, ['tofu', 'ele', 'forest']); ctx.restore(); return;
   } if (img.shark_top) { ctx.rotate(u.hd + 1.5708 + Math.sin(clock * 7) * 0.06); sprite('shark_top', 250, 250); ctx.restore(); return; }      // 俯視鯨鯊：頭朝前進方向，尾巴輕輕擺
@@ -1787,7 +1807,7 @@ function frame(now) {
 
 /* ====== 流程與操作 ====== */
 function show(id) { for (const p of ['mapPanel', 'startPanel', 'pausePanel', 'resultPanel']) $(p).hidden = p !== id; }
-function start() { reset(); const ub = $('ultBtn'), im = ub.querySelector('img'); if (im) im.src = 'assets/' + (NM() ? 'jiao_pair.png' : RM() ? 'rail_ult.png' : PM() ? 'pier_ult.png' : 'whaleshark_top.png'); ub.setAttribute('aria-label', NM() ? '擲筊祈福' : RM() ? '呼叫河豚自行車' : PM() ? '彩虹鏡海' : '呼叫鯨鯊'); mode = 'play'; show(null); $('hud').hidden = false; $('hint').hidden = false; $('ultBtn').hidden = false; banner('第 ' + stageNo + ' 關　' + ST().name); beep(523, 0.12, 'triangle', 0.06, 260); }
+function start() { reset(); const ub = $('ultBtn'), im = ub.querySelector('img'); if (im) im.src = 'assets/' + (NM() ? 'jiao_pair.png' : RM() ? 'rail_ult.png' : PM() ? (img.fx_keel ? 'ult_icon_pier.png' : 'pier_ult.png') : 'whaleshark_top.png'); ub.setAttribute('aria-label', NM() ? '擲筊祈福' : RM() ? '呼叫河豚自行車' : PM() ? '彩虹鏡海' : '呼叫鯨鯊'); mode = 'play'; show(null); $('hud').hidden = false; $('hint').hidden = false; $('ultBtn').hidden = false; banner('第 ' + stageNo + ' 關　' + ST().name); beep(523, 0.12, 'triangle', 0.06, 260); }
 function pause() { if (mode !== 'play') return; mode = 'pause'; kite.drag = false; show('pausePanel'); }
 function resume() { if (mode !== 'pause') return; mode = 'play'; show(null); }
 function cleanPct() { return stats.spawned ? Math.round(stats.cleared / stats.spawned * 100) : 0; }
