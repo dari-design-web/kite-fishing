@@ -67,6 +67,18 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .dex{display:flex;flex-wrap:wrap;gap:4px;justify-content:center}
 .dex button{border:1.5px solid var(--ink);border-radius:999px;background:#fff;padding:1px 8px;font-size:12px}
 .dex button.fresh{background:var(--gold)}
+#stage.dark .time span{color:#F5F8FA;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.pick{display:flex;gap:6px;justify-content:center}
+.pick button{flex:1;border:2px solid var(--ink);border-radius:12px;background:transparent;padding:5px 4px;font-size:13px;font-weight:700;line-height:1.3}
+.pick button small{display:block;font-weight:400;font-size:11px;color:var(--muted)}
+.pick button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.pick button[aria-pressed="true"] small{color:#DCE6EC}
+.pick button:disabled{opacity:.5}
+.dexline{font-size:13px;text-align:left;border:1.5px dashed var(--line);border-radius:10px;padding:6px 8px;color:var(--ink)}
+.dexline .chips{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
+.dexline .chips span{border:1.5px solid var(--ink);border-radius:999px;padding:0 6px;font-size:11px;background:#fff}
+.dexline .chips span.no{border-style:dashed;color:var(--muted);background:transparent}
+.unlock{margin:0;padding:6px 10px;border-radius:10px;background:var(--gold);border:2px solid var(--ink);font-weight:700;text-align:center;font-size:14px}
 .dex button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
 .dex button:disabled{border-style:dashed;opacity:.55;cursor:default}
 .card.result{gap:8px;padding:14px 16px;max-width:312px}
@@ -93,7 +105,9 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
   <div class="panel" id="startPanel">
     <div class="card">
       <h1>小鳶捕魚</h1>
-      <p>60 秒內，看你能幫小鳶抓到幾公斤。</p>
+      <p id="sessionNote">60 秒內，看你能幫小鳶抓到幾公斤。</p>
+      <div class="pick" id="sessionPick" role="group" aria-label="場次"></div>
+      <div class="dexline" id="dexLine"></div>
       <ul class="how">
         <li><b>點魚</b><span>點水裡的魚，小鳶會俯衝下去抓</span></li>
         <li><b>六種漁獲</b><span>越深越重。小卷成群，白帶魚扭著游</span></li>
@@ -102,7 +116,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
         <li><b>鯨鯊</b><span>牠是朋友，出現時公斤數加倍</span></li>
       </ul>
       <button class="btn" id="startBtn">開始</button>
-      <p class="note">原型 v0.5：暫用素材、不發點數</p>
+      <p class="note">原型 v0.6：暫用素材、不發點數。進度只存在這支手機的瀏覽器</p>
     </div>
   </div>
 
@@ -120,6 +134,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
       <div class="seal" id="seal" hidden>六種漁獲收藏章</div>
       <div class="total"><span id="totalKg">0.0</span> <small>公斤</small></div>
       <div class="rows" id="rows"></div>
+      <p class="unlock" id="unlockNote" hidden></p>
       <div class="dex" id="dex" aria-label="港邊圖鑑冊"></div>
       <p class="fact" id="fact"></p>
       <div class="ask" id="ask">
@@ -128,6 +143,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
         <div><span>還想再玩一局</span><span class="yn" data-q="again"><button aria-pressed="false">是</button><button aria-pressed="false">否</button></span></div>
       </div>
       <button class="btn" id="againBtn">再玩一局</button>
+      <button class="btn quiet" id="menuBtn">換場次・看圖鑑</button>
       <button class="btn quiet" id="copyBtn">複製測試紀錄</button>
       <textarea id="log" readonly hidden aria-label="測試紀錄"></textarea>
     </div>
@@ -139,7 +155,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.5',
+  version: '0.6',
   duration: 60,                 // 一局秒數
   W: 360, H: 640,               // 邏輯畫布尺寸
   surfaceY: 200,                // 海面高度
@@ -163,6 +179,12 @@ const CONFIG = {
     { from: 45, to: 55, every: 0.50, speedMul: 1.0, w: { saba: 3, squid: 1.2, grunt: 3.5, hairtail: 2, bream: 2 } },
     { from: 55, to: 60, every: 0.75, speedMul: 1.0, w: { saba: 3, squid: 1.2, grunt: 3.5, hairtail: 2, bream: 2 } }
   ],
+  // 三個場次（工作單 08 第五節）：底圖、說明、速度倍率、各魚種出現權重的倍率（boost）、要先玩過哪一場才開放（建議）
+  sessions: [
+    { id: 'noon',  name: '午後', bg: 'bg',       note: '港邊的午後，六種漁獲都有。' },
+    { id: 'dusk',  name: '黃昏', bg: 'bg_dusk',  note: '黃昏時白帶魚和黃雞魚變多，魚也游得快一點。', speedMul: 1.1, boost: { hairtail: 2.2, grunt: 1.4, saba: 0.7 }, unlock: 'noon' },
+    { id: 'night', name: '夜釣', bg: 'bg_night', note: '夜裡的燈光把小卷引來，成群出現；白帶魚也常見。', speedMul: 1.15, boost: { squid: 3, hairtail: 1.6, saba: 0.6, bream: 0.7 }, light: true, unlock: 'dusk' }
+  ],
   rare: { type: 'amber', at: [24, 50] },     // 大物：固定在這幾秒各出現一條
   event: { from: 45, to: 55, mult: 2 },      // 鯨鯊事件：這段時間公斤數乘以 mult
   flash: 0.45,                               // 鯨鯊登場閃光的最高不透明度（0 到 1）；手機開啟減少動態效果時最多 0.2
@@ -171,7 +193,7 @@ const CONFIG = {
   diveSpriteAngle: 35           // kite_dive.png 本身朝右下的角度（度），繪製時扣回，讓喙對準目標
 };
 /* 素材：assets/ 裡的同名檔案。拿掉其中一行，那一項就會退回程式畫的佔位圖（全部朝右、透明背景） */
-const ASSET_FILES = { kite_glide: 'kite_glide.png', kite_dive: 'kite_dive.png', fish_small: 'fish_small.png', fish_mid: 'fish_mid.png', fish_big: 'fish_big.png', trash: 'trash.png', whaleshark: 'whaleshark.png', bg: 'bg.jpg', fish_squid: 'fish_squid.png', fish_hairtail: 'fish_hairtail.png', fish_amber: 'fish_amber.png' };
+const ASSET_FILES = { bg_dusk: 'bg_dusk.jpg', bg_night: 'bg_night.jpg', kite_glide: 'kite_glide.png', kite_dive: 'kite_dive.png', fish_small: 'fish_small.png', fish_mid: 'fish_mid.png', fish_big: 'fish_big.png', trash: 'trash.png', whaleshark: 'whaleshark.png', bg: 'bg.jpg', fish_squid: 'fish_squid.png', fish_hairtail: 'fish_hairtail.png', fish_amber: 'fish_amber.png' };
 
 const $ = (id) => document.getElementById(id);
 const stage = $('stage'), cv = $('world'), ctx = cv.getContext('2d');
@@ -186,6 +208,12 @@ if (window.USE_ASSETS !== false) for (const k in ASSET_FILES) { const im = new I
 let mode = 'start', t = 0, last = 0, clock = 0, spawnAcc = 0, kg = 0, soundOn = true, ac = null;
 let things = [], floats = [], rings = [], parts = [], shark = null, kite, stats, firstCatchDone = false, rareIdx = 0, flash = 0, sparkAcc = 0, prevKiteY = 0;
 let dex = {}; try { dex = JSON.parse(localStorage.getItem('kiteFishingDex2') || '{}'); } catch (e) {}
+let session = 'noon', prog = { played: {}, best: {} };      // 場次與進度（玩過幾局、每一場最佳公斤數）
+try { const q = JSON.parse(localStorage.getItem('kiteFishingProg1') || 'null'); if (q) prog = Object.assign({ played: {}, best: {} }, q); } catch (e) {}
+const SES = () => CONFIG.sessions.find((s) => s.id === session) || CONFIG.sessions[0];
+const ALL = /[?&]all=1/.test(location.search);      // 網址加 ?all=1 三場都開（給測試用）
+const isOpen = (s) => ALL || !s.unlock || (prog.played[s.unlock] || 0) > 0;
+const saveProg = () => { try { localStorage.setItem('kiteFishingProg1', JSON.stringify(prog)); } catch (e) {} };
 const answers = {};
 
 function fit() {
@@ -228,7 +256,9 @@ function addFish(type, dir, speed, y, back, ph) {
   const def = CONFIG.fish[type];
   things.push({ type, x: (dir > 0 ? -40 : W + 40) - dir * (back || 0), y, y0: y, vx: dir * speed, r: def.r, ph: ph === undefined ? rand(0, 6.28) : ph, move: def.move || '' });
 }
-function spawn(p, forced) {
+function spawn(p0, forced) {
+  const S = SES(), bo = S.boost || {}, w = {}; for (const k in p0.w) w[k] = p0.w[k] * (bo[k] === undefined ? 1 : bo[k]);
+  const p = Object.assign({}, p0, { w, speedMul: p0.speedMul * (S.speedMul || 1) });      // 這一場的權重與速度
   const keys = Object.keys(p.w); let roll = Math.random() * keys.reduce((s, k) => s + p.w[k], 0), type = keys[0];
   for (const k of keys) { roll -= p.w[k]; if (roll <= 0) { type = k; break; } }
   if (forced) type = forced;
@@ -346,7 +376,8 @@ function drawSurface() {
   for (let x = 0; x <= W; x += 6) { const y = s + Math.sin(x * 0.06 + clock * 2) * 2.4; x ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke();
 }
 function drawBackground() {
-  if (img.bg) { ctx.drawImage(img.bg, 0, 0, W, H); drawSurface(); return; }
+  const pic = img[SES().bg] || img.bg;
+  if (pic) { ctx.drawImage(pic, 0, 0, W, H); if (SES().light) drawLamp(); drawSurface(); return; }
   const s = CONFIG.surfaceY;
   ctx.fillStyle = '#BFE3F0'; ctx.fillRect(0, 0, W, s);
   ell(300, 52, 22, 22, '#FFF3C4');
@@ -363,6 +394,10 @@ function drawBackground() {
   drawSurface();
   ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(232,246,251,.35)';
   for (let i = 1; i < 5; i++) { ctx.beginPath(); for (let x = 0; x <= W; x += 8) { const y = s + i * bh + Math.sin(x * 0.05 + clock * 1.2 + i) * 2; x ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke(); }
+}
+function drawLamp() {      // 夜釣：海面上方的燈光照進上層水域，一明一暗
+  const s = CONFIG.surfaceY, a = calm ? 0.3 : 0.26 + 0.06 * Math.sin(clock * 1.6), g = ctx.createRadialGradient(W / 2, s - 20, 10, W / 2, s + 40, 230);
+  g.addColorStop(0, 'rgba(200,245,255,' + a + ')'); g.addColorStop(1, 'rgba(200,245,255,0)'); ctx.fillStyle = g; ctx.fillRect(0, s - 40, W, 300);
 }
 /* 鯨鯊時段：海面灑下的光束與鯨鯊身邊的光暈。a 是 0 到 1 的淡入淡出 */
 function drawEventLight(a) {
@@ -514,14 +549,34 @@ function frame(now) {
 }
 
 /* ====== 流程與操作 ====== */
+function hintOf(k) {      // 還沒抓過的魚：哪一場比較多
+  if (CONFIG.fish[k].rare) return '大物，每一場都會出現兩次';
+  const more = CONFIG.sessions.filter((s) => (s.boost || {})[k] > 1).map((s) => s.name);
+  return more.length ? more.join('、') + '比較多' : '每一場都有';
+}
+function renderStart() {
+  const box = $('sessionPick'); box.textContent = '';
+  for (const s of CONFIG.sessions) {
+    const open = isOpen(s), b = document.createElement('button'); b.type = 'button'; b.disabled = !open; b.setAttribute('aria-pressed', String(s.id === session));
+    const best = prog.best[s.id], sm = document.createElement('small');
+    sm.textContent = !open ? '玩過' + CONFIG.sessions.find((x) => x.id === s.unlock).name + '就開放' : best !== undefined ? '最佳 ' + best.toFixed(1) + ' kg' : '還沒玩過';
+    b.append(s.name, sm); b.onclick = () => { session = s.id; renderStart(); }; box.appendChild(b);
+  }
+  $('sessionNote').textContent = SES().note;
+  const got = SPECIES.filter((k) => dex[k]), miss = SPECIES.filter((k) => !dex[k]), dl = $('dexLine'); dl.textContent = '';
+  const head = document.createElement('div'); head.textContent = '港邊圖鑑 ' + got.length + ' / ' + SPECIES.length + (miss.length ? '　還沒抓過：' + CONFIG.fish[miss[0]].name + '（' + hintOf(miss[0]) + '）' : '　六種都抓到了！'); dl.appendChild(head);
+  const chips = document.createElement('div'); chips.className = 'chips';
+  for (const k of SPECIES) { const c = document.createElement('span'); c.textContent = dex[k] ? CONFIG.fish[k].name : '？？'; if (!dex[k]) c.className = 'no'; chips.appendChild(c); }
+  dl.appendChild(chips);
+}
 function show(id) { for (const p of ['startPanel', 'pausePanel', 'resultPanel']) $(p).hidden = p !== id; }
-function start() { reset(); mode = 'play'; show(null); $('hud').hidden = false; $('hint').hidden = false; beep(523, 0.12, 'triangle', 0.06, 260); }
+function start() { reset(); mode = 'play'; show(null); $('hud').hidden = false; $('hint').hidden = false; stage.classList.toggle('dark', !!SES().light); const bn = $('banner'); bn.textContent = SES().name + '場'; bn.hidden = false; setTimeout(() => { if (bn.textContent === SES().name + '場') bn.hidden = true; }, 1600); beep(523, 0.12, 'triangle', 0.06, 260); }
 function pause() { if (mode !== 'play') return; mode = 'pause'; show('pausePanel'); }
 function resume() { if (mode !== 'pause') return; mode = 'play'; show(null); }
 function rankOf(v) { let name = CONFIG.ranks[0][1]; for (const r of CONFIG.ranks) if (v >= r[0]) name = r[1]; return name; }
 function record() {
   const acc = stats.dives ? Math.round(stats.hits / stats.dives * 100) : 0;
-  return { game: '小鳶捕魚原型', version: CONFIG.version, time: new Date().toISOString(), totalKg: +kg.toFixed(1), rank: rankOf(kg), dex: SPECIES.filter((k) => dex[k]).length, kgInEvent: +stats.kgInEvent.toFixed(1), comboBonus: +stats.comboBonus.toFixed(1), bestCombo: stats.bestCombo, counts: stats.counts,
+  return { game: '小鳶捕魚原型', version: CONFIG.version, session: SES().name, time: new Date().toISOString(), totalKg: +kg.toFixed(1), rank: rankOf(kg), dex: SPECIES.filter((k) => dex[k]).length, kgInEvent: +stats.kgInEvent.toFixed(1), comboBonus: +stats.comboBonus.toFixed(1), bestCombo: stats.bestCombo, counts: stats.counts,
     taps: stats.taps, dives: stats.dives, hits: stats.hits, misses: stats.misses, hitRate: acc, tapsDuringCooldown: stats.blocked, tapsOnSky: stats.skyTaps, trash: stats.trash, tapsOnWhaleShark: stats.sharkTaps,
     answers, assets: Object.keys(img), screen: innerWidth + 'x' + innerHeight, ua: navigator.userAgent };
 }
@@ -532,6 +587,9 @@ function finish() {
   const add = (a, b, isNew) => { const l = document.createElement('span'); l.textContent = a; if (isNew) { const n = document.createElement('span'); n.className = 'new'; n.textContent = '新圖鑑'; l.appendChild(n); } const r = document.createElement('span'); r.textContent = b; rows.append(l, r); };
   for (const k of SPECIES) if (stats.counts[k]) add(CONFIG.fish[k].name + '（' + CONFIG.fish[k].kg + ' kg）', stats.counts[k] + (k === 'squid' ? ' 隻' : ' 條'), stats.newDex.includes(k));
   if (!stats.hits) add('這局沒有抓到魚', '0 條');
+  const sid = session, old = prog.best[sid], before = CONFIG.sessions.filter(isOpen).length; prog.played[sid] = (prog.played[sid] || 0) + 1; if (old === undefined || kg > old) prog.best[sid] = +kg.toFixed(1); saveProg();
+  const un = $('unlockNote'), opened = CONFIG.sessions.filter(isOpen); un.hidden = opened.length <= before; if (!un.hidden) un.textContent = '「' + opened[opened.length - 1].name + '」場開放了！';
+  add(SES().name + '場最佳', prog.best[sid].toFixed(1) + ' kg' + (old !== undefined && kg > old ? '　新紀錄' : ''));
   add('鯨鯊加倍時段', stats.kgInEvent.toFixed(1) + ' kg'); add('連抓加成（最多連 ' + stats.bestCombo + '）', '+' + stats.comboBonus.toFixed(1) + ' kg'); add('命中率', acc + '%（' + stats.hits + '/' + stats.dives + '）'); add('抓到垃圾', stats.trash + ' 次');
   // 港邊圖鑑冊：六種漁獲的小卡，抓過的可以點開看小知識；這局新抓到的標成金色
   const got = SPECIES.filter((k) => dex[k]).length, box = $('dex'), fact = $('fact'); box.textContent = '';
@@ -554,7 +612,7 @@ cv.addEventListener('pointerdown', (e) => {
   if (kite.state !== 'glide' || kite.wait > 0) { stats.blocked++; return; }
   stats.dives++; kite.tx = x; kite.ty = Math.min(H - 30, y); kite.state = 'dive'; beep(700, 0.18, 'sawtooth', 0.03, -420);
 });
-$('startBtn').onclick = start; $('againBtn').onclick = start; $('restartBtn').onclick = start; $('resumeBtn').onclick = resume; $('pauseBtn').onclick = pause;
+$('startBtn').onclick = start; $('againBtn').onclick = start; $('menuBtn').onclick = () => { renderStart(); show('startPanel'); }; $('restartBtn').onclick = start; $('resumeBtn').onclick = resume; $('pauseBtn').onclick = pause;
 $('soundBtn').onclick = () => { soundOn = !soundOn; $('soundBtn').textContent = soundOn ? '音' : '靜'; $('soundBtn').setAttribute('aria-pressed', String(!soundOn)); };
 document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
 for (const g of document.querySelectorAll('.yn')) g.addEventListener('click', (e) => {
@@ -566,8 +624,8 @@ $('copyBtn').onclick = () => {
   const fallback = () => { log.value = text; log.hidden = false; log.focus(); log.select(); $('copyBtn').textContent = '請長按上方文字複製'; };
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
 };
-window.__kiteGame = { CONFIG, state: () => ({ mode, t, kg, kite, things: things.map((o) => ({ type: o.type, x: o.x, y: o.y, vx: o.vx, move: o.move })), stats, shark: !!shark, flash }), skip: (s) => { t = s; } };
-reset(); requestAnimationFrame(frame);
+window.__kiteGame = { CONFIG, setSession: (s) => { session = s; renderStart(); }, prog: () => prog, state: () => ({ mode, session, t, kg, kite, things: things.map((o) => ({ type: o.type, x: o.x, y: o.y, vx: o.vx, move: o.move })), stats, shark: !!shark, flash }), skip: (s) => { t = s; } };
+reset(); renderStart(); requestAnimationFrame(frame);
 })();
 </script>
 </body>
