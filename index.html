@@ -78,6 +78,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .dexline .chips{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
 .dexline .chips span{border:1.5px solid var(--ink);border-radius:999px;padding:0 6px;font-size:11px;background:#fff}
 .dexline .chips span.no{border-style:dashed;color:var(--muted);background:transparent}
+.bentoGot{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;background:#fff7e0;border:2px solid var(--ink);font-size:14px;font-weight:700}.bentoGot img{width:34px;height:auto}.bentoGot a{margin-left:auto;color:var(--ink);white-space:nowrap}
 .unlock{margin:0;padding:6px 10px;border-radius:10px;background:var(--gold);border:2px solid var(--ink);font-weight:700;text-align:center;font-size:14px}
 .dex button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
 .dex button:disabled{border-style:dashed;opacity:.55;cursor:default}
@@ -114,9 +115,10 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
         <li><b>連抓</b><span>連續抓到 3 條起，每條多 0.2 公斤</span></li>
         <li><b>垃圾</b><span>抓到會暈一下，要避開</span></li>
         <li><b>鯨鯊</b><span>牠是朋友，出現時公斤數加倍</span></li>
+        <li><b>便當</b><span>一局抓到小卷 3 隻、白帶魚 2 條，就做成便當讓小鳶去旅行</span></li>
       </ul>
       <button class="btn" id="startBtn">開始</button>
-      <p class="note">原型 v0.6：暫用素材、不發點數。進度只存在這支手機的瀏覽器</p>
+      <p class="note">原型 v0.7：暫用素材、不發點數。進度只存在這支手機的瀏覽器</p>
     </div>
   </div>
 
@@ -135,6 +137,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
       <div class="total"><span id="totalKg">0.0</span> <small>公斤</small></div>
       <div class="rows" id="rows"></div>
       <p class="unlock" id="unlockNote" hidden></p>
+      <div class="bentoGot" id="bentoGot" hidden></div>
       <div class="dex" id="dex" aria-label="港邊圖鑑冊"></div>
       <p class="fact" id="fact"></p>
       <div class="ask" id="ask">
@@ -155,7 +158,8 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.6',
+  version: '0.7',
+  bento: { squid: 3, hairtail: 2 },      // 一局抓到幾隻以上，結算時直接得到 1 份便當給小鳶去旅行（工作單 11 v4；每局每種最多 1 份）
   duration: 60,                 // 一局秒數
   W: 360, H: 640,               // 邏輯畫布尺寸
   surfaceY: 200,                // 海面高度
@@ -213,6 +217,21 @@ try { const q = JSON.parse(localStorage.getItem('kiteFishingProg1') || 'null'); 
 const SES = () => CONFIG.sessions.find((s) => s.id === session) || CONFIG.sessions[0];
 const ALL = /[?&]all=1/.test(location.search);      // 網址加 ?all=1 三場都開（給測試用）
 const isOpen = (s) => ALL || !s.unlock || (prog.played[s.unlock] || 0) > 0;
+/* 便當：寫進小鳶去旅行的便當庫存（同一個網站、同一支手機）。去旅行還沒打開過也先存著 */
+function giveBento() {
+  const got = [];
+  if (stats.counts.squid >= CONFIG.bento.squid) got.push(['squid', '小卷便當', 'fish_squid']);
+  if (stats.counts.hairtail >= CONFIG.bento.hairtail) got.push(['hair', '白帶魚便當', 'fish_hairtail']);
+  if (!got.length) return got;
+  try {
+    let t = JSON.parse(localStorage.getItem('kiteTravel1') || 'null'); if (!t || t.v !== 1) t = { v: 1 };
+    t.bento = Object.assign({ far: 0, squid: 0, hair: 0, special: 0 }, t.bento || {});
+    for (const g of got) t.bento[g[0]]++;
+    t.fishGift = (t.fishGift || 0) + got.length; localStorage.setItem('kiteTravel1', JSON.stringify(t));
+    for (const g of got) g.push(t.bento[g[0]]);
+  } catch (e) {}
+  return got;
+}
 const saveProg = () => { try { localStorage.setItem('kiteFishingProg1', JSON.stringify(prog)); } catch (e) {} };
 const answers = {};
 
@@ -577,7 +596,7 @@ function rankOf(v) { let name = CONFIG.ranks[0][1]; for (const r of CONFIG.ranks
 function record() {
   const acc = stats.dives ? Math.round(stats.hits / stats.dives * 100) : 0;
   return { game: '小鳶捕魚原型', version: CONFIG.version, session: SES().name, time: new Date().toISOString(), totalKg: +kg.toFixed(1), rank: rankOf(kg), dex: SPECIES.filter((k) => dex[k]).length, kgInEvent: +stats.kgInEvent.toFixed(1), comboBonus: +stats.comboBonus.toFixed(1), bestCombo: stats.bestCombo, counts: stats.counts,
-    taps: stats.taps, dives: stats.dives, hits: stats.hits, misses: stats.misses, hitRate: acc, tapsDuringCooldown: stats.blocked, tapsOnSky: stats.skyTaps, trash: stats.trash, tapsOnWhaleShark: stats.sharkTaps,
+    taps: stats.taps, dives: stats.dives, hits: stats.hits, misses: stats.misses, hitRate: acc, bento: stats.bento || [], tapsDuringCooldown: stats.blocked, tapsOnSky: stats.skyTaps, trash: stats.trash, tapsOnWhaleShark: stats.sharkTaps,
     answers, assets: Object.keys(img), screen: innerWidth + 'x' + innerHeight, ua: navigator.userAgent };
 }
 function finish() {
@@ -601,6 +620,13 @@ function finish() {
   const nk = stats.newDex[stats.newDex.length - 1];
   if (nk) tell(nk, box.children[SPECIES.indexOf(nk)]); else fact.textContent = '圖鑑 ' + got + ' / ' + SPECIES.length + '。點上面的漁獲看小知識。';
   $('seal').hidden = got < SPECIES.length;
+  const bg = giveBento(), bx = $('bentoGot'); bx.hidden = !bg.length; bx.textContent = '';
+  if (bg.length) {
+    for (const g of bg) { const im = document.createElement('img'); im.src = 'assets/' + g[2] + '.png'; im.alt = ''; bx.appendChild(im); }
+    const s = document.createElement('span'); s.textContent = '做成' + bg.map((g) => g[1]).join('、') + '！'; bx.appendChild(s);
+    const a = document.createElement('a'); a.href = 'travel/'; a.textContent = '帶給小鳶 →'; bx.appendChild(a);
+  }
+  stats.bento = bg.map((g) => g[0]);
   $('log').hidden = true; $('copyBtn').textContent = '複製測試紀錄'; show('resultPanel');
 }
 
