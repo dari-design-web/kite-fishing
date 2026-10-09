@@ -127,7 +127,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
     <canvas class="mapfx" id="mapFx" aria-hidden="true"></canvas>
     <h1 class="maptitle">小鳶飛行冒險</h1>
     <div id="stageButtons"></div>
-    <p class="mapnote">原型 v0.18：暫用圖、不發點數。測試期間四關都開放</p>
+    <p class="mapnote">原型 v0.19：暫用圖、不發點數。測試期間四關都開放</p>
   </div>
 
   <div class="panel" id="startPanel" hidden>
@@ -152,7 +152,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
       </div>
       <button class="btn" id="startBtn">開始</button>
       <button class="btn quiet" id="mapBtn">回關卡地圖</button>
-      <p class="note">原型 v0.18：暫用圖、不發點數</p>
+      <p class="note">原型 v0.19：暫用圖、不發點數</p>
     </div>
   </div>
 
@@ -189,7 +189,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.18',
+  version: '0.19',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -273,11 +273,14 @@ const ASSET_FILES = { trash: 'trash.png', fish_small: 'fish_small.png', fish_squ
   // G-34 第 4 關深澳（ChatGPT，暫用）。河豚車、山野君、河豚車按鈕等 Dari 確認車款與第三位角色後再換（m_forest、m_puffer、m_puffer_full、ult_icon_rail）
   bg_rail_a: 'bg_rail_a.jpg', bg_rail_b: 'bg_rail_b.jpg', bg_rail_c: 'bg_rail_c.jpg', r_hedge: 'r_hedge.png', r_jelly: 'r_jelly.png', r_coal: 'r_coal.png', r_slag: 'r_slag.png', r_dust: 'r_dust.png', r_crab: 'r_crab.png', r_shriek: 'r_shriek.png',
   r_boss: 'r_boss.png', r_boss_cast: 'r_boss_cast.png', r_beam: 'r_beam.png', r_cart: 'r_cart.png', fx_keel: 'fx_keel.png', fx_blade: 'fx_blade.png', fx_ring: 'fx_tunnel_ring.png',
-  // G-35 A 交付後在這裡登記（程式已經會用）：bg_rail_s（jpg）、rail_car_crab、rail_car_crab_top、ult_icon_rail、map_crab_car、m_forest、bind_cable、bind_vine、bind_rail；還沒有圖時用程式畫的佔位圖
+  // G-35 A（ChatGPT，暫用）：八斗子站月台、紅蟹鐵道車（俯視朝上、按鈕、地圖小車）、咖啡色白帽山野君、三種綁繩
+  bg_rail_s: 'bg_rail_s.jpg', rail_car_crab_top: 'rail_car_crab_top.png', ult_icon_rail: 'ult_icon_rail.png', map_crab_car: 'map_crab_car.png', m_forest: 'm_forest.png', bind_cable: 'bind_cable.png', bind_vine: 'bind_vine.png', bind_rail: 'bind_rail.png',
+  // G-35 B（ChatGPT，暫用）：第 4 關怪獸狀態與巨岩怪四態、第 1 關大垃圾團核心與小團
+  r_hedge_open: 'r_hedge_open.png', r_crab_shell: 'r_crab_shell.png', fx_coal_smoke: 'fx_coal_smoke.png', r_shriek_rest: 'r_shriek_rest.png', r_boss_armL: 'r_boss_armL.png', r_boss_armR: 'r_boss_armR.png', r_boss_arms: 'r_boss_arms.png', r_boss_core: 'r_boss_core.png', boss_core: 'boss_core.png', boss_mini: 'boss_mini.png',
   bg_harbor: 'bg_harbor.jpg', bg_sea: 'bg_sea.jpg', bg_mkt_a: 'bg_mkt_a.jpg', bg_mkt_b: 'bg_mkt_b.jpg', bg_mkt_c: 'bg_mkt_c.jpg' };
 // 每種垃圾用哪張圖、畫多大（邏輯像素）。碎片沿用保麗龍、小油滴沿用油污、追人的污水泡沿用污水泡
 const SPR = { can: ['can', 26, 26], bag: ['bag', 32, 32], butt: ['butt', 10, 24], foam: ['foam', 40, 36], chip: ['foam', 19, 17], barrel: ['barrel', 38, 38], tire: ['tire', 44, 44], oil: ['oil', 54, 54], drop: ['oil', 23, 23],
-  goo: ['goo', 32, 32], chaser: ['goo', 30, 30], battery: ['battery', 31, 31], sprayer: ['sprayer', 40, 44], log: ['log', 0, 26], net: ['net', 60, 60], tangle: ['tangle', 60, 60], boss: ['boss', 120, 104], minib: ['boss', 60, 52] };
+  goo: ['goo', 32, 32], chaser: ['goo', 30, 30], battery: ['battery', 31, 31], sprayer: ['sprayer', 40, 44], log: ['log', 0, 26], net: ['net', 60, 60], tangle: ['tangle', 60, 60], boss: ['boss', 120, 104], minib: ['boss_mini', 60, 52] };
 
 const $ = (id) => document.getElementById(id);
 const stage = $('stage'), cv = $('world'); let ctx = cv.getContext('2d');      // ctx 用 let：畫底圖的離屏畫布時會暫時換掉
@@ -576,7 +579,7 @@ function update(dt) {
   for (const s of shots) for (const f of foes) {
     if (s.dead || f.hp <= 0 || f.hidden || f.ghost) continue;
     if (T[f.type].solid) { if (Math.abs(s.x - f.x) < f.w / 2 + 3 && Math.abs(s.y - f.y) < 14) { s.dead = true; part('drop', s.x, s.y, { size: 2, fade: 5, color: '#D9B48A' }); } continue; }      // 漂流木：羽毛打到就沒了，木頭不受影響
-    if (Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { s.dead = true; if (f === boss && f.phased) { if (!bossShot(f, s)) s.dead = false; continue; } if (RM() && railBlocks(f)) { clank(s.x, s.y); if (!stats.toldBlock) { stats.toldBlock = true; say(f.type === 'tire' ? '躲在殼裡打不動，等牠探頭' : '大叫時羽毛會被彈開，等牠停', f.x, f.y - 34, '#DCE6EC'); } continue; } const x2 = f === boss && f.atk === 'devour' && f.mouth >= 1; f.hp -= x2 ? 2 : 1; if (x2 && !stats.toldX2) { stats.toldX2 = true; say('打嘴巴 傷害 ×2', f.x, f.y + 84, '#FFE08A'); } f.hitT = 0.08; part('star', s.x, s.y, { size: 3, fade: 4, color: s.ink ? '#C9B6F2' : '#fff' }); }
+    if (Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { s.dead = true; if (f === boss && f.phased) { if (!bossShot(f, s)) s.dead = false; continue; } if (RM() && railBlocks(f)) { clank(s.x, s.y); if (!stats.toldBlock) { stats.toldBlock = true; say(f.type === 'tire' ? '躲在殼裡打不動，等牠探頭' : f.type === 'battery' ? '大叫時羽毛會被彈開，等牠停' : '縮成球時彈開羽毛，等牠張開', f.x, f.y - 34, '#DCE6EC'); } continue; } const x2 = f === boss && f.atk === 'devour' && f.mouth >= 1; f.hp -= x2 ? 2 : 1; if (x2 && !stats.toldX2) { stats.toldX2 = true; say('打嘴巴 傷害 ×2', f.x, f.y + 84, '#FFE08A'); } f.hitT = 0.08; part('star', s.x, s.y, { size: 3, fade: 4, color: s.ink ? '#C9B6F2' : '#fff' }); }
   }
   shots = shots.filter((s) => !s.dead && s.y > -20 && s.x > -20 && s.x < W + 20);
   updateRing(dt); bossFinalCheck(real);
@@ -1373,6 +1376,7 @@ function drawRailFoe(f) {
   const ty = f.type, r = f.r, wob = calm ? 0 : Math.sin(clock * 6 + f.ph); ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
   const K = { can: 'r_hedge', butt: 'r_hedge', bag: 'r_jelly', sprayer: 'r_coal', goo: 'r_slag', chaser: 'r_slag', tire: 'r_crab', battery: 'r_shriek', fire: 'r_dust', boss: 'r_boss' }[ty];
   if (ty === 'can' || ty === 'butt') {      // 鐵軌刺蝟：生鏽鐵軌與彈簧的刺球，滾著前進
+    if (f.open && img.r_hedge_open) { sprite('r_hedge_open', 24, 24); return true; }      // 張開：露出軟肚子，這時才打得到
     ctx.rotate(clock * 5 + f.ph); if (K && img[K]) { sprite(K, 24, 24); return true; }
     for (let i = 0; i < 10; i++) { const a = i / 10 * 6.28; poly([Math.cos(a) * 8, Math.sin(a) * 8, Math.cos(a + 0.2) * 14, Math.sin(a + 0.2) * 14, Math.cos(a + 0.4) * 8, Math.sin(a + 0.4) * 8], '#8A5A3C', PAL.line); }
     ell(0, 0, 9, 9, '#B07A52', PAL.line); ctx.rotate(-(clock * 5 + f.ph)); eyes(2, 2.4, true); return true;
@@ -1394,14 +1398,14 @@ function drawRailFoe(f) {
   }
   if (ty === 'tire') {      // 豆腐岩寄居蟹：方塊豆腐岩當殼；被打到會先抖一下再衝撞
     if (f.chg && !f.dash) { ctx.strokeStyle = 'rgba(232,70,50,.9)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(0, 0, r + 8, 0, 6.2832); ctx.stroke(); }
-    if (K && img[K]) { sprite(K, 50, 46); return true; }
+    if (K && img[K]) { sprite(f.shell && img.r_crab_shell ? 'r_crab_shell' : K, 50, 46); return true; }
     for (const sx of [-1, 1]) { ctx.save(); ctx.translate(sx * 16, 14); ctx.rotate(sx * 0.5); ell(0, 0, 7, 9, '#E0603A', PAL.line); ctx.restore(); }
     rrect(-18, -20, 36, 30, 3, '#C9B79A', PAL.line, 1.5); ctx.strokeStyle = '#9E8B6E'; ctx.beginPath(); ctx.moveTo(-18, -5); ctx.lineTo(18, -5); ctx.moveTo(0, -20); ctx.lineTo(0, 10); ctx.stroke(); eyes(14, 3.2, true); return true;
   }
   if (ty === 'battery') {      // 海蝕尖嘯獸：快叫之前先標出音波範圍
     const warn = T.battery.zapEvery - f.zapAcc < 0.6;
     if (warn) { ctx.strokeStyle = 'rgba(190,230,255,.95)'; ctx.setLineDash([4, 5]); ctx.beginPath(); ctx.arc(0, 0, T.battery.zapR, 0, 6.2832); ctx.stroke(); ctx.setLineDash([]); }
-    if (K && img[K]) { sprite(K, 38, 40); return true; }
+    if (K && img[K]) { sprite(!(f.loud || warn) && img.r_shriek_rest ? 'r_shriek_rest' : K, 38, 40); return true; }
     poly([-16, 12, -12, -10, -4, -18, 6, -14, 16, -4, 14, 14], '#8E8A80', PAL.line); ctx.strokeStyle = '#6E6A62'; ctx.beginPath(); ctx.moveTo(-8, -6); ctx.lineTo(6, -2); ctx.moveTo(-10, 4); ctx.lineTo(8, 6); ctx.stroke(); eyes(2, 3, true); ell(0, 10, 4, 3, PAL.line); return true;
   }
   if (ty === 'fire') { if (K && img[K]) { sprite(K, 16, 16); return true; } glow(12, '60,50,50', 0.5); ell(0, 0, r, r, '#2E2B2B', PAL.line); ell(-2, -2, 2, 2, '#FF8A3C'); return true; }
@@ -1412,7 +1416,7 @@ function drawRailFoe(f) {
 /* 不沉煤艦・建基巨岩怪（佔位圖） */
 function drawJianji(f) {
   const r = f.r; glow(r + 34, f.atk ? '255,170,90' : '120,140,200', 0.45);
-  if (img.r_boss) { sprite(f.atk === 'storm' && img.r_boss_cast ? 'r_boss_cast' : 'r_boss', 136, 136); hpBar(-r - 22, 90, 7, f.hp / (f.maxHp || T.boss.hp)); return; }
+  if (img.r_boss) { sprite(jianjiKey(f), 136, 136); hpBar(-r - 22, 90, 7, f.hp / (f.maxHp || T.boss.hp)); return; }
   ctx.save(); ctx.rotate(Math.sin(clock * 1.2) * 0.03); ctx.lineWidth = 2;
   const up = f.atk === 'storm' ? -26 : 0;
   for (const sx of [-1, 1]) { ctx.save(); ctx.translate(sx * 40, -6); ctx.rotate(sx * (0.5 + (up ? 0.9 : 0))); rrect(-6, -46, 12, 60, 2, '#7A6A5E', PAL.line, 2); ctx.strokeStyle = '#6E8A58'; ctx.beginPath(); ctx.moveTo(-6, -30); ctx.lineTo(6, -10); ctx.stroke(); ctx.restore(); }      // 鋼梁手臂與纏著的藤
@@ -1420,6 +1424,15 @@ function drawJianji(f) {
   for (let i = 0; i < 7; i++) ell(-30 + (i * 13) % 60, -20 + (i * 17) % 40, 2, 2, ['#7FD8FF', '#FFD27A', '#B9A7E0'][i % 3]);      // 礦砂與光點
   ell(-14, -10, 6, 4, '#FFB23E', PAL.line); ell(14, -10, 6, 4, '#FFB23E', PAL.line); poly([-14, 14, 14, 14, 8, 22, -8, 22], '#1E1C1E', PAL.line);
   ctx.restore(); hpBar(-r - 22, 90, 7, f.hp / (f.maxHp || T.boss.hp));
+}
+function jianjiKey(f) {      // G-35 B 的四態（同畫布、同中心）：斷左臂、斷右臂、雙臂斷（頭冠導光）、煤核
+  if (!f.phased) return f.atk === 'storm' && img.r_boss_cast ? 'r_boss_cast' : 'r_boss';
+  const L = f.pools.armL <= 0, Rr = f.pools.armR <= 0;
+  if (f.phase >= 3 && img.r_boss_core) return 'r_boss_core';
+  if ((f.phase === 2 || (L && Rr)) && img.r_boss_arms) return 'r_boss_arms';
+  if (L && img.r_boss_armL) return 'r_boss_armL';
+  if (Rr && img.r_boss_armR) return 'r_boss_armR';
+  return 'r_boss';
 }
 /* 巨岩怪的三招 */
 function updateJianji(f, dt) {
@@ -1633,17 +1646,19 @@ function railFoeState(f, dt) {
   else if (f.type === 'tire' && !f.chg) f.shell = (f.age % 2.9) < 1.5;      // 寄居蟹：躲殼 1.5 秒（打不動）→ 探頭 1.4 秒
   else if (f.type === 'tire') f.shell = false;
   else if (f.type === 'battery') f.loud = f.zapAcc < 0.7 && f.age > 1;      // 尖嘯獸：叫的時候把羽毛彈開
+  else if ((f.type === 'can' || f.type === 'butt') && f.rail) f.open = !f.noCount && (f.age % 2.0) >= 1.2;      // 刺蝟：滾成球 1.2 秒（羽毛被彈開）→ 張開 0.8 秒；鐵軌上衝下來的刺蝟列車一直是球
 }
-function railBlocks(f) { return (f.type === 'tire' && f.shell) || (f.type === 'battery' && f.loud); }
+function railBlocks(f) { return (f.type === 'tire' && f.shell) || (f.type === 'battery' && f.loud) || ((f.type === 'can' || f.type === 'butt') && f.rail && !f.open); }
 function smokeBlocks(s) {      // 煤煙礦坑怪噴出的煤煙雲擋住正下方的羽毛，兩側留有缺口
   for (const f of foes) if (f.type === 'sprayer' && f.y > 0) { const cx = f.x + Math.sin(t * 1.3 + f.ph) * 18; if (Math.abs(s.x - cx) < 20 && s.y > f.y + 14 && s.y < f.y + 120) return true; }
   return false;
 }
 function drawSmokeClouds() {
-  for (const f of foes) if (f.type === 'sprayer' && f.y > 0) { const cx = f.x + Math.sin(t * 1.3 + f.ph) * 18; ctx.save(); ctx.globalAlpha = 0.78; for (const p of [[0, 40, 22, 30], [-8, 72, 20, 26], [8, 100, 18, 22]]) { const g = ctx.createRadialGradient(cx + p[0], f.y + p[1], 2, cx + p[0], f.y + p[1], p[2]); g.addColorStop(0, 'rgba(30,26,30,.95)'); g.addColorStop(1, 'rgba(30,26,30,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(cx + p[0], f.y + p[1], p[2], p[3], 0, 0, 6.2832); ctx.fill(); } ctx.restore(); }
+  for (const f of foes) if (f.type === 'sprayer' && f.y > 0 && img.fx_coal_smoke) { const cx = f.x + Math.sin(t * 1.3 + f.ph) * 18; ctx.save(); ctx.translate(cx, f.y + 14 + 55); sprite('fx_coal_smoke', 44, 110); ctx.restore(); }      // 煤煙：直長半透明的圖
+  if (!img.fx_coal_smoke) for (const f of foes) if (f.type === 'sprayer' && f.y > 0) { const cx = f.x + Math.sin(t * 1.3 + f.ph) * 18; ctx.save(); ctx.globalAlpha = 0.78; for (const p of [[0, 40, 22, 30], [-8, 72, 20, 26], [8, 100, 18, 22]]) { const g = ctx.createRadialGradient(cx + p[0], f.y + p[1], 2, cx + p[0], f.y + p[1], p[2]); g.addColorStop(0, 'rgba(30,26,30,.95)'); g.addColorStop(1, 'rgba(30,26,30,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(cx + p[0], f.y + p[1], p[2], p[3], 0, 0, 6.2832); ctx.fill(); } ctx.restore(); }
 }
 function drawRailFoeState(f) {      // 狀態提示畫在怪獸上面（B 組正式圖交付前的佔位）
-  if (f.type === 'tire' && f.shell) { ctx.save(); ctx.translate(f.x, f.y); rrect(-22, -20, 44, 38, 5, 'rgba(201,183,154,.96)', PAL.line, 2); ctx.strokeStyle = '#9E8B6E'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-22, -2); ctx.lineTo(22, -2); ctx.moveTo(0, -20); ctx.lineTo(0, 18); ctx.stroke(); ctx.restore(); }
+  if (f.type === 'tire' && f.shell && !img.r_crab_shell) { ctx.save(); ctx.translate(f.x, f.y); rrect(-22, -20, 44, 38, 5, 'rgba(201,183,154,.96)', PAL.line, 2); ctx.strokeStyle = '#9E8B6E'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-22, -2); ctx.lineTo(22, -2); ctx.moveTo(0, -20); ctx.lineTo(0, 18); ctx.stroke(); ctx.restore(); }
   if (f.type === 'battery' && f.loud) { ctx.save(); ctx.strokeStyle = 'rgba(190,230,255,.9)'; ctx.lineWidth = 2; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(f.x, f.y, 24 + i * 9 + (clock * 40) % 9, 0.3, 2.84); ctx.stroke(); } ctx.restore(); }
 }
 
@@ -1690,9 +1705,9 @@ function drawBossFx() {
   const f = boss; if (!f) return;
   if (f.phased && !f.hidden) {
     if (!RM() && f.phase === 1) for (let i = 0; i < f.layers; i++) { const a = clock * 0.6 + i * 2.09; ctx.save(); ctx.translate(f.x + Math.cos(a) * 46, f.y + Math.sin(a) * 34); ctx.rotate(a); if (!sprite('bag', 34, 34)) ell(0, 0, 14, 12, '#F4F7F8', PAL.line); ctx.restore(); }      // 一層層的塑膠袋外殼
-    if (RM()) { for (const k of ['armL', 'armR']) if (f.pools[k] <= 0) { const x = f.x + (k === 'armL' ? -48 : 48), y = f.y + 20; ctx.save(); ctx.globalAlpha = 0.85; ell(x, y, 20, 16, 'rgba(60,52,46,.9)'); ctx.strokeStyle = '#2B292C'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - 12, y - 10); ctx.lineTo(x + 2, y + 2); ctx.lineTo(x - 4, y + 12); ctx.moveTo(x + 10, y - 8); ctx.lineTo(x, y + 4); ctx.stroke(); ctx.restore(); } }      // 斷掉的手臂（佔位）
-    if (RM() && f.phase === 3) { ctx.save(); ctx.translate(f.x, f.y + 16); const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 22); g.addColorStop(0, '#FFF2B0'); g.addColorStop(0.4, '#FF8A3C'); g.addColorStop(1, 'rgba(120,30,10,.9)'); ell(0, 0, 18, 16, '#2B292C', PAL.line); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 13 + Math.sin(clock * 8), 0, 6.2832); ctx.fill(); ctx.restore(); }      // 胸口的煤核
-    if (!RM() && f.phase === 2) { ctx.save(); ctx.translate(f.x, f.y + 4); const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 20); g.addColorStop(0, '#F4FFE0'); g.addColorStop(0.5, '#9FE07A'); g.addColorStop(1, 'rgba(60,120,60,.2)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 15 + Math.sin(clock * 8), 0, 6.2832); ctx.fill(); ctx.restore(); }      // 大垃圾團的核心
+    if (RM() && !img.r_boss_armL) { for (const k of ['armL', 'armR']) if (f.pools[k] <= 0) { const x = f.x + (k === 'armL' ? -48 : 48), y = f.y + 20; ctx.save(); ctx.globalAlpha = 0.85; ell(x, y, 20, 16, 'rgba(60,52,46,.9)'); ctx.strokeStyle = '#2B292C'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - 12, y - 10); ctx.lineTo(x + 2, y + 2); ctx.lineTo(x - 4, y + 12); ctx.moveTo(x + 10, y - 8); ctx.lineTo(x, y + 4); ctx.stroke(); ctx.restore(); } }      // 斷掉的手臂（佔位）
+    if (RM() && f.phase === 3 && !img.r_boss_core) { ctx.save(); ctx.translate(f.x, f.y + 16); const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 22); g.addColorStop(0, '#FFF2B0'); g.addColorStop(0.4, '#FF8A3C'); g.addColorStop(1, 'rgba(120,30,10,.9)'); ell(0, 0, 18, 16, '#2B292C', PAL.line); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 13 + Math.sin(clock * 8), 0, 6.2832); ctx.fill(); ctx.restore(); }      // 胸口的煤核
+    if (!RM() && f.phase === 2 && !img.boss_core) { ctx.save(); ctx.translate(f.x, f.y + 4); const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 20); g.addColorStop(0, '#F4FFE0'); g.addColorStop(0.5, '#9FE07A'); g.addColorStop(1, 'rgba(60,120,60,.2)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 15 + Math.sin(clock * 8), 0, 6.2832); ctx.fill(); ctx.restore(); }      // 大垃圾團的核心
     for (const w of weakPoints(f)) { const x = f.x + w[1], y = f.y + w[2], p = 0.6 + 0.4 * Math.sin(clock * 8); ctx.strokeStyle = 'rgba(255,255,255,' + p + ')'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, w[3] + 4, 0, 6.2832); ctx.stroke(); ctx.strokeStyle = 'rgba(255,224,138,.95)'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.arc(x, y, w[3] + 9 + p * 2, 0, 6.2832); ctx.stroke(); ctx.setLineDash([]); poly([x - 6, y + w[3] + 22, x + 6, y + w[3] + 22, x, y + w[3] + 13], '#FFE08A', PAL.line); }      // 弱點：白圈加金色虛線圈與往上的小箭頭
   }
   for (const o of foes) if (o.suck) { ctx.strokeStyle = 'rgba(255,176,160,.55)'; ctx.setLineDash([3, 5]); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(f.x, f.y); ctx.stroke(); ctx.setLineDash([]); }
@@ -1893,7 +1908,9 @@ function hpBar(y, w, h, v) { ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(16,41,61
 /* 用素材畫一個垃圾。回傳 false 代表這種垃圾沒有素材或還沒載入，改畫佔位圖 */
 function drawFoeSprite(f) {
   if (f.type === 'bound') { drawBound(f); return true; }
-  const ty = f.type, S = (ST().spr && ST().spr[ty]) || SPR[ty], r = f.r;
+  const ty = f.type, r = f.r; let S = (ST().spr && ST().spr[ty]) || SPR[ty];
+  if (ty === 'boss' && f.phased && f.phase >= 2 && img.boss_core) S = ['boss_core', 120, 104];      // 大垃圾團剝掉外殼後換成露出核心的圖
+  if (ty === 'minib' && !img.boss_mini) S = ['boss', 60, 52];
   if (NM() && ty !== 'log' && drawNightFoe(f)) return true;
   if (PM() && drawPierFoe(f)) return true;
   if (RM() && drawRailFoe(f)) return true;
@@ -2177,7 +2194,7 @@ function mapRail(mt) {      // 河豚自行車載豆腐君、象鼻君、山野�
   if (img0 && img0.complete && img0.naturalWidth) g.drawImage(img0, 60 * img0.naturalWidth / 720, 182 * img0.naturalHeight / 1280, 32 * img0.naturalWidth / 720, 28 * img0.naturalHeight / 1280, 93, 182, 32, 28);      // 用旁邊的鐵軌蓋掉圖上原本停著的台車
   g.save(); g.translate(x, y - 6); g.rotate(Math.atan2(R.b[1] - R.a[1], R.b[0] - R.a[0])); if (back) g.scale(-1, 1);
   g.fillStyle = 'rgba(40,20,10,0.3)'; g.beginPath(); g.ellipse(0, 18, 28, 6, 0, 0, 6.2832); g.fill();
-  g.save(); g.rotate(1.5708); if (!sprite('map_crab_car', 30, 30)) drawCrabTop(0.62); g.restore();      // 紅蟹鐵道車（俯視，車頭朝前進方向）
+  if (!sprite('map_crab_car', 30, 30)) { g.save(); g.rotate(1.5708); drawCrabTop(0.62); g.restore(); }      // ChatGPT 的地圖小車本身車頭朝右；程式佔位圖朝上才要轉      // 紅蟹鐵道車（俯視，車頭朝前進方向）
   ['tofu', 'ele', 'forest'].forEach((m, i) => { const hop = stop ? Math.abs(Math.sin(mt * 7 + i * 1.2)) * 8 : Math.abs(Math.sin(mt * 10 + i * 1.9)) * 3; g.save(); g.translate(-30 - i * 20, 20 - hop); if (back) g.scale(-1, 1); drawMascot(m, 0.5); g.restore(); });      // 吉祥物跟在車後面走      // 騎車時一顛一顛，停下來就跳一跳
   g.restore();
 }
