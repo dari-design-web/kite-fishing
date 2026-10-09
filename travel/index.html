@@ -144,7 +144,7 @@ h3{font-size:15px;margin:14px 16px 6px}
       </div>
     </div>
     <div class="stats" id="stats"></div>
-    <p class="muted pad" style="margin-top:12px">原型 v0.1：暫用圖、不發點數。資料只存在這支手機的瀏覽器。</p>
+    <p class="muted pad" style="margin-top:12px">原型 v0.2：暫用圖、不發點數。資料只存在這支手機的瀏覽器。</p>
     <div class="dev" id="dev" hidden></div>
   </section>
 
@@ -185,7 +185,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 <div class="toast" id="toast"></div>
 
 <script>
-/* 小鳶去旅行 原型 v0.1（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
+/* 小鳶去旅行 原型 v0.2（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
   version: '0.1',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
@@ -489,6 +489,7 @@ function renderDev() {
 }
 window.__travel = { S: () => S, CFG, LOCS, rollTrip, setRnd: (f) => { rnd = f; }, go, commitTrip, depart: (k, items, pick) => { pk = { bento: k, items: items || [], pick: pick || '' }; depart(); }, finishNow: () => { if (S.trip) S.trip.end = Date.now(); tick(); }, open: openLetter };
 go('home');
+if (S.fishGift) { const n = S.fishGift; S.fishGift = 0; save(); setTimeout(() => toast('捕魚做的便當送到了（' + n + ' 份），打包時可以選'), 600); }      // v0.2：捕魚 v0.7 結算直接給便當
 </script>
 </body>
 </html>
