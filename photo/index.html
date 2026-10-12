@@ -36,7 +36,7 @@ button{font-family:inherit}
 .top .fname{flex:1;text-align:center;font-size:14px;font-weight:700}
 .iconbtn{border:1px solid rgba(255,244,226,.35);background:rgba(255,244,226,.1);color:#FFF4E2;border-radius:999px;font-size:13px;padding:6px 11px;white-space:nowrap}
 .stagewrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:0 8px}
-.stage{position:relative;aspect-ratio:3/4;height:100%;max-width:100%;overflow:hidden;border-radius:6px;background:#0E1418;touch-action:none;user-select:none;-webkit-user-select:none}
+.stage{position:relative;aspect-ratio:3/4;width:min(100%,calc((100vh - 220px) * .75));overflow:hidden;border-radius:6px;background:#0E1418;touch-action:none;user-select:none;-webkit-user-select:none}
 .stage video,.stage .bgimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .stage video.mirror{transform:scaleX(-1)}
 .stage canvas.frame{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
@@ -129,7 +129,7 @@ button{font-family:inherit}
 
 <script>
 /* 小鳶合照館 原型 v0.1（工作單 11 v4 P2）。貼紙、相框、解鎖方式都是建議，等 Dari 確認；正式素材之後開單給 ChatGPT */
-const CFG = { version: '0.2', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
+const CFG = { version: '0.3', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
 const $ = (id) => document.getElementById(id);
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = 'none'), 2400); }
@@ -149,7 +149,7 @@ const STK = [
   { tab: '小鳶與鯨鯊', id: 'stk_shark_side', name: '鯨鯊', s: 0.7 },
   { tab: '小鳶與鯨鯊', id: 'stk_shark_jump', name: '鯨鯊躍起', s: 0.7 },
   { tab: '飛行朋友', id: 'stk_turtle', name: '海龜', s: 0.3, ok: () => cleared(1), how: '飛行冒險第 1 關過關' },
-  { tab: '飛行朋友', id: 'stk_oden', name: '黑輪', s: 0.26, ok: () => cleared(2), how: '飛行冒險第 2 關過關' },
+  { tab: '飛行朋友', id: 'stk_oden', name: '黑輪', s: 0.31, ok: () => cleared(2), how: '飛行冒險第 2 關過關' },
   { tab: '飛行朋友', id: 'stk_jelly', name: '石花凍', s: 0.26, ok: () => cleared(2), how: '飛行冒險第 2 關過關' },
   { tab: '飛行朋友', id: 'stk_bird', name: '守望鳥', s: 0.3, ok: () => cleared(3), how: '飛行冒險第 3 關過關' },
   { tab: '飛行朋友', id: 'stk_cat', name: '水母貓', s: 0.28, ok: () => cleared(3), how: '飛行冒險第 3 關過關' },
@@ -179,7 +179,7 @@ function drawFrame(c) {
   const W = CFG.W, H = CFG.H; c.clearRect(0, 0, W, H); c.textBaseline = 'middle';
   const font = (w, s) => w + ' ' + s + "px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif";
   const put = (id) => { const f = img(id); if (f.complete && f.naturalWidth) c.drawImage(f, 0, 0, W, H); };
-  const label = (t) => { c.save(); c.font = font('700', 34); c.fillStyle = '#fff'; c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 8; c.fillText(t, 64, 84); c.restore(); };      // 上緣安全區外的小字
+  const label = (t) => { c.save(); c.font = font('700', 34); const w = c.measureText(t).width; c.fillStyle = 'rgba(14,20,24,.55)'; roundRect(c, 44, 56, w + 40, 56, 28); c.fill(); c.fillStyle = '#fff'; c.fillText(t, 64, 85); c.restore(); };      // 上緣小字：加深色半透明底，亮背景也看得清（v0.3）
   if (frameI === 0) {      // 碼頭（G-44 frame_pier；不預畫小鳶，貼紙另放）
     put('frame_pier'); label('基隆・東三東四　' + today());
   } else if (frameI === 1) {      // 港灣四時（G-44 四色，沿用 G-25 配色）
@@ -187,7 +187,7 @@ function drawFrame(c) {
   } else {      // 本週主題（G-44 frame_week_base；郵票洞與兩行字由程式放）
     put('frame_week_base');
     const p = img('pc_' + WEEK[0] + '_a_v2', 'jpg'), [x0, y0, x1, y1] = [805, 1215, 1025, 1395];
-    if (p.complete && p.naturalWidth) { const bw = x1 - x0, bh = y1 - y0, r = Math.max(bw / p.naturalWidth, bh / p.naturalHeight), sw = bw / r, sh = bh / r; c.drawImage(p, (p.naturalWidth - sw) / 2, (p.naturalHeight - sh) / 2, sw, sh, x0, y0, bw, bh); }
+    if (p.complete && p.naturalWidth) { const bw = x1 - x0, bh = y1 - y0, r = Math.min(bw / p.naturalWidth, bh / p.naturalHeight), dw = p.naturalWidth * r, dh = p.naturalHeight * r; c.fillStyle = '#FBF4E6'; c.fillRect(x0, y0, bw, bh); c.drawImage(p, x0 + (bw - dw) / 2, y0 + (bh - dh) / 2, dw, dh); }      // v0.3：整張等比放進郵票洞，不裁到小鳶
     c.fillStyle = '#3E2B1D'; c.font = font('900', 34); c.fillText('本週小鳶在' + WEEK[1], 96, 1320);
     c.fillStyle = '#8A7565'; c.font = font('500', 28); c.fillText('一起來' + WEEK[1] + '走走吧　' + today(), 96, 1370);
   }
@@ -208,7 +208,9 @@ async function openCam() {
 }
 function stopCam() { if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; } }
 function useImage(url) { stopCam(); const b = $('bgimg'); b.src = url; b.hidden = false; $('video').hidden = true; src = 'img'; show('shoot'); }
-function show(id) { for (const s of document.querySelectorAll('.screen')) s.classList.toggle('on', s.id === id); if (id === 'shoot') { redrawFrame(); renderTray(); } }
+/* v0.3：舞台寬高一起按 3:4 放進可用空間，預覽和 1080×1440 匯出比例一致（ChatGPT 複查第 4 點） */
+function fitStage() { const w = document.querySelector('.stagewrap'), st = $('stage'); if (!w || !w.clientHeight) return; const W = w.clientWidth - 16, H = w.clientHeight, sw = Math.min(W, H * 3 / 4); st.style.width = sw + 'px'; st.style.height = (sw * 4 / 3) + 'px'; }
+function show(id) { for (const s of document.querySelectorAll('.screen')) s.classList.toggle('on', s.id === id); if (id === 'shoot') { fitStage(); redrawFrame(); renderTray(); stks.forEach(place); } }
 
 /* ---- 貼紙：放上、拖曳、兩指縮放旋轉、右下角把手縮放旋轉、左上刪除 ---- */
 let stks = [], sel = null, tab = TABS[0];
@@ -263,7 +265,7 @@ function handleDrag(e, o) {      // 右下角把手：單指（或滑鼠）就�
   h.addEventListener('pointermove', mv); h.addEventListener('pointerup', up);
 }
 $('stage').addEventListener('pointerdown', (e) => { if (e.target === $('stage') || e.target.id === 'video' || e.target.id === 'bgimg') select(null); });
-addEventListener('resize', () => stks.forEach(place));
+addEventListener('resize', () => { fitStage(); stks.forEach(place); });
 
 /* ---- 拍照合成：1080×1440，背景＋貼紙＋相框 ---- */
 function cover(c, im, iw, ih, mirror) {
