@@ -50,7 +50,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
 <body>
 <main class="phone">
   <header class="top">
-    <div><h1>小鳶來港</h1><p>測試首頁 v22・點圖片就能玩・素材都是暫用</p></div>
+    <div><h1>小鳶來港</h1><p>測試首頁 v23・點圖片就能玩・素材都是暫用</p></div>
     <img src="../travel/assets/kite_wave.png" alt="">
   </header>
 
@@ -82,7 +82,10 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
     <span class="cap"><span class="txt"><b class="h">官方 LINE 會員畫面</b><span class="sub">入會、消費領點、服務台核銷</span></span><span class="play">看</span></span>
   </a>
 
-  <div class="soon"><span>🗺️</span><span><b>港灣蓋章散步</b>　下一個做</span></div>
+  <a class="card" data-href="stamp/">
+    <span class="img" style="background-image:url(thumbs/stamp.jpg)"></span><span class="ver">蓋章 v0.1</span>
+    <span class="cap"><span class="txt"><b class="h">港灣蓋章散步</b><span class="sub">現場掃 QR 蓋章，集滿拿雨傘</span></span><span class="play">蓋</span></span>
+  </a>
 
   <details>
     <summary>測試選項</summary>
@@ -93,6 +96,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
       <a class="flag" data-href="travel/?fast=1">旅行快速模式</a>
       <a class="flag" data-href="travel/?reset=1">旅行從頭開始</a>
       <a class="flag" data-href="travel/?fast=1&amp;v1=1">旅行對照舊圖</a>
+      <a class="flag" data-href="stamp/?spot=1">模擬掃第 1 點</a>
     </div>
   </details>
 
@@ -103,7 +107,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
       <button type="button" data-keys="kiteFishingDex2,kiteFishingProg1">清除捕魚</button>
       <button type="button" data-keys="kiteFlyProgress1">清除飛行</button>
       <button type="button" data-keys="kiteTravel1">清除旅行</button>
-      <button type="button" data-keys="kiteFishingDex2,kiteFishingProg1,kiteFlyProgress1,kiteTravel1">全部清除</button>
+      <button type="button" data-keys="kiteStamp1">清除蓋章</button>
+      <button type="button" data-keys="kiteFishingDex2,kiteFishingProg1,kiteFlyProgress1,kiteTravel1,kiteStamp1">全部清除</button>
     </div>
   </details>
 
