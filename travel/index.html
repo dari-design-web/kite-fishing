@@ -31,7 +31,7 @@ header h1{font-size:20px;margin:0;flex:1}
 .roomview{position:relative;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;background:#3E2B1D}
 .roomview::-webkit-scrollbar{display:none}
 /* v0.14：小屋放大（Dari 00:31）。舞台高度由 fitRoom() 算，寬度跟著底圖比例；比手機寬時可以左右滑，鏡頭會跟著小鳶 */
-.room{position:relative;width:100%;aspect-ratio:1080/990;overflow:hidden;margin:0 auto;background:#EADFCB url(assets/room_bg.jpg) center/100% 100% no-repeat}
+.room{position:relative;width:100%;aspect-ratio:1080/1350;overflow:hidden;margin:0 auto;background:#EADFCB url(assets/room_living.jpg) center/100% 100% no-repeat}
 .room.ph{background:var(--ph-bg)}
 .room .props{position:absolute;inset:0;pointer-events:none}
 .room .props i{position:absolute;font-style:normal;line-height:1;transform:translate(-50%,-100%);filter:drop-shadow(0 2px 2px rgba(0,0,0,.18))}
@@ -45,11 +45,11 @@ header h1{font-size:20px;margin:0;flex:1}
 .swipehint.l{left:6px}.swipehint.r{right:6px}
 .swipehint.off{opacity:0}
 /* 位置照 ChatGPT 小屋置入位置_v1.json（1080×990 底圖換算成百分比）；底圖的空掛位、空架只是背景，實際收藏由玩家資料放上去 */
-.wallhit{position:absolute;left:50%;top:14.6%;width:32.9%;height:9.9%;cursor:pointer}
-.wallcards span{position:absolute;top:16.8%;width:8.5%;height:6.4%;border-radius:2px;background-size:100% 100%;box-shadow:0 1px 3px rgba(0,0,0,.3);border:1.5px solid #FFFDF8;transform:rotate(-3deg)}
+.wallhit{position:absolute;left:45.8%;top:24%;width:37.2%;height:6.7%;cursor:pointer}      /* v0.15：位置照 G-47 房間置入位置_G47_v1.json（1080×1350，百分比） */
+.wallcards span{position:absolute;top:25.5%;width:9.4%;height:4.4%;border-radius:2px;background-size:cover;background-position:center;box-shadow:0 1px 3px rgba(0,0,0,.3);border:1.5px solid #FFFDF8;transform:rotate(-3deg)}
 .wallcards span:nth-child(2){transform:rotate(2deg)}
-.shelfhit{position:absolute;left:0;top:43.7%;width:28.7%;height:23.8%;cursor:pointer}
-.shelfitems img{position:absolute;top:49.4%;width:5.93%;height:6.46%;object-fit:contain}
+.shelfhit{position:absolute;left:1.4%;top:45%;width:30%;height:18.5%;cursor:pointer}
+.shelfitems img{position:absolute;width:5.93%;height:4.74%;object-fit:contain;transform:translate(-50%,-50%)}      /* 三格改成左邊上下排（G-47） */
 .bird{position:absolute;left:35.2%;top:55.6%;width:34%;aspect-ratio:1;background:center/contain no-repeat;cursor:pointer;z-index:2;transform-origin:50% 92%;will-change:left,top,transform}
 /* v0.7：小鳶在屋裡生活。位置與動作由程式（PET）每一格更新 */
 .emote{position:absolute;width:10.5%;aspect-ratio:1;z-index:120;pointer-events:none;transform:translate(-50%,-100%);animation:pop .35s ease-out}
@@ -66,11 +66,11 @@ header h1{font-size:20px;margin:0;flex:1}
 .say .bubble::after{content:'';position:absolute;left:50%;bottom:-8px;margin-left:-6px;border:6px solid transparent;border-top-color:#fff}
 #home{flex-direction:column;overflow:hidden;padding:0;background:linear-gradient(#5A3F2A,#3E2B1D)}
 .hud{display:flex;align-items:center;gap:6px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 8px;color:#FFF4E2}
-.hud h1{font-size:17px;margin:0;flex:1;white-space:nowrap;letter-spacing:.04em}
+.hud h1{font-size:17px;margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.04em}
 .hud h1 small{font-size:11px;font-weight:400;opacity:.7;margin-left:6px;letter-spacing:0}
 .pill{display:inline-flex;align-items:center;gap:4px;background:rgba(255,248,236,.14);border:1px solid rgba(255,248,236,.25);border-radius:999px;padding:3px 9px 3px 4px;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .pill img{width:20px;height:20px;object-fit:contain}
-.gear{white-space:nowrap;flex:none;border:1px solid rgba(255,248,236,.35);background:rgba(255,248,236,.1);color:#FFF4E2;border-radius:999px;font:inherit;font-size:12px;padding:4px 10px}
+.gear{white-space:nowrap;flex:none;display:inline-flex;align-items:center;justify-content:center;min-height:28px;border:1px solid rgba(255,248,236,.35);background:rgba(255,248,236,.1);color:#FFF4E2;border-radius:999px;font:inherit;font-size:12px;padding:4px 10px}
 .roomwrap{position:relative;flex:none;isolation:isolate}      /* v0.8：小鳶、對話、圖示的層級只在小屋裡比，不會蓋過拆信畫面 */
 .roomwrap .chip{position:absolute;left:10px;right:10px;top:8px;margin:0;z-index:3;background:rgba(255,253,248,.92);box-shadow:0 2px 8px rgba(0,0,0,.15);font-size:13px;text-align:center}
 .floor{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-between;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(#9C6B45,#7A5134);box-shadow:inset 0 6px 10px rgba(0,0,0,.25)}
@@ -259,7 +259,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.14',
+  version: '0.15',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -404,38 +404,34 @@ const ACC = {
   straw: '<ellipse cx="180" cy="94" rx="112" ry="22" fill="#E9C77B" stroke="#3E2B1D" stroke-width="6"/><path d="M122 94 Q126 38 180 36 Q234 38 238 94 Z" fill="#F1D592" stroke="#3E2B1D" stroke-width="6" stroke-linejoin="round"/><path d="M123 82 Q180 72 237 82 L238 94 Q180 84 122 94 Z" fill="#D9534F"/><circle cx="232" cy="80" r="9" fill="#FF9EB5" stroke="#3E2B1D" stroke-width="4"/>',
   school: '<path d="M108 100 Q114 28 180 26 Q246 28 252 100 Z" fill="#F6CB2E" stroke="#3E2B1D" stroke-width="6" stroke-linejoin="round"/><ellipse cx="180" cy="100" rx="88" ry="13" fill="#F2B705" stroke="#3E2B1D" stroke-width="6"/><circle cx="180" cy="28" r="8" fill="#F2B705" stroke="#3E2B1D" stroke-width="4"/>'
 };
-const ROOMS = [
-  { id: 'living', name: '客廳', icon: '🛋️', w: 1080, h: 990, area: { x0: 26, x1: 78, y0: 82, y1: 95 }, acc: '' },
-  { id: 'bed', name: '臥室', icon: '🛏️', w: 1080, h: 1350, area: { x0: 22, x1: 78, y0: 78, y1: 93 }, acc: 'cap', nap: 3,
-    bg: 'radial-gradient(circle at 76% 22%,#FFF6C8 0 5%,transparent 5.5%),linear-gradient(#2D3E66,#2D3E66) 70% 14%/30% 22% no-repeat,linear-gradient(#C9D3EC 0 62%,#B98A63 62% 100%)',
-    props: [['🛏️', 32, 80, 40], ['🧸', 12, 83, 11], ['🪴', 90, 70, 12], ['🕯️', 56, 60, 7], ['⭐', 64, 12, 5], ['⭐', 84, 20, 4]],
-    says: ['我的枕頭軟綿綿～', '晚安…才不是，現在是白天啦！', '睡衣是星星的喔！', '我想抱抱熊熊。'] },
-  { id: 'kitchen', name: '廚房', icon: '🍳', w: 1080, h: 1350, area: { x0: 20, x1: 80, y0: 78, y1: 93 }, acc: 'chef',
-    bg: 'linear-gradient(#8A5A3A,#8A5A3A) 0 52%/100% 4% no-repeat,repeating-linear-gradient(90deg,transparent 0 46px,rgba(255,255,255,.55) 46px 48px),repeating-linear-gradient(transparent 0 46px,rgba(255,255,255,.55) 46px 48px),linear-gradient(#F3E2BE 0 64%,#D9C3A0 64% 100%)',
-    props: [['🍙', 26, 51, 10], ['🍳', 46, 51, 11], ['🥢', 62, 51, 8], ['🧺', 82, 51, 11], ['🫖', 14, 30, 9], ['🍱', 74, 86, 12]],
-    says: ['我在幫忙做便當！', '飯糰要捏圓圓的～', '小卷好香喔！', '洗手手，才可以煮飯。'] },
-  { id: 'garden', name: '花園', icon: '🌼', w: 1080, h: 1350, area: { x0: 14, x1: 86, y0: 76, y1: 94 }, acc: 'straw',
-    bg: 'radial-gradient(circle at 82% 14%,#FFE58A 0 6%,transparent 6.5%),linear-gradient(#BFE3F2 0 46%,#6FAE5A 46% 60%,#8CC46B 60% 100%)',
-    props: [['🌻', 12, 66, 16], ['🌷', 28, 70, 10], ['🌼', 70, 68, 10], ['🪴', 88, 70, 13], ['🦋', 56, 36, 8], ['🐞', 40, 92, 5]],
-    says: ['花花長高了耶！', '我在澆水，你看～', '蝴蝶飛過來了！', '草草軟軟的，好舒服。'] },
-  { id: 'school', name: '學校', icon: '🏫', w: 1080, h: 1350, area: { x0: 16, x1: 84, y0: 78, y1: 94 }, acc: 'school',
-    bg: 'linear-gradient(#2F5A46,#2F5A46) 50% 16%/64% 24% no-repeat,linear-gradient(#8A5A3A,#8A5A3A) 50% 13.5%/68% 29% no-repeat,linear-gradient(#EFE6D2 0 64%,#C39A6B 64% 100%)',
-    props: [['🖍️', 30, 64, 8], ['📚', 14, 66, 12], ['🎒', 86, 72, 13], ['🌏', 70, 64, 10], ['🍎', 50, 64, 7]],
-    says: ['我今天學會寫「港」了！', '老師說要舉手才能說話。', '下課了！來玩吧～', '我畫了一隻鯨鯊喔！'],
-    board: '小鳶的教室' }
+const ROOMS = [      // v0.15：五間都換上 G-47 正式暫用底圖（1080×1350）；可走範圍與看東西的點照 G-47 JSON（腳底中心，百分比）
+  { id: 'living', name: '客廳', icon: '🛋️', img: 'room_living.jpg', acc: '' },
+  { id: 'bed', name: '臥室', icon: '🛏️', img: 'room_bed.jpg', acc: 'cap', nap: 3,
+    looks: [[44, 78, -1, '兔兔在床上等我耶。'], [73, 77, 1, '月亮彎彎的，好像在笑～']],
+    says: ['我的枕頭軟綿綿～', '晚安…才不是，現在是白天啦！', '睡衣是星星的喔！', '我想抱抱兔兔。'] },
+  { id: 'kitchen', name: '廚房', icon: '🍳', img: 'room_kitchen.jpg', acc: 'chef',
+    looks: [[63, 77, 1, '飯糰跟便當！好想吃喔～'], [33, 77, -1, '洗手手，才可以煮飯。']],
+    says: ['我在幫忙做便當！', '飯糰要捏圓圓的～', '小卷好香喔！'] },
+  { id: 'garden', name: '花園', icon: '🌼', img: 'room_garden.jpg', acc: 'straw',
+    looks: [[38, 78, -1, '花花長高了耶！'], [79, 79, 1, '我來澆水，你看～']],
+    says: ['可以看到港口的船耶！', '草草軟軟的，好舒服。', '海風吹過來了～'] },
+  { id: 'school', name: '學校', icon: '🏫', img: 'room_school.jpg', acc: 'school',
+    looks: [[52, 78, 1, '黑板空空的，我來畫一隻鯨鯊！'], [79, 78, 1, '我的小書包在這裡～']],
+    says: ['我今天學會寫「港」了！', '老師說要舉手才能說話。', '下課了！來玩吧～'] }
 ];
+ROOMS.forEach((r) => { r.w = 1080; r.h = 1350; r.area = { x0: 15, x1: 85, y0: 75, y1: 95 }; });
 const ROOM = () => ROOMS.find((r) => r.id === S.room) || ROOMS[0];
-const ROOMDIM = { w: 1080, h: 990 };
+const ROOMDIM = { w: 1080, h: 1350 };
 let roomUserT = 0;
 function setRoom(id) {
   if (ROOMS.some((r) => r.id === id)) S.room = id; save();
   const r = ROOM(), room = $('room'), live = r.id === 'living';
-  room.classList.toggle('ph', !live); room.style.setProperty('--ph-bg', r.bg || 'none');
+  room.style.backgroundImage = 'url(assets/' + r.img + ')';
   ['wall', 'wallHit', 'miniShelf', 'shelfHit'].forEach((k) => ($(k).style.display = live ? '' : 'none'));
-  $('props').innerHTML = (r.props || []).map(([e, x, y, sz]) => '<i data-s="' + sz + '" style="left:' + x + '%;top:' + y + '%">' + e + '</i>').join('') + (r.board ? '<i data-s="4.6" style="left:50%;top:24%;color:#F4F1E6;font-weight:700;filter:none;white-space:nowrap">' + r.board + '</i>' : '');
-  $('phTag').hidden = live;
+  $('props').innerHTML = '';
+  $('phTag').hidden = true;
   $('scenes').innerHTML = ROOMS.map((x) => '<button type="button" data-room="' + x.id + '" aria-pressed="' + (x.id === r.id) + '"><span>' + x.icon + '</span>' + x.name + '</button>').join('');
-  $('scenes').querySelectorAll('button').forEach((b) => (b.onclick = () => { if (b.dataset.room !== S.room) { setRoom(b.dataset.room); PET.enter(); } }));
+  $('scenes').querySelectorAll('button').forEach((b) => (b.onclick = () => { if (b.dataset.room !== S.room) { setRoom(b.dataset.room); PET.enter(); if (typeof travelBgmSync === 'function') travelBgmSync(); } }));
   const acc = $('bird').querySelector('.acc') || $('bird').appendChild(Object.assign(document.createElement('div'), { className: 'acc' }));
   acc.innerHTML = r.acc ? '<svg viewBox="0 0 360 360" width="100%" height="100%">' + ACC[r.acc] + '</svg>' : '';
   fitRoom();
@@ -448,7 +444,7 @@ function fitRoom() {
   wk.hidden = false;
   const kids = [...fl.children].filter((k) => k.id !== 'weekly' && k.offsetParent !== null);
   const base = pad + kids.reduce((s2, k) => s2 + k.offsetHeight, 0) + gap * (kids.length - 1);
-  const want = W * 1.32, low = W * 1.2;      // 原本 1080×990 是寬度的 0.92 倍；放大到約 1.43 倍（Dari：高度再加 1/3～1/2）
+  const want = W * 1.25, low = W * 1.25;      // 原本 1080×990 是寬度的 0.92 倍；G-47 新底圖 4:5，高度＝寬度 1.25 倍，約放大 1.36 倍（Dari：高度再加 1/3～1/2），不用左右滑
   let H = appH - hud - base - wk.offsetHeight - gap;
   if (H < low) { wk.hidden = true; H = appH - hud - base; }
   H = Math.max(180, Math.min(want, H));
@@ -476,11 +472,11 @@ function renderHome() {
   PET.reset($('say').textContent);
   // 牆上最近三張、架上的紀念品
   const recent = Object.entries(S.cards).sort((a, b2) => b2[1] - a[1]).slice(0, 3);
-  const WALL_X = [51.5, 62.4, 73.3];      // 三個空掛位的左緣（%）
+  const WALL_X = [47, 59.7, 72.5];      // 三個空掛位的左緣（%，G-47 JSON）
   $('wall').innerHTML = ''; recent.forEach(([id], n) => { const s = document.createElement('span'); const [loc, i] = id.split('-'); const l = LOCS.find((x) => x.id === loc), c = l.cards[+i]; s.style.left = WALL_X[n] + '%'; s.style.backgroundImage = c[2] ? 'url(assets/' + c[2] + ')' : 'linear-gradient(' + l.tone[0] + ',' + l.tone[1] + ')'; $('wall').appendChild(s); });
   $('wallHit').onclick = () => go('album');
-  const SHELF_X = [4.44, 11.67, 18.8];      // 架上三格的左緣（%）
-  $('miniShelf').innerHTML = Object.entries(S.souvenirs).sort((a, b2) => b2[1] - a[1]).slice(0, 3).map(([k], n) => '<img src="assets/sv_' + k + '.png" alt="' + LOCS.find((l) => l.id === k).souvenir + '" style="left:' + SHELF_X[n] + '%">').join('');
+  const SHELF_Y = [48.3, 54.3, 60.1];      // v0.15：架上三格改成上下排，中心 x 16%（G-47 JSON）
+  $('miniShelf').innerHTML = Object.entries(S.souvenirs).sort((a, b2) => b2[1] - a[1]).slice(0, 3).map(([k], n) => '<img src="assets/sv_' + k + '.png" alt="' + LOCS.find((l) => l.id === k).souvenir + '" style="left:16%;top:' + SHELF_Y[n] + '%">').join('');
   $('shelfHit').onclick = () => go('shelf');
   const nb = (S.bento.far || 0) + (S.bento.squid || 0) + (S.bento.hair || 0) + (S.bento.special || 0) + riceLeft();
   $('hCards').textContent = ownedCount() + '/24'; $('hBento').textContent = nb;
@@ -517,7 +513,7 @@ const PET = (() => {
     p.t = 0; p.pose = S.state === 'back' ? 'back' : !S.firstDone ? 'wave' : 'home';
     const r = Math.random();
     if (S.state === 'back') {      // 拿著信，想讓你快點拆
-      if (r < 0.4) { go(rnd(60, 76), rnd(86, 93)); p.then = () => { emote('excl'); say(pick(['快來拆信！', '這次去了好遠喔！', '信在這裡～'])); }; }
+      if (r < 0.4) { go(rnd(55, 80), rnd(80, 92)); p.then = () => { emote('excl'); say(pick(['快來拆信！', '這次去了好遠喔！', '信在這裡～'])); }; }
       else if (r < 0.7) { p.act = 'jump'; p.dur = 0.7; emote('excl'); }
       else { p.act = 'idle'; p.dur = rnd(1.5, 3); }
       return;
@@ -529,7 +525,8 @@ const PET = (() => {
         [3, () => { go(rnd(AREA.x0, AREA.x1), rnd(AREA.y0, AREA.y1)); }],
         [1, () => { p.act = 'flap'; p.dur = 1.3; p.pose = 'wave'; }],
         [1, () => { p.act = 'jump'; p.dur = 0.75; emote('heart', true); }],
-        [2, () => { go(rnd(AREA.x0, AREA.x1), rnd(AREA.y0, AREA.y1)); p.then = () => { p.act = 'idle'; p.dur = 2.6; emote('spark'); say(pick(rm.says)); }; }],
+        [1.2, () => { go(rnd(AREA.x0, AREA.x1), rnd(AREA.y0, AREA.y1)); p.then = () => { p.act = 'idle'; p.dur = 2.6; emote('spark'); say(pick(rm.says)); }; }],
+        [rm.looks ? 1.8 : 0, () => { const lk = pick(rm.looks); go(lk[0], lk[1]); p.then = () => { p.face = lk[2]; p.act = 'look'; p.dur = 2.6; emote('heart'); say(lk[3]); }; }],      // 走到 G-47 標的點，看床、月亮、便當、花、黑板…
         [rm.nap || 0.6, () => { p.act = 'nap'; p.dur = rnd(4, 6); emote('zzz'); say(pick(['呼…呼…', '我想睡一下下。', '哈～眼睛快閉起來了。']), 2.2); }],
         [0.8, () => { p.act = 'sing'; p.dur = 2.4; emote('note', true); say(pick(['啦啦啦～', '今天天氣真好～', '海風的味道～'])); }],
         [1.2, () => { p.act = 'idle'; p.dur = rnd(1.5, 3.5); }]
@@ -543,13 +540,13 @@ const PET = (() => {
       [3, () => { go(rnd(AREA.x0, AREA.x1), rnd(AREA.y0, AREA.y1)); }],
       [1.2, () => { p.act = 'flap'; p.dur = 1.3; p.pose = 'wave'; }],
       [1, () => { p.act = 'jump'; p.dur = 0.75; emote('heart', true); }],
-      [cards.length ? 1.4 : 0.4, () => { go(rnd(60, 70), 83); p.then = () => { p.face = 1; p.act = 'look'; p.dur = 2.6; if (cards.length) { const [loc, i] = pick(cards).split('-'), l = LOCS.find((z) => z.id === loc); emote('heart'); say('這張是在' + l.name + '拍的「' + l.cards[+i][0] + '」！'); } else { emote('q'); say('牆上還空空的，想多掛幾張…'); } }; }],
-      [svs.length ? 1.1 : 0.3, () => { go(28, 84); p.then = () => { p.face = -1; p.act = 'look'; p.dur = 2.6; if (svs.length) { const id = pick(svs), l = LOCS.find((z) => z.id === id); emote('spark'); say(l.souvenir + '～' + l.sv); } else { emote('q'); say('架子上還沒有東西。'); } }; }],
+      [cards.length ? 1.4 : 0.4, () => { go(rnd(56, 72), 77); p.then = () => { p.face = 1; p.act = 'look'; p.dur = 2.6; if (cards.length) { const [loc, i] = pick(cards).split('-'), l = LOCS.find((z) => z.id === loc); emote('heart'); say('這張是在' + l.name + '拍的「' + l.cards[+i][0] + '」！'); } else { emote('q'); say('牆上還空空的，想多掛幾張…'); } }; }],
+      [svs.length ? 1.1 : 0.3, () => { go(19, 78); p.then = () => { p.face = -1; p.act = 'look'; p.dur = 2.6; if (svs.length) { const id = pick(svs), l = LOCS.find((z) => z.id === id); emote('spark'); say(l.souvenir + '～' + l.sv); } else { emote('q'); say('架子上還沒有東西。'); } }; }],
       [0.8, () => { p.act = 'nap'; p.dur = rnd(4, 6); emote('zzz'); say(pick(['呼…呼…', '我想睡一下下。', '哈～眼睛快閉起來了。']), 2.2); }],
       [0.9, () => { p.act = 'sing'; p.dur = 2.4; emote('note', true); say(pick(['啦啦啦～', '今天天氣真好～', '海風的味道～'])); }],
       [0.8, () => { p.act = 'busy'; p.dur = 2.4; p.pose = 'pack'; emote('sweat'); say(pick(['背包好亂喔…', '要帶什麼出門呢…', '地圖跑去哪裡了…'])); }],
       [nb ? 0.7 : 0.5, () => { p.act = 'idle'; p.dur = 2.4; emote('food'); say(nb ? '便當好香，想出門了！' : riceLeft() ? pick(['我想吃飯糰喔！', '吃飽飽，再出門！']) : pick(['肚子咕嚕咕嚕叫了…', '肚肚咕嚕咕嚕了。'])); }],
-      [0.6, () => { go(rnd(44, 56), 95); p.then = () => { p.face = 1; p.act = 'idle'; p.dur = 2.2; emote('q'); say(pick(['你在看我嗎？', '嘿嘿～', '要一起去旅行嗎？'])); }; }],
+      [0.6, () => { go(rnd(44, 56), 94); p.then = () => { p.face = 1; p.act = 'idle'; p.dur = 2.2; emote('q'); say(pick(['你在看我嗎？', '嘿嘿～', '要一起去旅行嗎？'])); }; }],
       [1.4, () => { p.act = 'idle'; p.dur = rnd(1.5, 3.5); }]
     ];
     let tot = acts.reduce((s, a) => s + a[0], 0), k = Math.random() * tot;
@@ -586,6 +583,7 @@ const PET = (() => {
       const sb = $('sayBox'); sb.style.left = Math.max(32, Math.min(68, p.x)) + '%'; sb.style.top = (headTop - 1) + '%';
       const em = $('emote'); em.style.left = (p.x + p.face * w * 0.46) + '%'; em.style.top = (headTop + 12) + '%';
       if (p.sayT > 0) { p.sayT -= dt; if (p.sayT <= 0) $('sayBox').classList.add('off'); }
+      if (p.act === 'nap' && p.emoT < 0.3) emote('zzz', true);      // v0.15（D58②）：閉眼打瞌睡的整段都冒 ZZZ
       if (p.emoT > 0) { p.emoT -= dt; if (p.emoT <= 0) $('emote').hidden = true; }
       const v = $('roomview'), over = v.scrollWidth - v.clientWidth;      // 舞台比手機寬：鏡頭慢慢跟著小鳶；手指剛滑過就先不搶
       if (over > 2 && now - roomUserT > 2500) { const tx = Math.max(0, Math.min(over, p.x / 100 * ROOMDIM.w - v.clientWidth / 2)); if (Math.abs(tx - v.scrollLeft) > 1) v.scrollLeft += (tx - v.scrollLeft) * Math.min(1, dt * 2.5); }
@@ -789,50 +787,170 @@ if (S.fishGift) { const n = S.fishGift; S.fishGift = 0; save(); setTimeout(() =>
 </script>
 <script>
 /* ===== 暫用配樂（C-70）：用程式即時產生，不用音檔、沒有版權問題。正式配樂來源待 Dari 決定 ===== */
+/* BGM-START｜配樂 v2（C-82，Dari 10/13 01:03／01:06）
+   每個場景一首不同的曲子：捕魚三場、飛行地圖與四關、去旅行五個房間。
+   有音樂檔就播檔案：assets/bgm/<場景>.mp3（例如 assets/bgm/fly_2.mp3）；沒有檔案就用程式即時合成。
+   這份是原始檔（shared/bgm.js），各頁面內嵌的是同一份內容。 */
 const BGM = (() => {
-  let ac = null, master = null, timer = null, cur = null, step = 0, next = 0, noise = null;
-  const hz = (m) => 440 * Math.pow(2, (m - 69) / 12), _ = null;
-  const T = {      // 每首 32 個八分音符；bass 每兩格一個音
-    fish:   { bpm: 108, mw: 'triangle', bw: 'sine', mv: 0.05, hat: 0.010,
-              mel: [72, _, 76, 79, 77, 76, 74, _, 72, 74, 76, _, 74, 72, 71, _, 69, _, 72, 76, 74, 72, 71, _, 72, _, _, _, 79, _, 76, _],
-              bass: [48, 55, 52, 55, 53, 57, 55, 50, 45, 52, 48, 52, 43, 47, 48, 55] },
-    fly:    { bpm: 132, mw: 'square', bw: 'triangle', mv: 0.022, hat: 0.012,
-              mel: [72, 74, 76, 79, 76, 74, 72, _, 74, 76, 79, 81, 79, 76, 74, _, 76, 79, 81, 84, 81, 79, 76, 74, 72, _, 74, _, 76, _, 79, _],
-              bass: [48, 48, 55, 55, 57, 57, 53, 53, 48, 48, 55, 55, 53, 55, 48, 43] },
-    travel: { bpm: 80, mw: 'sine', bw: 'sine', mv: 0.05, hat: 0,
-              mel: [67, _, 72, _, 71, 72, 74, _, 72, _, 69, _, 67, _, _, _, 65, _, 69, _, 72, 71, 69, _, 67, _, _, _, 64, _, 67, _],
-              bass: [48, 52, 55, 52, 45, 48, 52, 48, 41, 45, 48, 45, 43, 47, 50, 47] }
+  const BASE = 'assets/bgm/';
+  const ALIAS = { fish: 'fish_noon', fly: 'fly_1', travel: 'travel_living' };
+  const SC = { major: [0, 2, 4, 5, 7, 9, 11], minor: [0, 2, 3, 5, 7, 8, 10], dorian: [0, 2, 3, 5, 7, 9, 10], penta: [0, 2, 4, 7, 9], mixo: [0, 2, 4, 5, 7, 9, 10] };
+  /* key：主音（MIDI）；prog：每小節和弦的級數（0＝I）；meter：一小節幾個八分音符；lead／bass／arp／pad：樂器；drum：每小節的鼓點（x＝打）；g：音量校正（離線量過，讓每首差不多大聲） */
+  const TR = {
+    fish_noon:     { key: 60, scale: 'major', bpm: 108, prog: [0, 4, 5, 3, 0, 4, 3, 4], lead: 'pluck', bass: 'oompah', bw: 'triangle', drum: { k: 'x...x...', s: '....x...', h: '.x.x.x.x' }, dens: 0.75, seed: 11, g: 1.21 },
+    fish_dusk:     { key: 65, scale: 'major', bpm: 86, prog: [0, 3, 5, 4, 0, 3, 4, 0], lead: 'flute', bass: 'long', bw: 'sine', pad: 1, drum: { h: '..x...x.' }, dens: 0.55, seed: 23, g: 1.3 },
+    fish_night:    { key: 62, scale: 'dorian', bpm: 72, prog: [0, 0, 3, 3, 0, 0, 6, 4], lead: 'bell', bass: 'long', bw: 'sine', pad: 1, arp: 8, dens: 0.42, seed: 37, g: 1.35 },
+    fly_map:       { key: 55, scale: 'major', bpm: 112, prog: [0, 3, 4, 0, 5, 3, 4, 4], lead: 'chip', bass: 'root', bw: 'triangle', drum: { k: 'x...x...', s: '..x...xx' }, dens: 0.8, seed: 41, g: 1.28 },
+    fly_1:         { key: 60, scale: 'major', bpm: 136, prog: [0, 5, 3, 4, 0, 5, 3, 4], lead: 'chip', bass: 'oct', bw: 'triangle', arp: 16, drum: { k: 'x..x..x.', s: '....x...', h: 'xxxxxxxx' }, dens: 0.85, seed: 53, g: 0.98 },
+    fly_2:         { key: 62, scale: 'major', mscale: 'penta', bpm: 120, prog: [0, 0, 3, 4, 0, 0, 4, 0], lead: 'pluck', bass: 'oompah', bw: 'triangle', drum: { k: 'x...x...', w: 'x.x.xx.x' }, dens: 0.8, seed: 67, g: 1.11 },
+    fly_3:         { key: 65, scale: 'major', bpm: 124, swing: 0.18, prog: [0, 3, 0, 4, 0, 3, 4, 0], lead: 'reed', bass: 'walk', bw: 'triangle', drum: { k: 'x...x...', s: '..x...x.', h: '.x.x.x.x' }, dens: 0.8, seed: 79, g: 1.24 },
+    fly_4:         { key: 64, scale: 'minor', bpm: 144, prog: [0, 5, 2, 6, 0, 5, 6, 4], lead: 'chip', bass: 'root', bw: 'sawtooth', drum: { k: 'x.x.x.x.', s: '....x..x', h: 'xxxxxxxx' }, dens: 0.85, seed: 97, g: 0.89 },
+    travel_living: { key: 60, scale: 'major', bpm: 84, prog: [0, 3, 4, 0, 5, 3, 4, 0], lead: 'pluck', bass: 'long', bw: 'sine', pad: 1, dens: 0.6, seed: 101, g: 1.6 },
+    travel_bed:    { key: 65, scale: 'major', bpm: 66, meter: 6, prog: [0, 3, 0, 4, 0, 3, 4, 0], lead: 'bell', bass: 'long', bw: 'sine', pad: 1, dens: 0.5, seed: 113, g: 1.35 },
+    travel_kitchen:{ key: 67, scale: 'major', bpm: 108, swing: 0.12, prog: [0, 4, 0, 4, 3, 0, 4, 0], lead: 'pluck', bass: 'oompah', bw: 'triangle', drum: { k: 'x...x...', w: '..x...x.' }, dens: 0.7, seed: 127, g: 1.17 },
+    travel_garden: { key: 62, scale: 'major', bpm: 96, prog: [0, 3, 0, 4, 5, 3, 4, 0], lead: 'flute', bass: 'long', bw: 'sine', arp: 8, birds: 1, drum: { h: '..x...x.' }, dens: 0.6, seed: 139, g: 1.28 },
+    travel_school: { key: 64, scale: 'major', bpm: 116, prog: [0, 3, 4, 0, 0, 3, 4, 0], lead: 'bell', bass: 'root', bw: 'triangle', drum: { k: 'x...x...', c: '..x...x.' }, dens: 0.75, seed: 151, g: 0.91 }
   };
-  function tone(f, t, d, w, v) { const o = ac.createOscillator(), g = ac.createGain(); o.type = w; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + d); o.connect(g); g.connect(master); o.start(t); o.stop(t + d + 0.02); }
-  function hat(t, v) { if (!noise) { const b = ac.createBuffer(1, ac.sampleRate * 0.05, ac.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; noise = b; } const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); s.buffer = noise; f.type = 'highpass'; f.frequency.value = 6000; g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.04); s.connect(f); f.connect(g); g.connect(master); s.start(t); }
-  function tick() {
-    const s = T[cur]; if (!s) return; const e = 60 / s.bpm / 2;
-    while (next < ac.currentTime + 0.15) {
-      const i = step % 32, m = s.mel[i];
-      if (m) tone(hz(m), next, e * 1.7, s.mw, s.mv);
-      if (i % 2 === 0) tone(hz(s.bass[i / 2]), next, e * 1.9, s.bw, 0.045);
-      if (s.hat && i % 2 === 1) hat(next, s.hat);
-      next += e; step++;
+  const FILE = {};      // 場景 → false（確定沒有音樂檔）
+  let ac = null, out = null, timer = null, cur = null, step = 0, next = 0, audio = null, song = null, noise = null;
+  const hz = (m) => 440 * Math.pow(2, (m - 69) / 12);
+  function rng(s) { return () => { s = (s * 1103515245 + 12345) % 2147483648; return s / 2147483648; }; }
+  /* ====== 作曲：同一個種子每次寫出一樣的曲子。前四小節是 A 句，後四小節重複 A 句、最後一小節回到主音 ====== */
+  function compose(T) {
+    const r = rng(T.seed), sc = SC[T.scale], ms = SC[T.mscale || T.scale], bpb = T.meter || 8, bars = T.prog.length;
+    const deg = (d, base) => base + sc[((d % 7) + 7) % 7] + 12 * Math.floor(d / 7);
+    const pool = []; for (let o = -1; o < 3; o++) for (const s of ms) { const m = T.key + s + 12 * o; if (m >= T.key - 3 && m <= T.key + 17) pool.push(m); }
+    pool.sort((a, b) => a - b);
+    const chordPc = (b) => [0, 2, 4].map((k) => deg(T.prog[b] + k, T.key) % 12);
+    let at = pool.indexOf(pool.reduce((p, m) => (Math.abs(m - (T.key + 7)) < Math.abs(p - (T.key + 7)) ? m : p), pool[0]));
+    const near = (pcs) => { let best = at, bd = 99; pool.forEach((m, i) => { if (pcs.includes(m % 12) && Math.abs(i - at) < bd) { bd = Math.abs(i - at); best = i; } }); return best; };
+    const barMel = (b, end) => {
+      const a = [];
+      for (let s = 0; s < bpb; s++) {
+        const strong = s % (bpb === 6 ? 3 : 4) === 0;
+        if (end && s >= bpb - 2) { a.push(s === bpb - 2 ? null : null); continue; }
+        if (end && s === bpb - 4) { at = near([T.key % 12]); a.push(pool[at]); continue; }
+        if (strong || r() < T.dens * 0.8) {
+          if (strong) at = near(chordPc(b));
+          else { const mv = [-2, -1, -1, 1, 1, 2][Math.floor(r() * 6)]; at = Math.max(0, Math.min(pool.length - 1, at + mv)); }
+          a.push(pool[at]);
+        } else a.push(null);
+      }
+      return a;
+    };
+    const A = []; for (let b = 0; b < 4; b++) A.push(barMel(b, false));
+    const mel = [];
+    for (let b = 0; b < bars; b++) {
+      if (b < 4) mel.push(A[b]);
+      else if (b === bars - 1) mel.push(barMel(b, true));
+      else if (b === 5) { const v = A[1].slice(); for (let s = 1; s < bpb; s += 2) if (v[s] && r() < 0.5) v[s] = null; mel.push(v); }
+      else mel.push(A[b - 4]);
     }
+    const flat = [].concat(...mel), dur = flat.map((m, i) => { if (!m) return 0; let d = 1; while (d < 4 && !flat[(i + d) % flat.length]) d++; return d; });
+    const roots = T.prog.map((d) => deg(d, T.key - 24)), triads = T.prog.map((d) => [0, 2, 4].map((k) => deg(d + k, T.key - 12)));
+    return { flat, dur, roots, triads, bpb, bars, len: bpb * bars };
   }
-  function play(name) {
-    if (cur === name && timer) return; stop();
-    try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  /* ====== 樂器 ====== */
+  function env(g, t, a, peak, d) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + d); }
+  function osc(c, type, f, t, d, dest, v, a, detune) { const o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = f; if (detune) o.detune.value = detune; env(g, t, a || 0.01, v, d); o.connect(g); g.connect(dest); o.start(t); o.stop(t + d + 0.05); return o; }
+  function voice(c, dest, kind, m, t, d, v) {
+    const f = hz(m);
+    if (kind === 'chip') { const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3200; lp.connect(dest); osc(c, 'square', f, t, d * 0.9, lp, v * 0.55, 0.005); }
+    else if (kind === 'pluck') { osc(c, 'triangle', f, t, Math.min(d, 0.45) + 0.15, dest, v, 0.004); osc(c, 'sine', f * 2, t, 0.18, dest, v * 0.25, 0.003); }
+    else if (kind === 'bell') { osc(c, 'sine', f, t, 1.1, dest, v * 0.9, 0.003); osc(c, 'sine', f * 2, t, 0.6, dest, v * 0.3, 0.003); osc(c, 'sine', f * 3.01, t, 0.25, dest, v * 0.12, 0.002); }
+    else if (kind === 'flute') { const o = osc(c, 'sine', f, t, d + 0.1, dest, v, 0.06); osc(c, 'triangle', f, t, d + 0.1, dest, v * 0.18, 0.06); const lf = c.createOscillator(), lg = c.createGain(); lf.frequency.value = 5; lg.gain.value = f * 0.006; lf.connect(lg); lg.connect(o.frequency); lf.start(t + 0.12); lf.stop(t + d + 0.15); }
+    else if (kind === 'reed') { const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1700; lp.connect(dest); osc(c, 'sawtooth', f, t, d * 0.95, lp, v * 0.5, 0.02); osc(c, 'sawtooth', f, t, d * 0.95, lp, v * 0.3, 0.02, 9); }
+    else osc(c, kind, f, t, d, dest, v, 0.01);
+  }
+  function noiseBuf(c) { const b = c.createBuffer(1, c.sampleRate * 0.25, c.sampleRate), x = b.getChannelData(0); for (let i = 0; i < x.length; i++) x[i] = Math.random() * 2 - 1; return b; }
+  function hit(c, dest, kind, t) {
+    if (kind === 'k') { const o = c.createOscillator(), g = c.createGain(); o.frequency.setValueAtTime(130, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.12); env(g, t, 0.003, 0.55, 0.18); o.connect(g); g.connect(dest); o.start(t); o.stop(t + 0.2); return; }
+    if (kind === 'w') { osc(c, 'sine', 820, t, 0.07, dest, 0.22, 0.001); osc(c, 'square', 1640, t, 0.02, dest, 0.04, 0.001); return; }
+    const nb = c === ac ? (noise = noise || noiseBuf(c)) : noiseBuf(c), s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(); s.buffer = nb;
+    if (kind === 'h') { f.type = 'highpass'; f.frequency.value = 7000; env(g, t, 0.002, 0.09, 0.045); }
+    else if (kind === 's') { f.type = 'bandpass'; f.frequency.value = 1800; env(g, t, 0.002, 0.22, 0.14); }
+    else { f.type = 'bandpass'; f.frequency.value = 1300; env(g, t, 0.002, 0.25, 0.09); env(g, t + 0.012, 0.002, 0.2, 0.1); }      // c：拍手
+    s.connect(f); f.connect(g); g.connect(dest); s.start(t); s.stop(t + 0.2);
+  }
+  function chirp(c, dest, t) { for (let i = 0; i < 3; i++) { const o = c.createOscillator(), g = c.createGain(), u = t + i * 0.11; o.type = 'sine'; o.frequency.setValueAtTime(2600, u); o.frequency.exponentialRampToValueAtTime(3800, u + 0.06); env(g, u, 0.005, 0.05, 0.08); o.connect(g); g.connect(dest); o.start(u); o.stop(u + 0.1); } }
+  /* 排一個八分音符格（即時播放和離線量音量共用） */
+  function schedule(c, dest, T, S, i, t, e) {
+    const b = Math.floor(i / S.bpb) % S.bars, s = i % S.bpb, k = i % S.len, beat = S.bpb === 6 ? 3 : 2;
+    const m = S.flat[k]; if (m) voice(c, dest, T.lead, m, t, S.dur[k] * e * 0.95, 0.16 * T.g);
+    const root = S.roots[b];
+    if (T.bass === 'long' && s === 0) osc(c, T.bw, hz(root), t, S.bpb * e * 0.95, dest, 0.15 * T.g, 0.04);
+    if (T.bass === 'root' && s % beat === 0) osc(c, T.bw, hz(root), t, e * beat * 0.8, dest, 0.13 * T.g, 0.006);
+    if (T.bass === 'oct' && s % 1 === 0) osc(c, T.bw, hz(root + (s % 2 ? 12 : 0)), t, e * 0.8, dest, 0.12 * T.g, 0.005);
+    if (T.bass === 'oompah' && s % beat === 0) osc(c, T.bw, hz(root + ((s / beat) % 2 ? 7 : 0)), t, e * 1.4, dest, 0.14 * T.g, 0.005);
+    if (T.bass === 'walk' && s % beat === 0) { const w = [0, 4, 7, 9][(s / beat) % 4]; osc(c, T.bw, hz(root + w), t, e * beat * 0.85, dest, 0.14 * T.g, 0.006); }
+    if (T.pad && s === 0) S.triads[b].forEach((n) => osc(c, 'triangle', hz(n), t, S.bpb * e, dest, 0.035 * T.g, 0.25));
+    if (T.arp) { const tri = S.triads[b], n = T.arp === 16 ? 2 : 1; for (let j = 0; j < n; j++) osc(c, 'triangle', hz(tri[(s * n + j) % 3] + 12), t + j * e / n, e / n * 0.9, dest, 0.05 * T.g, 0.004); }
+    if (T.drum) for (const key in T.drum) { const p = T.drum[key]; if (p[s % p.length] === 'x') hit(c, dest, key, t); }
+    if (T.birds && k === 0) chirp(c, dest, t + e * 3);
+  }
+  const SONG = {};
+  function song_(name) { return SONG[name] || (SONG[name] = compose(TR[name])); }
+  function tick() {
+    const T = TR[cur]; if (!T || !ac) return; const S = song_(cur), e = 60 / T.bpm / 2;
+    while (next < ac.currentTime + 0.2) { const sw = step % 2 ? (T.swing || 0) * e : 0; schedule(ac, out, T, S, step, next + sw, e); next += e; step++; }
+  }
+  function ensure() {
+    try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); } catch (x) { return false; }
     if (ac.state === 'suspended') ac.resume();
-    if (!master) { master = ac.createGain(); master.gain.value = 0.8; master.connect(ac.destination); }
-    cur = name; step = 0; next = ac.currentTime + 0.08; timer = setInterval(tick, 30); tick();
+    if (!out) { const comp = ac.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 4; comp.attack.value = 0.005; comp.release.value = 0.2; out = ac.createGain(); out.gain.value = 1.1; out.connect(comp); comp.connect(ac.destination); }
+    return true;
   }
-  function stop() { if (timer) clearInterval(timer); timer = null; cur = null; }
-  document.addEventListener('visibilitychange', () => { if (document.hidden && ac && ac.state === 'running') ac.suspend(); else if (!document.hidden && ac && timer) ac.resume(); });
-  return { play, stop, get on() { return !!timer; } };
+  function synth(name) { if (!TR[name] || !ensure()) return; step = 0; next = ac.currentTime + 0.08; timer = setInterval(tick, 30); tick(); }
+  function play(name) {
+    name = ALIAS[name] || name;
+    ensure();      // 一定要在點擊當下建立／喚醒，手機才會出聲
+    if (cur === name) { if (audio && audio.paused) audio.play().catch(() => {}); if (timer || audio) return; }
+    stop(); cur = name;
+    if (FILE[name] !== false && typeof Audio !== 'undefined') {
+      const a = new Audio(); let failed = false; a.loop = true; a.volume = 0.9; a.preload = 'auto';
+      const fail = () => { if (failed) return; failed = true; FILE[name] = false; if (audio === a) { audio = null; if (cur === name) synth(name); } };
+      a.onerror = fail; a.src = BASE + name + '.mp3'; audio = a;
+      const p = a.play(); if (p && p.catch) p.catch((x) => { if (!x || x.name !== 'NotAllowedError') fail(); });
+      return;
+    }
+    synth(name);
+  }
+  function stop() { if (timer) clearInterval(timer); timer = null; if (audio) { audio.pause(); audio = null; } cur = null; }
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { if (ac && ac.state === 'running') ac.suspend(); if (audio) audio.pause(); }
+    else { if (ac && timer) ac.resume(); if (audio) audio.play().catch(() => {}); }
+  });
+  /* 測試用：離線算出一首合成曲的音量（RMS） */
+  function measure(name, sec) {
+    const T = TR[name], S = song_(name), sr = 22050, c = new OfflineAudioContext(1, sr * sec, sr), e = 60 / T.bpm / 2;
+    const g = c.createGain(); g.gain.value = 1; g.connect(c.destination);
+    for (let i = 0, t = 0.05; t < sec; i++, t += e) schedule(c, g, T, S, i, t + (i % 2 ? (T.swing || 0) * e : 0), e);
+    return c.startRendering().then((b) => { const x = b.getChannelData(0); let s = 0; for (let i = 0; i < x.length; i++) s += x[i] * x[i]; return Math.sqrt(s / x.length); });
+  }
+  return { play, stop, measure, tracks: Object.keys(TR), TR, get on() { return !!(timer || audio); }, get cur() { return cur; } };
 })();
+/* 音樂與暫停圖示（C-81）：開＝音符、關＝音符加圓圈斜線；暫停＝紅色正方形，暫停中＝綠色播放箭頭 */
+const SND_ICON = (() => {
+  const note = '<path d="M9.5 17.2a2.9 2.9 0 1 1-1.9-2.7V5.4l10.3-2.3v11.3a2.9 2.9 0 1 1-1.9-2.7V7l-6.5 1.5z" fill="currentColor"/>';
+  return {
+    on: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">' + note + '</svg>',
+    off: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><g transform="translate(3.6 3.6) scale(.7)" opacity=".75">' + note + '</g><circle cx="12" cy="12" r="10" fill="none" stroke="#C9473A" stroke-width="2.2"/><path d="M5 5l14 14" stroke="#C9473A" stroke-width="2.2" stroke-linecap="round"/></svg>',
+    stop: '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2.5" fill="#D9342B"/></svg>',
+    play: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M8 4.8l11.5 7.2L8 19.2z" fill="#2FA84F" stroke="#2FA84F" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+    get saved() { try { return localStorage.getItem('kiteBgm') !== '0'; } catch (e) { return true; } },
+    save(on) { try { localStorage.setItem('kiteBgm', on ? '1' : '0'); } catch (e) {} }
+  };
+})();
+/* BGM-END */
 </script>
 <script>
-/* 小屋配樂：預設開，第一次點畫面才開始（瀏覽器規定）；右上 ♪ 可關，記在這支手機 */
-(() => { let on = true; try { on = localStorage.getItem('kiteBgm') !== '0'; } catch (e) {}
-  const b = document.getElementById('bgmBtn'), draw = () => { b.style.opacity = on ? 1 : 0.45; b.setAttribute('aria-pressed', String(on)); };
-  draw(); b.onclick = (e) => { e.stopPropagation(); on = !on; try { localStorage.setItem('kiteBgm', on ? '1' : '0'); } catch (x) {} if (on) BGM.play('travel'); else BGM.stop(); draw(); };
-  document.addEventListener('pointerdown', () => { if (on && !BGM.on) BGM.play('travel'); }, { once: false, passive: true });
+/* 小屋配樂：預設開，第一次點畫面才開始（瀏覽器規定）；右上音符可關，記在這支手機。v0.15（D58）：五個房間各一首，換房間就換曲子；圖示：開＝音符、關＝音符加圓圈斜線 */
+let travelBgmOn = SND_ICON.saved;
+function travelBgmSync() { if (travelBgmOn) BGM.play('travel_' + (S.room || 'living')); else BGM.stop(); }
+(() => {
+  const b = document.getElementById('bgmBtn'), draw = () => { b.innerHTML = SND_ICON[travelBgmOn ? 'on' : 'off']; b.setAttribute('aria-pressed', String(!travelBgmOn)); b.setAttribute('aria-label', travelBgmOn ? '音樂開著，點一下關掉' : '音樂關著，點一下打開'); };
+  draw(); b.onclick = (e) => { e.stopPropagation(); travelBgmOn = !travelBgmOn; SND_ICON.save(travelBgmOn); travelBgmSync(); draw(); };
+  document.addEventListener('pointerdown', () => { if (travelBgmOn) travelBgmSync(); }, { passive: true });
 })();
 </script>
 </body>
