@@ -24,22 +24,18 @@ header h1{font-size:20px;margin:0;flex:1}
 .screen{display:none}
 .screen.on{display:block}
 /* 小屋 */
-.room{position:relative;margin:0 16px 12px;height:330px;border-radius:18px;overflow:hidden;background:linear-gradient(#EADFCB 0 66%,#C9A27E 66% 100%);border:2px solid var(--line)}
-.window{position:absolute;left:18px;top:22px;width:132px;height:110px;border-radius:10px;border:6px solid #A97A52;background:url(assets/card_harbor.jpg) center/cover}
-.door{position:absolute;right:20px;top:58px;width:78px;height:160px;border-radius:38px 38px 4px 4px;background:#2F7F86;border:5px solid #A97A52}
-.door::after{content:'';position:absolute;left:14px;top:80px;width:9px;height:9px;border-radius:50%;background:var(--gold)}
-.wallcards{position:absolute;left:166px;top:26px;display:flex;gap:6px}
-.wallcards span{width:38px;height:26px;border-radius:3px;background:#fff;border:2px solid #D9C9B2;transform:rotate(-4deg);background-size:cover;background-position:center}
-.wallcards span:nth-child(2){transform:rotate(5deg)}
-.shelf{position:absolute;left:18px;top:150px;width:132px;height:62px;border-bottom:6px solid #A97A52;display:flex;align-items:flex-end;gap:4px;padding:0 6px}
-.shelf i{font-style:normal;font-size:11px;background:#fff;border:1.5px solid #D9C9B2;border-radius:6px;padding:2px 4px;white-space:nowrap}
-.bird{position:absolute;left:50%;bottom:16px;width:132px;height:132px;transform:translateX(-50%);background:center/contain no-repeat;transition:transform .3s}
+.room{position:relative;margin:0 16px 12px;aspect-ratio:1080/990;border-radius:18px;overflow:hidden;background:#EADFCB url(assets/room_bg.jpg) center/100% 100% no-repeat;border:2px solid var(--line)}
+/* 位置照 ChatGPT 小屋置入位置_v1.json（1080×990 底圖換算成百分比）；底圖的空掛位、空架只是背景，實際收藏由玩家資料放上去 */
+.wallhit{position:absolute;left:50%;top:14.6%;width:32.9%;height:9.9%;cursor:pointer}
+.wallcards span{position:absolute;top:16.8%;width:8.5%;height:6.4%;border-radius:2px;background-size:100% 100%;box-shadow:0 1px 3px rgba(0,0,0,.3);border:1.5px solid #FFFDF8;transform:rotate(-3deg)}
+.wallcards span:nth-child(2){transform:rotate(2deg)}
+.shelfhit{position:absolute;left:0;top:43.7%;width:28.7%;height:23.8%;cursor:pointer}
+.shelfitems img{position:absolute;top:49.4%;width:5.93%;height:6.46%;object-fit:contain}
+.bird{position:absolute;left:35.2%;top:55.6%;width:37%;height:40.4%;background:center/contain no-repeat;pointer-events:none}
 .bird.bob{animation:bob 2.4s ease-in-out infinite}
-@keyframes bob{50%{transform:translateX(-50%) translateY(-6px)}}
-.note{position:absolute;left:50%;bottom:44px;transform:translateX(-50%) rotate(-3deg);width:190px;padding:12px;background:#FFF8D9;border:1.5px solid #E5D49B;box-shadow:0 3px 8px rgba(0,0,0,.12);font-size:14px;line-height:1.5}
-.envelope{position:absolute;right:28px;bottom:26px;width:86px;height:58px;background:#FFFDF8;border:2px solid #D9C9B2;border-radius:6px;animation:bob 1.6s infinite}
-.envelope::before{content:'';position:absolute;left:-2px;right:-2px;top:-2px;height:34px;background:linear-gradient(to bottom right,transparent 49%,#D9C9B2 50%,transparent 52%),linear-gradient(to bottom left,transparent 49%,#D9C9B2 50%,transparent 52%)}
-.envelope::after{content:'';position:absolute;left:34px;top:22px;width:18px;height:18px;border-radius:50%;background:var(--red)}
+@keyframes bob{50%{transform:translateY(-6px)}}
+.note{position:absolute;left:50%;bottom:9%;transform:translateX(-50%) rotate(-3deg);width:56%;padding:10px 12px;background:#FFF8D9;border:1.5px solid #E5D49B;box-shadow:0 3px 8px rgba(0,0,0,.12);font-size:14px;line-height:1.5}
+.envelope{position:absolute;left:69.4%;top:76.8%;width:22.2%;height:16.2%;background:url(assets/letter_seal.png) center/contain no-repeat,url(assets/letter_env.png) center/contain no-repeat;animation:bob 1.6s infinite;cursor:pointer}
 .say{position:absolute;left:16px;right:16px;top:-2px;transform:translateY(-100%);text-align:center}
 .bubble{display:inline-block;background:#fff;border:2px solid var(--line);border-radius:14px;padding:6px 12px;font-size:14px}
 .stats{display:flex;gap:8px;margin:10px 16px 0;flex-wrap:wrap}
@@ -61,22 +57,25 @@ h3{font-size:15px;margin:14px 16px 6px}
 .dest{margin:10px 16px;padding:10px 12px;border-radius:12px;background:#FFF8D9;font-size:13px;line-height:1.55}
 /* 出門 */
 .depart{position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(244,239,230,.97);display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:20}
-.depart .bird2{width:150px;height:150px;background:url(assets/kite_hello.png) center/contain no-repeat;animation:fly 2s ease-in forwards}
+.depart .bird2{width:170px;height:170px;background:url(assets/kite_pack.png) center/contain no-repeat;animation:fly 2s ease-in forwards}
 @keyframes fly{0%{transform:translate(0,0) scale(1)}40%{transform:translate(0,-10px) scale(1.05)}100%{transform:translate(260px,-260px) scale(.4);opacity:0}}
 /* 拆信 */
 .letter{position:fixed;inset:0;max-width:430px;margin:0 auto;background:#2B3A40;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
 .letter .skip{position:absolute;right:14px;top:14px;border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:6px 12px;font-family:inherit}
-.env{width:240px;height:160px;background:#FFFDF8;border-radius:10px;position:relative;cursor:pointer;box-shadow:0 10px 24px rgba(0,0,0,.35)}
-.env::before{content:'';position:absolute;inset:0;background:linear-gradient(to bottom right,transparent 49.5%,#D9C9B2 50%,transparent 51%) top/100% 60% no-repeat,linear-gradient(to bottom left,transparent 49.5%,#D9C9B2 50%,transparent 51%) top/100% 60% no-repeat}
-.seal{position:absolute;left:50%;top:44%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:var(--red);box-shadow:inset 0 0 0 4px #A8382E;transition:transform .4s,opacity .4s}
-.env.open .seal{transform:scale(1.6) rotate(30deg);opacity:0}
+.env{width:min(300px,80vw);aspect-ratio:3/2;position:relative;cursor:pointer;filter:drop-shadow(0 10px 18px rgba(0,0,0,.35))}
+.env img{position:absolute;inset:0;width:100%;height:100%;transition:opacity .16s,transform .35s}
+.env .seal{transform:translateY(1.25%);transform-origin:50% 68%}      /* 蠟封往下約 6px（720 寬時），正壓信封尖端 */
+.env .opened{opacity:0}
+.env.open .seal{transform:translateY(1.25%) scale(.6);opacity:0}
+.env.open .closed{opacity:0;transition-delay:.4s}      /* 先讓打開的信封淡入，再收掉閉合的，避免中間變透明 */
+.env.open .opened{opacity:1;transition-delay:.25s}
 .tapme{color:#fff;margin-top:16px;font-size:15px}
 .pc{width:min(340px,86vw);aspect-ratio:8/5;perspective:900px;margin-top:6px}
 .pc .in{position:relative;width:100%;height:100%;transition:transform .6s;transform-style:preserve-3d}
 .pc.flip .in{transform:rotateY(180deg)}
 .pc .front,.pc .backside{position:absolute;inset:0;border-radius:10px;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:6px solid #FFFDF8;box-shadow:0 10px 24px rgba(0,0,0,.35)}
 .pc .backside{transform:rotateY(180deg);background:#FFFDF8;padding:14px 16px;font-size:14px;line-height:1.7;color:var(--ink)}
-.pc .backside .stampbox{position:absolute;right:12px;top:10px;width:46px;height:54px;border:2px dashed #D9C9B2;border-radius:4px;background:url(assets/kite_hello.png) center/80% no-repeat}
+.pc .backside .stampbox{position:absolute;right:12px;top:10px;width:46px;height:54px;border:2px dashed #D9C9B2;border-radius:4px;background:url(assets/kite_home.png) center/90% no-repeat}
 .pc .backside .to{position:absolute;left:16px;bottom:12px;right:16px;border-top:1.5px solid #E2D6C6;padding-top:6px;font-size:12px;color:var(--muted)}
 .slideup{animation:slideup .7s ease-out}
 @keyframes slideup{from{transform:translateY(60px);opacity:0}}
@@ -87,7 +86,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 .scene{width:100%;height:100%;position:relative;background-size:cover;background-position:center}
 .scene .ttl{position:absolute;left:10px;top:8px;font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5)}
 .scene .tmp{position:absolute;right:8px;top:8px;font-size:10px;background:rgba(255,255,255,.8);border-radius:999px;padding:1px 7px;color:var(--ink)}
-.scene .kb{position:absolute;bottom:6%;width:15%;aspect-ratio:1;background:url(assets/kite_hello.png) center/contain no-repeat}
+.scene .kb{position:absolute;bottom:4%;width:15%;aspect-ratio:1;background:url(assets/kite_home.png) center/contain no-repeat}      /* 只給還沒有正式圖的 C 款與本週限定；正式明信片已含小鳶，不另疊 */
 .scene .fr{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-size:11px;background:rgba(255,255,255,.85);border-radius:999px;padding:1px 8px}
 /* 收藏冊 */
 .tabs{display:flex;gap:6px;margin:0 16px 10px;overflow-x:auto}
@@ -107,7 +106,10 @@ h3{font-size:15px;margin:14px 16px 6px}
 /* 紀念品櫃 */
 .shelfgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 16px}
 .sv{aspect-ratio:1;border-radius:12px;background:var(--card);border:2px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;text-align:center;padding:4px;font-family:inherit;color:var(--ink)}
-.sv svg{width:34px;height:34px}
+.sv img{width:56px;height:56px;object-fit:contain}
+.sv.no img{filter:grayscale(1) brightness(1.6);opacity:.35}
+.opt img.ic,.slot img.ic{object-fit:contain}
+.slot img.ic{width:52px;height:52px}
 .sv.no{opacity:.45}
 /* 第一次 */
 .intro{position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(30,40,44,.6);z-index:25;display:flex;align-items:flex-end}
@@ -127,10 +129,10 @@ h3{font-size:15px;margin:14px 16px 6px}
     <header><h1>小鳶的小屋</h1><span class="muted" id="ver"></span></header>
     <div class="chip" id="chip"></div>
     <div class="room" id="room">
-      <div class="window"></div>
       <div class="wallcards" id="wall"></div>
-      <div class="shelf" id="miniShelf"></div>
-      <div class="door"></div>
+      <div class="wallhit" id="wallHit" role="button" aria-label="明信片牆，打開收藏冊"></div>
+      <div class="shelfitems" id="miniShelf"></div>
+      <div class="shelfhit" id="shelfHit" role="button" aria-label="紀念品架，打開紀念品櫃"></div>
       <div class="bird" id="bird"></div>
       <div class="note" id="note" hidden></div>
       <div class="envelope" id="envIcon" hidden></div>
@@ -144,7 +146,7 @@ h3{font-size:15px;margin:14px 16px 6px}
       </div>
     </div>
     <div class="stats" id="stats"></div>
-    <p class="muted pad" style="margin-top:12px">原型 v0.2：暫用圖、不發點數。資料只存在這支手機的瀏覽器。</p>
+    <p class="muted pad" style="margin-top:12px">原型 v0.3：暫用圖（ChatGPT G-39）、不發點數。資料只存在這支手機的瀏覽器。</p>
     <div class="dev" id="dev" hidden></div>
   </section>
 
@@ -185,9 +187,9 @@ h3{font-size:15px;margin:14px 16px 6px}
 <div class="toast" id="toast"></div>
 
 <script>
-/* 小鳶去旅行 原型 v0.2（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
+/* 小鳶去旅行 原型 v0.3（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.1',
+  version: '0.3',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -210,21 +212,21 @@ const DIST_NAME = { home: '家附近', near: '近', mid: '中', far: '遠', fart
 /* 8 個地點、每地 3 張（A 全景、B 生活片刻、C 心情或細節）。題材照 ChatGPT G-38 表，卡名與札記都是暫用 */
 const LOCS = [
   { id: 'home', name: '東三東四', dist: 'near', tone: ['#7FC4D6', '#2F7F86'], souvenir: '小鯨鯊吊飾', sv: '鯨鯊說下次要一起去更遠的地方。',
-    cards: [['午後碼頭與郵輪', '午後的碼頭好安靜，大船慢慢靠過來。我數了好久的窗戶，數到一半就忘了。', 'pc_home_a.jpg'], ['鯨鯊在港口探頭', '港口裡有個大朋友對我揮鰭。我也揮了揮翅膀，牠好像笑了。'], ['夕陽下的旅客中心', '太陽要下山了，水面上一條金色的路。好想沿著它飛過去。']] },
+    cards: [['午後碼頭與郵輪', '午後的碼頭好安靜，大船慢慢靠過來。我數了好久的窗戶，數到一半就忘了。', 'pc_home_a.jpg'], ['鯨鯊在港口探頭', '港口裡有個大朋友對我揮鰭。我也揮了揮翅膀，牠好像笑了。', 'pc_home_b.jpg'], ['夕陽下的旅客中心', '太陽要下山了，水面上一條金色的路。好想沿著它飛過去。']] },
   { id: 'miaokou', name: '基隆廟口', dist: 'near', tone: ['#F5C76A', '#7A3B2E'], souvenir: '小燈籠', sv: '我把它掛在床邊，晚上就不怕黑了。',
-    cards: [['黃色燈籠街', '一整排黃色的燈籠，像天上的星星掉下來排隊。'], ['一碗鼎邊趖', '熱熱的一碗，蒸氣把我的眼鏡……喔，我沒戴眼鏡。'], ['雨夜騎樓', '下雨了，我躲在騎樓下面，聽雨和人聲一起唱歌。']] },
+    cards: [['黃色燈籠街', '一整排黃色的燈籠，像天上的星星掉下來排隊。', 'pc_miaokou_a.jpg'], ['一碗鼎邊趖', '熱熱的一碗，蒸氣把我的眼鏡……喔，我沒戴眼鏡。', 'pc_miaokou_b.jpg'], ['雨夜騎樓', '下雨了，我躲在騎樓下面，聽雨和人聲一起唱歌。']] },
   { id: 'zhengbin', name: '正濱漁港', dist: 'mid', tone: ['#F2A7A0', '#4C8DB5'], souvenir: '彩色小木屋', sv: '小小的房子，跟港邊的一模一樣。',
-    cards: [['彩色屋倒影', '房子在水裡也有一間，顏色一樣漂亮，只是會晃。', 'pc_zhengbin_a.jpg'], ['清晨漁船', '天剛亮，漁船要出門了。我在岸邊說了聲路上小心。'], ['岸邊的小圓點', '一顆顆橘色的浮球，我跟它們比了一下，我比較圓。']] },
+    cards: [['彩色屋倒影', '房子在水裡也有一間，顏色一樣漂亮，只是會晃。', 'pc_zhengbin_a.jpg'], ['清晨漁船', '天剛亮，漁船要出門了。我在岸邊說了聲路上小心。', 'pc_zhengbin_b.jpg'], ['岸邊的小圓點', '一顆顆橘色的浮球，我跟它們比了一下，我比較圓。']] },
   { id: 'heping', name: '和平島', dist: 'mid', tone: ['#9FD3C7', '#6E6A62'], souvenir: '小貝殼', sv: '放在耳朵旁邊，好像聽得到海。',
-    cards: [['海蝕平台', '石頭被海浪磨了好久好久，變成一層一層的樣子。'], ['天然泳池', '海水圍成一個池子，我只敢把腳伸進去。'], ['海邊石菇', '海邊長了好多石頭香菇，不能吃，可是好可愛。']] },
+    cards: [['海蝕平台', '石頭被海浪磨了好久好久，變成一層一層的樣子。', 'pc_heping_a.jpg'], ['天然海水池', '海水圍成一個池子，我只敢把腳伸進去。', 'pc_heping_b.jpg'], ['海邊石菇', '海邊長了好多石頭香菇，不能吃，可是好可愛。']] },
   { id: 'badouzi', name: '八斗子', dist: 'mid', tone: ['#F4BB42', '#3E6E8E'], souvenir: '小車票', sv: '車票上印著海，我捨不得剪。', unlock: 'fly4',
-    cards: [['八斗子車站', '月台旁邊就是海，等車的時候可以看浪。'], ['望幽谷步道', '步道彎彎的，走到最上面，海變得好大。'], ['海邊的鐵軌', '鐵軌一直延伸到很遠，我在旁邊畫了一張小地圖。']] },
+    cards: [['八斗子車站', '月台旁邊就是海，等車的時候可以看浪。', 'pc_badouzi_a.jpg'], ['望幽谷步道', '步道彎彎的，走到最上面，海變得好大。', 'pc_badouzi_b.jpg'], ['海邊的鐵軌', '鐵軌一直延伸到很遠，我在旁邊畫了一張小地圖。']] },
   { id: 'shenao', name: '深澳', dist: 'far', tone: ['#E85A5A', '#2B4A6E'], souvenir: '豆腐岩小石頭', sv: '方方的小石頭，豆腐君說像牠。', unlock: 'fly4',
-    cards: [['紅蟹鐵道車', '紅色的螃蟹車停在軌道上，我在旁邊揮手，它好像也在笑。'], ['豆腐岩', '一塊一塊方方的石頭，像海邊排好的豆腐。'], ['深澳岬角奇岩', '岬角上的石頭換了新的樣子，大家都在猜它像什麼。']] },
-  { id: 'chaojing', name: '潮境公園', dist: 'far', tone: ['#8FD3E8', '#3F7F5A'], souvenir: '小海星', sv: '是撿到的掉落的殼喔，活的我都放回去了。', unlock: 'dex3',
-    cards: [['潮間帶', '退潮了，石頭縫裡藏著好多小秘密。', 'pc_chaojing_a.jpg'], ['潮池的朋友', '一個小水窪裡，有一位很害羞的朋友。我們互看了好久。'], ['草地上看海', '風好大，羽毛都翹起來了，可是好舒服。']] },
+    cards: [['紅蟹鐵道車', '紅色的螃蟹車停在軌道上，我在旁邊揮手，它好像也在笑。', 'pc_shenao_a.jpg'], ['豆腐岩', '一塊一塊方方的石頭，像海邊排好的豆腐。', 'pc_shenao_b.jpg'], ['深澳岬角奇岩', '岬角上的石頭換了新的樣子，大家都在猜它像什麼。']] },
+  { id: 'chaojing', name: '潮境公園', dist: 'far', tone: ['#8FD3E8', '#3F7F5A'], souvenir: '海星小飾品', sv: '在小店帶回來的海星小飾品，放在架上就想起潮池。', unlock: 'dex3',
+    cards: [['潮間帶', '退潮了，石頭縫裡藏著好多小秘密。', 'pc_chaojing_a.jpg'], ['潮池的朋友', '一個小水窪裡，有一位很害羞的朋友。我們互看了好久。', 'pc_chaojing_b.jpg'], ['草地上看海', '風好大，羽毛都翹起來了，可是好舒服。']] },
   { id: 'jiufen', name: '九份', dist: 'farthest', tone: ['#F08A3C', '#4A3A5E'], souvenir: '芋圓碗', sv: '用它裝點心，好像又回到山上。', unlock: 'special',
-    cards: [['山城燈籠', '房子一層一層疊在山上，燈籠亮起來的時候好溫暖。'], ['一碗芋圓', 'QQ 的芋圓，我吃得好慢好慢，因為窗外的海太漂亮。'], ['看海的階梯', '走到一半停下來，回頭就看到海。']] }
+    cards: [['山城燈籠', '房子一層一層疊在山上，燈籠亮起來的時候好溫暖。', 'pc_jiufen_a.jpg'], ['一碗芋圓', 'QQ 的芋圓，我吃得好慢好慢，因為窗外的海太漂亮。', 'pc_jiufen_b.jpg'], ['看海的階梯', '走到一半停下來，回頭就看到海。']] }
 ];
 const LIMITED = LOCS.map((l) => ({ id: 'lim-' + l.id, loc: l.id, title: '本週限定・' + l.name + '的小驚喜', note: '這一週特別想來' + l.name + '，果然遇到了特別的事！' }));
 const SAYS = {
@@ -304,17 +306,19 @@ function renderHome() {
   $('ver').textContent = 'v' + CFG.version + (CFG.fast ? '・快速' : '');
   const st = S.state, b = $('bird'), note = $('note'), env = $('envIcon'), main = $('mainBtn');
   note.hidden = true; env.hidden = true; b.style.display = 'block'; b.className = 'bird bob';
-  if (!S.firstDone && st === 'home') { $('chip').textContent = '第一次見面！先帶小鳶在附近走走吧'; b.style.backgroundImage = 'url(assets/kite_hello.png)'; $('say').textContent = '你好！我是小鳶。'; main.textContent = '第一次，先在附近走走吧（3 分鐘）'; main.onclick = startFirst; }
-  else if (st === 'home') { $('chip').textContent = '小鳶在家，還沒出發'; b.style.backgroundImage = 'url(assets/kite_hello.png)'; $('say').textContent = sayOne('home'); main.textContent = '打包出門'; main.onclick = () => go('pack'); }
+  if (!S.firstDone && st === 'home') { $('chip').textContent = '第一次見面！先帶小鳶在附近走走吧'; b.style.backgroundImage = 'url(assets/kite_wave.png)'; $('say').textContent = '你好！我是小鳶。'; main.textContent = '第一次，先在附近走走吧（3 分鐘）'; main.onclick = startFirst; }
+  else if (st === 'home') { $('chip').textContent = '小鳶在家，還沒出發'; b.style.backgroundImage = 'url(assets/kite_home.png)'; $('say').textContent = sayOne('home'); main.textContent = '打包出門'; main.onclick = () => go('pack'); }
   else if (st === 'away') { b.style.display = 'none'; note.hidden = false; note.textContent = '「' + (S.trip.say || sayOne('away')) + '」　— 小鳶'; $('chip').textContent = '小鳶正在旅行，大約 ' + fmtTime(S.trip.end) + ' 回來；信會等你，不會過期'; $('say').textContent = ''; main.textContent = '大約 ' + fmtTime(S.trip.end) + ' 回來'; main.onclick = () => toast('小鳶還在路上，晚點再來看看'); }
-  else { $('chip').textContent = '小鳶回來了！帶了一封信'; b.style.backgroundImage = 'url(assets/kite_happy.png)'; env.hidden = false; $('say').textContent = sayOne('back'); main.textContent = '拆信'; main.onclick = openLetter; env.onclick = openLetter; }
+  else { $('chip').textContent = '小鳶回來了！帶了一封信'; b.style.backgroundImage = 'url(assets/kite_back.png)'; env.hidden = false; $('say').textContent = sayOne('back'); main.textContent = '拆信'; main.onclick = openLetter; env.onclick = openLetter; }
   $('say').parentElement.style.visibility = $('say').textContent ? 'visible' : 'hidden';
   // 牆上最近三張、架上的紀念品
   const recent = Object.entries(S.cards).sort((a, b2) => b2[1] - a[1]).slice(0, 3);
-  $('wall').innerHTML = ''; for (const [id] of recent) { const s = document.createElement('span'); const [loc, i] = id.split('-'); const l = LOCS.find((x) => x.id === loc), c = l.cards[+i]; s.style.background = c[2] ? 'url(assets/' + c[2] + ') center/cover' : 'linear-gradient(' + l.tone[0] + ',' + l.tone[1] + ')'; $('wall').appendChild(s); }
-  $('wall').onclick = () => go('album');
-  $('miniShelf').innerHTML = Object.keys(S.souvenirs).slice(0, 3).map((k) => '<i>' + LOCS.find((l) => l.id === k).souvenir + '</i>').join('');
-  $('miniShelf').onclick = () => go('shelf');
+  const WALL_X = [51.5, 62.4, 73.3];      // 三個空掛位的左緣（%）
+  $('wall').innerHTML = ''; recent.forEach(([id], n) => { const s = document.createElement('span'); const [loc, i] = id.split('-'); const l = LOCS.find((x) => x.id === loc), c = l.cards[+i]; s.style.left = WALL_X[n] + '%'; s.style.backgroundImage = c[2] ? 'url(assets/' + c[2] + ')' : 'linear-gradient(' + l.tone[0] + ',' + l.tone[1] + ')'; $('wall').appendChild(s); });
+  $('wallHit').onclick = () => go('album');
+  const SHELF_X = [4.44, 11.67, 18.8];      // 架上三格的左緣（%）
+  $('miniShelf').innerHTML = Object.entries(S.souvenirs).sort((a, b2) => b2[1] - a[1]).slice(0, 3).map(([k], n) => '<img src="assets/sv_' + k + '.png" alt="' + LOCS.find((l) => l.id === k).souvenir + '" style="left:' + SHELF_X[n] + '%">').join('');
+  $('shelfHit').onclick = () => go('shelf');
   $('stats').innerHTML = ['明信片 ' + ownedCount() + ' / 24', '旅行 ' + S.trips + ' 次', '郵票 ' + S.stamps, '遠行便當 還差 ' + (CFG.farEvery - S.farAcc) + ' 趟'].map((t) => '<span>' + t + '</span>').join('');
   renderDev();
   if (!S.seen.intro) showIntro();
@@ -335,12 +339,10 @@ function startFirst() {
 /* 打包 */
 let pk = { bento: '', items: [], pick: '' };
 function bentoIcon(k) {
-  const c = { walk: '#9FD3C7', rice: '#FFFFFF', far: '#F6D27A', squid: '#F9DDD0', hair: '#DCEBF2', special: '#F2A7A0' }[k];
-  if (k === 'walk') return '<svg class="ic" viewBox="0 0 44 44"><circle cx="22" cy="22" r="20" fill="' + c + '"/><path d="M14 30c4-8 12-8 16-14" stroke="#4A3426" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-dasharray="3 4"/></svg>';
-  if (k === 'rice') return '<svg class="ic" viewBox="0 0 44 44"><path d="M22 6L38 34H6Z" fill="#fff" stroke="#4A3426" stroke-width="2" stroke-linejoin="round"/><rect x="14" y="24" width="16" height="10" fill="#2F4F3A"/></svg>';
-  return '<svg class="ic" viewBox="0 0 44 44"><rect x="5" y="10" width="34" height="26" rx="5" fill="' + c + '" stroke="#4A3426" stroke-width="2"/><path d="M5 18h34" stroke="#4A3426" stroke-width="2"/>' + (k === 'squid' ? '<image href="assets/fish_squid.png" x="10" y="20" width="24" height="14"/>' : k === 'hair' ? '<image href="assets/fish_hairtail.png" x="8" y="20" width="28" height="14"/>' : k === 'special' ? '<circle cx="22" cy="27" r="5" fill="#E85A5A"/>' : '<circle cx="16" cy="27" r="4" fill="#fff"/><circle cx="28" cy="27" r="4" fill="#E8B879"/>') + '</svg>';
+  if (k === 'walk') return '<svg class="ic" viewBox="0 0 44 44"><circle cx="22" cy="22" r="20" fill="#9FD3C7"/><path d="M14 30c4-8 12-8 16-14" stroke="#4A3426" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-dasharray="3 4"/></svg>';
+  return '<img class="ic" src="assets/bento_' + k + '.png" alt="">';      // 五種便當：ChatGPT G-39
 }
-function itemIcon(k) { return '<svg class="ic" viewBox="0 0 44 44"><circle cx="22" cy="22" r="20" fill="#EEF7F6" stroke="#2F7F86" stroke-width="2"/>' + (k === 'camera' ? '<rect x="11" y="15" width="22" height="16" rx="3" fill="#4A3426"/><circle cx="22" cy="23" r="5" fill="#9FD3C7"/>' : k === 'telescope' ? '<path d="M10 28l20-12 3 5-20 12z" fill="#4A3426"/><path d="M20 26l-4 10M20 26l4 10" stroke="#4A3426" stroke-width="2"/>' : '<path d="M10 24a12 12 0 0124 0z" fill="#E85A5A"/><path d="M22 24v9a3 3 0 01-6 0" stroke="#4A3426" stroke-width="2" fill="none"/>') + '</svg>'; }
+function itemIcon(k) { return '<img class="ic" src="assets/item_' + k + '.png" alt="">'; }
 function renderPack() {
   if (S.state !== 'home' || !S.firstDone) { go('home'); return; }
   const bl = $('bentoList'); bl.innerHTML = '';
@@ -406,7 +408,7 @@ function calcTitles() {
 }
 function sceneHTML(l, i, friend, lim) {
   const c = lim ? null : l.cards[i], img = c && c[2];
-  return '<div class="scene" style="background:' + (img ? 'url(assets/' + img + ') center/cover' : 'linear-gradient(' + (160 + i * 70) + 'deg,' + l.tone[i % 2] + ',' + l.tone[(i + 1) % 2] + ')') + '">' + (img ? '' : '<svg viewBox="0 0 160 100" width="100%" height="100%" preserveAspectRatio="none" style="position:absolute;inset:0;opacity:.35"><path d="M0 70 Q40 55 80 68 T160 62 V100 H0Z" fill="#fff"/><path d="M0 82 Q50 72 100 80 T160 78 V100 H0Z" fill="#fff"/></svg>') + '<span class="ttl">' + l.name + '｜' + (lim ? lim.title : c[0]) + '</span><span class="tmp">暫用</span><span class="kb" style="' + (i % 2 ? 'left' : 'right') + ':5%"></span>' + (friend ? '<span class="fr">遇到了 ' + friend + '</span>' : '') + '</div>';
+  return '<div class="scene" style="background:' + (img ? 'url(assets/' + img + ') center/100% 100%' : 'linear-gradient(' + (160 + i * 70) + 'deg,' + l.tone[i % 2] + ',' + l.tone[(i + 1) % 2] + ')') + '">' + (img ? '' : '<svg viewBox="0 0 160 100" width="100%" height="100%" preserveAspectRatio="none" style="position:absolute;inset:0;opacity:.35"><path d="M0 70 Q40 55 80 68 T160 62 V100 H0Z" fill="#fff"/><path d="M0 82 Q50 72 100 80 T160 78 V100 H0Z" fill="#fff"/></svg>') + '<span class="ttl">' + l.name + '｜' + (lim ? lim.title : c[0]) + '</span><span class="tmp">暫用</span>' + (img ? '' : '<span class="kb" style="' + (i % 2 ? 'left' : 'right') + ':5%"></span>') + (friend ? '<span class="fr">遇到了 ' + friend + '</span>' : '') + '</div>';
 }
 function cardHTML(l, i, opts) {
   const c = l.cards[i], lim = opts && opts.lim;
@@ -416,7 +418,7 @@ function openLetter() {
   if (S.state !== 'back' || !S.trip) return;
   const tr = S.trip, l = LOCS.find((x) => x.id === tr.dest);
   const L = document.createElement('div'); L.className = 'letter';
-  L.innerHTML = '<button class="skip" id="skipL">略過 ››</button><div class="env" id="envL"><div class="seal"></div></div><p class="tapme" id="tapme">點一下打開信封</p>';
+  L.innerHTML = '<button class="skip" id="skipL">略過 ››</button><div class="env" id="envL"><img class="closed" src="assets/letter_env.png" alt=""><img class="opened" src="assets/letter_open.png" alt=""><img class="seal" src="assets/letter_seal.png" alt=""></div><p class="tapme" id="tapme">點一下打開信封</p>';
   document.body.appendChild(L);
   const queue = tr.got.map((i) => ({ i })).concat(tr.limited ? [{ lim: LIMITED.find((x) => x.id === tr.limited) }] : []);
   const extras = []; if (tr.stamps) extras.push('重複的明信片換成 ' + tr.stamps + ' 枚小鳶郵票'); if (tr.souvenir) extras.push('還帶回了紀念品：' + l.souvenir); if (tr.friend) extras.push('在' + l.name + '遇到了 ' + tr.friend + '！');
@@ -430,7 +432,7 @@ function openLetter() {
     $('skipL2').onclick = finish; $('flipL').onclick = () => { const p = $('pc'); p.classList.toggle('flip'); $('flipL').textContent = p.classList.contains('flip') ? '看正面' : '看背面'; };
     $('nextL').onclick = () => { step++; showCard(); };
   };
-  $('envL').onclick = () => { $('envL').classList.add('open'); $('tapme').textContent = ''; setTimeout(showCard, 500); };
+  $('envL').onclick = () => { $('envL').classList.add('open'); $('tapme').textContent = ''; setTimeout(showCard, 750); };
 }
 
 /* 收藏冊：常設 24 張、每週限定、港灣護照、合照（本機） */
@@ -471,7 +473,7 @@ function showCardModal(l, i, lim) {
 }
 function renderShelf() {
   const g = $('shelfGrid'); g.innerHTML = '';
-  for (const l of LOCS) { const own = S.souvenirs[l.id], b = document.createElement('button'); b.className = 'sv' + (own ? '' : ' no'); b.type = 'button'; b.innerHTML = '<svg viewBox="0 0 34 34"><circle cx="17" cy="17" r="14" fill="' + (own ? l.tone[0] : '#D9CFC2') + '" stroke="#4A3426" stroke-width="2"/></svg>' + (own ? l.souvenir : '？？'); b.onclick = () => toast(own ? '「' + l.sv + '」' : '去' + l.name + '有機會帶回來'); g.appendChild(b); }
+  for (const l of LOCS) { const own = S.souvenirs[l.id], b = document.createElement('button'); b.className = 'sv' + (own ? '' : ' no'); b.type = 'button'; b.innerHTML = '<img src="assets/sv_' + l.id + '.png" alt="">' + (own ? l.souvenir : '？？'); b.onclick = () => toast(own ? '「' + l.sv + '」' : '去' + l.name + '有機會帶回來'); g.appendChild(b); }
   const t = Object.values(calcTitles()); $('titles').innerHTML = t.length ? t.map((x) => '<span class="chip" style="display:inline-block;margin:0 6px 6px 0">' + x + '</span>').join('') : '<p class="muted">集滿一個地點的 3 張，就會得到稱號。九份以外 21 張「港灣旅行家」、全部 24 張「小鳶的好朋友」。</p>';
 }
 
