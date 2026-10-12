@@ -24,11 +24,12 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .kg{background:var(--paper);border:2px solid var(--ink);border-radius:999px;padding:2px 12px;font-family:var(--display);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .kg.pop{animation:pop .25s ease-out}
 @keyframes pop{50%{transform:scale(1.15)}}
-.time{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.time{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;background:rgba(255,248,236,.82);border-radius:10px;padding:3px 8px 5px}
 .time span{font-size:12px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
 .bar{height:8px;border-radius:999px;background:rgba(23,50,74,.18);overflow:hidden}
 .bar i{display:block;height:100%;width:100%;background:var(--ink);border-radius:999px;transform-origin:left center}
 .bar i.low{background:var(--coral)}
+.bar i.hp{background:#D9534F;transition:transform .15s}
 .icon{pointer-events:auto;width:36px;height:36px;border-radius:50%;border:2px solid var(--ink);background:var(--paper);font-size:13px;font-weight:700;padding:0;flex:none}
 
 .banner{position:absolute;left:12px;right:12px;top:52px;text-align:center;background:var(--gold);border:2px solid var(--ink);border-radius:12px;padding:3px 10px;font-family:var(--display);font-weight:700;font-size:16px;pointer-events:none}
@@ -127,7 +128,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
     <canvas class="mapfx" id="mapFx" aria-hidden="true"></canvas>
     <h1 class="maptitle">小鳶飛行冒險</h1>
     <div id="stageButtons"></div>
-    <p class="mapnote">原型 v0.19：暫用圖、不發點數。測試期間四關都開放</p>
+    <p class="mapnote">原型 v0.20：暫用圖、不發點數。測試期間四關都開放</p>
   </div>
 
   <div class="panel" id="startPanel" hidden>
@@ -135,24 +136,24 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
       <h1 id="stageTitle">小鳶飛行冒險</h1>
       <p id="stageIntro">第 1 關　叁肆行：把漂進港口的垃圾清乾淨。</p>
       <ul class="how">
-        <li><b>拖曳</b><span>按住畫面拖動小鳶，風之羽自動發射</span></li>
+        <li><b>滑動</b><span>手指在畫面上滑，小鳶跟著走，風之羽自動發射</span></li>
         <li><b>要閃的</b><span id="howDodge">漂流木打不掉；看到紅色區域就整隻離開</span></li>
         <li><b id="howBarrelK">油桶</b><span id="howBarrel">打爆會炸掉旁邊的垃圾，自己別靠太近</span></li>
         <li id="howFriend"><b>救朋友</b><span id="howFriendT">清掉纏住牠們的垃圾。小卷會來幫忙，海龜送你護盾</span></li>
         <li><b id="howUltK">鯨鯊</b><span id="howUlt">右下角集滿後按一下，全畫面大掃除</span></li>
       </ul>
-      <div class="pick" id="modePick" role="group" aria-label="拖曳方式">
+      <div class="pick" id="modePick" role="group" aria-label="拖曳方式" hidden>
         <button type="button" data-mode="relative" aria-pressed="true">滑動帶著走</button>
         <button type="button" data-mode="follow" aria-pressed="false">跟著手指</button>
       </div>
-      <div class="pick" id="levelPick" role="group" aria-label="難度">
+      <div class="pick" id="levelPick" role="group" aria-label="難度" hidden>
         <button type="button" data-level="easy" aria-pressed="false">輕鬆 ♥7</button>
         <button type="button" data-level="normal" aria-pressed="true">標準 ♥5</button>
         <button type="button" data-level="hard" aria-pressed="false">挑戰 ♥3</button>
       </div>
       <button class="btn" id="startBtn">開始</button>
       <button class="btn quiet" id="mapBtn">回關卡地圖</button>
-      <p class="note">原型 v0.19：暫用圖、不發點數</p>
+      <p class="note">原型 v0.20：暫用圖、不發點數</p>
     </div>
   </div>
 
@@ -189,7 +190,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.19',
+  version: '0.20',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -629,7 +630,8 @@ function update(dt) {
   if (flash > 0) flash = Math.max(0, flash - real * 2.2);
   if (shake > 0) shake = Math.max(0, shake - real);
   // 畫面資訊
-  const total = CONFIG.boss.at + 14; $('stageBar').style.transform = 'scaleX(' + Math.min(1, t / total) + ')';
+  const total = CONFIG.boss.at + 14, sb = $('stageBar');      // v0.20：魔王出場後，上方長條改成魔王血量（D51：第 4 關血量顯示和上方長條疊在一起）
+  if (boss && !won) { sb.classList.add('hp'); sb.style.transform = 'scaleX(' + Math.max(0, Math.min(1, boss.hp / (boss.maxHp || 1))) + ')'; } else { sb.classList.remove('hp'); sb.style.transform = 'scaleX(' + Math.min(1, t / total) + ')'; }
   $('stageText').textContent = boss && boss.phased ? bossGoalText(boss) + '　' + Math.max(0, Math.ceil(BTIME() - (t - boss.born))) + ' 秒' : boss ? (T.boss.short || T.boss.name) + ' ' + Math.max(0, Math.ceil(boss.hp)) + ' / ' + boss.maxHp + '　剩 ' + Math.max(0, Math.ceil(BTIME() - (t - boss.born))) + ' 秒' : '清掉 ' + stats.cleared + (stats.combo >= 3 ? '　連清 ' + stats.combo : '');
   const ub = $('ultBtn'), full = gauge >= CONFIG.ult.need; ub.disabled = !full || !!ult; ub.style.setProperty('--fill', Math.round(gauge / CONFIG.ult.need * 100) + '%'); ub.classList.toggle('ready', full && !ult); const tag = $('ultTag'), word = full && !ult ? (NM() ? '祈福！' : '出動！') : ULTN(); if (tag.textContent !== word) tag.textContent = word;
   if (full && !toldUlt && !ult) { toldUlt = true; banner(ULTN() + '準備好了！按右下角'); jingle([659, 880], 120); }
@@ -815,7 +817,7 @@ function drawTaotieOld(f) {
   ctx.fillStyle = '#FFF8EA'; for (let x = -15; x <= 15; x += 7.5) poly([x - 3, 22 + m * 4 - mh + 1, x, 22 + m * 4 - mh + 7, x + 3, 22 + m * 4 - mh + 1], '#FFF8EA', PAL.line);
   if (m > 0.3 && !calm) { ctx.strokeStyle = 'rgba(255,190,240,' + m * 0.6 + ')'; ctx.lineWidth = 2; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(0, 26, 6 + ((clock * 30 + i * 8) % 22), 0, 6.2832); ctx.stroke(); } }
   ctx.restore();
-  hpBar(-r - 26, 90, 7, f.hp / (f.maxHp || T.boss.hp));
+  0;
 }
 /* 攤位的熱氣（先出現紅區，再噴）與油煙（擋住視線，不扣血） */
 function addVent(fromLeft) {
@@ -1062,7 +1064,7 @@ function drawTaotie(f) {
     if (!calm) { ctx.strokeStyle = 'rgba(255,190,240,.55)'; ctx.lineWidth = 2; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(0, 30, 8 + ((clock * 30 + i * 9) % 26), 0, 6.2832); ctx.stroke(); } }
     ctx.font = "700 15px 'Noto Sans TC',system-ui,sans-serif"; ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = '#10293D'; ctx.strokeText('×2', 46, 40); ctx.fillStyle = '#FFE08A'; ctx.fillText('×2', 46, 40);
   }
-  hpBar(-r - 22, 90, 7, f.hp / (f.maxHp || T.boss.hp));
+  0;
 }
 /* ====== 第 3 關：正濱漁港（清晨，D21）。Dari 的五隻野生怪獸、三位朋友、阿根納骨骸巨獸與三招；新機制是出港漁船與廢網纏身
    角色與底圖都是程式畫的佔位圖，等 ChatGPT 的正式圖 ====== */
@@ -1233,13 +1235,13 @@ function drawPierFoe(f) {
 function drawAgenor(f) {
   const r = f.r, ch = f.atk === 'ram' && f.ramT !== undefined;
   glow(r + 30, f.atk ? '220,120,80' : '150,120,100', 0.4);
-  if (img.p_boss) { sprite(ch && img.p_boss_ram ? 'p_boss_ram' : 'p_boss', 132, 132); hpBar(-r - 22, 90, 7, f.hp / (f.maxHp || T.boss.hp)); return; }
+  if (img.p_boss) { sprite(ch && img.p_boss_ram ? 'p_boss_ram' : 'p_boss', 132, 132); 0; return; }
   ctx.save(); ctx.rotate(Math.sin(clock * 1.2) * 0.03); ctx.lineWidth = 2;
   ctx.strokeStyle = PAL.line; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(0, -r); ctx.lineTo(0, r * 0.7); ctx.stroke(); ctx.strokeStyle = '#8B6A55'; ctx.lineWidth = 4; ctx.stroke();      // 龍骨
   for (let i = 0; i < 6; i++) { const y = -r + 10 + i * 13, w = 30 + Math.sin(i / 5 * Math.PI) * 18; for (const sx of [-1, 1]) { ctx.strokeStyle = PAL.line; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(0, y); ctx.quadraticCurveTo(sx * w, y - 4, sx * (w - 6), y + 12); ctx.stroke(); ctx.strokeStyle = i % 2 ? '#A0785E' : '#9A9086'; ctx.lineWidth = 3; ctx.stroke(); } }      // 肋骨
   poly([-20, r * 0.55, 20, r * 0.55, 14, r + 10, 0, r + 18, -14, r + 10], '#7D746C', PAL.line); ell(-8, r * 0.75, 4, 4, ch ? '#FFE08A' : '#E8674A', PAL.line); ell(8, r * 0.75, 4, 4, ch ? '#FFE08A' : '#E8674A', PAL.line);      // 船頭鋼鐵頭與發光的眼
   ctx.restore();
-  hpBar(-r - 22, 90, 7, f.hp / (f.maxHp || T.boss.hp));
+  0;
 }
 /* 阿根納巨獸的三招 */
 function updateAgenor(f, dt) {
@@ -1416,14 +1418,14 @@ function drawRailFoe(f) {
 /* 不沉煤艦・建基巨岩怪（佔位圖） */
 function drawJianji(f) {
   const r = f.r; glow(r + 34, f.atk ? '255,170,90' : '120,140,200', 0.45);
-  if (img.r_boss) { sprite(jianjiKey(f), 136, 136); hpBar(-r - 22, 90, 7, f.hp / (f.maxHp || T.boss.hp)); return; }
+  if (img.r_boss) { sprite(jianjiKey(f), 136, 136); 0; return; }
   ctx.save(); ctx.rotate(Math.sin(clock * 1.2) * 0.03); ctx.lineWidth = 2;
   const up = f.atk === 'storm' ? -26 : 0;
   for (const sx of [-1, 1]) { ctx.save(); ctx.translate(sx * 40, -6); ctx.rotate(sx * (0.5 + (up ? 0.9 : 0))); rrect(-6, -46, 12, 60, 2, '#7A6A5E', PAL.line, 2); ctx.strokeStyle = '#6E8A58'; ctx.beginPath(); ctx.moveTo(-6, -30); ctx.lineTo(6, -10); ctx.stroke(); ctx.restore(); }      // 鋼梁手臂與纏著的藤
   ell(0, 0, r, r * 0.9, '#3E3B3E', PAL.line); for (const b of [[-24, -18, 14], [20, -22, 12], [26, 14, 13], [-20, 18, 15], [0, 0, 18]]) ell(b[0], b[1], b[2], b[2] * 0.9, '#2B292C', PAL.line);
   for (let i = 0; i < 7; i++) ell(-30 + (i * 13) % 60, -20 + (i * 17) % 40, 2, 2, ['#7FD8FF', '#FFD27A', '#B9A7E0'][i % 3]);      // 礦砂與光點
   ell(-14, -10, 6, 4, '#FFB23E', PAL.line); ell(14, -10, 6, 4, '#FFB23E', PAL.line); poly([-14, 14, 14, 14, 8, 22, -8, 22], '#1E1C1E', PAL.line);
-  ctx.restore(); hpBar(-r - 22, 90, 7, f.hp / (f.maxHp || T.boss.hp));
+  ctx.restore(); 0;
 }
 function jianjiKey(f) {      // G-35 B 的四態（同畫布、同中心）：斷左臂、斷右臂、雙臂斷（頭冠導光）、煤核
   if (!f.phased) return f.atk === 'storm' && img.r_boss_cast ? 'r_boss_cast' : 'r_boss';
@@ -1947,7 +1949,7 @@ function drawFoeSprite(f) {
   pic(); ctx.restore(); ctx.globalAlpha = 1;
   if (ty === 'net' || ty === 'tangle') sos(r);
   else if (ty === 'sprayer') hpBar(-r - 12, 32, 4, f.hp / T.sprayer.hp);
-  else if (ty === 'boss') hpBar(-r - 14, 80, 7, f.hp / (f.maxHp || T.boss.hp));
+  else if (ty === 'boss') {}
   return true;
 }
 function drawFoe(f) {
@@ -1978,7 +1980,7 @@ function drawFoe(f) {
     ctx.save(); ctx.rotate(Math.sin(clock * 1.5) * 0.06);
     ell(0, 0, r, r * 0.86, '#5B5148', PAL.line); for (const b of [[-26, -14, 16], [22, -18, 15], [28, 14, 14], [-20, 20, 17], [2, 2, 20]]) ell(b[0], b[1], b[2], b[2] * 0.9, '#3B3340');
     ctx.rotate(0.5); ctx.fillStyle = '#C9D6C4'; ctx.fillRect(-34, -8, 10, 20); ctx.fillStyle = '#B8C2C8'; ctx.fillRect(16, 10, 14, 10); ctx.fillStyle = '#F4F7F8'; ctx.fillRect(-4, -34, 16, 12); ctx.restore();
-    ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(16,41,61,.5)'; ctx.fillRect(-40, -r - 14, 80, 7); ctx.fillStyle = '#BFF0D0'; ctx.fillRect(-40, -r - 14, 80 * Math.max(0, f.hp) / (f.maxHp || T.boss.hp), 7); ctx.strokeStyle = '#10293D'; ctx.lineWidth = 1.5; ctx.strokeRect(-40, -r - 14, 80, 7);
+    ctx.globalAlpha = 1;      // 魔王血量改在上方長條顯示
   }
   ctx.restore();
 }

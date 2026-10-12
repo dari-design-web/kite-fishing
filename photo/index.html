@@ -49,6 +49,16 @@ button{font-family:inherit}
 .stk .rot{right:-18px;bottom:-18px;background:var(--teal);cursor:nwse-resize}
 .hint{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:6;background:rgba(20,28,32,.7);color:#fff;font-size:12px;border-radius:999px;padding:4px 12px;white-space:nowrap;pointer-events:none}
 .tray{padding:8px 0 0;color:#FFF4E2}
+.sheet{position:fixed;inset:0;z-index:50;background:rgba(14,20,24,.55);display:flex;align-items:flex-end}
+.sheet[hidden]{display:none}
+.sheetin{width:100%;background:#FFF8EC;color:#3E2B1D;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;max-height:80%;overflow:auto}
+.sheetin .btn.ghost{background:#fff;color:#2F7F86;border:2px solid #2F7F86;box-shadow:none}
+.sheetin h3{margin:0;font-size:17px}.sheetin p{margin:0;font-size:14px;line-height:1.6;color:#6B5545}
+.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.fcell{border:2px solid transparent;border-radius:10px;background:none;padding:0;font:inherit;font-size:12px;color:#3E2B1D;display:flex;flex-direction:column;gap:4px;align-items:center}
+.fcell.on{border-color:#2F7F86}
+.fcell .fimg{width:100%;aspect-ratio:3/4;border-radius:8px;background:linear-gradient(160deg,#BFE3F0,#7FB6C9) center/cover;position:relative;overflow:hidden}
+.fcell .fimg img{position:absolute;inset:0;width:100%;height:100%}
 .tabs{display:flex;gap:6px;padding:0 10px 6px;overflow-x:auto}
 .tabs button{flex:none;border:1px solid rgba(255,244,226,.35);background:transparent;color:#FFF4E2;border-radius:999px;padding:4px 11px;font-size:12px}
 .tabs button[aria-pressed="true"]{background:#FFF4E2;color:var(--ink);border-color:#FFF4E2;font-weight:700}
@@ -84,6 +94,7 @@ button{font-family:inherit}
       <button class="btn light" id="albumBtn" type="button">從相簿選照片</button>
       <button class="btn ghost" id="demoBtn" type="button">用示範背景試試</button>
       <input type="file" id="file" accept="image/*" hidden>
+      <input type="file" id="snap" accept="image/*" capture="environment" hidden>
       <small>原型 <span id="ver"></span>：暫用貼紙與相框。照片只在這支手機上合成，不會上傳；換手機就沒有。</small>
     </div>
   </section>
@@ -125,11 +136,13 @@ button{font-family:inherit}
     <p class="pnote">1080 × 1440。照片只在這支手機，沒有上傳。</p>
   </section>
 </div>
+<div class="sheet" id="frameSheet" hidden><div class="sheetin"><h3>選相框</h3><div class="fgrid" id="fgrid"></div><button class="btn ghost" id="fsClose" type="button">關閉</button></div></div>
+<div class="sheet" id="camSheet" hidden><div class="sheetin"><h3>相機打不開</h3><p id="camWhy"></p><button class="btn" id="snapBtn" type="button">用手機相機拍一張</button><button class="btn ghost" id="camAlbum" type="button">從相簿選照片</button><button class="btn ghost" id="csClose" type="button">關閉</button></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
 /* 小鳶合照館 原型 v0.1（工作單 11 v4 P2）。貼紙、相框、解鎖方式都是建議，等 Dari 確認；正式素材之後開單給 ChatGPT */
-const CFG = { version: '0.3', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
+const CFG = { version: '0.4', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
 const $ = (id) => document.getElementById(id);
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = 'none'), 2400); }
@@ -204,7 +217,17 @@ async function openCam() {
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1440 }, height: { ideal: 1920 } }, audio: false });
     const v = $('video'); v.srcObject = stream; v.hidden = false; v.classList.toggle('mirror', facing === 'user'); $('bgimg').hidden = true; src = 'cam';
     await v.play().catch(() => {}); show('shoot'); return true;
-  } catch (e) { toast('相機打不開，改用相簿或示範背景'); return false; }
+  } catch (e) { camFail(e); return false; }
+}
+/* v0.4：相機打不開時說明原因，並提供手機內建相機（file input capture）當備案 */
+function camFail(e) {
+  const n = (e && e.name) || '', framed = (() => { try { return window.top !== window.self; } catch (x) { return true; } })(), inLine = /Line\//i.test(navigator.userAgent);
+  let why;
+  if (n === 'NotAllowedError' || n === 'SecurityError') why = framed ? '這個頁面是嵌在別的網頁裡打開的，瀏覽器不讓它用相機。請直接用手機瀏覽器開網址，或用下面的「用手機相機拍一張」。' : '還沒有允許使用相機。可以到瀏覽器的網站設定打開相機權限，或用下面的「用手機相機拍一張」。';
+  else if (n === 'NotFoundError' || n === 'OverconstrainedError') why = '找不到可以用的相機。';
+  else if (n === 'NotReadableError') why = '相機正在被別的 App 使用，關掉後再試一次。';
+  else why = (inLine ? '在 LINE 裡面' : framed ? '在嵌入的網頁裡' : '這個瀏覽器') + '不能直接開即時相機。可以用下面的「用手機相機拍一張」，拍完一樣能放貼紙和相框。';
+  $('camWhy').textContent = why + (n ? '（' + n + '）' : ''); $('camSheet').hidden = false;
 }
 function stopCam() { if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; } }
 function useImage(url) { stopCam(); const b = $('bgimg'); b.src = url; b.hidden = false; $('video').hidden = true; src = 'img'; show('shoot'); }
@@ -299,10 +322,27 @@ async function share() {
 $('ver').textContent = 'v' + CFG.version;
 $('camBtn').onclick = async () => { if (!(await openCam())) { /* 留在首頁，提示改用相簿或示範背景 */ } };
 $('albumBtn').onclick = () => $('file').click(); $('album2').onclick = () => $('file').click();
+$('snapBtn').onclick = () => { $('camSheet').hidden = true; $('snap').click(); };
+$('camAlbum').onclick = () => { $('camSheet').hidden = true; $('file').click(); };
+$('csClose').onclick = () => { $('camSheet').hidden = true; };
+$('snap').onchange = (e) => { const f = e.target.files && e.target.files[0]; if (f) useImage(URL.createObjectURL(f)); e.target.value = ''; };
 $('file').onchange = (e) => { const f = e.target.files && e.target.files[0]; if (f) useImage(URL.createObjectURL(f)); e.target.value = ''; };
 $('demoBtn').onclick = () => useImage('assets/demo_bg.jpg');
 $('backBtn').onclick = () => { stopCam(); show('home'); };
-$('frameBtn').onclick = () => { if (frameI === 1 && seasonI < 3) { seasonI++; } else { frameI = (frameI + 1) % 3; if (frameI === 1) seasonI = 0; } redrawFrame(); };
+/* v0.4：「換相框」改成跳出相框清單直接選（Dari 10/12 19:03） */
+const FRAME_LIST = [[0, null, '碼頭', 'frame_pier'], [1, 0, '清晨', SEASON_IMG[0]], [1, 1, '午後', SEASON_IMG[1]], [1, 2, '黃昏', SEASON_IMG[2]], [1, 3, '雨夜', SEASON_IMG[3]], [2, null, '本週主題', 'frame_week_base']];
+function openFrames() {
+  const g = $('fgrid'); g.innerHTML = '';
+  for (const [fi, si, nm, id] of FRAME_LIST) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'fcell' + (fi === frameI && (si === null || si === seasonI) ? ' on' : '');
+    b.innerHTML = '<span class="fimg"><img src="assets/' + id + '.png" alt=""></span>' + (fi === 1 ? '港灣四時・' : '') + nm;
+    b.onclick = () => { frameI = fi; if (si !== null) seasonI = si; redrawFrame(); $('frameSheet').hidden = true; };
+    g.appendChild(b);
+  }
+  $('frameSheet').hidden = false;
+}
+$('frameBtn').onclick = openFrames;
+$('fsClose').onclick = () => { $('frameSheet').hidden = true; };
 $('flipBtn').onclick = () => { if (src !== 'cam') { toast('用相機時才能翻轉'); return; } facing = facing === 'user' ? 'environment' : 'user'; openCam(); };
 $('clearBtn').onclick = () => { stks.forEach((o) => o.el.remove()); stks = []; sel = null; $('hint').hidden = false; };
 $('shutter').onclick = () => { select(null); capture(); };
