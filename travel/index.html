@@ -237,7 +237,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.11',
+  version: '0.12',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -304,9 +304,9 @@ const VOICE = {
 if (CFG.look) for (const l of LOCS) { const v = VOICE[l.id]; l.sv = v.sv; v.n.forEach((n, i) => { l.cards[i][1] = n; }); }
 const LIMITED = LOCS.map((l) => ({ id: 'lim-' + l.id, loc: l.id, title: '本週限定・' + l.name + '的小驚喜', note: '這個禮拜好想去' + l.name + '，真的遇到好特別的事！' }));
 const SAYS = {
-  home: ['今天天氣好好，我們出門玩好不好？', '你看了我寄的明信片嗎？', '便當準備好了嗎？我隨時可以出發！', '我好想去看海喔！'],
-  away: ['我去看海囉，等我喔！', '聽說那裡有好吃的，我去看看！', '我會寄漂亮的風景給你！', '出門囉，幫我看家喔！'],
-  back: ['我回來了！有一封信給你！', '好累喔，可是好好玩！', '你猜猜我去了哪裡？']
+  home: ['嘿嘿，你來啦！', '嗨嗨！今天去哪裡？', '今天天氣好好，我們出門玩好不好？', '你看了我寄的明信片嗎？', '便當準備好了嗎？我隨時可以出發！', '我好想去看海喔！'],
+  away: ['背包背好，出發囉！', '我去看看，回來告訴你！', '我去看海囉，等我喔！', '聽說那裡有好吃的，我去看看！', '我會寄漂亮的風景給你！', '出門囉，幫我看家喔！'],
+  back: ['我回來啦！嘿嘿！', '外面好多新東西喔！', '我有好多事想說喔！', '我回來了！有一封信給你！', '好累喔，可是好好玩！', '你猜猜我去了哪裡？']
 };
 const KEY = 'kiteTravel1';
 const $ = (id) => document.getElementById(id);
@@ -440,10 +440,10 @@ const PET = (() => {
       [1, () => { p.act = 'jump'; p.dur = 0.75; emote('heart', true); }],
       [cards.length ? 1.4 : 0.4, () => { go(rnd(60, 70), 83); p.then = () => { p.face = 1; p.act = 'look'; p.dur = 2.6; if (cards.length) { const [loc, i] = pick(cards).split('-'), l = LOCS.find((z) => z.id === loc); emote('heart'); say('這張是在' + l.name + '拍的「' + l.cards[+i][0] + '」！'); } else { emote('q'); say('牆上還空空的，想多掛幾張…'); } }; }],
       [svs.length ? 1.1 : 0.3, () => { go(28, 84); p.then = () => { p.face = -1; p.act = 'look'; p.dur = 2.6; if (svs.length) { const id = pick(svs), l = LOCS.find((z) => z.id === id); emote('spark'); say(l.souvenir + '～' + l.sv); } else { emote('q'); say('架子上還沒有東西。'); } }; }],
-      [0.8, () => { p.act = 'nap'; p.dur = rnd(4, 6); emote('zzz'); say('呼…呼…', 2); }],
+      [0.8, () => { p.act = 'nap'; p.dur = rnd(4, 6); emote('zzz'); say(pick(['呼…呼…', '我想睡一下下。', '哈～眼睛快閉起來了。']), 2.2); }],
       [0.9, () => { p.act = 'sing'; p.dur = 2.4; emote('note', true); say(pick(['啦啦啦～', '今天天氣真好～', '海風的味道～'])); }],
       [0.8, () => { p.act = 'busy'; p.dur = 2.4; p.pose = 'pack'; emote('sweat'); say(pick(['背包好亂喔…', '要帶什麼出門呢…', '地圖跑去哪裡了…'])); }],
-      [nb ? 0.7 : 0.5, () => { p.act = 'idle'; p.dur = 2.4; emote('food'); say(nb ? '便當好香，想出門了！' : riceLeft() ? '今天的飯糰還在喔！' : '肚子咕嚕咕嚕叫了…'); }],
+      [nb ? 0.7 : 0.5, () => { p.act = 'idle'; p.dur = 2.4; emote('food'); say(nb ? '便當好香，想出門了！' : riceLeft() ? pick(['我想吃飯糰喔！', '吃飽飽，再出門！']) : pick(['肚子咕嚕咕嚕叫了…', '肚肚咕嚕咕嚕了。'])); }],
       [0.6, () => { go(rnd(44, 56), 95); p.then = () => { p.face = 1; p.act = 'idle'; p.dur = 2.2; emote('q'); say(pick(['你在看我嗎？', '嘿嘿～', '要一起去旅行嗎？'])); }; }],
       [1.4, () => { p.act = 'idle'; p.dur = rnd(1.5, 3.5); }]
     ];
@@ -453,7 +453,7 @@ const PET = (() => {
   function tap() {
     if (S.state === 'away') return;
     p.act = 'jump'; p.dur = 0.75; p.t = 0; p.then = null; emote('heart', true);
-    say(pick(S.state === 'back' ? ['我回來了！', '快看信嘛～', '好想你喔！'] : ['嘿！', '摸摸頭～', '好癢！', '我在這裡！', '今天也要一起玩喔！']), 2.2);
+    say(pick(S.state === 'back' ? ['我回來了！', '快看信嘛～', '好想你喔！'] : ['嘿！', '摸摸頭～', '好癢！', '我在這裡！', '早安呀，一起玩！', '耶！我好開心喔！']), 2.2);
   }
   function frame(now) {
     const dt = Math.min(0.05, (now - (p.last || now)) / 1000); p.last = now;
