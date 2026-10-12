@@ -35,12 +35,20 @@ header h1{font-size:20px;margin:0;flex:1}
 .wallcards span:nth-child(2){transform:rotate(2deg)}
 .shelfhit{position:absolute;left:0;top:43.7%;width:28.7%;height:23.8%;cursor:pointer}
 .shelfitems img{position:absolute;top:49.4%;width:5.93%;height:6.46%;object-fit:contain}
-.bird{position:absolute;left:35.2%;top:55.6%;width:37%;height:40.4%;background:center/contain no-repeat;pointer-events:none}
-.bird.bob{animation:bob 2.4s ease-in-out infinite}
+.bird{position:absolute;left:35.2%;top:55.6%;width:34%;aspect-ratio:1;background:center/contain no-repeat;cursor:pointer;z-index:2;transform-origin:50% 92%;will-change:left,top,transform}
+/* v0.7：小鳶在屋裡生活。位置與動作由程式（PET）每一格更新 */
+.emote{position:absolute;width:10.5%;aspect-ratio:1;z-index:120;pointer-events:none;transform:translate(-50%,-100%);animation:pop .35s ease-out}
+.emote svg{width:100%;height:100%;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}
+@keyframes pop{0%{transform:translate(-50%,-60%) scale(.3);opacity:0}70%{transform:translate(-50%,-105%) scale(1.15);opacity:1}100%{transform:translate(-50%,-100%) scale(1)}}
+.emote.float{animation:pop .35s ease-out,drift 1.6s ease-in .35s forwards}
+@keyframes drift{to{transform:translate(-50%,-180%);opacity:0}}
 @keyframes bob{50%{transform:translateY(-6px)}}
 .note{position:absolute;left:50%;bottom:9%;transform:translateX(-50%) rotate(-3deg);width:56%;padding:10px 12px;background:#FFF8D9;border:1.5px solid #E5D49B;box-shadow:0 3px 8px rgba(0,0,0,.12);font-size:14px;line-height:1.5}
-.envelope{position:absolute;left:69.4%;top:76.8%;width:22.2%;height:16.2%;background:url(assets/letter_seal.png) center/contain no-repeat,url(assets/letter_env.png) center/contain no-repeat;animation:bob 1.6s infinite;cursor:pointer}
-.say{position:absolute;left:8%;right:8%;top:41%;text-align:center;pointer-events:none;z-index:2}
+.envelope{position:absolute;z-index:100;left:69.4%;top:76.8%;width:22.2%;height:16.2%;background:url(assets/letter_seal.png) center/contain no-repeat,url(assets/letter_env.png) center/contain no-repeat;animation:bob 1.6s infinite;cursor:pointer}
+.say{position:absolute;width:62%;text-align:center;pointer-events:none;z-index:130;transform:translate(-50%,-100%);transition:opacity .25s}
+.say.off{opacity:0}
+.say .bubble{position:relative;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.say .bubble::after{content:'';position:absolute;left:50%;bottom:-8px;margin-left:-6px;border:6px solid transparent;border-top-color:#fff}
 #home{flex-direction:column;overflow:hidden;padding:0;background:linear-gradient(#5A3F2A,#3E2B1D)}
 .hud{display:flex;align-items:center;gap:6px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 8px;color:#FFF4E2}
 .hud h1{font-size:17px;margin:0;flex:1;white-space:nowrap;letter-spacing:.04em}
@@ -62,7 +70,7 @@ header h1{font-size:20px;margin:0;flex:1}
 .ibtn:active{transform:translateY(2px);box-shadow:0 1px 0 #C9A57E}
 .ibtn img{width:38px;height:38px;object-fit:contain}
 .ibtn small{font-size:11px;font-weight:400;color:var(--muted)}
-.quickback{position:absolute;right:10px;bottom:10px;z-index:3;border:0;border-radius:999px;background:#2B3A40;color:#fff;font:inherit;font-size:12px;padding:6px 12px;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.quickback{position:absolute;right:10px;bottom:10px;z-index:150;border:0;border-radius:999px;background:#2B3A40;color:#fff;font:inherit;font-size:12px;padding:6px 12px;box-shadow:0 2px 6px rgba(0,0,0,.3)}
 .devsheet{position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(30,40,44,.55);z-index:45;display:flex;align-items:flex-end}
 .devsheet .dev{margin:0;width:100%;background:var(--paper);border:0;border-radius:18px 18px 0 0;padding:14px 14px calc(16px + env(safe-area-inset-bottom,0px));max-height:70%;overflow:auto}
 .bubble{display:inline-block;background:#fff;border:2px solid var(--line);border-radius:14px;padding:6px 12px;font-size:14px}
@@ -171,7 +179,8 @@ h3{font-size:15px;margin:14px 16px 6px}
         <div class="shelfitems" id="miniShelf"></div>
         <div class="shelfhit" id="shelfHit" role="button" aria-label="紀念品架，打開紀念品櫃"></div>
         <div class="bird" id="bird"></div>
-        <div class="say"><span class="bubble" id="say"></span></div>
+        <div class="say off" id="sayBox"><span class="bubble" id="say"></span></div>
+        <div class="emote" id="emote" hidden></div>
         <div class="note" id="note" hidden></div>
         <div class="envelope" id="envIcon" hidden></div>
         <button class="quickback" id="quickBack" type="button" hidden>⏩ 馬上回來（測試）</button>
@@ -226,9 +235,9 @@ h3{font-size:15px;margin:14px 16px 6px}
 <div class="toast" id="toast"></div>
 
 <script>
-/* 小鳶去旅行 原型 v0.6（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
+/* 小鳶去旅行 原型 v0.7（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.6',
+  version: '0.7',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -347,12 +356,12 @@ function renderHome() {
   tick();
   $('ver').textContent = 'v' + CFG.version + (CFG.fast ? '・快速' : '') + (CFG.look ? '・B 款新版看稿' : '');
   const st = S.state, b = $('bird'), note = $('note'), env = $('envIcon'), main = $('mainBtn');
-  note.hidden = true; env.hidden = true; b.style.display = 'block'; b.className = 'bird bob'; $('quickBack').hidden = st !== 'away';
+  note.hidden = true; env.hidden = true; b.style.display = 'block'; b.className = 'bird'; $('quickBack').hidden = st !== 'away';
   if (!S.firstDone && st === 'home') { $('chip').textContent = '第一次見面！先帶小鳶在附近走走吧'; b.style.backgroundImage = 'url(assets/kite_wave.png)'; $('say').textContent = '你好！我是小鳶。'; main.textContent = '第一次，先在附近走走吧（3 分鐘）'; main.onclick = startFirst; }
   else if (st === 'home') { $('chip').textContent = '小鳶在家，還沒出發'; b.style.backgroundImage = 'url(assets/kite_home.png)'; $('say').textContent = sayOne('home'); main.textContent = '打包出門'; main.onclick = () => go('pack'); }
   else if (st === 'away') { b.style.display = 'none'; note.hidden = false; note.textContent = '「' + (S.trip.say || sayOne('away')) + '」　— 小鳶'; $('chip').textContent = '小鳶正在旅行，大約 ' + fmtTime(S.trip.end) + ' 回來；信會等你，不會過期'; $('say').textContent = ''; main.textContent = '大約 ' + fmtTime(S.trip.end) + ' 回來'; main.onclick = () => toast('小鳶還在路上，晚點再來看看'); }
   else { $('chip').textContent = '小鳶回來了！帶了一封信'; b.style.backgroundImage = 'url(assets/kite_back.png)'; env.hidden = false; $('say').textContent = sayOne('back'); main.textContent = '拆信'; main.onclick = openLetter; env.onclick = openLetter; }
-  $('say').parentElement.style.visibility = $('say').textContent ? 'visible' : 'hidden';
+  PET.reset($('say').textContent);
   // 牆上最近三張、架上的紀念品
   const recent = Object.entries(S.cards).sort((a, b2) => b2[1] - a[1]).slice(0, 3);
   const WALL_X = [51.5, 62.4, 73.3];      // 三個空掛位的左緣（%）
@@ -371,6 +380,97 @@ function renderHome() {
   $('gearBtn').onclick = openDev;
   if (!S.seen.intro) showIntro();
 }
+/* ====== 小鳶的屋內生活（v0.7）：走動、展翅、跳、看明信片、看紀念品、打瞌睡、唱歌、流汗；點牠會有反應 ====== */
+const EMO = {
+  heart: '<svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2A5.2 5.2 0 0 1 12 6.3a5.2 5.2 0 0 1 9.6 5.5C19.5 16.4 12 21 12 21z" fill="#EF5A6F" stroke="#fff" stroke-width="1.6"/></svg>',
+  sweat: '<svg viewBox="0 0 24 24"><path d="M12 2c3 5 6 8.5 6 12.2A6 6 0 0 1 6 14.2C6 10.5 9 7 12 2z" fill="#73C6F2" stroke="#fff" stroke-width="1.6"/><path d="M9.5 14a2.6 2.6 0 0 0 2 2.8" stroke="#fff" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>',
+  zzz: '<svg viewBox="0 0 24 24"><g font-family="sans-serif" font-weight="900" fill="#5B7BB8" stroke="#fff" stroke-width=".8" paint-order="stroke"><text x="3" y="21" font-size="11">Z</text><text x="11" y="13" font-size="8">z</text><text x="17" y="7" font-size="6">z</text></g></svg>',
+  note: '<svg viewBox="0 0 24 24"><path d="M9 18.5a3 3 0 1 1-2-2.8V5l11-2.5v11.7a3 3 0 1 1-2-2.8V6.2l-7 1.6z" fill="#2F7F86" stroke="#fff" stroke-width="1.2"/></svg>',
+  excl: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#F4BB42" stroke="#fff" stroke-width="1.6"/><path d="M12 6v8" stroke="#4A3426" stroke-width="3" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.7" fill="#4A3426"/></svg>',
+  q: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" stroke="#9FC9CC" stroke-width="1.6"/><path d="M9.2 9.3a2.9 2.9 0 1 1 4.3 2.5c-1 .6-1.5 1.1-1.5 2.4" stroke="#2F7F86" stroke-width="2.4" fill="none" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.5" fill="#2F7F86"/></svg>',
+  spark: '<svg viewBox="0 0 24 24"><path d="M12 1.5l2.4 7.1 7.1 2.4-7.1 2.4L12 20.5l-2.4-7.1-7.1-2.4 7.1-2.4z" fill="#FFD45E" stroke="#fff" stroke-width="1.4"/></svg>',
+  busy: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" stroke="#C9B8A4" stroke-width="1.4"/><path d="M12 5a7 7 0 1 1-6.6 4.7M12 8.5a3.5 3.5 0 1 1-3.3 2.3" stroke="#8A7565" stroke-width="2" fill="none" stroke-linecap="round"/></svg>',
+  food: '<svg viewBox="0 0 24 24"><path d="M12 3L21 19H3z" fill="#fff" stroke="#4A3426" stroke-width="1.6" stroke-linejoin="round"/><rect x="8" y="13" width="8" height="6" fill="#2F4F3A"/></svg>'
+};
+const PET = (() => {
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const p = { x: 50, y: 90, face: 1, act: 'idle', t: 0, dur: 2, sx: 50, sy: 90, tx: 50, ty: 90, pose: 'home', hop: 0, say: '', sayT: 0, emoT: 0, last: 0 };
+  const AREA = { x0: 26, x1: 78, y0: 82, y1: 95 };      // 地板上可以走的範圍（小屋底圖的百分比）
+  const rnd = (a, b2) => a + Math.random() * (b2 - a);
+  const pick = (a) => a[Math.floor(Math.random() * a.length)];
+  function say(t, sec) { p.say = t; p.sayT = sec || 2.8; $('say').textContent = t; $('sayBox').classList.remove('off'); }
+  function emote(k, float) { const e = $('emote'); e.hidden = false; e.innerHTML = EMO[k]; e.className = 'emote' + (float ? ' float' : ''); void e.offsetWidth; p.emoT = float ? 2 : 2.4; }
+  function go(x, y) { p.sx = p.x; p.sy = p.y; p.tx = Math.max(AREA.x0, Math.min(AREA.x1, x)); p.ty = Math.max(AREA.y0, Math.min(AREA.y1, y)); p.face = p.tx >= p.x ? 1 : -1; p.act = 'walk'; p.t = 0; p.dur = Math.max(0.6, Math.hypot(p.tx - p.x, (p.ty - p.y) * 2) / 14); }
+  function next() {
+    p.t = 0; p.pose = S.state === 'back' ? 'back' : !S.firstDone ? 'wave' : 'home';
+    const r = Math.random();
+    if (S.state === 'back') {      // 拿著信，想讓你快點拆
+      if (r < 0.4) { go(rnd(60, 76), rnd(86, 93)); p.then = () => { emote('excl'); say(pick(['快來拆信！', '這次去了好遠喔！', '信在這裡～'])); }; }
+      else if (r < 0.7) { p.act = 'jump'; p.dur = 0.7; emote('excl'); }
+      else { p.act = 'idle'; p.dur = rnd(1.5, 3); }
+      return;
+    }
+    const cards = Object.keys(S.cards), svs = Object.keys(S.souvenirs), nb = (S.bento.far || 0) + (S.bento.squid || 0) + (S.bento.hair || 0) + (S.bento.special || 0);
+    const acts = [
+      [3, () => { go(rnd(AREA.x0, AREA.x1), rnd(AREA.y0, AREA.y1)); }],
+      [1.2, () => { p.act = 'flap'; p.dur = 1.3; p.pose = 'wave'; }],
+      [1, () => { p.act = 'jump'; p.dur = 0.75; emote('heart', true); }],
+      [cards.length ? 1.4 : 0.4, () => { go(rnd(60, 70), 83); p.then = () => { p.face = 1; p.act = 'look'; p.dur = 2.6; if (cards.length) { const [loc, i] = pick(cards).split('-'), l = LOCS.find((z) => z.id === loc); emote('heart'); say('這張是在' + l.name + '拍的「' + l.cards[+i][0] + '」！'); } else { emote('q'); say('牆上還空空的，想多掛幾張…'); } }; }],
+      [svs.length ? 1.1 : 0.3, () => { go(28, 84); p.then = () => { p.face = -1; p.act = 'look'; p.dur = 2.6; if (svs.length) { const id = pick(svs), l = LOCS.find((z) => z.id === id); emote('spark'); say(l.souvenir + '～' + l.sv); } else { emote('q'); say('架子上還沒有東西。'); } }; }],
+      [0.8, () => { p.act = 'nap'; p.dur = rnd(4, 6); emote('zzz'); say('呼…呼…', 2); }],
+      [0.9, () => { p.act = 'sing'; p.dur = 2.4; emote('note', true); say(pick(['啦啦啦～', '今天天氣真好～', '海風的味道～'])); }],
+      [0.8, () => { p.act = 'busy'; p.dur = 2.4; p.pose = 'pack'; emote('sweat'); say(pick(['整理背包好忙…', '要帶什麼出門呢…', '地圖收在哪裡了…'])); }],
+      [nb ? 0.7 : 0.5, () => { p.act = 'idle'; p.dur = 2.4; emote('food'); say(nb ? '便當好香，想出門了！' : riceLeft() ? '今天的飯糰還在喔！' : '肚子有點餓…'); }],
+      [0.6, () => { go(rnd(44, 56), 95); p.then = () => { p.face = 1; p.act = 'idle'; p.dur = 2.2; emote('q'); say(pick(['你在看我嗎？', '嘿嘿～', '要一起去旅行嗎？'])); }; }],
+      [1.4, () => { p.act = 'idle'; p.dur = rnd(1.5, 3.5); }]
+    ];
+    let tot = acts.reduce((s, a) => s + a[0], 0), k = Math.random() * tot;
+    for (const a of acts) { k -= a[0]; if (k <= 0) { a[1](); return; } }
+  }
+  function tap() {
+    if (S.state === 'away') return;
+    p.act = 'jump'; p.dur = 0.75; p.t = 0; p.then = null; emote('heart', true);
+    say(pick(S.state === 'back' ? ['我回來了！', '快看信嘛～', '好想你喔！'] : ['嘿！', '摸摸頭～', '好癢！', '我在這裡！', '今天也要一起玩喔！']), 2.2);
+  }
+  function frame(now) {
+    const dt = Math.min(0.05, (now - (p.last || now)) / 1000); p.last = now;
+    const b = $('bird');
+    if (b && b.offsetParent && S.state !== 'away') {
+      p.t += dt;
+      let bob = 0, rot = 0, sq = 1;
+      if (p.act === 'walk') { const u = Math.min(1, p.t / p.dur); p.x = p.sx + (p.tx - p.sx) * u; p.y = p.sy + (p.ty - p.sy) * u; bob = Math.abs(Math.sin(p.t * 9)) * 2.2; rot = Math.sin(p.t * 9) * 4; if (u >= 1) { p.act = 'idle'; p.t = 0; p.dur = 0.4; const f = p.then; p.then = null; if (f) f(); } }
+      else if (p.act === 'jump') { const u = Math.min(1, p.t / p.dur); bob = Math.sin(u * Math.PI) * 9; sq = u < 0.15 || u > 0.9 ? 0.92 : 1.04; }
+      else if (p.act === 'flap') { bob = Math.abs(Math.sin(p.t * 7)) * 5; rot = Math.sin(p.t * 14) * 3; }
+      else if (p.act === 'nap') { sq = 0.93 + Math.sin(p.t * 1.6) * 0.02; rot = -6; }
+      else if (p.act === 'sing') { rot = Math.sin(p.t * 5) * 8; bob = Math.abs(Math.sin(p.t * 5)) * 1.5; }
+      else if (p.act === 'busy') { p.x += Math.sin(p.t * 10) * 0.08; bob = Math.abs(Math.sin(p.t * 12)) * 1.2; if (Math.random() < dt * 1.2) p.face *= -1; }
+      else { sq = 1 + Math.sin(p.t * 2.2) * 0.015; }
+      if (p.act !== 'walk' && p.t >= p.dur) next();
+      if (calm) { bob = 0; rot = 0; sq = 1; }
+      const scale = 0.86 + (p.y - AREA.y0) / (AREA.y1 - AREA.y0) * 0.16, w = 34 * scale;
+      const key = p.pose === 'wave' ? 'kite_wave' : p.pose === 'pack' ? 'kite_pack' : p.pose === 'back' ? 'kite_back' : 'kite_home';
+      if (b.dataset.k !== key) { b.style.backgroundImage = 'url(assets/' + key + '.png)'; b.dataset.k = key; }
+      const hPct = w * 1080 / 990;      // 小屋底圖 1080×990，換算成高度的百分比
+      b.style.width = w + '%'; b.style.left = (p.x - w / 2) + '%'; b.style.top = (p.y - hPct * 0.92) + '%';
+      b.style.transform = 'translateY(' + (-bob) + '%) rotate(' + rot + 'deg) scale(' + p.face + ',' + sq + ')';
+      b.style.zIndex = Math.round(p.y);
+      const headTop = p.y - hPct * 0.84 - bob * 0.3;
+      const sb = $('sayBox'); sb.style.left = Math.max(32, Math.min(68, p.x)) + '%'; sb.style.top = (headTop - 1) + '%';
+      const em = $('emote'); em.style.left = (p.x + p.face * w * 0.46) + '%'; em.style.top = (headTop + 12) + '%';
+      if (p.sayT > 0) { p.sayT -= dt; if (p.sayT <= 0) $('sayBox').classList.add('off'); }
+      if (p.emoT > 0) { p.emoT -= dt; if (p.emoT <= 0) $('emote').hidden = true; }
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  return {
+    reset(line) {      // renderHome 呼叫：換狀態時重新開始
+      const b = $('bird'); b.onclick = tap; p.then = null; b.dataset.k = '';
+      if (line) say(line, 3.2); else $('sayBox').classList.add('off');
+      next();
+    }
+  };
+})();
 function showTrips() {      // 旅行紀錄：郵票、遠行便當、稱號一眼看完
   const t = Object.values(calcTitles());
   const m = $('modal'); m.innerHTML = '<div class="sheet2"><h3 style="margin:0 0 10px">旅行紀錄</h3><p>旅行 <b>' + S.trips + '</b> 次・郵票 <b>' + S.stamps + '</b> 枚（滿 ' + CFG.stampsToPick + ' 枚可以指定地點）</p><p>遠行便當：再旅行 <b>' + (CFG.farEvery - S.farAcc) + '</b> 趟，小鳶會自己存下 1 份</p><p>便當：遠行 ' + (S.bento.far || 0) + '、小卷 ' + (S.bento.squid || 0) + '、白帶魚 ' + (S.bento.hair || 0) + '、特製 ' + (S.bento.special || 0) + '；今天的飯糰' + (riceLeft() ? '還在' : '已經用了') + '</p><p>稱號：' + (t.length ? t.join('、') : '還沒有') + '</p><button class="btn" id="tClose" style="margin-top:12px">好</button></div>';
