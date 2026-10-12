@@ -22,6 +22,18 @@ header p{margin:2px 0 0;font-size:13px;color:var(--muted)}
 .book h2{margin:0 0 10px;font-size:16px;display:flex;justify-content:space-between;align-items:baseline}
 .book h2 small{font-size:12px;color:var(--muted);font-weight:400}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+/* v0.2：護照頁換上 G-49 底圖（1080×1350），六個章照圓框位置 JSON 對位（2 欄 × 3 列） */
+.passport{position:relative;width:100%;aspect-ratio:1080/1350;background:url(assets/passport_page.jpg) center/100% 100%;border-radius:14px;box-shadow:0 6px 18px rgba(62,43,29,.15);overflow:hidden}
+.passport .ttl{position:absolute;left:0;right:0;top:5%;text-align:center}
+.passport .ttl b{display:block;font-size:22px;letter-spacing:.12em;color:#5A3A24}
+.passport .ttl span{font-size:13px;color:#8A7565}
+.pcell{position:absolute;transform:translate(-50%,-50%);border:0;background:none;padding:0;font:inherit;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#A08A72}
+.pcell img{width:100%;height:100%;object-fit:contain;transform:rotate(-8deg);mix-blend-mode:multiply}
+.pcell .n{font-size:26px;font-weight:700;color:#C8B79F;line-height:1}
+.pcell small{font-size:11px;line-height:1.35;text-align:center;padding:0 12%;margin-top:4px}
+.pcell .dt{position:absolute;bottom:-4%;font-size:10.5px;font-weight:700;color:#B4483C;background:rgba(255,250,240,.85);border-radius:999px;padding:0 6px}
+.passport .foot{position:absolute;left:0;right:0;bottom:3.2%;text-align:center;font-size:12px;color:#8A7565}
+.big img{width:100%;height:100%;object-fit:contain;animation:slam .45s cubic-bezier(.3,1.6,.6,1) both}
 .cell{border:0;background:none;font:inherit;padding:0;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--ink)}
 .slot{width:100%;aspect-ratio:1;border-radius:50%;border:2.5px dashed #CDBDA6;display:flex;align-items:center;justify-content:center;position:relative;background:rgba(255,255,255,.5)}
 .slot .n{font-size:22px;font-weight:700;color:#CDBDA6}
@@ -68,9 +80,10 @@ summary{font-weight:700;font-size:14px;cursor:pointer}
     <div class="bar"><i id="prog" style="width:0"></i></div>
     <p class="note" id="progTxt" style="margin-top:6px"></p>
   </div>
-  <section class="book">
-    <h2>港灣探險護照 <small id="count"></small></h2>
-    <div class="grid" id="grid"></div>
+  <section class="passport" id="passport">
+    <div class="ttl"><b>港灣探險護照</b><span id="count"></span></div>
+    <div id="grid"></div>
+    <div class="foot">點蓋好的章，可以再聽一次小鳶的故事</div>
   </section>
   <div class="reward" id="reward" hidden></div>
   <a class="btn light" href="../travel/" id="toTravel">回小鳶的小屋</a>
@@ -82,7 +95,8 @@ summary{font-weight:700;font-size:14px;cursor:pointer}
 </div>
 <div class="ov" id="ov" hidden><div class="sheet" id="sheet"></div></div>
 <script>
-const CFG = { version: '0.1', key: 'kiteStamp1' };
+const CFG = { version: '0.2', key: 'kiteStamp1' };
+const FRAMES = [[31.2037, 34.1481], [68.7037, 34.1481], [31.2037, 56.2222], [68.7037, 56.1852], [31.1574, 78.2593], [68.7037, 78.2963]], FRAME_R = 12.45;      // G-49 護照頁圓框中心（%）與半徑（佔寬度 %）
 /* 6 個蓋章點（工作單 11 v4 第三節；實際位置待 Dari 現勘）。小鳶的話照 D42：4 到 7 歲小小孩的語氣 */
 const SPOTS = [
   { id: 1, name: '小鳶', hint: '旅客服務中心入口的小鳶', icon: 'kite', lines: ['我第一次飛來這裡的時候，好緊張喔！', '後來發現大家都好親切。', '歡迎你也來玩～'] },
@@ -106,11 +120,12 @@ let P = load();
 const save = () => { try { localStorage.setItem(CFG.key, JSON.stringify(P)); } catch (e) {} };
 const n = () => Object.keys(P.spots).length;
 const fmt = (ms) => { const d = new Date(ms); return (d.getMonth() + 1) + '/' + d.getDate(); };
+function stampImg(s) { return '<img src="assets/stamp_' + s.icon + '.png" alt="' + s.name + '章">'; }      // v0.2：G-49 正式章（暫用）
 function stampHTML(s, withDate) { return '<div class="stamp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + ICON[s.icon] + '</svg><span>' + s.name + (withDate && P.spots[s.id] ? '・' + fmt(P.spots[s.id]) : '') + '</span></div>'; }
 function render() {
   $('ver').textContent = 'v' + CFG.version;
-  $('grid').innerHTML = SPOTS.map((s) => { const done = !!P.spots[s.id]; return '<button class="cell" type="button" data-id="' + s.id + '"><span class="slot' + (done ? ' done' : '') + '">' + (done ? stampHTML(s, true) : '<span class="n">' + s.id + '</span>') + '</span><b>' + (done ? s.name : '還沒蓋') + '</b><small>' + (done ? '點一下再聽一次' : '在' + s.hint) + '</small></button>'; }).join('');
-  $('grid').querySelectorAll('.cell').forEach((b) => (b.onclick = () => { const s = SPOTS.find((x) => x.id === +b.dataset.id); if (P.spots[s.id]) showStory(s, false); }));
+  $('grid').innerHTML = SPOTS.map((s, i) => { const done = !!P.spots[s.id], [x, y] = FRAMES[i], d = FRAME_R * 2 * 1.02; return '<button class="pcell" type="button" data-id="' + s.id + '" style="left:' + x + '%;top:' + y + '%;width:' + d + '%;aspect-ratio:1" aria-label="' + (done ? s.name + '章' : '第 ' + s.id + ' 點，還沒蓋') + '">' + (done ? stampImg(s) + '<span class="dt">' + fmt(P.spots[s.id]) + '</span>' : '<span class="n">' + s.id + '</span><small>' + s.hint + '</small>') + '</button>'; }).join('');
+  $('grid').querySelectorAll('.pcell').forEach((b) => (b.onclick = () => { const s = SPOTS.find((x) => x.id === +b.dataset.id); if (P.spots[s.id]) showStory(s, false); }));
   $('count').textContent = n() + ' / 6'; $('prog').style.width = (n() / 6 * 100) + '%';
   $('progTxt').textContent = n() === 6 ? '6 個章都蓋好了！' : '再蓋 ' + (6 - n()) + ' 個就集滿，可以拿到護照明信片和小鳶的雨傘';
   const r = $('reward'); r.hidden = !P.complete;
@@ -126,7 +141,7 @@ function scan(id) {
   showStory(s, first);
 }
 function showStory(s, first) {
-  $('sheet').innerHTML = '<div class="big">' + stampHTML(s, false) + '</div><h3>' + (first ? '蓋到「' + s.name + '」章了！' : '這個章已經收下囉') + '</h3>' +
+  $('sheet').innerHTML = '<div class="big">' + stampImg(s) + '</div><h3>' + (first ? '蓋到「' + s.name + '」章了！' : '這個章已經收下囉') + '</h3>' +
     '<div class="say"><img src="../travel/assets/' + (first ? 'kite_happy' : 'kite_home') + '.png" alt=""><p>' + s.lines.join('<br>') + '</p></div>' +
     (s.rec ? '<div class="rec">' + s.rec + '</div>' : '') +
     '<p class="again">' + (n() < 6 ? '還差 ' + (6 - n()) + ' 個：' + SPOTS.filter((x) => !P.spots[x.id]).map((x) => x.hint).join('、') : '6 個都蓋好了！') + '</p>' +
