@@ -128,7 +128,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
     <canvas class="mapfx" id="mapFx" aria-hidden="true"></canvas>
     <h1 class="maptitle">小鳶飛行冒險</h1>
     <div id="stageButtons"></div>
-    <p class="mapnote">原型 v0.21：暫用圖、不發點數。測試期間四關都開放</p>
+    <p class="mapnote">原型 v0.22：暫用圖、不發點數。測試期間四關都開放</p>
   </div>
 
   <div class="panel" id="startPanel" hidden>
@@ -137,6 +137,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
       <p id="stageIntro">第 1 關　叁肆行：把漂進港口的垃圾清乾淨。</p>
       <ul class="how">
         <li><b>滑動</b><span>手指在畫面上滑，小鳶跟著走，風之羽自動發射</span></li>
+        <li><b>分數</b><span>清掉一個 10 分、救朋友 50 分、打倒魔王 300 分，最後剩幾顆愛心再各加 50 分</span></li>
         <li><b>要閃的</b><span id="howDodge">漂流木打不掉；看到紅色區域就整隻離開</span></li>
         <li><b id="howBarrelK">油桶</b><span id="howBarrel">打爆會炸掉旁邊的垃圾，自己別靠太近</span></li>
         <li id="howFriend"><b>救朋友</b><span id="howFriendT">清掉纏住牠們的垃圾。小卷會來幫忙，海龜送你護盾</span></li>
@@ -153,7 +154,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
       </div>
       <button class="btn" id="startBtn">開始</button>
       <button class="btn quiet" id="mapBtn">回關卡地圖</button>
-      <p class="note">原型 v0.21：暫用圖、不發點數</p>
+      <p class="note">原型 v0.22：暫用圖、不發點數</p>
     </div>
   </div>
 
@@ -168,7 +169,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
   <div class="panel" id="resultPanel" hidden>
     <div class="card result">
       <div class="headline"><h2 id="resTitle">過關</h2><div class="rank" id="rank"></div></div>
-      <div class="total"><span id="cleanPct">0</span> <small>% 乾淨</small></div>
+      <div class="total"><span id="cleanPct">0</span> <small>分</small></div>
       <div class="rows" id="rows"></div>
       <div class="ask" id="ask">
         <div><span>一看就知道怎麼玩</span><span class="yn" data-q="easy"><button aria-pressed="false">是</button><button aria-pressed="false">否</button></span></div>
@@ -190,7 +191,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.21',
+  version: '0.22',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -632,7 +633,7 @@ function update(dt) {
   // 畫面資訊
   const total = CONFIG.boss.at + 14, sb = $('stageBar');      // v0.20：魔王出場後，上方長條改成魔王血量（D51：第 4 關血量顯示和上方長條疊在一起）
   if (boss && !won) { sb.classList.add('hp'); sb.style.transform = 'scaleX(' + Math.max(0, Math.min(1, boss.hp / (boss.maxHp || 1))) + ')'; } else { sb.classList.remove('hp'); sb.style.transform = 'scaleX(' + Math.min(1, t / total) + ')'; }
-  $('stageText').textContent = boss && boss.phased ? bossGoalText(boss) + '　' + Math.max(0, Math.ceil(BTIME() - (t - boss.born))) + ' 秒' : boss ? (T.boss.short || T.boss.name) + ' ' + Math.max(0, Math.ceil(boss.hp)) + ' / ' + boss.maxHp + '　剩 ' + Math.max(0, Math.ceil(BTIME() - (t - boss.born))) + ' 秒' : '清掉 ' + stats.cleared + (stats.combo >= 3 ? '　連清 ' + stats.combo : '');
+  $('stageText').textContent = boss && boss.phased ? bossGoalText(boss) + '　' + Math.max(0, Math.ceil(BTIME() - (t - boss.born))) + ' 秒' : boss ? (T.boss.short || T.boss.name) + ' ' + Math.max(0, Math.ceil(boss.hp)) + ' / ' + boss.maxHp + '　剩 ' + Math.max(0, Math.ceil(BTIME() - (t - boss.born))) + ' 秒' : '分數 ' + scoreNow() + (stats.combo >= 3 ? '　連清 ' + stats.combo : '');
   const ub = $('ultBtn'), full = gauge >= CONFIG.ult.need; ub.disabled = !full || !!ult; ub.style.setProperty('--fill', Math.round(gauge / CONFIG.ult.need * 100) + '%'); ub.classList.toggle('ready', full && !ult); const tag = $('ultTag'), word = full && !ult ? (NM() ? '祈福！' : '出動！') : ULTN(); if (tag.textContent !== word) tag.textContent = word;
   if (full && !toldUlt && !ult) { toldUlt = true; banner(ULTN() + '準備好了！按右下角'); jingle([659, 880], 120); }
   $('hint').hidden = firstMove || t > 8;
@@ -2104,6 +2105,10 @@ function show(id) { for (const p of ['mapPanel', 'startPanel', 'pausePanel', 're
 function start() { reset(); const ub = $('ultBtn'), im = ub.querySelector('img'); if (im) im.src = 'assets/' + (NM() ? 'jiao_pair.png' : RM() ? (img.ult_icon_rail ? 'ult_icon_rail.png' : 'rail_ult.png') : PM() ? (img.fx_keel ? 'ult_icon_pier.png' : 'pier_ult.png') : 'whaleshark_top.png'); if (im && RM() && !img.ult_icon_rail) im.src = crabIconURL(); ub.setAttribute('aria-label', NM() ? '擲筊祈福' : RM() ? '呼叫紅蟹鐵道車' : PM() ? '彩虹鏡海' : '呼叫鯨鯊'); mode = 'play'; show(null); $('hud').hidden = false; $('hint').hidden = false; $('ultBtn').hidden = false; banner('第 ' + stageNo + ' 關　' + ST().name); beep(523, 0.12, 'triangle', 0.06, 260); }
 function pause() { if (mode !== 'play') return; mode = 'pause'; kite.drag = false; show('pausePanel'); }
 function resume() { if (mode !== 'pause') return; mode = 'play'; show(null); }
+/* v0.22（D44）：結果改用「分數」。暫用配分，之後依便當與點數規則再調（D43、D44 參數最後決定） */
+const SCORE = { cleared: 10, rescued: 50, boss: 300, heart: 50 };
+function scoreNow() { return stats.cleared * SCORE.cleared + (stats.rescued || 0) * SCORE.rescued + (stats.bossCleared ? SCORE.boss : 0); }
+function scoreFinal() { return scoreNow() + Math.max(0, kite.hearts) * SCORE.heart; }
 function cleanPct() { return stats.spawned ? Math.round(stats.cleared / stats.spawned * 100) : 0; }
 function rankOf(v) { let name = CONFIG.ranks[0][1]; for (const r of CONFIG.ranks) if (v >= r[0]) name = r[1]; return name; }
 function record() {
@@ -2125,7 +2130,7 @@ function renderMap() {
     const open = !s.locked && s.id <= progress.unlocked, st = progress.stars[s.id] || [], best = progress.best[s.id];
     const title = document.createElement('b'); title.textContent = '第 ' + s.id + ' 關　' + s.name;
     const line = document.createElement('span');
-    line.textContent = s.locked ? s.time + '　製作中' : !open ? s.time + '　過了第 ' + (s.id - 1) + ' 關就開放' : s.time + '　' + [0, 1, 2].map((k) => (st[k] ? '★' : '☆')).join('') + (best ? '　最佳 ' + best.pct + '%' : '');
+    line.textContent = s.locked ? s.time + '　製作中' : !open ? s.time + '　過了第 ' + (s.id - 1) + ' 關就開放' : s.time + '　' + [0, 1, 2].map((k) => (st[k] ? '★' : '☆')).join('') + (best ? '　最佳 ' + (best.score !== undefined ? best.score + ' 分' : best.pct + '%') : '');
     btn.append(title, line); btn.disabled = !open; if (!open) btn.classList.add('locked');
     btn.onclick = () => { stageNo = s.id; $('stageTitle').textContent = '第 ' + s.id + ' 關　' + s.name; $('stageIntro').textContent = s.time + '。' + s.intro; const nm = s.theme === 'market'; $('howDodge').textContent = nm ? '雨棚打不掉；攤位前出現紅區就是要噴熱氣，先離開；灰色油煙會擋住視線' : '漂流木打不掉；看到紅色區域就整隻離開'; $('howBarrelK').textContent = nm ? '爆米香' : '油桶'; $('howBarrel').textContent = nm ? '打爆會「碰！」一聲炸開，炸掉旁邊的妖怪，自己別靠太近' : '打爆會炸掉旁邊的垃圾，自己別靠太近'; $('howFriendT').textContent = nm ? '打破包住牠們的塑膠袋。黑輪補體力、石花凍送護盾、小卷米粉派小卷幫忙、大腸圈繞著你轉' : '清掉纏住牠們的垃圾。小卷會來幫忙，海龜送你護盾'; $('howUltK').textContent = nm ? '擲筊' : '鯨鯊'; $('howUlt').textContent = nm ? '右下角集滿後按一下，擲筊祈福，全畫面淨化；擲出的結果再送回禮' : '右下角集滿後按一下，全畫面大掃除'; if (s.how) { $('howDodge').textContent = s.how.dodge; $('howBarrelK').textContent = s.how.barrelK; $('howBarrel').textContent = s.how.barrel; $('howFriendT').textContent = s.how.friend; $('howUltK').textContent = s.how.ultK; $('howUlt').textContent = s.how.ult; } reset(); mode = 'start'; show('startPanel'); };
     box.append(btn);
@@ -2203,12 +2208,12 @@ function mapRail(mt) {      // 河豚自行車載豆腐君、象鼻君、山野�
 function finish() {
   mode = 'result'; $('hud').hidden = true; $('banner').hidden = true; $('hint').hidden = true; $('ultBtn').hidden = true;
   const ok = kite.hearts > 0, pct = cleanPct(); jingle(ok ? [523, 659, 784] : [392, 330, 262], 120);
-  $('resTitle').textContent = !ok ? '小鳶累了' : stats.bossCleared ? '過關' : '時間到'; $('rank').textContent = rankOf(pct); $('cleanPct').textContent = pct;
+  $('resTitle').textContent = !ok ? '小鳶累了' : stats.bossCleared ? '過關' : '時間到'; $('rank').textContent = rankOf(pct); $('cleanPct').textContent = scoreFinal();
   const rows = $('rows'); rows.textContent = ''; const add = (a, b) => { const l = document.createElement('span'); l.textContent = a; const r = document.createElement('span'); r.textContent = b; rows.append(l, r); };
-  const nm = NM(); add(nm ? '淨化的妖怪' : '清掉的垃圾與污染', stats.cleared + ' / ' + stats.spawned); add('最多連清', stats.bestCombo + (nm ? ' 隻' : ' 件')); add(nm ? '爆米香一次最多炸掉' : '油桶一次最多炸掉', stats.bestBlast + (nm ? ' 隻' : ' 件') + (stats.chain ? '　★' + CONFIG.chain.title : '')); if (stats.trapped) add('救出朋友', stats.rescued + ' / ' + stats.trapped);
+  const nm = NM(); add('乾淨程度', pct + '%'); add(nm ? '淨化的妖怪' : '清掉的垃圾與污染', stats.cleared + ' / ' + stats.spawned); add('最多連清', stats.bestCombo + (nm ? ' 隻' : ' 件')); add(nm ? '爆米香一次最多炸掉' : '油桶一次最多炸掉', stats.bestBlast + (nm ? ' 隻' : ' 件') + (stats.chain ? '　★' + CONFIG.chain.title : '')); if (stats.trapped) add('救出朋友', stats.rescued + ' / ' + stats.trapped);
   add(T.boss.name, stats.bossCleared ? (nm || PM() || RM() ? '打倒了' : '清掉了') : (nm || PM() || RM() ? '沒打倒' : '沒清完')); add('剩下體力', Math.max(0, kite.hearts) + ' / ' + LV().hearts + '（被打到 ' + stats.hits + ' 次）'); add(nm ? '擲筊祈福' : '呼叫' + ULTN(), stats.ultUsed + ' 次，' + (nm ? '淨化 ' + stats.ultCleared + ' 隻' : '清掉 ' + stats.ultCleared + ' 件'));
   const sv = starsOf(), id = stageNo, old = progress.stars[id] || [false, false, false]; progress.stars[id] = old.map((v, k) => v || sv[k]);
-  const best = progress.best[id]; if (!best || pct > best.pct) progress.best[id] = { pct, combo: stats.bestCombo };
+  const best = progress.best[id]; const sc = scoreFinal(); if (!best || sc > (best.score || 0)) progress.best[id] = { pct, combo: stats.bestCombo, score: sc };
   const un = $('unlockNote'); un.hidden = true;
   if (won && progress.unlocked <= id && STAGES[id] && !STAGES[id].locked) { progress.unlocked = id + 1; un.textContent = '第 ' + (id + 1) + ' 關「' + STAGES[id].name + '」已開放！'; un.hidden = false; }
   saveProgress();
