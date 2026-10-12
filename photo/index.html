@@ -37,8 +37,12 @@ button{font-family:inherit}
 .iconbtn{border:1px solid rgba(255,244,226,.35);background:rgba(255,244,226,.1);color:#FFF4E2;border-radius:999px;font-size:13px;padding:6px 11px;white-space:nowrap}
 .stagewrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:0 8px}
 .stage{position:relative;aspect-ratio:3/4;width:min(100%,calc((100vh - 220px) * .75));overflow:hidden;border-radius:6px;background:#0E1418;touch-action:none;user-select:none;-webkit-user-select:none}
-.stage video,.stage .bgimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.stage video.mirror{transform:scaleX(-1)}
+.stage video,.stage .bgimg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform-origin:50% 50%}
+.stage .blurbg{position:absolute;inset:-20px;width:calc(100% + 40px);height:calc(100% + 40px);object-fit:cover;filter:blur(18px) brightness(.8);transform-origin:50% 50%}
+.stage.fill video,.stage.fill .bgimg{object-fit:cover}
+.camtools{display:flex;align-items:center;gap:8px;padding:6px 12px 0;color:#FFF4E2;font-size:12px}
+.camtools input[type=range]{flex:1;accent-color:#E8B85A}
+.camtools button{border:1px solid rgba(255,244,226,.35);background:rgba(255,244,226,.1);color:#FFF4E2;border-radius:999px;font-size:12px;padding:5px 10px;white-space:nowrap}
 .stage canvas.frame{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
 .stk{position:absolute;left:0;top:0;transform-origin:50% 50%;z-index:3;touch-action:none}
 .stk img{display:block;width:100%;height:auto;pointer-events:none;filter:drop-shadow(0 3px 4px rgba(0,0,0,.3))}
@@ -89,7 +93,7 @@ button{font-family:inherit}
     <img class="homekite" src="assets/stk_kite_wave.png" alt="">
     <div class="homein">
       <h1>小鳶合照館</h1>
-      <p>和小鳶、鯨鯊，還有你在遊戲裡救過的朋友拍一張。貼紙可以拖、轉、放大，三款相框隨你換。</p>
+      <p>和小鳶、鯨鯊，還有你在遊戲裡救過的朋友拍一張。貼紙可以拖、轉、放大，好多相框隨你換。</p>
       <button class="btn" id="camBtn" type="button">打開相機</button>
       <button class="btn light" id="albumBtn" type="button">從相簿選照片</button>
       <button class="btn ghost" id="demoBtn" type="button">用示範背景試試</button>
@@ -108,12 +112,19 @@ button{font-family:inherit}
     </div>
     <div class="stagewrap">
       <div class="stage" id="stage">
+        <video class="blurbg" id="vblur" playsinline muted autoplay hidden></video>
+        <img class="blurbg" id="iblur" alt="" hidden>
         <video id="video" playsinline muted autoplay></video>
         <img class="bgimg" id="bgimg" alt="" hidden>
         <div id="layer"></div>
         <canvas class="frame" id="frameCv" width="1080" height="1440"></canvas>
         <div class="hint" id="hint">點下面的貼紙放上來</div>
       </div>
+    </div>
+    <div class="camtools" id="camtools">
+      <span>遠</span><input type="range" id="zoom" min="1" max="3" step="0.05" value="1" aria-label="變焦"><span>近</span>
+      <button type="button" id="fitBtn">完整畫面</button>
+      <button type="button" id="lensBtn" hidden>換鏡頭</button>
     </div>
     <div class="tray">
       <div class="tabs" id="tabs"></div>
@@ -142,7 +153,7 @@ button{font-family:inherit}
 
 <script>
 /* 小鳶合照館 原型 v0.1（工作單 11 v4 P2）。貼紙、相框、解鎖方式都是建議，等 Dari 確認；正式素材之後開單給 ChatGPT */
-const CFG = { version: '0.4', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
+const CFG = { version: '0.5', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
 const $ = (id) => document.getElementById(id);
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = 'none'), 2400); }
@@ -184,10 +195,43 @@ const weekIdx = Math.floor((Date.now() / 86400000 + 3) / 7) % 8, WEEK = LOCS[wee
 const SEASONS = [['清晨', '#F6C9A6', '#7FB6C9'], ['午後', '#7FC4D6', '#2F7F86'], ['黃昏', '#F2A26B', '#6B4A7A'], ['雨夜', '#3B5168', '#18222E']];
 const SEASON_IMG = ['frame_season_dawn', 'frame_season_noon', 'frame_season_dusk', 'frame_season_rain'];
 let seasonI = (() => { const h = new Date().getHours(); return h < 9 ? 0 : h < 16 ? 1 : h < 19 ? 2 : 3; })();
-const FRAMES = ['碼頭', '港灣四時', '本週主題'];
+const FRAMES = ['碼頭', '港灣四時', '本週主題', '鯨鯊泡泡', '夜市燈籠', '正濱彩色屋', '深澳鐵道', '潮境海洋'];
 let frameI = 0;
 function roundRect(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
 function today() { const d = new Date(); return d.getFullYear() + '.' + (d.getMonth() + 1) + '.' + d.getDate(); }
+const G46 = {};      // G-46 交件後把檔名填進來，例如 { frame_shark: 1 }
+function star(c, x, y, r, col) { c.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r; c.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } c.closePath(); c.fillStyle = col; c.fill(); }
+function band(c, W, H, fill) { c.save(); c.fillStyle = fill; c.beginPath(); c.rect(0, 0, W, H); c.rect(40, 130, W - 80, 1100); c.fill('evenodd'); c.restore(); }      // 安全區 [40,130,1040,1230] 以外的邊框
+function codeFrame(c, k, W, H) {
+  c.save();
+  if (k === 0) {      // 鯨鯊泡泡
+    const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#7FC4D6'); g.addColorStop(1, '#1F5E78'); band(c, W, H, g);
+    c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 4; for (let i = 0; i < 26; i++) { const x = (i * 197) % W, y = 1250 + (i * 53) % 170, r = 8 + (i % 4) * 6; c.beginPath(); c.arc(x, y, r, 0, 6.3); c.stroke(); }
+    for (let i = 0; i < 10; i++) { const x = i % 2 ? 18 : W - 18, y = 200 + i * 105; c.beginPath(); c.arc(x, y, 9 + (i % 3) * 4, 0, 6.3); c.stroke(); }
+    const sh = img('stk_shark_side'); if (sh.complete && sh.naturalWidth) c.drawImage(sh, W - 470, H - 250, 430, 251);
+  } else if (k === 1) {      // 夜市燈籠
+    band(c, W, H, '#5A1F1A');
+    c.strokeStyle = '#3A120E'; c.lineWidth = 4; c.beginPath(); c.moveTo(0, 60); c.quadraticCurveTo(W / 2, 120, W, 60); c.stroke();
+    for (let i = 0; i < 9; i++) { const x = 60 + i * 120, y = 60 + Math.sin(i / 8 * Math.PI) * 50 + 20; c.fillStyle = '#F5C76A'; c.beginPath(); c.ellipse(x, y, 30, 38, 0, 0, 6.3); c.fill(); c.fillStyle = '#C9473A'; c.fillRect(x - 18, y - 42, 36, 8); c.fillRect(x - 18, y + 34, 36, 8); }
+    for (let i = 0; i < 6; i++) { const x = i * 190, h = 120 + (i % 2) * 40; c.fillStyle = '#2A0E0B'; c.fillRect(x, H - h, 170, h); c.fillStyle = '#F5C76A'; c.fillRect(x + 20, H - h + 20, 130, 14); }
+  } else if (k === 2) {      // 正濱彩色屋
+    band(c, W, H, '#F7F1E6');
+    const cols = ['#E8674A', '#F2B134', '#5BB3A8', '#4C8DB5', '#F2A7A0', '#8BC34A', '#B27BD1'];
+    for (let i = 0; i < 9; i++) { const x = i * 122, w = 118, h = 120 + (i % 3) * 22; c.fillStyle = cols[i % cols.length]; c.fillRect(x, H - 210 - h + 120, w, h); c.fillStyle = 'rgba(255,255,255,.85)'; for (let j = 0; j < 2; j++) c.fillRect(x + 20 + j * 48, H - 210 - h + 150, 26, 30); c.globalAlpha = 0.35; c.fillStyle = cols[i % cols.length]; c.fillRect(x, H - 90, w, 90); c.globalAlpha = 1; }
+    c.fillStyle = '#fff'; for (const [x, y] of [[120, 70], [900, 60]]) { c.beginPath(); c.arc(x, y, 30, 0, 6.3); c.arc(x + 35, y - 10, 36, 0, 6.3); c.arc(x + 75, y, 28, 0, 6.3); c.fill(); }
+  } else if (k === 3) {      // 深澳鐵道
+    band(c, W, H, '#2B4A6E');
+    c.strokeStyle = '#8A5A3C'; c.lineWidth = 8; for (const x of [W - 30, W - 10]) { c.beginPath(); c.moveTo(x, 130); c.lineTo(x, H); c.stroke(); } c.lineWidth = 6; for (let y = 150; y < H; y += 46) { c.beginPath(); c.moveTo(W - 40, y); c.lineTo(W, y); c.stroke(); }
+    c.fillStyle = '#E85A5A'; roundRect(c, W - 46, 1260, 52, 90, 14); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.arc(W - 30, 1285, 7, 0, 6.3); c.arc(W - 12, 1285, 7, 0, 6.3); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 5; for (let k2 = 0; k2 < 3; k2++) { c.beginPath(); for (let x = 0; x <= W - 60; x += 20) { const y = H - 150 + k2 * 40 + Math.sin(x / 50 + k2) * 8; x ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke(); }
+  } else {      // 潮境海洋
+    const g = c.createLinearGradient(0, 1200, 0, H); g.addColorStop(0, '#8FD3E8'); g.addColorStop(1, '#3F7F9A'); band(c, W, H, g);
+    c.fillStyle = '#7A6A58'; for (let i = 0; i < 12; i++) { c.beginPath(); c.ellipse(i * 95 + 30, H - 40 + (i % 2) * 14, 70, 40, 0, 0, 6.3); c.fill(); }
+    star(c, 200, H - 120, 34, '#F2A65A'); star(c, 820, H - 150, 28, '#E8674A'); star(c, 20, 400, 22, '#F2A65A'); star(c, W - 20, 820, 22, '#F2B134');
+    c.fillStyle = '#E8674A'; c.beginPath(); c.ellipse(560, H - 110, 34, 22, 0, 0, 6.3); c.fill(); c.strokeStyle = '#E8674A'; c.lineWidth = 6; for (const d of [-1, 1]) { c.beginPath(); c.moveTo(560 + d * 30, H - 115); c.lineTo(560 + d * 52, H - 140); c.stroke(); }
+  }
+  c.restore();
+}
 function drawFrame(c) {
   const W = CFG.W, H = CFG.H; c.clearRect(0, 0, W, H); c.textBaseline = 'middle';
   const font = (w, s) => w + ' ' + s + "px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif";
@@ -197,6 +241,10 @@ function drawFrame(c) {
     put('frame_pier'); label('基隆・東三東四　' + today());
   } else if (frameI === 1) {      // 港灣四時（G-44 四色，沿用 G-25 配色）
     put(SEASON_IMG[seasonI]); label('港灣四時・' + SEASONS[seasonI][0] + '　' + today());
+  } else if (frameI >= 3) {      // v0.5：5 款暫用相框（程式畫，G-46 交件後換成 ChatGPT 的圖）
+    const id = ['frame_shark', 'frame_night', 'frame_color', 'frame_rail', 'frame_tide'][frameI - 3];
+    if (G46[id]) put(id); else codeFrame(c, frameI - 3, W, H);
+    label('基隆・東三東四　' + today());
   } else {      // 本週主題（G-44 frame_week_base；郵票洞與兩行字由程式放）
     put('frame_week_base');
     const p = img('pc_' + WEEK[0] + '_a_v2', 'jpg'), [x0, y0, x1, y1] = [805, 1215, 1025, 1395];
@@ -209,13 +257,33 @@ function drawFrame(c) {
 function redrawFrame() { drawFrame($('frameCv').getContext('2d')); }
 
 /* ---- 畫面來源：相機、相簿、示範背景 ---- */
-let stream = null, facing = 'user', src = 'none';
+let stream = null, facing = 'user', src = 'none', lensId = null, lenses = [];
+/* v0.5（Dari 10/12 23:25）：相機不裁邊、可變焦、可換鏡頭。手機有提供硬體變焦就直接調鏡頭（有的手機能拉到 0.5 倍廣角）；沒有就用畫面放大 */
+const VIEW = { fit: true, z: 1, hw: null };
+function track() { return stream && stream.getVideoTracks()[0]; }
+function setupZoom() {
+  const t = track(), cap = t && t.getCapabilities ? t.getCapabilities() : {}, r = $('zoom');
+  if (cap.zoom && cap.zoom.max > cap.zoom.min) { VIEW.hw = cap.zoom; r.min = cap.zoom.min; r.max = cap.zoom.max; r.step = cap.zoom.step || 0.1; const now = (t.getSettings().zoom) || cap.zoom.min; r.value = now; VIEW.z = 1; }
+  else { VIEW.hw = null; r.min = 1; r.max = 3; r.step = 0.05; r.value = VIEW.z = 1; }
+  applyView();
+}
+async function listLenses() {
+  try { const all = await navigator.mediaDevices.enumerateDevices(); lenses = all.filter((d) => d.kind === 'videoinput'); } catch (e) { lenses = []; }
+  $('lensBtn').hidden = lenses.length < 3;      // 只有前後兩顆時用「翻轉」就好；三顆以上（含廣角）才顯示
+}
+function applyView() {
+  const mirror = src === 'cam' && facing === 'user' && !lensId, sx = (mirror ? -1 : 1) * VIEW.z;
+  for (const id of ['video', 'bgimg']) $(id).style.transform = 'scale(' + sx + ',' + VIEW.z + ')';
+  $('vblur').style.transform = $('iblur').style.transform = mirror ? 'scaleX(-1)' : '';
+  $('stage').classList.toggle('fill', !VIEW.fit); $('fitBtn').textContent = VIEW.fit ? '完整畫面' : '填滿畫面';
+}
+
 async function openCam() {
   stopCam();
   try {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('no');
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1440 }, height: { ideal: 1920 } }, audio: false });
-    const v = $('video'); v.srcObject = stream; v.hidden = false; v.classList.toggle('mirror', facing === 'user'); $('bgimg').hidden = true; src = 'cam';
+    stream = await navigator.mediaDevices.getUserMedia({ video: Object.assign(lensId ? { deviceId: { exact: lensId } } : { facingMode: facing }, { width: { ideal: 1920 }, height: { ideal: 1920 }, zoom: true }), audio: false });
+    const v = $('video'); v.srcObject = stream; v.hidden = false; $('vblur').srcObject = stream; $('vblur').hidden = false; $('iblur').hidden = true; $('bgimg').hidden = true; src = 'cam'; setupZoom(); listLenses();
     await v.play().catch(() => {}); show('shoot'); return true;
   } catch (e) { camFail(e); return false; }
 }
@@ -230,7 +298,7 @@ function camFail(e) {
   $('camWhy').textContent = why + (n ? '（' + n + '）' : ''); $('camSheet').hidden = false;
 }
 function stopCam() { if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; } }
-function useImage(url) { stopCam(); const b = $('bgimg'); b.src = url; b.hidden = false; $('video').hidden = true; src = 'img'; show('shoot'); }
+function useImage(url) { stopCam(); const b = $('bgimg'); b.src = url; b.hidden = false; $('iblur').src = url; $('iblur').hidden = false; $('vblur').hidden = true; $('video').hidden = true; src = 'img'; VIEW.hw = null; const r = $('zoom'); r.min = 1; r.max = 3; r.step = 0.05; r.value = VIEW.z = 1; applyView(); show('shoot'); }
 /* v0.3：舞台寬高一起按 3:4 放進可用空間，預覽和 1080×1440 匯出比例一致（ChatGPT 複查第 4 點） */
 function fitStage() { const w = document.querySelector('.stagewrap'), st = $('stage'); if (!w || !w.clientHeight) return; const W = w.clientWidth - 16, H = w.clientHeight, sw = Math.min(W, H * 3 / 4); st.style.width = sw + 'px'; st.style.height = (sw * 4 / 3) + 'px'; }
 function show(id) { for (const s of document.querySelectorAll('.screen')) s.classList.toggle('on', s.id === id); if (id === 'shoot') { fitStage(); redrawFrame(); renderTray(); stks.forEach(place); } }
@@ -291,14 +359,15 @@ $('stage').addEventListener('pointerdown', (e) => { if (e.target === $('stage') 
 addEventListener('resize', () => { fitStage(); stks.forEach(place); });
 
 /* ---- 拍照合成：1080×1440，背景＋貼紙＋相框 ---- */
-function cover(c, im, iw, ih, mirror) {
-  const W = CFG.W, H = CFG.H, s = Math.max(W / iw, H / ih), w = iw * s, h = ih * s;
-  c.save(); if (mirror) { c.translate(W, 0); c.scale(-1, 1); } c.drawImage(im, (W - w) / 2, (H - h) / 2, w, h); c.restore();
+function cover(c, im, iw, ih, mirror) {      // 合成時照預覽：完整畫面時先畫一層模糊滿版，再畫完整畫面；再乘上畫面放大倍率
+  const W = CFG.W, H = CFG.H, draw = (s, blur) => { const w = iw * s, h = ih * s; c.save(); if (blur) c.filter = 'blur(40px) brightness(0.8)'; if (mirror) { c.translate(W, 0); c.scale(-1, 1); } c.drawImage(im, (W - w) / 2, (H - h) / 2, w, h); c.restore(); };
+  const fill = Math.max(W / iw, H / ih), fit = Math.min(W / iw, H / ih);
+  if (VIEW.fit && fit < fill) { draw(fill * 1.08, true); draw(fit * VIEW.z, false); } else draw(fill * VIEW.z, false);
 }
 function capture() {
   const cv = document.createElement('canvas'); cv.width = CFG.W; cv.height = CFG.H; const c = cv.getContext('2d');
   c.fillStyle = '#0E1418'; c.fillRect(0, 0, CFG.W, CFG.H);
-  if (src === 'cam') { const v = $('video'); if (v.videoWidth) cover(c, v, v.videoWidth, v.videoHeight, facing === 'user'); }
+  if (src === 'cam') { const v = $('video'); if (v.videoWidth) cover(c, v, v.videoWidth, v.videoHeight, facing === 'user' && !lensId); }
   else { const b = $('bgimg'); if (b.naturalWidth) cover(c, b, b.naturalWidth, b.naturalHeight, false); }
   for (const o of stks) {
     const im = img(o.d.id); if (!im.naturalWidth) continue;
@@ -330,12 +399,14 @@ $('file').onchange = (e) => { const f = e.target.files && e.target.files[0]; if 
 $('demoBtn').onclick = () => useImage('assets/demo_bg.jpg');
 $('backBtn').onclick = () => { stopCam(); show('home'); };
 /* v0.4：「換相框」改成跳出相框清單直接選（Dari 10/12 19:03） */
-const FRAME_LIST = [[0, null, '碼頭', 'frame_pier'], [1, 0, '清晨', SEASON_IMG[0]], [1, 1, '午後', SEASON_IMG[1]], [1, 2, '黃昏', SEASON_IMG[2]], [1, 3, '雨夜', SEASON_IMG[3]], [2, null, '本週主題', 'frame_week_base']];
+const FRAME_LIST = [[0, null, '碼頭', 'frame_pier'], [1, 0, '清晨', SEASON_IMG[0]], [1, 1, '午後', SEASON_IMG[1]], [1, 2, '黃昏', SEASON_IMG[2]], [1, 3, '雨夜', SEASON_IMG[3]], [2, null, '本週主題', 'frame_week_base'], [3, null, '鯨鯊泡泡', null], [4, null, '夜市燈籠', null], [5, null, '正濱彩色屋', null], [6, null, '深澳鐵道', null], [7, null, '潮境海洋', null]];
 function openFrames() {
   const g = $('fgrid'); g.innerHTML = '';
   for (const [fi, si, nm, id] of FRAME_LIST) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'fcell' + (fi === frameI && (si === null || si === seasonI) ? ' on' : '');
-    b.innerHTML = '<span class="fimg"><img src="assets/' + id + '.png" alt=""></span>' + (fi === 1 ? '港灣四時・' : '') + nm;
+    let src2 = id ? 'assets/' + id + '.png' : null;
+    if (!src2) { const k = fi - 3, gid = ['frame_shark', 'frame_night', 'frame_color', 'frame_rail', 'frame_tide'][k]; if (G46[gid]) src2 = 'assets/' + gid + '.png'; else { const t = document.createElement('canvas'); t.width = 270; t.height = 360; const tc = t.getContext('2d'); tc.scale(0.25, 0.25); codeFrame(tc, k, 1080, 1440); src2 = t.toDataURL(); } }
+    b.innerHTML = '<span class="fimg"><img src="' + src2 + '" alt=""></span>' + (fi === 1 ? '港灣四時・' : '') + nm;
     b.onclick = () => { frameI = fi; if (si !== null) seasonI = si; redrawFrame(); $('frameSheet').hidden = true; };
     g.appendChild(b);
   }
@@ -343,7 +414,10 @@ function openFrames() {
 }
 $('frameBtn').onclick = openFrames;
 $('fsClose').onclick = () => { $('frameSheet').hidden = true; };
-$('flipBtn').onclick = () => { if (src !== 'cam') { toast('用相機時才能翻轉'); return; } facing = facing === 'user' ? 'environment' : 'user'; openCam(); };
+$('flipBtn').onclick = () => { if (src !== 'cam') { toast('用相機時才能翻轉'); return; } facing = facing === 'user' ? 'environment' : 'user'; lensId = null; openCam(); };
+$('zoom').oninput = () => { const v = +$('zoom').value, t = track(); if (VIEW.hw && t) { t.applyConstraints({ advanced: [{ zoom: v }] }).catch(() => {}); } else { VIEW.z = v; applyView(); } };
+$('fitBtn').onclick = () => { VIEW.fit = !VIEW.fit; applyView(); };
+$('lensBtn').onclick = () => { if (!lenses.length) return; const i = lenses.findIndex((d) => d.deviceId === lensId); const n = lenses[(i + 1) % lenses.length]; lensId = n.deviceId; toast('換到：' + (n.label || '鏡頭 ' + ((i + 2) % lenses.length || lenses.length))); openCam(); };
 $('clearBtn').onclick = () => { stks.forEach((o) => o.el.remove()); stks = []; sel = null; $('hint').hidden = false; };
 $('shutter').onclick = () => { select(null); capture(); };
 $('saveBtn').onclick = save; $('shareBtn').onclick = share; $('againBtn').onclick = () => show('shoot');
