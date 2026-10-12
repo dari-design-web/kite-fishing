@@ -28,7 +28,22 @@ header h1{font-size:20px;margin:0;flex:1}
 .screen.on{display:block}
 #home.on{display:flex}
 /* 小屋 */
-.room{position:relative;width:100%;aspect-ratio:1080/990;overflow:hidden;background:#EADFCB url(assets/room_bg.jpg) center/100% 100% no-repeat}
+.roomview{position:relative;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;background:#3E2B1D}
+.roomview::-webkit-scrollbar{display:none}
+/* v0.14：小屋放大（Dari 00:31）。舞台高度由 fitRoom() 算，寬度跟著底圖比例；比手機寬時可以左右滑，鏡頭會跟著小鳶 */
+.room{position:relative;width:100%;aspect-ratio:1080/990;overflow:hidden;margin:0 auto;background:#EADFCB url(assets/room_bg.jpg) center/100% 100% no-repeat}
+.room.ph{background:var(--ph-bg)}
+.room .props{position:absolute;inset:0;pointer-events:none}
+.room .props i{position:absolute;font-style:normal;line-height:1;transform:translate(-50%,-100%);filter:drop-shadow(0 2px 2px rgba(0,0,0,.18))}
+.room .phtag{position:absolute;right:8px;bottom:8px;z-index:140;font-size:11px;color:#fff;background:rgba(43,58,64,.7);border-radius:999px;padding:2px 9px;pointer-events:none}
+.bird .acc{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+.scenes{display:flex;gap:6px}
+.scenes button{flex:1;min-width:0;border:0;border-radius:12px;padding:5px 0 4px;background:rgba(255,247,234,.16);color:#FFF4E2;font:inherit;font-size:12px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2}
+.scenes button span{font-size:19px;line-height:1.1}
+.scenes button[aria-pressed="true"]{background:#FFF7EA;color:var(--ink);box-shadow:0 3px 0 #C9A57E}
+.swipehint{position:absolute;top:50%;z-index:140;transform:translateY(-50%);width:26px;height:44px;border-radius:13px;background:rgba(43,58,64,.45);color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;pointer-events:none;transition:opacity .4s}
+.swipehint.l{left:6px}.swipehint.r{right:6px}
+.swipehint.off{opacity:0}
 /* 位置照 ChatGPT 小屋置入位置_v1.json（1080×990 底圖換算成百分比）；底圖的空掛位、空架只是背景，實際收藏由玩家資料放上去 */
 .wallhit{position:absolute;left:50%;top:14.6%;width:32.9%;height:9.9%;cursor:pointer}
 .wallcards span{position:absolute;top:16.8%;width:8.5%;height:6.4%;border-radius:2px;background-size:100% 100%;box-shadow:0 1px 3px rgba(0,0,0,.3);border:1.5px solid #FFFDF8;transform:rotate(-3deg)}
@@ -55,20 +70,22 @@ header h1{font-size:20px;margin:0;flex:1}
 .hud h1 small{font-size:11px;font-weight:400;opacity:.7;margin-left:6px;letter-spacing:0}
 .pill{display:inline-flex;align-items:center;gap:4px;background:rgba(255,248,236,.14);border:1px solid rgba(255,248,236,.25);border-radius:999px;padding:3px 9px 3px 4px;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .pill img{width:20px;height:20px;object-fit:contain}
-.gear{border:1px solid rgba(255,248,236,.35);background:rgba(255,248,236,.1);color:#FFF4E2;border-radius:999px;font:inherit;font-size:12px;padding:4px 10px}
+.gear{white-space:nowrap;flex:none;border:1px solid rgba(255,248,236,.35);background:rgba(255,248,236,.1);color:#FFF4E2;border-radius:999px;font:inherit;font-size:12px;padding:4px 10px}
 .roomwrap{position:relative;flex:none;isolation:isolate}      /* v0.8：小鳶、對話、圖示的層級只在小屋裡比，不會蓋過拆信畫面 */
 .roomwrap .chip{position:absolute;left:10px;right:10px;top:8px;margin:0;z-index:3;background:rgba(255,253,248,.92);box-shadow:0 2px 8px rgba(0,0,0,.15);font-size:13px;text-align:center}
-.floor{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-between;gap:10px;padding:12px 14px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(#9C6B45,#7A5134);box-shadow:inset 0 6px 10px rgba(0,0,0,.25)}
-.floor .btn{box-shadow:0 4px 0 #1F5A5F;font-size:17px;padding:14px}
+.floor{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-between;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(#9C6B45,#7A5134);box-shadow:inset 0 6px 10px rgba(0,0,0,.25)}
+.floor>*{flex:none}
+.floor .btn{box-shadow:0 4px 0 #1F5A5F;font-size:17px;padding:12px}
 .floor .btn:active{transform:translateY(2px);box-shadow:0 2px 0 #1F5A5F}
-.weekly{display:flex;align-items:center;gap:10px;background:rgba(255,247,234,.14);border:1px dashed rgba(255,247,234,.45);border-radius:14px;padding:8px 10px;color:#FFF4E2;font-size:13px;line-height:1.45}
-.weekly img{width:64px;height:40px;object-fit:cover;border-radius:4px;border:2px solid #FFF7EA;flex:none}
+.weekly{display:flex;align-items:center;gap:8px;background:rgba(255,247,234,.14);border:1px dashed rgba(255,247,234,.45);border-radius:12px;padding:5px 9px;color:#FFF4E2;font-size:12.5px;line-height:1.35;white-space:nowrap;overflow:hidden}
+.weekly span{overflow:hidden;text-overflow:ellipsis}
+.weekly img{width:42px;height:27px;object-fit:cover;border-radius:4px;border:2px solid #FFF7EA;flex:none}
 .weekly b{color:#FFE2A8}
-@media (max-height:640px){.weekly{display:none}}
+.weekly[hidden]{display:none}
 .iconrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.ibtn{display:flex;flex-direction:column;align-items:center;gap:2px;border:0;border-radius:14px;padding:8px 4px 7px;background:#FFF7EA;color:var(--ink);font:inherit;font-size:13px;font-weight:700;box-shadow:0 3px 0 #C9A57E}
+.ibtn{display:flex;flex-direction:column;align-items:center;gap:1px;border:0;border-radius:14px;padding:6px 4px 5px;background:#FFF7EA;color:var(--ink);font:inherit;font-size:13px;font-weight:700;box-shadow:0 3px 0 #C9A57E}
 .ibtn:active{transform:translateY(2px);box-shadow:0 1px 0 #C9A57E}
-.ibtn img{width:38px;height:38px;object-fit:contain}
+.ibtn img{width:32px;height:32px;object-fit:contain}
 .ibtn small{font-size:11px;font-weight:400;color:var(--muted)}
 .quickback{position:absolute;right:10px;bottom:10px;z-index:150;border:0;border-radius:999px;background:#2B3A40;color:#fff;font:inherit;font-size:12px;padding:6px 12px;box-shadow:0 2px 6px rgba(0,0,0,.3)}
 .devsheet{position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(30,40,44,.55);z-index:45;display:flex;align-items:flex-end}
@@ -174,7 +191,8 @@ h3{font-size:15px;margin:14px 16px 6px}
     </div>
     <div class="roomwrap">
       <div class="chip" id="chip"></div>
-      <div class="room" id="room">
+      <div class="roomview" id="roomview"><div class="room" id="room">
+        <div class="props" id="props"></div>
         <div class="wallcards" id="wall"></div>
         <div class="wallhit" id="wallHit" role="button" aria-label="明信片牆，打開收藏冊"></div>
         <div class="shelfitems" id="miniShelf"></div>
@@ -185,9 +203,12 @@ h3{font-size:15px;margin:14px 16px 6px}
         <div class="note" id="note" hidden></div>
         <div class="envelope" id="envIcon" hidden></div>
         <button class="quickback" id="quickBack" type="button" hidden>⏩ 馬上回來（測試）</button>
-      </div>
+        <span class="phtag" id="phTag" hidden>暫用示意，等正式圖（G-47）</span>
+      </div></div>
+      <span class="swipehint l off" id="hintL">‹</span><span class="swipehint r off" id="hintR">›</span>
     </div>
     <div class="floor">
+      <div class="scenes" id="scenes" role="group" aria-label="換房間"></div>
       <div class="weekly" id="weekly"></div>
       <button class="btn" id="mainBtn"></button>
       <div class="iconrow">
@@ -238,7 +259,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.13',
+  version: '0.14',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -313,7 +334,7 @@ const KEY = 'kiteTravel1';
 const $ = (id) => document.getElementById(id);
 const today = () => new Date().toISOString().slice(0, 10);
 const HOUR = CFG.fast ? 10000 : 3600000;
-function fresh() { return { v: 1, firstDone: false, trips: 0, farAcc: 0, state: 'home', trip: null, cards: {}, limited: {}, souvenirs: {}, stamps: 0, bento: { far: 0, squid: 0, hair: 0, special: 0 }, riceDay: '', testItems: {}, seen: {}, titles: {} }; }
+function fresh() { return { v: 1, firstDone: false, trips: 0, farAcc: 0, state: 'home', trip: null, cards: {}, limited: {}, souvenirs: {}, stamps: 0, bento: { far: 0, squid: 0, hair: 0, special: 0 }, riceDay: '', testItems: {}, seen: {}, titles: {}, room: 'living' }; }
 let S = fresh();
 try { if (/[?&]reset=1/.test(location.search)) localStorage.removeItem(KEY); const q = JSON.parse(localStorage.getItem(KEY) || 'null'); if (q && q.v === 1) S = Object.assign(fresh(), q); } catch (e) {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
@@ -376,6 +397,72 @@ function sayOne(k) { const a = SAYS[k]; return a[Math.floor(Math.random() * a.le
 function tick() { if (S.state === 'away' && S.trip && Date.now() >= S.trip.end) { S.state = 'back'; save(); if ($('home').classList.contains('on')) renderHome(); } }
 setInterval(tick, 1000);
 
+/* ====== v0.14 五個室內場景（Dari 00:31）：客廳是現有底圖；臥室、廚房、花園、學校先用程式畫的暫用示意，等 G-47 正式圖（1080×1350）。換房間小鳶會換配件 ====== */
+const ACC = {
+  cap: '<path d="M112 104 Q128 30 200 30 Q272 34 304 84 Q262 64 248 104 Z" fill="#6C8FD0" stroke="#3E2B1D" stroke-width="6" stroke-linejoin="round"/><circle cx="160" cy="70" r="5" fill="#FFF3B0"/><circle cx="214" cy="56" r="4" fill="#FFF3B0"/><ellipse cx="180" cy="104" rx="74" ry="15" fill="#FFFDF8" stroke="#3E2B1D" stroke-width="6"/><circle cx="304" cy="88" r="16" fill="#FFFDF8" stroke="#3E2B1D" stroke-width="6"/>',
+  chef: '<circle cx="146" cy="66" r="28" fill="#FFFDF8" stroke="#3E2B1D" stroke-width="6"/><circle cx="214" cy="66" r="28" fill="#FFFDF8" stroke="#3E2B1D" stroke-width="6"/><circle cx="180" cy="50" r="32" fill="#FFFDF8" stroke="#3E2B1D" stroke-width="6"/><rect x="130" y="72" width="100" height="34" rx="8" fill="#FFFDF8" stroke="#3E2B1D" stroke-width="6"/><path d="M146 66 Q160 80 180 70 Q200 80 214 66" fill="none" stroke="#FFFDF8" stroke-width="14"/>',
+  straw: '<ellipse cx="180" cy="94" rx="112" ry="22" fill="#E9C77B" stroke="#3E2B1D" stroke-width="6"/><path d="M122 94 Q126 38 180 36 Q234 38 238 94 Z" fill="#F1D592" stroke="#3E2B1D" stroke-width="6" stroke-linejoin="round"/><path d="M123 82 Q180 72 237 82 L238 94 Q180 84 122 94 Z" fill="#D9534F"/><circle cx="232" cy="80" r="9" fill="#FF9EB5" stroke="#3E2B1D" stroke-width="4"/>',
+  school: '<path d="M108 100 Q114 28 180 26 Q246 28 252 100 Z" fill="#F6CB2E" stroke="#3E2B1D" stroke-width="6" stroke-linejoin="round"/><ellipse cx="180" cy="100" rx="88" ry="13" fill="#F2B705" stroke="#3E2B1D" stroke-width="6"/><circle cx="180" cy="28" r="8" fill="#F2B705" stroke="#3E2B1D" stroke-width="4"/>'
+};
+const ROOMS = [
+  { id: 'living', name: '客廳', icon: '🛋️', w: 1080, h: 990, area: { x0: 26, x1: 78, y0: 82, y1: 95 }, acc: '' },
+  { id: 'bed', name: '臥室', icon: '🛏️', w: 1080, h: 1350, area: { x0: 22, x1: 78, y0: 78, y1: 93 }, acc: 'cap', nap: 3,
+    bg: 'radial-gradient(circle at 76% 22%,#FFF6C8 0 5%,transparent 5.5%),linear-gradient(#2D3E66,#2D3E66) 70% 14%/30% 22% no-repeat,linear-gradient(#C9D3EC 0 62%,#B98A63 62% 100%)',
+    props: [['🛏️', 32, 80, 40], ['🧸', 12, 83, 11], ['🪴', 90, 70, 12], ['🕯️', 56, 60, 7], ['⭐', 64, 12, 5], ['⭐', 84, 20, 4]],
+    says: ['我的枕頭軟綿綿～', '晚安…才不是，現在是白天啦！', '睡衣是星星的喔！', '我想抱抱熊熊。'] },
+  { id: 'kitchen', name: '廚房', icon: '🍳', w: 1080, h: 1350, area: { x0: 20, x1: 80, y0: 78, y1: 93 }, acc: 'chef',
+    bg: 'linear-gradient(#8A5A3A,#8A5A3A) 0 52%/100% 4% no-repeat,repeating-linear-gradient(90deg,transparent 0 46px,rgba(255,255,255,.55) 46px 48px),repeating-linear-gradient(transparent 0 46px,rgba(255,255,255,.55) 46px 48px),linear-gradient(#F3E2BE 0 64%,#D9C3A0 64% 100%)',
+    props: [['🍙', 26, 51, 10], ['🍳', 46, 51, 11], ['🥢', 62, 51, 8], ['🧺', 82, 51, 11], ['🫖', 14, 30, 9], ['🍱', 74, 86, 12]],
+    says: ['我在幫忙做便當！', '飯糰要捏圓圓的～', '小卷好香喔！', '洗手手，才可以煮飯。'] },
+  { id: 'garden', name: '花園', icon: '🌼', w: 1080, h: 1350, area: { x0: 14, x1: 86, y0: 76, y1: 94 }, acc: 'straw',
+    bg: 'radial-gradient(circle at 82% 14%,#FFE58A 0 6%,transparent 6.5%),linear-gradient(#BFE3F2 0 46%,#6FAE5A 46% 60%,#8CC46B 60% 100%)',
+    props: [['🌻', 12, 66, 16], ['🌷', 28, 70, 10], ['🌼', 70, 68, 10], ['🪴', 88, 70, 13], ['🦋', 56, 36, 8], ['🐞', 40, 92, 5]],
+    says: ['花花長高了耶！', '我在澆水，你看～', '蝴蝶飛過來了！', '草草軟軟的，好舒服。'] },
+  { id: 'school', name: '學校', icon: '🏫', w: 1080, h: 1350, area: { x0: 16, x1: 84, y0: 78, y1: 94 }, acc: 'school',
+    bg: 'linear-gradient(#2F5A46,#2F5A46) 50% 16%/64% 24% no-repeat,linear-gradient(#8A5A3A,#8A5A3A) 50% 13.5%/68% 29% no-repeat,linear-gradient(#EFE6D2 0 64%,#C39A6B 64% 100%)',
+    props: [['🖍️', 30, 64, 8], ['📚', 14, 66, 12], ['🎒', 86, 72, 13], ['🌏', 70, 64, 10], ['🍎', 50, 64, 7]],
+    says: ['我今天學會寫「港」了！', '老師說要舉手才能說話。', '下課了！來玩吧～', '我畫了一隻鯨鯊喔！'],
+    board: '小鳶的教室' }
+];
+const ROOM = () => ROOMS.find((r) => r.id === S.room) || ROOMS[0];
+const ROOMDIM = { w: 1080, h: 990 };
+let roomUserT = 0;
+function setRoom(id) {
+  if (ROOMS.some((r) => r.id === id)) S.room = id; save();
+  const r = ROOM(), room = $('room'), live = r.id === 'living';
+  room.classList.toggle('ph', !live); room.style.setProperty('--ph-bg', r.bg || 'none');
+  ['wall', 'wallHit', 'miniShelf', 'shelfHit'].forEach((k) => ($(k).style.display = live ? '' : 'none'));
+  $('props').innerHTML = (r.props || []).map(([e, x, y, sz]) => '<i data-s="' + sz + '" style="left:' + x + '%;top:' + y + '%">' + e + '</i>').join('') + (r.board ? '<i data-s="4.6" style="left:50%;top:24%;color:#F4F1E6;font-weight:700;filter:none;white-space:nowrap">' + r.board + '</i>' : '');
+  $('phTag').hidden = live;
+  $('scenes').innerHTML = ROOMS.map((x) => '<button type="button" data-room="' + x.id + '" aria-pressed="' + (x.id === r.id) + '"><span>' + x.icon + '</span>' + x.name + '</button>').join('');
+  $('scenes').querySelectorAll('button').forEach((b) => (b.onclick = () => { if (b.dataset.room !== S.room) { setRoom(b.dataset.room); PET.enter(); } }));
+  const acc = $('bird').querySelector('.acc') || $('bird').appendChild(Object.assign(document.createElement('div'), { className: 'acc' }));
+  acc.innerHTML = r.acc ? '<svg viewBox="0 0 360 360" width="100%" height="100%">' + ACC[r.acc] + '</svg>' : '';
+  fitRoom();
+}
+function fitRoom() {
+  if (!$('home').classList.contains('on')) return;
+  const r = ROOM(), view = $('roomview'), room = $('room'), wk = $('weekly'), fl = document.querySelector('.floor');
+  const W = view.clientWidth || $('app').clientWidth, appH = $('app').clientHeight, hud = document.querySelector('.hud').offsetHeight;
+  const cs = getComputedStyle(fl), gap = parseFloat(cs.rowGap) || 8, pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+  wk.hidden = false;
+  const kids = [...fl.children].filter((k) => k.id !== 'weekly' && k.offsetParent !== null);
+  const base = pad + kids.reduce((s2, k) => s2 + k.offsetHeight, 0) + gap * (kids.length - 1);
+  const want = W * 1.32, low = W * 1.2;      // 原本 1080×990 是寬度的 0.92 倍；放大到約 1.43 倍（Dari：高度再加 1/3～1/2）
+  let H = appH - hud - base - wk.offsetHeight - gap;
+  if (H < low) { wk.hidden = true; H = appH - hud - base; }
+  H = Math.max(180, Math.min(want, H));
+  const sw = Math.max(W, H * r.w / r.h);
+  view.style.height = H + 'px'; room.style.height = H + 'px'; room.style.width = sw + 'px'; room.style.aspectRatio = 'auto';
+  ROOMDIM.w = sw; ROOMDIM.h = H;
+  room.querySelectorAll('.props i').forEach((i) => (i.style.fontSize = (+i.dataset.s * sw / 100) + 'px'));
+  PET.center();
+}
+addEventListener('resize', fitRoom);
+try { let q = 0; const ro = new ResizeObserver(() => { if (!q) q = requestAnimationFrame(() => { q = 0; fitRoom(); }); }); ['scenes', 'mainBtn'].forEach((k) => ro.observe($(k))); ro.observe(document.querySelector('.iconrow')); ro.observe(document.querySelector('.hud')); } catch (e) {}
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitRoom);
+['pointerdown', 'touchstart', 'wheel'].forEach((ev) => $('roomview').addEventListener(ev, () => (roomUserT = performance.now()), { passive: true }));
+$('roomview').addEventListener('scroll', () => { const v = $('roomview'); $('hintL').classList.toggle('off', v.scrollLeft < 6); $('hintR').classList.toggle('off', v.scrollLeft > v.scrollWidth - v.clientWidth - 6); }, { passive: true });
 function renderHome() {
   tick();
   $('ver').textContent = 'v' + CFG.version + (CFG.fast ? '・快速' : '') + (CFG.look ? '' : '・舊圖');
@@ -385,6 +472,7 @@ function renderHome() {
   else if (st === 'home') { $('chip').textContent = '小鳶在家，還沒出發'; b.style.backgroundImage = 'url(assets/kite_home.png)'; $('say').textContent = sayOne('home'); main.textContent = '打包出門'; main.onclick = () => go('pack'); }
   else if (st === 'away') { b.style.display = 'none'; note.hidden = false; note.textContent = '「' + (S.trip.say || sayOne('away')) + '」　— 小鳶'; $('chip').textContent = '小鳶正在旅行，大約 ' + fmtTime(S.trip.end) + ' 回來；信會等你，不會過期'; $('say').textContent = ''; main.textContent = '大約 ' + fmtTime(S.trip.end) + ' 回來'; main.onclick = () => toast('小鳶還在路上，晚點再來看看'); }
   else { $('chip').textContent = '小鳶回來了！帶了一封信'; b.style.backgroundImage = 'url(assets/kite_back.png)'; env.hidden = false; $('say').textContent = sayOne('back'); main.textContent = '拆信'; main.onclick = openLetter; env.onclick = openLetter; }
+  setRoom(S.room);
   PET.reset($('say').textContent);
   // 牆上最近三張、架上的紀念品
   const recent = Object.entries(S.cards).sort((a, b2) => b2[1] - a[1]).slice(0, 3);
@@ -397,7 +485,7 @@ function renderHome() {
   const nb = (S.bento.far || 0) + (S.bento.squid || 0) + (S.bento.hair || 0) + (S.bento.special || 0) + riceLeft();
   $('hCards').textContent = ownedCount() + '/24'; $('hBento').textContent = nb;
   $('iCards').textContent = ownedCount() + ' / 24'; $('iSv').textContent = Object.keys(S.souvenirs).length + ' / 8'; $('iTrips').textContent = S.trips + ' 次';
-  const wk = weekLoc(); $('weekly').innerHTML = '<img src="assets/' + wk.cards[0][2] + '" alt=""><span>本週小鳶特別想去<b>' + wk.name + '</b><br>機會加倍，還有本週限定明信片' + (locOpen(wk) ? '' : '（' + openHow(wk) + '才會開）') + '</span>';
+  const wk = weekLoc(); $('weekly').innerHTML = '<img src="assets/' + wk.cards[0][2] + '" alt=""><span>本週想去<b>' + wk.name + '</b>・機會加倍' + (locOpen(wk) ? '・有限定卡' : '（' + openHow(wk) + '才開）') + '</span>';
   $('albumBtn').onclick = () => go('album'); $('shelfBtn').onclick = () => go('shelf');
   $('infoBtn').onclick = showTrips;
   $('quickBack').onclick = () => { if (S.trip) { S.trip.end = Date.now(); tick(); renderHome(); } };
@@ -419,7 +507,7 @@ const EMO = {
 const PET = (() => {
   const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const p = { x: 50, y: 90, face: 1, act: 'idle', t: 0, dur: 2, sx: 50, sy: 90, tx: 50, ty: 90, pose: 'home', hop: 0, say: '', sayT: 0, emoT: 0, last: 0 };
-  const AREA = { x0: 26, x1: 78, y0: 82, y1: 95 };      // 地板上可以走的範圍（小屋底圖的百分比）
+  const AREA = { x0: 26, x1: 78, y0: 82, y1: 95 };      // 地板上可以走的範圍（底圖的百分比）；換房間時換成該房間的範圍
   const rnd = (a, b2) => a + Math.random() * (b2 - a);
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
   function say(t, sec) { p.say = t; p.sayT = sec || 2.8; $('say').textContent = t; $('sayBox').classList.remove('off'); }
@@ -432,6 +520,22 @@ const PET = (() => {
       if (r < 0.4) { go(rnd(60, 76), rnd(86, 93)); p.then = () => { emote('excl'); say(pick(['快來拆信！', '這次去了好遠喔！', '信在這裡～'])); }; }
       else if (r < 0.7) { p.act = 'jump'; p.dur = 0.7; emote('excl'); }
       else { p.act = 'idle'; p.dur = rnd(1.5, 3); }
+      return;
+    }
+    Object.assign(AREA, ROOM().area);
+    const rm = ROOM();
+    if (rm.id !== 'living') {      // 其他房間：自己的台詞，臥室比較常打瞌睡
+      const acts2 = [
+        [3, () => { go(rnd(AREA.x0, AREA.x1), rnd(AREA.y0, AREA.y1)); }],
+        [1, () => { p.act = 'flap'; p.dur = 1.3; p.pose = 'wave'; }],
+        [1, () => { p.act = 'jump'; p.dur = 0.75; emote('heart', true); }],
+        [2, () => { go(rnd(AREA.x0, AREA.x1), rnd(AREA.y0, AREA.y1)); p.then = () => { p.act = 'idle'; p.dur = 2.6; emote('spark'); say(pick(rm.says)); }; }],
+        [rm.nap || 0.6, () => { p.act = 'nap'; p.dur = rnd(4, 6); emote('zzz'); say(pick(['呼…呼…', '我想睡一下下。', '哈～眼睛快閉起來了。']), 2.2); }],
+        [0.8, () => { p.act = 'sing'; p.dur = 2.4; emote('note', true); say(pick(['啦啦啦～', '今天天氣真好～', '海風的味道～'])); }],
+        [1.2, () => { p.act = 'idle'; p.dur = rnd(1.5, 3.5); }]
+      ];
+      let t2 = acts2.reduce((s2, a) => s2 + a[0], 0), k2 = Math.random() * t2;
+      for (const a of acts2) { k2 -= a[0]; if (k2 <= 0) { a[1](); return; } }
       return;
     }
     const cards = Object.keys(S.cards), svs = Object.keys(S.souvenirs), nb = (S.bento.far || 0) + (S.bento.squid || 0) + (S.bento.hair || 0) + (S.bento.special || 0);
@@ -472,9 +576,9 @@ const PET = (() => {
       if (p.act !== 'walk' && p.t >= p.dur) next();
       if (calm) { bob = 0; rot = 0; sq = 1; }
       const scale = 0.86 + (p.y - AREA.y0) / (AREA.y1 - AREA.y0) * 0.16, w = 34 * scale;
-      const key = p.pose === 'wave' ? 'kite_wave' : p.pose === 'pack' ? 'kite_pack' : p.pose === 'back' ? 'kite_back' : 'kite_home';
+      const key = p.act === 'nap' ? 'kite_nap' : p.pose === 'wave' ? 'kite_wave' : p.pose === 'pack' ? 'kite_pack' : p.pose === 'back' ? 'kite_back' : 'kite_home';      // v0.14：打瞌睡換閉眼圖
       if (b.dataset.k !== key) { b.style.backgroundImage = 'url(assets/' + key + '.png)'; b.dataset.k = key; }
-      const hPct = w * 1080 / 990;      // 小屋底圖 1080×990，換算成高度的百分比
+      const hPct = w * ROOMDIM.w / ROOMDIM.h;      // 舞台實際寬高（fitRoom 算的），換算成高度的百分比
       b.style.width = w + '%'; b.style.left = (p.x - w / 2) + '%'; b.style.top = (p.y - hPct * 0.92) + '%';
       b.style.transform = 'translateY(' + (-bob) + '%) rotate(' + rot + 'deg) scale(' + p.face + ',' + sq + ')';
       b.style.zIndex = Math.round(p.y);
@@ -483,14 +587,22 @@ const PET = (() => {
       const em = $('emote'); em.style.left = (p.x + p.face * w * 0.46) + '%'; em.style.top = (headTop + 12) + '%';
       if (p.sayT > 0) { p.sayT -= dt; if (p.sayT <= 0) $('sayBox').classList.add('off'); }
       if (p.emoT > 0) { p.emoT -= dt; if (p.emoT <= 0) $('emote').hidden = true; }
+      const v = $('roomview'), over = v.scrollWidth - v.clientWidth;      // 舞台比手機寬：鏡頭慢慢跟著小鳶；手指剛滑過就先不搶
+      if (over > 2 && now - roomUserT > 2500) { const tx = Math.max(0, Math.min(over, p.x / 100 * ROOMDIM.w - v.clientWidth / 2)); if (Math.abs(tx - v.scrollLeft) > 1) v.scrollLeft += (tx - v.scrollLeft) * Math.min(1, dt * 2.5); }
     }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
   return {
     hide() { $('sayBox').classList.add('off'); $('emote').hidden = true; p.sayT = 0; p.emoT = 0; },
+    center() { const v = $('roomview'); v.scrollLeft = Math.max(0, p.x / 100 * ROOMDIM.w - v.clientWidth / 2); v.dispatchEvent(new Event('scroll')); },
+    enter() {      // 換房間：小鳶從房間中間出來，說一句這個房間的話
+      const r = ROOM(); Object.assign(AREA, r.area); p.x = (AREA.x0 + AREA.x1) / 2; p.y = (AREA.y0 + AREA.y1) / 2; p.act = 'jump'; p.t = 0; p.dur = 0.75; p.then = null;
+      if (S.state !== 'away') { emote('spark'); say(r.says ? pick(r.says) : pick(['回到客廳了！', '我的明信片牆～'])); }
+      this.center();
+    },
     reset(line) {      // renderHome 呼叫：換狀態時重新開始
-      const b = $('bird'); b.onclick = tap; p.then = null; b.dataset.k = '';
+      const b = $('bird'); b.onclick = tap; p.then = null; b.dataset.k = ''; Object.assign(AREA, ROOM().area); p.x = Math.max(AREA.x0, Math.min(AREA.x1, p.x)); p.y = Math.max(AREA.y0, Math.min(AREA.y1, p.y));
       if (line) say(line, 3.2); else $('sayBox').classList.add('off');
       next();
     }

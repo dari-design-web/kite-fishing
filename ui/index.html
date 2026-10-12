@@ -154,6 +154,23 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
   .top h1{font-size:22px}
 }
 @media (prefers-reduced-motion:reduce){.chest.shut,.gain{animation:none}.btn{transition:none}}
+/* v0.5（Dari 00:31）：只做手機版。電腦打開也是一欄手機寬；說明和頁面清單收起來，要看再點 */
+body{background:#1D2F36}
+.app{max-width:430px;padding:calc(12px + env(safe-area-inset-top,0px)) 10px calc(20px + env(safe-area-inset-bottom,0px));gap:10px;background:var(--bg);min-height:100vh;min-height:100dvh}
+.top{flex-direction:column;align-items:stretch;gap:8px}
+.top h1{font-size:20px}
+.top p{display:none}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.tabs button{padding:6px 4px;font-size:14px}
+.work{grid-template-columns:minmax(0,1fr);gap:12px}
+.device{max-width:none;margin:0;order:1}
+.notes{order:2} .pages{order:3}
+.phone{padding:6px;border-radius:26px}
+.screen{height:calc(100dvh - 220px);min-height:520px;max-height:700px;border-radius:20px}
+body:not(.showNotes) .notes,body:not(.showPages) .pages{display:none}
+.infobtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.infobtns button{border:1.5px solid var(--rule);background:var(--panel);color:var(--fg);border-radius:12px;padding:9px 0;font-weight:700;font-size:14px}
+.infobtns button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
 </style>
 
 </head>
@@ -161,7 +178,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
 <div class="app">
   <header class="top">
     <div>
-      <h1>小鳶來港介面原型 v0.4</h1>
+      <h1>小鳶來港會員畫面 v0.5</h1>
       <p>三條路徑都能點著走。畫面裡的店家、金額、贈品與點數都是示範值，素材為暫用。</p>
     </div>
     <div class="tabs" role="tablist" aria-label="路徑" id="tabs"></div>
@@ -174,7 +191,8 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
       <div class="who"><span id="who"></span><span id="pageno"></span></div>
       <div class="handoff" id="handoff" hidden></div>
       <div class="phone"><div class="screen" id="screen"></div></div>
-      <div class="resetrow"><span>框線外的按鈕是原型操作，不是產品畫面。</span><button type="button" id="reset">這條路徑重來</button></div>
+      <div class="resetrow"><span>框外按鈕是原型操作</span><button type="button" id="reset">這條路徑重來</button></div>
+      <div class="infobtns"><button type="button" id="tNotes" aria-pressed="false">這頁說明</button><button type="button" id="tPages" aria-pressed="false">全部畫面</button></div>
     </section>
 
     <aside class="notes" aria-label="這一頁的說明" id="notes"></aside>
@@ -183,6 +201,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script>
+['Notes', 'Pages'].forEach(function (k) { var b = document.getElementById('t' + k); b.onclick = function () { var on = document.body.classList.toggle('show' + k); b.setAttribute('aria-pressed', on); if (on) document.querySelector(k === 'Notes' ? '.notes' : '.pages').scrollIntoView({ behavior: 'smooth', block: 'start' }); }; });
 (() => {
 const $ = (s) => document.querySelector(s);
 const A = 'assets/';
