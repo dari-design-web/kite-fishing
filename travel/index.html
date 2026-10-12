@@ -169,6 +169,7 @@ h3{font-size:15px;margin:14px 16px 6px}
       <h1>小鳶的小屋<small id="ver"></small></h1>
       <span class="pill" title="明信片"><img src="assets/pc_home_a_v2.jpg" alt="" style="border-radius:3px;height:14px;width:22px;object-fit:cover"><span id="hCards">0/24</span></span>
       <span class="pill" title="便當"><img src="assets/bento_rice.png" alt=""><span id="hBento">0</span></span>
+      <button class="gear" id="bgmBtn" type="button" aria-label="音樂開關">♪</button>
       <button class="gear" id="gearBtn" type="button">測試</button>
     </div>
     <div class="roomwrap">
@@ -237,7 +238,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.12',
+  version: '0.13',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -673,6 +674,54 @@ function renderDev() {
 window.__travel = { S: () => S, CFG, LOCS, rollTrip, setRnd: (f) => { rnd = f; }, go, commitTrip, depart: (k, items, pick) => { pk = { bento: k, items: items || [], pick: pick || '' }; depart(); }, finishNow: () => { if (S.trip) S.trip.end = Date.now(); tick(); }, open: openLetter };
 go('home');
 if (S.fishGift) { const n = S.fishGift; S.fishGift = 0; save(); setTimeout(() => toast('捕魚做的便當送到了（' + n + ' 份），打包時可以選'), 600); }      // v0.2：捕魚 v0.7 結算直接給便當
+</script>
+<script>
+/* ===== 暫用配樂（C-70）：用程式即時產生，不用音檔、沒有版權問題。正式配樂來源待 Dari 決定 ===== */
+const BGM = (() => {
+  let ac = null, master = null, timer = null, cur = null, step = 0, next = 0, noise = null;
+  const hz = (m) => 440 * Math.pow(2, (m - 69) / 12), _ = null;
+  const T = {      // 每首 32 個八分音符；bass 每兩格一個音
+    fish:   { bpm: 108, mw: 'triangle', bw: 'sine', mv: 0.05, hat: 0.010,
+              mel: [72, _, 76, 79, 77, 76, 74, _, 72, 74, 76, _, 74, 72, 71, _, 69, _, 72, 76, 74, 72, 71, _, 72, _, _, _, 79, _, 76, _],
+              bass: [48, 55, 52, 55, 53, 57, 55, 50, 45, 52, 48, 52, 43, 47, 48, 55] },
+    fly:    { bpm: 132, mw: 'square', bw: 'triangle', mv: 0.022, hat: 0.012,
+              mel: [72, 74, 76, 79, 76, 74, 72, _, 74, 76, 79, 81, 79, 76, 74, _, 76, 79, 81, 84, 81, 79, 76, 74, 72, _, 74, _, 76, _, 79, _],
+              bass: [48, 48, 55, 55, 57, 57, 53, 53, 48, 48, 55, 55, 53, 55, 48, 43] },
+    travel: { bpm: 80, mw: 'sine', bw: 'sine', mv: 0.05, hat: 0,
+              mel: [67, _, 72, _, 71, 72, 74, _, 72, _, 69, _, 67, _, _, _, 65, _, 69, _, 72, 71, 69, _, 67, _, _, _, 64, _, 67, _],
+              bass: [48, 52, 55, 52, 45, 48, 52, 48, 41, 45, 48, 45, 43, 47, 50, 47] }
+  };
+  function tone(f, t, d, w, v) { const o = ac.createOscillator(), g = ac.createGain(); o.type = w; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + d); o.connect(g); g.connect(master); o.start(t); o.stop(t + d + 0.02); }
+  function hat(t, v) { if (!noise) { const b = ac.createBuffer(1, ac.sampleRate * 0.05, ac.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; noise = b; } const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); s.buffer = noise; f.type = 'highpass'; f.frequency.value = 6000; g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.04); s.connect(f); f.connect(g); g.connect(master); s.start(t); }
+  function tick() {
+    const s = T[cur]; if (!s) return; const e = 60 / s.bpm / 2;
+    while (next < ac.currentTime + 0.15) {
+      const i = step % 32, m = s.mel[i];
+      if (m) tone(hz(m), next, e * 1.7, s.mw, s.mv);
+      if (i % 2 === 0) tone(hz(s.bass[i / 2]), next, e * 1.9, s.bw, 0.045);
+      if (s.hat && i % 2 === 1) hat(next, s.hat);
+      next += e; step++;
+    }
+  }
+  function play(name) {
+    if (cur === name && timer) return; stop();
+    try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+    if (ac.state === 'suspended') ac.resume();
+    if (!master) { master = ac.createGain(); master.gain.value = 0.8; master.connect(ac.destination); }
+    cur = name; step = 0; next = ac.currentTime + 0.08; timer = setInterval(tick, 30); tick();
+  }
+  function stop() { if (timer) clearInterval(timer); timer = null; cur = null; }
+  document.addEventListener('visibilitychange', () => { if (document.hidden && ac && ac.state === 'running') ac.suspend(); else if (!document.hidden && ac && timer) ac.resume(); });
+  return { play, stop, get on() { return !!timer; } };
+})();
+</script>
+<script>
+/* 小屋配樂：預設開，第一次點畫面才開始（瀏覽器規定）；右上 ♪ 可關，記在這支手機 */
+(() => { let on = true; try { on = localStorage.getItem('kiteBgm') !== '0'; } catch (e) {}
+  const b = document.getElementById('bgmBtn'), draw = () => { b.style.opacity = on ? 1 : 0.45; b.setAttribute('aria-pressed', String(on)); };
+  draw(); b.onclick = (e) => { e.stopPropagation(); on = !on; try { localStorage.setItem('kiteBgm', on ? '1' : '0'); } catch (x) {} if (on) BGM.play('travel'); else BGM.stop(); draw(); };
+  document.addEventListener('pointerdown', () => { if (on && !BGM.on) BGM.play('travel'); }, { once: false, passive: true });
+})();
 </script>
 </body>
 </html>
