@@ -95,7 +95,7 @@ summary{font-weight:700;font-size:14px;cursor:pointer}
 </div>
 <div class="ov" id="ov" hidden><div class="sheet" id="sheet"></div></div>
 <script>
-const CFG = { version: '0.2', key: 'kiteStamp1' };
+const CFG = { version: '0.3', key: 'kiteStamp1' };
 const FRAMES = [[31.2037, 34.1481], [68.7037, 34.1481], [31.2037, 56.2222], [68.7037, 56.1852], [31.1574, 78.2593], [68.7037, 78.2963]], FRAME_R = 12.45;      // G-49 護照頁圓框中心（%）與半徑（佔寬度 %）
 /* 6 個蓋章點（工作單 11 v4 第三節；實際位置待 Dari 現勘）。小鳶的話照 D42：4 到 7 歲小小孩的語氣 */
 const SPOTS = [
@@ -129,7 +129,7 @@ function render() {
   $('count').textContent = n() + ' / 6'; $('prog').style.width = (n() / 6 * 100) + '%';
   $('progTxt').textContent = n() === 6 ? '6 個章都蓋好了！' : '再蓋 ' + (6 - n()) + ' 個就集滿，可以拿到護照明信片和小鳶的雨傘';
   const r = $('reward'); r.hidden = !P.complete;
-  r.innerHTML = '<img src="../travel/assets/item_umbrella.png" alt=""><p><b>集滿獎勵已收下</b><br>小鳶的雨傘已經放進小屋的背包，帶著出門比較容易拿到還沒拿過的明信片。護照明信片之後會放進收藏冊。</p>';
+  r.innerHTML = '<img src="assets/pc_passport.jpg" alt="" style="width:96px;height:60px;object-fit:cover;border-radius:4px;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.2)"><p><b>集滿獎勵已收下</b><br>護照紀念明信片放進小屋的收藏冊（港灣護照），小鳶的雨傘放進背包了。</p>';
   $('tools').innerHTML = SPOTS.map((s) => '<button type="button" data-s="' + s.id + '">掃第 ' + s.id + ' 點</button>').join('') + '<button type="button" data-s="all">全部蓋好</button><button type="button" data-s="clear" style="grid-column:span 2">清除蓋章紀錄</button>';
   $('tools').querySelectorAll('button').forEach((b) => (b.onclick = () => { const v = b.dataset.s; if (v === 'clear') { P = { v: 1, spots: {}, complete: false, rewarded: false }; save(); render(); return; } if (v === 'all') { SPOTS.forEach((s) => { if (!P.spots[s.id]) P.spots[s.id] = Date.now(); }); save(); checkDone(); render(); return; } scan(+v); }));
 }
@@ -152,9 +152,9 @@ function showStory(s, first) {
 function checkDone() {
   if (n() < 6 || P.rewarded) return;
   P.complete = true; P.rewarded = true; save();
-  $('sheet').innerHTML = '<img src="../travel/assets/kite_happy.png" alt="" style="width:120px"><h3>港灣探險護照集滿了！</h3>' +
+  $('sheet').innerHTML = '<img src="assets/pc_passport.jpg" alt="港灣探險護照紀念明信片" style="width:100%;border-radius:8px;border:5px solid #fff;box-shadow:0 6px 16px rgba(0,0,0,.25);transform:rotate(-2deg)"><h3>港灣探險護照集滿了！</h3>' +
     '<div class="say"><img src="../travel/assets/item_umbrella.png" alt=""><p>謝謝你陪我走完一圈！<br>這把雨傘送給你，<br>下雨天也可以帶我去旅行喔～</p></div>' +
-    '<p class="again">拿到：護照明信片（之後放進收藏冊）、小鳶的雨傘（已放進小屋背包）</p><button class="btn" type="button" id="ovOk">好耶！</button>';
+    '<p class="again">拿到：護照紀念明信片（在小屋收藏冊「港灣護照」）、小鳶的雨傘（已放進小屋背包）</p><button class="btn" type="button" id="ovOk">好耶！</button>';
   $('ov').hidden = false; $('ovOk').onclick = () => { $('ov').hidden = true; render(); };
 }
 render();
