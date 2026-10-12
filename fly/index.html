@@ -128,7 +128,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
     <canvas class="mapfx" id="mapFx" aria-hidden="true"></canvas>
     <h1 class="maptitle">小鳶飛行冒險</h1>
     <div id="stageButtons"></div>
-    <p class="mapnote">原型 v0.20：暫用圖、不發點數。測試期間四關都開放</p>
+    <p class="mapnote">原型 v0.21：暫用圖、不發點數。測試期間四關都開放</p>
   </div>
 
   <div class="panel" id="startPanel" hidden>
@@ -153,7 +153,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
       </div>
       <button class="btn" id="startBtn">開始</button>
       <button class="btn quiet" id="mapBtn">回關卡地圖</button>
-      <p class="note">原型 v0.20：暫用圖、不發點數</p>
+      <p class="note">原型 v0.21：暫用圖、不發點數</p>
     </div>
   </div>
 
@@ -190,7 +190,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.20',
+  version: '0.21',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -265,7 +265,7 @@ const ASSET_FILES = { trash: 'trash.png', fish_small: 'fish_small.png', fish_squ
   kite_a: 'kite_top_a.png', kite_b: 'kite_top_b.png', feather: 'feather.png', turtle: 'turtle_top.png',
   can: 'foe_can.png', bag: 'foe_bag.png', butt: 'foe_butt.png', foam: 'foe_foam.png', barrel: 'foe_barrel.png', tire: 'foe_tire.png', oil: 'foe_oil.png', goo: 'foe_goo.png',
   battery: 'foe_battery.png', sprayer: 'foe_sprayer.png', log: 'foe_log.png', net: 'foe_net.png', tangle: 'foe_tangle.png', boss: 'foe_boss.png',
-  jerky: 'pick_jerky.png', power: 'pick_power.png', gale: 'pick_gale.png', m_tofu: /[?&]helmet=1/.test(location.search) ? 'm_tofu_helmet.png' : 'm_tofu.png', m_ele: 'm_ele.png',      // 網址加 ?helmet=1 換成戴礦工帽的豆腐君（給 Dari 比較，U-24）
+  jerky: 'pick_jerky_v2.png', power: 'pick_power_v2.png', gale: 'pick_gale_v2.png', m_tofu: /[?&]helmet=1/.test(location.search) ? 'm_tofu_helmet.png' : 'm_tofu.png', m_ele: 'm_ele.png',      // 網址加 ?helmet=1 換成戴礦工帽的豆腐君（給 Dari 比較，U-24）
   // G-31 第 2 關角色（ChatGPT，暫用）與兩關整張底圖（ChatGPT，暫用）
   n_shark: 'n_shark.png', n_sausage: 'n_sausage.png', n_head: 'n_head.png', n_dragon: 'n_dragon.png', n_jelly: 'n_jelly.png', n_ice: 'n_ice.png', n_ice_s: 'n_ice_s.png', n_puff: 'n_puff.png', n_crab: 'n_crab.png', n_sand: 'n_sand.png', n_sand_h: 'n_sand_h.png',
   n_guard: 'n_guard.png', n_lamp_s: 'n_lamp_s.png', fx_lamp: 'fx_lamp.png', fx_fire: 'fx_fire.png', f_oden: 'f_oden.png', f_jelly: 'f_jelly.png', f_rice: 'f_rice.png', f_ring: 'f_ring.png', boss_idle: 'boss_idle.png', boss_open: 'boss_open.png',
@@ -2000,7 +2000,7 @@ function drawPick(p) {
   glow(27 + br * 4, GLOW[p.kind], 0.6 + br * 0.15);
   if (!calm) for (let i = 0; i < 2; i++) { const a = clock * 2.4 + i * 3.1416 + p.x; twinkle(Math.cos(a) * 21, Math.sin(a) * 21, 3.4, 0.55 + 0.4 * Math.sin(clock * 6 + i * 2)); }
   ctx.scale(1 + br * 0.08, 1 + br * 0.08);
-  if (sprite(p.kind, 32, 32)) { ctx.restore(); return; }
+  if (sprite(p.kind, 40, 40)) { ctx.restore(); return; }
   ell(0, 0, 15, 15, 'rgba(255,248,234,.92)', PAL.line);
   if (p.kind === 'jerky') { poly([-9, 0, -3, -5, 6, -4, 10, 0, 6, 4, -3, 5], '#D9A066', PAL.line); poly([-9, 0, -13, -5, -13, 5], '#D9A066', PAL.line); }
   else if (p.kind === 'gale') { ctx.strokeStyle = '#2F7FA8'; ctx.lineWidth = 2.4; ctx.lineCap = 'round'; for (const y of [-5, 0, 5]) { ctx.beginPath(); ctx.moveTo(-8, y); ctx.quadraticCurveTo(0, y - 4, 8, y); ctx.stroke(); } }
