@@ -86,7 +86,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 .scene{width:100%;height:100%;position:relative;background-size:cover;background-position:center}
 .scene .ttl{position:absolute;left:10px;top:8px;font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5)}
 .scene .tmp{position:absolute;right:8px;top:8px;font-size:10px;background:rgba(255,255,255,.8);border-radius:999px;padding:1px 7px;color:var(--ink)}
-.scene .kb{position:absolute;bottom:4%;width:15%;aspect-ratio:1;background:url(assets/kite_home.png) center/contain no-repeat}      /* 只給還沒有正式圖的 C 款與本週限定；正式明信片已含小鳶，不另疊 */
+.scene .kb{position:absolute;bottom:4%;width:15%;aspect-ratio:1;background:url(assets/kite_home.png) center/contain no-repeat}      /* 只給還沒有正式圖的本週限定；正式明信片已含小鳶，不另疊 */
 .scene .fr{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-size:11px;background:rgba(255,255,255,.85);border-radius:999px;padding:1px 8px}
 /* 收藏冊 */
 .tabs{display:flex;gap:6px;margin:0 16px 10px;overflow-x:auto}
@@ -146,7 +146,7 @@ h3{font-size:15px;margin:14px 16px 6px}
       </div>
     </div>
     <div class="stats" id="stats"></div>
-    <p class="muted pad" style="margin-top:12px">原型 v0.3：暫用圖（ChatGPT G-39）、不發點數。資料只存在這支手機的瀏覽器。</p>
+    <p class="muted pad" style="margin-top:12px">原型 v0.4：暫用圖（ChatGPT G-39、G-40）、不發點數。資料只存在這支手機的瀏覽器。</p>
     <div class="dev" id="dev" hidden></div>
   </section>
 
@@ -187,9 +187,9 @@ h3{font-size:15px;margin:14px 16px 6px}
 <div class="toast" id="toast"></div>
 
 <script>
-/* 小鳶去旅行 原型 v0.3（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
+/* 小鳶去旅行 原型 v0.4（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.3',
+  version: '0.4',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -212,21 +212,21 @@ const DIST_NAME = { home: '家附近', near: '近', mid: '中', far: '遠', fart
 /* 8 個地點、每地 3 張（A 全景、B 生活片刻、C 心情或細節）。題材照 ChatGPT G-38 表，卡名與札記都是暫用 */
 const LOCS = [
   { id: 'home', name: '東三東四', dist: 'near', tone: ['#7FC4D6', '#2F7F86'], souvenir: '小鯨鯊吊飾', sv: '鯨鯊說下次要一起去更遠的地方。',
-    cards: [['午後碼頭與郵輪', '午後的碼頭好安靜，大船慢慢靠過來。我數了好久的窗戶，數到一半就忘了。', 'pc_home_a.jpg'], ['鯨鯊在港口探頭', '港口裡有個大朋友對我揮鰭。我也揮了揮翅膀，牠好像笑了。', 'pc_home_b.jpg'], ['夕陽下的旅客中心', '太陽要下山了，水面上一條金色的路。好想沿著它飛過去。']] },
+    cards: [['午後碼頭與郵輪', '午後的碼頭好安靜，大船慢慢靠過來。我數了好久的窗戶，數到一半就忘了。', 'pc_home_a.jpg'], ['鯨鯊在港口探頭', '港口裡有個大朋友對我揮鰭。我也揮了揮翅膀，牠好像笑了。', 'pc_home_b.jpg'], ['夕陽下的旅客中心', '太陽要下山了，水面上一條金色的路。好想沿著它飛過去。', 'pc_home_c.jpg']] },
   { id: 'miaokou', name: '基隆廟口', dist: 'near', tone: ['#F5C76A', '#7A3B2E'], souvenir: '小燈籠', sv: '我把它掛在床邊，晚上就不怕黑了。',
-    cards: [['黃色燈籠街', '一整排黃色的燈籠，像天上的星星掉下來排隊。', 'pc_miaokou_a.jpg'], ['一碗鼎邊趖', '熱熱的一碗，蒸氣把我的眼鏡……喔，我沒戴眼鏡。', 'pc_miaokou_b.jpg'], ['雨夜騎樓', '下雨了，我躲在騎樓下面，聽雨和人聲一起唱歌。']] },
+    cards: [['黃色燈籠街', '一整排黃色的燈籠，像天上的星星掉下來排隊。', 'pc_miaokou_a.jpg'], ['一碗鼎邊趖', '熱熱的一碗，蒸氣把我的眼鏡……喔，我沒戴眼鏡。', 'pc_miaokou_b.jpg'], ['雨夜騎樓', '下雨了，我躲在騎樓下面，聽雨和人聲一起唱歌。', 'pc_miaokou_c.jpg']] },
   { id: 'zhengbin', name: '正濱漁港', dist: 'mid', tone: ['#F2A7A0', '#4C8DB5'], souvenir: '彩色小木屋', sv: '小小的房子，跟港邊的一模一樣。',
-    cards: [['彩色屋倒影', '房子在水裡也有一間，顏色一樣漂亮，只是會晃。', 'pc_zhengbin_a.jpg'], ['清晨漁船', '天剛亮，漁船要出門了。我在岸邊說了聲路上小心。', 'pc_zhengbin_b.jpg'], ['岸邊的小圓點', '一顆顆橘色的浮球，我跟它們比了一下，我比較圓。']] },
+    cards: [['彩色屋倒影', '房子在水裡也有一間，顏色一樣漂亮，只是會晃。', 'pc_zhengbin_a.jpg'], ['清晨漁船', '天剛亮，漁船要出門了。我在岸邊說了聲路上小心。', 'pc_zhengbin_b.jpg'], ['岸邊的小圓點', '一顆顆橘色的浮球，我跟它們比了一下，我比較圓。', 'pc_zhengbin_c.jpg']] },
   { id: 'heping', name: '和平島', dist: 'mid', tone: ['#9FD3C7', '#6E6A62'], souvenir: '小貝殼', sv: '放在耳朵旁邊，好像聽得到海。',
-    cards: [['海蝕平台', '石頭被海浪磨了好久好久，變成一層一層的樣子。', 'pc_heping_a.jpg'], ['天然海水池', '海水圍成一個池子，我只敢把腳伸進去。', 'pc_heping_b.jpg'], ['海邊石菇', '海邊長了好多石頭香菇，不能吃，可是好可愛。']] },
+    cards: [['海蝕平台', '石頭被海浪磨了好久好久，變成一層一層的樣子。', 'pc_heping_a.jpg'], ['天然海水池', '海水圍成一個池子，我只敢把腳伸進去。', 'pc_heping_b.jpg'], ['海邊石菇', '海邊長了好多石頭香菇，不能吃，可是好可愛。', 'pc_heping_c.jpg']] },
   { id: 'badouzi', name: '八斗子', dist: 'mid', tone: ['#F4BB42', '#3E6E8E'], souvenir: '小車票', sv: '車票上印著海，我捨不得剪。', unlock: 'fly4',
-    cards: [['八斗子車站', '月台旁邊就是海，等車的時候可以看浪。', 'pc_badouzi_a.jpg'], ['望幽谷步道', '步道彎彎的，走到最上面，海變得好大。', 'pc_badouzi_b.jpg'], ['海邊的鐵軌', '鐵軌一直延伸到很遠，我在旁邊畫了一張小地圖。']] },
+    cards: [['八斗子車站', '月台旁邊就是海，等車的時候可以看浪。', 'pc_badouzi_a.jpg'], ['望幽谷步道', '步道彎彎的，走到最上面，海變得好大。', 'pc_badouzi_b.jpg'], ['海邊的鐵軌', '鐵軌一直延伸到很遠，我在旁邊畫了一張小地圖。', 'pc_badouzi_c.jpg']] },
   { id: 'shenao', name: '深澳', dist: 'far', tone: ['#E85A5A', '#2B4A6E'], souvenir: '豆腐岩小石頭', sv: '方方的小石頭，豆腐君說像牠。', unlock: 'fly4',
-    cards: [['紅蟹鐵道車', '紅色的螃蟹車停在軌道上，我在旁邊揮手，它好像也在笑。', 'pc_shenao_a.jpg'], ['豆腐岩', '一塊一塊方方的石頭，像海邊排好的豆腐。', 'pc_shenao_b.jpg'], ['深澳岬角奇岩', '岬角上的石頭換了新的樣子，大家都在猜它像什麼。']] },
+    cards: [['紅蟹鐵道車', '紅色的螃蟹車停在軌道上，我在旁邊揮手，它好像也在笑。', 'pc_shenao_a.jpg'], ['豆腐岩', '一塊一塊方方的石頭，像海邊排好的豆腐。', 'pc_shenao_b.jpg'], ['深澳岬角奇岩', '岬角上的石頭換了新的樣子，大家都在猜它像什麼。', 'pc_shenao_c.jpg']] },
   { id: 'chaojing', name: '潮境公園', dist: 'far', tone: ['#8FD3E8', '#3F7F5A'], souvenir: '海星小飾品', sv: '在小店帶回來的海星小飾品，放在架上就想起潮池。', unlock: 'dex3',
-    cards: [['潮間帶', '退潮了，石頭縫裡藏著好多小秘密。', 'pc_chaojing_a.jpg'], ['潮池的朋友', '一個小水窪裡，有一位很害羞的朋友。我們互看了好久。', 'pc_chaojing_b.jpg'], ['草地上看海', '風好大，羽毛都翹起來了，可是好舒服。']] },
+    cards: [['潮間帶', '退潮了，石頭縫裡藏著好多小秘密。', 'pc_chaojing_a.jpg'], ['潮池的朋友', '一個小水窪裡，有一位很害羞的朋友。我們互看了好久。', 'pc_chaojing_b.jpg'], ['草地上看海', '風好大，羽毛都翹起來了，可是好舒服。', 'pc_chaojing_c.jpg']] },
   { id: 'jiufen', name: '九份', dist: 'farthest', tone: ['#F08A3C', '#4A3A5E'], souvenir: '芋圓碗', sv: '用它裝點心，好像又回到山上。', unlock: 'special',
-    cards: [['山城燈籠', '房子一層一層疊在山上，燈籠亮起來的時候好溫暖。', 'pc_jiufen_a.jpg'], ['一碗芋圓', 'QQ 的芋圓，我吃得好慢好慢，因為窗外的海太漂亮。', 'pc_jiufen_b.jpg'], ['看海的階梯', '走到一半停下來，回頭就看到海。']] }
+    cards: [['山城燈籠', '房子一層一層疊在山上，燈籠亮起來的時候好溫暖。', 'pc_jiufen_a.jpg'], ['一碗芋圓', 'QQ 的芋圓，我吃得好慢好慢，因為窗外的海太漂亮。', 'pc_jiufen_b.jpg'], ['看海的階梯', '走到一半停下來，回頭就看到海。', 'pc_jiufen_c.jpg']] }
 ];
 const LIMITED = LOCS.map((l) => ({ id: 'lim-' + l.id, loc: l.id, title: '本週限定・' + l.name + '的小驚喜', note: '這一週特別想來' + l.name + '，果然遇到了特別的事！' }));
 const SAYS = {
