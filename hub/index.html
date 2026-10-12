@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>小鳶來港測試首頁</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* 版面：港邊的出航看板。上面一張會員服務，下面三款遊戲並排（手機時直排），再來是護照三站的順序軌道與測試工具 */
+:root{
+  --bg:#EDF3F3; --surface:#FFFFFF; --ink:#13303A; --muted:#5B7480; --line:#CFDEE0;
+  --teal:#2F7F86; --buoy:#E2702A; --buoy-ink:#FFFFFF; --soft:#E1EEEE; --warn:#B4541B;
+  --f-display:'LXGW WenKai TC','Kaiti TC','STKaiti',serif;
+  --f-body:'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1C21; --surface:#152A31; --ink:#E4EFF0; --muted:#94AEB6; --line:#27424A;
+  --teal:#5CB5BB; --buoy:#F08A45; --buoy-ink:#1B1006; --soft:#1B353D; --warn:#F2A06A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1C21; --surface:#152A31; --ink:#E4EFF0; --muted:#94AEB6; --line:#27424A;
+  --teal:#5CB5BB; --buoy:#F08A45; --buoy-ink:#1B1006; --soft:#1B353D; --warn:#F2A06A; color-scheme:dark}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 var(--f-body)}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:20px;padding-block:28px 48px;display:flex;flex-direction:column;gap:40px}
+a{color:inherit}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;margin:0;text-wrap:balance;line-height:1.25}
+p{margin:0}
+.eyebrow{font-size:12px;letter-spacing:.14em;color:var(--muted)}
+.mono{font-family:var(--f-mono);font-size:12px}
+
+/* 頁首 */
+.top{display:grid;grid-template-columns:1fr auto;gap:16px 24px;align-items:end;border-bottom:2px solid var(--ink);padding-bottom:18px}
+.top h1{font-size:clamp(30px,6vw,46px)}
+.top .lead{color:var(--muted);max-width:52ch;margin-top:6px}
+.board{display:flex;flex-direction:column;gap:4px;text-align:right;font-size:13px;color:var(--muted)}
+.board b{color:var(--ink);font-weight:500}
+@media (max-width:640px){.top{grid-template-columns:1fr}.board{text-align:left}}
+
+section{display:flex;flex-direction:column;gap:14px}
+.sh{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.sh h2{font-size:24px}
+.sh p{color:var(--muted);font-size:13px}
+
+/* 卡片共用 */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.shot{display:block;aspect-ratio:3/4;max-width:100%;background:var(--soft) center/cover no-repeat;border-bottom:1px solid var(--line)}
+.body{padding:16px;display:flex;flex-direction:column;gap:10px;flex:1}
+.name{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.name h3{font-size:21px}
+.ver{font-family:var(--f-mono);font-size:12px;color:var(--teal);border:1px solid currentColor;border-radius:999px;padding:0 8px;white-space:nowrap}
+.desc{color:var(--muted);font-size:14px}
+.prog{font-size:13px;padding:8px 10px;border-radius:10px;background:var(--soft);font-variant-numeric:tabular-nums}
+.prog b{font-weight:700}
+.go{display:flex;align-items:center;justify-content:center;gap:6px;min-height:46px;border-radius:12px;background:var(--buoy);color:var(--buoy-ink);text-decoration:none;font-weight:700;font-size:16px;margin-top:auto}
+.go:hover{filter:brightness(1.06)}
+.flags{display:flex;flex-wrap:wrap;gap:6px}
+.flag{display:inline-flex;align-items:baseline;gap:6px;font-size:13px;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--surface)}
+.flag:hover{border-color:var(--teal)}
+.flag code{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+a:focus-visible,button:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+
+/* 會員服務：橫向一張 */
+.member{display:grid;grid-template-columns:200px 1fr;gap:0}
+.member .shot{aspect-ratio:3/4;border-bottom:0;border-right:1px solid var(--line)}
+.paths{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.path{border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px;min-width:0}
+.path b{display:block;font-family:var(--f-mono);font-size:12px;color:var(--teal)}
+.member .go{align-self:flex-start;padding-inline:22px}
+@media (max-width:640px){.member{grid-template-columns:1fr}.member .shot{aspect-ratio:4/3;border-right:0;border-bottom:1px solid var(--line);background-position:center 30%}.paths{grid-template-columns:1fr}.member .go{align-self:stretch}}
+
+/* 三款遊戲 */
+.games{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media (max-width:860px){.games{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:560px){.games{grid-template-columns:1fr}.games .shot{aspect-ratio:4/3;background-position:center 20%}}
+
+/* 護照三站：真正的先後順序（D36） */
+.track{display:grid;grid-template-columns:repeat(3,1fr);gap:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.stop{padding:16px;display:flex;flex-direction:column;gap:6px;min-width:0;position:relative}
+.stop+.stop{border-left:1px dashed var(--line)}
+.stop .n{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.stop h3{font-size:19px}
+.state{align-self:flex-start;font-size:12px;font-weight:700;border-radius:999px;padding:1px 10px}
+.state.live{background:var(--teal);color:var(--surface)}
+.state.wip{background:var(--buoy);color:var(--buoy-ink)}
+.state.plan{border:1px solid var(--line);color:var(--muted)}
+.stop p{font-size:13px;color:var(--muted)}
+.stop a{font-size:14px;font-weight:700;color:var(--teal)}
+@media (max-width:640px){.track{grid-template-columns:1fr}.stop+.stop{border-left:0;border-top:1px dashed var(--line)}}
+
+/* 測試工具 */
+.tools{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media (max-width:760px){.tools{grid-template-columns:repeat(2,1fr)}}
+.tool{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.tool b{font-size:14px}
+.tool small{color:var(--muted);font-size:12px;line-height:1.5}
+.tool button{font:inherit;font-size:13px;min-height:38px;border-radius:10px;border:1px solid var(--line);background:var(--soft);color:var(--ink);cursor:pointer;margin-top:auto}
+.tool button.arm{background:var(--warn);border-color:var(--warn);color:var(--surface);font-weight:700}
+.tool button:disabled{opacity:.5;cursor:default}
+.notice{font-size:13px;color:var(--muted);border-left:3px solid var(--buoy);padding:4px 0 4px 12px}
+.notice a{color:var(--teal);font-weight:700}
+
+footer{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between;color:var(--muted);font-size:13px}
+@media (prefers-reduced-motion:no-preference){.go,.flag{transition:filter .15s,border-color .15s}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <p class="eyebrow">叁肆行官方 LINE｜東三東四</p>
+      <h1>小鳶來港 測試首頁</h1>
+      <p class="lead">會員服務的介面原型和三款小遊戲都在這裡，點了就開。全部是暫用素材，不發點數，進度只存在你這支手機。</p>
+    </div>
+    <div class="board">
+      <span>整理日期 <b class="mono">2026-10-12</b></span>
+      <span>捕魚 <b class="mono">v0.8</b>・飛行 <b class="mono">v0.19</b>・去旅行 <b class="mono">v0.4</b></span>
+      <span>介面 <b class="mono">v0.3</b></span>
+    </div>
+  </header>
+
+  <section aria-labelledby="h-member">
+    <div class="sh"><h2 id="h-member">會員服務</h2><p>客人在官方 LINE 裡看到的畫面，三條路徑都能點著走</p></div>
+    <article class="card member">
+      <a class="shot" data-href="ui/" style="background-image:url(thumbs/ui.jpg)" aria-label="打開介面原型"></a>
+      <div class="body">
+        <div class="name"><h3>小鳶來港介面原型</h3><span class="ver">v0.3</span></div>
+        <p class="desc">44 個畫面：入會、消費領點、服務台核銷，以及逾時、重複掃碼等例外情況。店家、金額、贈品都是示範值。</p>
+        <div class="paths">
+          <div class="path"><b>A</b>DP 入會</div>
+          <div class="path"><b>B</b>消費領點</div>
+          <div class="path"><b>C</b>服務台核銷</div>
+        </div>
+        <a class="go" data-href="ui/">打開介面原型</a>
+      </div>
+    </article>
+  </section>
+
+  <section aria-labelledby="h-games">
+    <div class="sh"><h2 id="h-games">三款小遊戲</h2><p>同一個網站，三款會互相讀紀錄：捕魚做便當、飛行過關開地點</p></div>
+    <div class="games">
+      <article class="card">
+        <a class="shot" data-href="" style="background-image:url(thumbs/fish.jpg)" aria-label="開始捕魚"></a>
+        <div class="body">
+          <div class="name"><h3>小鳶捕魚</h3><span class="ver">v0.8</span></div>
+          <p class="desc">60 秒點魚讓小鳶俯衝。午後、黃昏、夜釣三場；抓到小卷 3 隻、白帶魚 2 條會做成便當。</p>
+          <p class="prog" id="pFish">這支手機的進度：讀取中</p>
+          <div class="flags"><a class="flag" data-href="?all=1">三場全開 <code>?all=1</code></a></div>
+          <a class="go" data-href="">開始捕魚</a>
+        </div>
+      </article>
+      <article class="card">
+        <a class="shot" data-href="fly/" style="background-image:url(thumbs/fly.jpg)" aria-label="開始飛行冒險"></a>
+        <div class="body">
+          <div class="name"><h3>小鳶飛行冒險</h3><span class="ver">v0.19</span></div>
+          <p class="desc">拖著小鳶清垃圾、救朋友。叁肆行、廟口夜市、正濱漁港、深澳鐵道四關，每關有三階段魔王。</p>
+          <p class="prog" id="pFly">這支手機的進度：讀取中</p>
+          <div class="flags"><a class="flag" data-href="fly/?all=1">四關全開 <code>?all=1</code></a><a class="flag" data-href="fly/?helmet=1">豆腐君戴礦工帽 <code>?helmet=1</code></a></div>
+          <a class="go" data-href="fly/">開始飛行</a>
+        </div>
+      </article>
+      <article class="card">
+        <a class="shot" data-href="travel/" style="background-image:url(thumbs/travel.jpg)" aria-label="打開小鳶去旅行"></a>
+        <div class="body">
+          <div class="name"><h3>小鳶去旅行</h3><span class="ver">v0.4</span></div>
+          <p class="desc">幫小鳶帶便當出門，牠會寄明信片回來。8 個地點 24 張明信片，圖都齊了。</p>
+          <p class="prog" id="pTravel">這支手機的進度：讀取中</p>
+          <div class="flags"><a class="flag" data-href="travel/?fast=1">快速模式 <code>?fast=1</code></a><a class="flag" data-href="travel/?reset=1">從第一次開始 <code>?reset=1</code></a></div>
+          <a class="go" data-href="travel/">打開小屋</a>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-pass">
+    <div class="sh"><h2 id="h-pass">港灣探險護照</h2><p>照 P1 → P2 → P3 的順序做</p></div>
+    <div class="track">
+      <div class="stop">
+        <span class="n">P1</span><h3>小鳶去旅行</h3><span class="state live">可以玩</span>
+        <p>小屋、打包、拆信、收藏冊、紀念品櫃。</p>
+        <a data-href="travel/?fast=1">用快速模式試 →</a>
+      </div>
+      <div class="stop">
+        <span class="n">P2</span><h3>小鳶合照館</h3><span class="state wip">原型製作中</span>
+        <p>在東三東四現場和小鳶合照，貼紙來自三款遊戲的收藏。</p>
+      </div>
+      <div class="stop">
+        <span class="n">P3</span><h3>港灣蓋章散步</h3><span class="state plan">規劃完成，排在合照館之後</span>
+        <p>沿港邊 6 個點掃碼蓋章，集滿換小鳶的雨傘。</p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-tools">
+    <div class="sh"><h2 id="h-tools">清除測試紀錄</h2><p>想從頭再試一次時用。只清這支手機，按一次會再問一次</p></div>
+    <p class="notice" id="originNote" hidden>這個頁面不是從線上網址打開的，讀不到也清不到遊戲紀錄。請改開 <a href="https://dari-design-web.github.io/kite-fishing/hub/">線上測試首頁</a>。</p>
+    <div class="tools">
+      <div class="tool"><b>捕魚</b><small>圖鑑、各場最佳成績、開放的場次</small><button type="button" id="rFish" data-keys="kiteFishingDex2,kiteFishingProg1">清除捕魚紀錄</button></div>
+      <div class="tool"><b>飛行冒險</b><small>過關星星、開放的關卡、最佳成績</small><button type="button" id="rFly" data-keys="kiteFlyProgress1">清除飛行紀錄</button></div>
+      <div class="tool"><b>小鳶去旅行</b><small>明信片、紀念品、便當、郵票、旅行次數</small><button type="button" id="rTravel" data-keys="kiteTravel1">清除旅行紀錄</button></div>
+      <div class="tool"><b>全部</b><small>三款一起清，回到第一次打開的樣子</small><button type="button" id="rAll" data-keys="kiteFishingDex2,kiteFishingProg1,kiteFlyProgress1,kiteTravel1">全部清除</button></div>
+    </div>
+  </section>
+
+  <footer>
+    <span>原型全部使用暫用素材、不發點數；正式上線前都會再改。</span>
+    <a href="https://github.com/dari-design-web/kite-fishing">GitHub 原始檔</a>
+  </footer>
+</div>
+
+<script>
+(function () {
+  var ONLINE = 'https://dari-design-web.github.io/kite-fishing/';
+  var onSite = location.hostname === 'dari-design-web.github.io' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  // 在線上網站時用相對路徑（同一個網站，紀錄互通）；在其他地方打開時連到線上網址
+  var base = onSite ? '../' : ONLINE;
+  document.querySelectorAll('[data-href]').forEach(function (a) { a.href = base + a.getAttribute('data-href'); if (!onSite) a.target = '_blank'; if (!onSite) a.rel = 'noopener'; });
+
+  function read(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+  function set(id, html) { var el = document.getElementById(id); if (el) el.innerHTML = html; }
+  if (!onSite) {
+    document.getElementById('originNote').hidden = false;
+    ['pFish', 'pFly', 'pTravel'].forEach(function (id) { set(id, '從線上網址打開才看得到這支手機的進度'); });
+    document.querySelectorAll('.tool button').forEach(function (b) { b.disabled = true; });
+    return;
+  }
+  function render() {
+    var dex = read('kiteFishingDex2') || {}, prog = read('kiteFishingProg1') || {};
+    var nDex = Object.keys(dex).filter(function (k) { return dex[k]; }).length, played = Object.keys(prog.played || {}).length;
+    set('pFish', played || nDex ? '圖鑑 <b>' + nDex + ' / 6</b>・玩過 <b>' + played + ' / 3</b> 場' : '還沒玩過');
+    var fly = read('kiteFlyProgress1'), stars = 0, cleared = 0;
+    if (fly && fly.stars) Object.keys(fly.stars).forEach(function (k) { var s = fly.stars[k] || []; var n = s.filter(Boolean).length; stars += n; if (s[0]) cleared++; });
+    set('pFly', fly ? '過關 <b>' + cleared + ' / 4</b>・星星 <b>' + stars + ' / 12</b>' : '還沒玩過');
+    var t = read('kiteTravel1');
+    if (t && t.v === 1) {
+      var cards = Object.keys(t.cards || {}).length, b = t.bento || {}, nb = (b.far || 0) + (b.squid || 0) + (b.hair || 0) + (b.special || 0);
+      var st = t.state === 'away' ? '旅行中' : t.state === 'back' ? '回來了，有信' : '在家';
+      set('pTravel', '明信片 <b>' + cards + ' / 24</b>・便當 <b>' + nb + '</b> 份・小鳶' + st);
+    } else set('pTravel', '還沒打開過');
+  }
+  render();
+  document.querySelectorAll('.tool button').forEach(function (btn) {
+    var label = btn.textContent, timer;
+    btn.addEventListener('click', function () {
+      if (!btn.classList.contains('arm')) { btn.classList.add('arm'); btn.textContent = '確定清除？再按一次'; clearTimeout(timer); timer = setTimeout(function () { btn.classList.remove('arm'); btn.textContent = label; }, 4000); return; }
+      clearTimeout(timer);
+      btn.getAttribute('data-keys').split(',').forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+      btn.classList.remove('arm'); btn.textContent = '已清除'; render();
+      setTimeout(function () { btn.textContent = label; }, 1800);
+    });
+  });
+})();
+</script>
+</body>
+</html>
