@@ -146,7 +146,7 @@ h3{font-size:15px;margin:14px 16px 6px}
       </div>
     </div>
     <div class="stats" id="stats"></div>
-    <p class="muted pad" style="margin-top:12px">原型 v0.4：暫用圖（ChatGPT G-39、G-40）、不發點數。資料只存在這支手機的瀏覽器。</p>
+    <p class="muted pad" style="margin-top:12px">原型 v0.5：暫用圖（ChatGPT G-39、G-40）、不發點數。資料只存在這支手機的瀏覽器。</p>
     <div class="dev" id="dev" hidden></div>
   </section>
 
@@ -187,9 +187,9 @@ h3{font-size:15px;margin:14px 16px 6px}
 <div class="toast" id="toast"></div>
 
 <script>
-/* 小鳶去旅行 原型 v0.4（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
+/* 小鳶去旅行 原型 v0.5（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.4',
+  version: '0.5',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -228,6 +228,9 @@ const LOCS = [
   { id: 'jiufen', name: '九份', dist: 'farthest', tone: ['#F08A3C', '#4A3A5E'], souvenir: '芋圓碗', sv: '用它裝點心，好像又回到山上。', unlock: 'special',
     cards: [['山城燈籠', '房子一層一層疊在山上，燈籠亮起來的時候好溫暖。', 'pc_jiufen_a.jpg'], ['一碗芋圓', 'QQ 的芋圓，我吃得好慢好慢，因為窗外的海太漂亮。', 'pc_jiufen_b.jpg'], ['看海的階梯', '走到一半停下來，回頭就看到海。', 'pc_jiufen_c.jpg']] }
 ];
+/* 看稿：網址加 ?v2=1，B 款換成 G-41 小鳶融入場景的樣張（D38，待 Dari 看方向；正式換圖等確認後再改上面的檔名） */
+CFG.look = /[?&]v2=1/.test(location.search);
+if (CFG.look) for (const l of LOCS) l.cards[1][2] = 'pc_' + l.id + '_b_v2.jpg';
 const LIMITED = LOCS.map((l) => ({ id: 'lim-' + l.id, loc: l.id, title: '本週限定・' + l.name + '的小驚喜', note: '這一週特別想來' + l.name + '，果然遇到了特別的事！' }));
 const SAYS = {
   home: ['今天天氣好像不錯，要不要一起出門？', '上次的明信片你看了嗎？', '便當準備好了嗎？我隨時可以出發！', '我好想去看海喔。'],
@@ -303,7 +306,7 @@ setInterval(tick, 1000);
 
 function renderHome() {
   tick();
-  $('ver').textContent = 'v' + CFG.version + (CFG.fast ? '・快速' : '');
+  $('ver').textContent = 'v' + CFG.version + (CFG.fast ? '・快速' : '') + (CFG.look ? '・B 款新版看稿' : '');
   const st = S.state, b = $('bird'), note = $('note'), env = $('envIcon'), main = $('mainBtn');
   note.hidden = true; env.hidden = true; b.style.display = 'block'; b.className = 'bird bob';
   if (!S.firstDone && st === 'home') { $('chip').textContent = '第一次見面！先帶小鳶在附近走走吧'; b.style.backgroundImage = 'url(assets/kite_wave.png)'; $('say').textContent = '你好！我是小鳶。'; main.textContent = '第一次，先在附近走走吧（3 分鐘）'; main.onclick = startFirst; }
@@ -483,11 +486,11 @@ function renderDev() {
   d.innerHTML = '<b>測試面板</b>（只在網址加 ?dev=1 或 ?fast=1 時出現）<br>' +
     ['far', 'squid', 'hair', 'special'].map((k) => '<button data-b="' + k + '">+1 ' + CFG.bentos[k].name + '</button>').join('') +
     '<button data-x="rice">飯糰重置</button><br>' + ['camera', 'telescope', 'umbrella'].map((k) => '<button data-i="' + k + '">' + (S.testItems[k] ? '收回' : '給') + CFG.items[k].name + '</button>').join('') +
-    '<br><button data-x="now">馬上回來</button><button data-x="trips">旅行次數 +5</button><button data-x="stamps">郵票 +5</button><button data-x="reset">全部清除</button>' +
+    '<br><button data-x="all">拿到全部 24 張</button><button data-x="now">馬上回來</button><button data-x="trips">旅行次數 +5</button><button data-x="stamps">郵票 +5</button><button data-x="reset">全部清除</button>' +
     '<br>現在：飛行過關 ' + (flyAnyCleared() ? '有' : '無') + '、第 4 關 ' + (flyCleared(4) ? '已過' : '未過') + '、捕魚圖鑑 ' + dexCount() + ' 種';
   d.querySelectorAll('[data-b]').forEach((b) => (b.onclick = () => { S.bento[b.dataset.b]++; save(); renderHome(); }));
   d.querySelectorAll('[data-i]').forEach((b) => (b.onclick = () => { S.testItems[b.dataset.i] = !S.testItems[b.dataset.i]; save(); renderHome(); }));
-  d.querySelectorAll('[data-x]').forEach((b) => (b.onclick = () => { const x = b.dataset.x; if (x === 'rice') S.riceDay = ''; if (x === 'now' && S.trip) S.trip.end = Date.now(); if (x === 'trips') S.trips += 5; if (x === 'stamps') S.stamps += 5; if (x === 'reset') { S = fresh(); } save(); renderHome(); }));
+  d.querySelectorAll('[data-x]').forEach((b) => (b.onclick = () => { const x = b.dataset.x; if (x === 'rice') S.riceDay = ''; if (x === 'now' && S.trip) S.trip.end = Date.now(); if (x === 'trips') S.trips += 5; if (x === 'stamps') S.stamps += 5; if (x === 'all') { let n = Date.now(); for (const l of LOCS) for (let i = 0; i < 3; i++) if (!S.cards[l.id + '-' + i]) S.cards[l.id + '-' + i] = n--; } if (x === 'reset') { S = fresh(); } save(); renderHome(); }));
 }
 window.__travel = { S: () => S, CFG, LOCS, rollTrip, setRnd: (f) => { rnd = f; }, go, commitTrip, depart: (k, items, pick) => { pk = { bento: k, items: items || [], pick: pick || '' }; depart(); }, finishNow: () => { if (S.trip) S.trip.end = Date.now(); tick(); }, open: openLetter };
 go('home');
