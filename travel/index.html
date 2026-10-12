@@ -259,7 +259,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.15',
+  version: '0.16',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -433,7 +433,7 @@ function setRoom(id) {
   $('scenes').innerHTML = ROOMS.map((x) => '<button type="button" data-room="' + x.id + '" aria-pressed="' + (x.id === r.id) + '"><span>' + x.icon + '</span>' + x.name + '</button>').join('');
   $('scenes').querySelectorAll('button').forEach((b) => (b.onclick = () => { if (b.dataset.room !== S.room) { setRoom(b.dataset.room); PET.enter(); if (typeof travelBgmSync === 'function') travelBgmSync(); } }));
   const acc = $('bird').querySelector('.acc') || $('bird').appendChild(Object.assign(document.createElement('div'), { className: 'acc' }));
-  acc.innerHTML = r.acc ? '<svg viewBox="0 0 360 360" width="100%" height="100%">' + ACC[r.acc] + '</svg>' : '';
+  acc.innerHTML = '';      // v0.16：換裝圖已含帽子衣服，程式畫的配件收起來
   fitRoom();
 }
 function fitRoom() {
@@ -573,7 +573,7 @@ const PET = (() => {
       if (p.act !== 'walk' && p.t >= p.dur) next();
       if (calm) { bob = 0; rot = 0; sq = 1; }
       const scale = 0.86 + (p.y - AREA.y0) / (AREA.y1 - AREA.y0) * 0.16, w = 34 * scale;
-      const key = p.act === 'nap' ? 'kite_nap' : p.pose === 'wave' ? 'kite_wave' : p.pose === 'pack' ? 'kite_pack' : p.pose === 'back' ? 'kite_back' : 'kite_home';      // v0.14：打瞌睡換閉眼圖
+      const rid = ROOM().id, key = rid !== 'living' ? 'kite_' + rid + '_' + (p.act === 'nap' ? 'nap' : p.pose === 'wave' ? 'wave' : 'home') : p.act === 'nap' ? 'kite_nap' : p.pose === 'wave' ? 'kite_wave' : p.pose === 'pack' ? 'kite_pack' : p.pose === 'back' ? 'kite_back' : 'kite_home';      // v0.16：其他四間用 G-47 第二批換裝圖      // v0.14：打瞌睡換閉眼圖
       if (b.dataset.k !== key) { b.style.backgroundImage = 'url(assets/' + key + '.png)'; b.dataset.k = key; }
       const hPct = w * ROOMDIM.w / ROOMDIM.h;      // 舞台實際寬高（fitRoom 算的），換算成高度的百分比
       b.style.width = w + '%'; b.style.left = (p.x - w / 2) + '%'; b.style.top = (p.y - hPct * 0.92) + '%';
