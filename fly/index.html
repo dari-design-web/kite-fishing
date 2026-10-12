@@ -128,7 +128,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
     <canvas class="mapfx" id="mapFx" aria-hidden="true"></canvas>
     <h1 class="maptitle">小鳶飛行冒險</h1>
     <div id="stageButtons"></div>
-    <p class="mapnote">原型 v0.24：暫用圖、不發點數。測試期間四關都開放</p>
+    <p class="mapnote">原型 v0.25：暫用圖、不發點數。測試期間四關都開放</p>
   </div>
 
   <div class="panel" id="startPanel" hidden>
@@ -154,7 +154,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
       </div>
       <button class="btn" id="startBtn">開始</button>
       <button class="btn quiet" id="mapBtn">回關卡地圖</button>
-      <p class="note">原型 v0.24：暫用圖、不發點數</p>
+      <p class="note">原型 v0.25：暫用圖、不發點數</p>
     </div>
   </div>
 
@@ -349,7 +349,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.24',
+  version: '0.25',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -424,6 +424,7 @@ const ASSET_FILES = { trash: 'trash.png', fish_small: 'fish_small.png', fish_squ
   kite_a: 'kite_top_a.png', kite_b: 'kite_top_b.png', feather: 'feather.png', turtle: 'turtle_top.png',
   can: 'foe_can.png', bag: 'foe_bag.png', butt: 'foe_butt.png', foam: 'foe_foam.png', barrel: 'foe_barrel.png', tire: 'foe_tire.png', oil: 'foe_oil.png', goo: 'foe_goo.png',
   battery: 'foe_battery.png', sprayer: 'foe_sprayer.png', log: 'foe_log.png', net: 'foe_net.png', tangle: 'foe_tangle.png', boss: 'foe_boss.png',
+  ui_menu_card: 'ui_menu_card.png', ui_beat_lamp: 'ui_beat_lamp.png', p_escort: 'p_escort.png', p_boss_stun: 'p_boss_stun.png',      // G-35 B（v0.25 起接上）
   jerky: 'pick_jerky_v2.png', power: 'pick_power_v2.png', gale: 'pick_gale_v2.png', m_tofu: /[?&]helmet=1/.test(location.search) ? 'm_tofu_helmet.png' : 'm_tofu.png', m_ele: 'm_ele.png',      // 網址加 ?helmet=1 換成戴礦工帽的豆腐君（給 Dari 比較，U-24）
   // G-31 第 2 關角色（ChatGPT，暫用）與兩關整張底圖（ChatGPT，暫用）
   n_shark: 'n_shark.png', n_sausage: 'n_sausage.png', n_head: 'n_head.png', n_dragon: 'n_dragon.png', n_jelly: 'n_jelly.png', n_ice: 'n_ice.png', n_ice_s: 'n_ice_s.png', n_puff: 'n_puff.png', n_crab: 'n_crab.png', n_sand: 'n_sand.png', n_sand_h: 'n_sand_h.png',
@@ -512,7 +513,10 @@ function buildScript() {
   if (ST().theme === 'market') {
     const order = ['rice', 'jelly', 'ring', 'oden'];      // 被包住的小吃朋友依序出現：小卷米粉、石花凍、大腸圈、基隆黑輪
     E.filter((e) => e.type === 'net' || e.type === 'tangle').sort((a, b) => a.t - b.t).forEach((e, i) => { e.friend = order[i % 4]; e.give = ''; });
-    for (const p of [[9.5, true], [16, false], [23.5, true], [30.5, false], [37, true], [43.5, false], [50.5, true], [57.5, false], [63, true]]) add(p[0], 'heat', 0, { fromLeft: p[1] });      // 攤位熱氣
+    for (const [t0, pat, reps] of [[8.5, 'LRLLR', 1], [28.5, 'RLRRL', 1], [47.5, 'LRLLR', 2]]) {      // v0.25（C-71，D50）：攤位照固定節拍噴熱氣；開始前燈先閃一次給你看
+      add(t0, 'beatDemo', 0, { pat }); const b0 = t0 + pat.length * BEAT.demoStep + 1.2;
+      for (let r = 0; r < reps; r++) for (let k = 0; k < pat.length; k++) add(b0 + (r * pat.length + k) * BEAT.gap, 'heat', 0, { fromLeft: pat[k] === 'L', beat: true });
+    }
     for (const p of [[12.5, false], [26, true], [34, false], [45.5, true], [54, false], [60, true]]) add(p[0], 'smoke', 0, { fromLeft: p[1] });      // 攤位油煙
     snake(21.5, 180, 8); diag(36, 'bottle', true, 5); diag(36.2, 'bottle', false, 5); add(39.5, 'foam', 60); add(39.5, 'foam', 300); snake(52, 180, 9, true); row(56.5, 'foam', [90, 270]); diag(61, 'can', true, 6);
   }
@@ -535,7 +539,7 @@ function buildScript() {
 function reset() {
   seed = CONFIG.seed; cine = 0; slowmo = 0; rushes = []; t = 0; si = 0; fireAcc = 0; gauge = 0; ult = null; flash = 0; shake = 0; boss = null; endTimer = 0; firstMove = false; toldUlt = false; toldBarrel = false; toldGate = false; toldRing = false; guide = null; won = false; seenPick = {};
   kite = { x: W / 2, y: 520, tx: W / 2, ty: 520, jetT: 0, ringT: 0, slowT: 0, homeT: 0, drumT: 0, drumAcc: 0, hearts: LV().hearts, safe: 0, power: 1, powerT: 0, galeT: 0, shield: false, drag: false, lx: 0, ly: 0 };
-  T = stageTypes(); vents = []; clouds = []; boats = []; mascots = [];
+  T = stageTypes(); vents = []; clouds = []; boats = []; mascots = []; beatDemo = null; menu = null;
   foes = []; shots = []; picks = []; parts = []; floats = []; friends = []; pals = []; rings = []; warns = []; script = buildScript();
   stats = { spawned: 0, cleared: 0, leaked: 0, score: 0, hits: 0, hitBy: {}, rescued: 0, trapped: 0, lost: 0, trappedBy: { squid: 0, turtle: 0, friend: 0, mascot: 0 }, lostBy: { squid: 0, turtle: 0, friend: 0, mascot: 0 }, jerky: 0, powerUps: 0, gales: 0, maxPower: 1, ultUsed: 0, ultCleared: 0, combo: 0, comboT: 0, bestCombo: 0, blasts: 0, bestBlast: 0, chain: false, rescuedBy: { squid: 0, turtle: 0, friend: 0, mascot: 0 }, friendIds: [], eaten: 0, jiao: { holy: 0, laugh: 0, yin: 0 }, shieldSaves: 0, bossCleared: false, dragPx: 0, byType: {} };
   for (const k in answers) delete answers[k];
@@ -549,7 +553,8 @@ function mk(type, x, y, o) {
   foes.push(f); if (!f.noCount) stats.spawned++; if (d.rescue) { stats.trapped++; stats.trappedBy[d.rescue]++; } return f;      // noCount：只是要閃的障礙，不算在乾淨度裡
 }
 function spawn(e) {
-  if (e.type === 'heat') { addVent(e.fromLeft); return; }
+  if (e.type === 'heat') { addVent(e.fromLeft, e.beat ? { beat: true, warn: BEAT.warn, on: BEAT.on } : null); return; }
+  if (e.type === 'beatDemo') { beatDemo = { pat: e.pat, t: 0, k: -1 }; banner('看燈記節拍：' + e.pat.split('').map((c) => (c === 'L' ? '左' : '右')).join('')); return; }
   if (e.type === 'boat') { addBoat(e.fromLeft); return; }
   if (e.type === 'mascot') { addMascot(e.kind); return; }
   if (e.type === 'tunnel') { banner('進入光隧道！牆上的光亮起時才看得到光影母'); jingle([392, 494, 587], 120); return; }
@@ -595,6 +600,7 @@ function clearFoe(f, how) {      // how：'' 羽毛或墨汁、'blast' 被炸到
   if (d.shatter && !calmClear) for (let k = 0; k < d.shatter; k++) mk('chip', f.x, f.y, { vx: (k - 1) * 75 });
   if (d.blast && !calmClear) explode(f.x, f.y, d);
   if (d.rescue) rescue(d.rescue, f.x, f.y, f);
+  menuHit(f, how);
   if (f.give) addPick(f.give, f.x, f.y);
   else if (!d.rescue && f.type !== 'drop' && f.type !== 'chip' && f.type !== 'butt' && f.type !== 'boss' && f.type !== 'lamp' && f.type !== 'fire' && !calmClear) {
     const roll = rnd(), D = CONFIG.drops, J = D.jerky * LVF('jerky'); if (roll < J) addPick('jerky', f.x, f.y); else if (roll < J + D.power) addPick('power', f.x, f.y); else if (roll < J + D.power + D.gale) addPick('gale', f.x, f.y);
@@ -684,7 +690,7 @@ function update(dt) {
   for (const w of warns) { w.t -= dt; if (w.t <= 0) { const sp = CONFIG.side.speed * SPD(); for (let i = 0; i < w.n; i++) mk('can', w.fromLeft ? -20 - i * 34 : W + 20 + i * 34, w.y, { noCount: true, cross: true, vx: w.fromLeft ? sp : -sp, vy: 0 }); beep(500, 0.2, 'sawtooth', 0.04, -200); } }
   warns = warns.filter((w) => w.t > 0);
   if (guide) { guide.y += guide.vy * dt; if (guide.y > H + 30) guide = null; }
-  updateVents(dt); if (PM()) { updateBoats(dt); updatePierFriends(dt); } if (RM()) { updateMascots(dt); updateRushes(dt); }
+  updateVents(dt); updateMarket(dt); if (PM()) { updateBoats(dt); updatePierFriends(dt); } if (RM()) { updateMascots(dt); updateRushes(dt); }
   // 垃圾與污染的移動與特殊能力
   for (const f of foes.slice()) {
     const d = T[f.type]; f.age += dt;
@@ -979,9 +985,9 @@ function drawTaotieOld(f) {
   0;
 }
 /* 攤位的熱氣（先出現紅區，再噴）與油煙（擋住視線，不扣血） */
-function addVent(fromLeft) {
+function addVent(fromLeft, o) {
   const first = !stats.toldVent; stats.toldVent = true;
-  vents.push({ fromLeft, y: Math.max(170, Math.min(520, kite.y - 60)), w: R(150, 200), t: 0, warn: CONFIG.vent.warn * LV().warn / 1.15, on: CONFIG.vent.on });
+  vents.push({ fromLeft, y: Math.max(170, Math.min(520, kite.y - 60)), w: R(150, 200), t: 0, warn: o ? o.warn : CONFIG.vent.warn * LV().warn / 1.15, on: o ? o.on : CONFIG.vent.on, beat: !!(o && o.beat) });
   if (first) say('攤位要噴熱氣了！離開紅區', W / 2, Math.max(150, kite.y - 110), '#FFD0C4');
   beep(330, 0.12, 'triangle', 0.04, 120);
 }
@@ -1014,6 +1020,57 @@ function drawVents() {
       ctx.strokeStyle = 'rgba(255,236,190,' + 0.8 * a + ')'; ctx.lineWidth = 2; for (let k = -1; k <= 1; k++) { ctx.beginPath(); for (let x = 0; x <= v.w; x += 6) { const xx = v.fromLeft ? x : W - x, yy = v.y + k * 11 + Math.sin(x * 0.12 - clock * 14 + k) * 3; x ? ctx.lineTo(xx, yy) : ctx.moveTo(xx, yy); } ctx.stroke(); }
     }
   }
+}
+/* ====== v0.25 第 2 關（C-71，D50）：節拍熱氣與點菜單 ======
+   節拍：兩邊的節拍燈先照順序閃一次（不會噴），接著攤位照同一個順序噴熱氣；燈亮的那一邊就是下一個要噴的。
+   點菜單：上方菜單卡列三道小吃妖怪，照順序淨化，每道加分；三道都完成「回禮加倍」掉兩個道具，再換下一張菜單。不照順序也能過關。 */
+const BEAT = { gap: 1.5, on: 1.0, warn: 0.75, demoStep: 0.5 };
+const MENUS = [['can', 'bag', 'bottle'], ['foam', 'can', 'bottle'], ['bottle', 'foam', 'can'], ['bag', 'bottle', 'foam']];
+let beatDemo = null, menu = null;
+function startMenu(n) { menu = { n, list: MENUS[n % MENUS.length], i: 0, pop: 0 }; }
+function menuIs(type, want) { return type === want || (want === 'can' && type === 'butt'); }
+function menuHit(f, how) {
+  if (!NM() || !menu || boss || how === 'sweep' || !menuIs(f.type, menu.list[menu.i])) return;
+  menu.i++; menu.pop = 0.6; stats.score += 20; stats.menuDish = (stats.menuDish || 0) + 1; gauge = Math.min(CONFIG.ult.need, gauge + 4);
+  beep(760 + menu.i * 140, 0.1, 'square', 0.045);
+  if (menu.i >= menu.list.length) {
+    stats.menus = (stats.menus || 0) + 1; say('菜單完成！回禮加倍', f.x, f.y - 36, '#FFE08A', true); jingle([659, 784, 1047], 110);
+    addPick('jerky', f.x - 14, f.y); addPick(stats.menus % 2 ? 'power' : 'gale', f.x + 14, f.y); startMenu(menu.n + 1);
+  } else say('第 ' + menu.i + ' 道完成！', f.x, f.y - 30, '#FFE08A');
+}
+function updateMarket(dt) {
+  if (!NM()) return;
+  if (!menu && t > 3) startMenu(0);
+  if (menu && menu.pop > 0) menu.pop -= dt;
+  if (beatDemo) { beatDemo.t += dt; const k = Math.floor(beatDemo.t / BEAT.demoStep); if (k !== beatDemo.k && k < beatDemo.pat.length) { beatDemo.k = k; beep(beatDemo.pat[k] === 'L' ? 523 : 659, 0.12, 'triangle', 0.05); } if (k >= beatDemo.pat.length) beatDemo = null; }
+}
+function lampOn(side) {
+  if (beatDemo) { const k = Math.floor(beatDemo.t / BEAT.demoStep); return beatDemo.pat[k] === side && (beatDemo.t % BEAT.demoStep) < BEAT.demoStep * 0.7; }
+  return vents.some((v) => v.beat && v.fromLeft === (side === 'L') && v.t < v.warn + v.on);
+}
+function drawMarketUI() {
+  if (!NM() || boss) return;
+  for (const side of ['L', 'R']) {      // 節拍燈
+    const on = lampOn(side), x = side === 'L' ? 2 : W - 38, y = 170, pul = on && !calm ? 1 + Math.sin(clock * 18) * 0.05 : 1;
+    ctx.save(); ctx.translate(x + 18, y + 22); ctx.scale(pul, pul);
+    if (on) { const g = ctx.createRadialGradient(0, 2, 2, 0, 2, 34); g.addColorStop(0, 'rgba(255,190,80,.85)'); g.addColorStop(1, 'rgba(255,150,40,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 2, 34, 0, 6.2832); ctx.fill(); }
+    ctx.globalAlpha = on ? 1 : 0.5; if (img.ui_beat_lamp) ctx.drawImage(img.ui_beat_lamp, -18, -22, 36, 45); else ell(0, 0, 12, 14, on ? '#FFB347' : '#5A6B70', PAL.line);
+    ctx.restore();
+  }
+  if (!menu) return;
+  const x = 70, y = 90, w = 220, h = 70, pop = menu.pop > 0 ? 1 + menu.pop * 0.12 : 1;      // 菜單卡
+  ctx.save(); ctx.translate(x + w / 2, y + h / 2); ctx.scale(pop, pop); ctx.translate(-w / 2, -h / 2);
+  if (img.ui_menu_card) ctx.drawImage(img.ui_menu_card, 0, 0, w, h); else { ctx.fillStyle = '#FFF3DA'; ctx.fillRect(0, 0, w, h); }
+  ctx.font = "700 10px 'Noto Sans TC','PingFang TC',system-ui,sans-serif"; ctx.textAlign = 'center'; ctx.fillStyle = '#7A4A2A'; ctx.fillText('點菜單 ' + (menu.n + 1), w / 2, 17);
+  menu.list.forEach((ty, k) => {
+    const cx = 44 + k * 66, cy = 38, spr = NIGHT_SPR[ty], im = spr && img[spr[0]], done = k < menu.i, cur = k === menu.i;
+    if (k) { ctx.fillStyle = '#B57A4A'; ctx.fillText('›', cx - 33, cy + 4); }
+    if (cur) { ctx.strokeStyle = '#E8A33A'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, 16 + (calm ? 0 : Math.sin(clock * 6) * 1.5), 0, 6.2832); ctx.stroke(); }
+    ctx.globalAlpha = done ? 0.35 : 1; if (im) { const s = 26 / Math.max(im.width, im.height); ctx.drawImage(im, cx - im.width * s / 2, cy - im.height * s / 2, im.width * s, im.height * s); }
+    ctx.globalAlpha = 1; if (done) { ctx.strokeStyle = '#2E9E5B'; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(cx - 8, cy); ctx.lineTo(cx - 2, cy + 7); ctx.lineTo(cx + 10, cy - 8); ctx.stroke(); }
+  });
+  const nm = (T[menu.list[menu.i]] || {}).name || ''; ctx.fillStyle = '#5A3420'; ctx.font = "700 10.5px 'Noto Sans TC','PingFang TC',system-ui,sans-serif"; ctx.fillText('下一道：' + nm, w / 2, 63);
+  ctx.restore();
 }
 function drawClouds() {
   for (const c of clouds) { const a = Math.max(0, Math.min(1, c.life * 1.4)) * 0.62, g = ctx.createRadialGradient(c.x, c.y, c.r * 0.2, c.x, c.y, c.r); g.addColorStop(0, 'rgba(186,184,192,' + a + ')'); g.addColorStop(0.7, 'rgba(160,158,168,' + a * 0.8 + ')'); g.addColorStop(1, 'rgba(150,148,160,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, 6.2832); ctx.fill(); }
@@ -2230,7 +2287,7 @@ function draw() {
   for (const c of friends) drawFriend(c);
   for (const p of picks) drawPick(p);
   for (const f of foes) drawFoe(f);
-  drawClouds(); drawTaotieZones(); drawVents(); if (PM()) { drawBoats(); drawAgenorZones(); } if (RM()) { drawSmokeClouds(); for (const f of foes) drawRailFoeState(f); drawTunnelDark(); drawRushes(); drawMascots(); drawJianjiZones(); } drawBossFx();
+  drawClouds(); drawTaotieZones(); drawVents(); drawMarketUI(); if (PM()) { drawBoats(); drawAgenorZones(); } if (RM()) { drawSmokeClouds(); for (const f of foes) drawRailFoeState(f); drawTunnelDark(); drawRushes(); drawMascots(); drawJianjiZones(); } drawBossFx();
   for (const r of rings) { ctx.strokeStyle = 'rgba(' + r.color + ',' + Math.max(0, r.life) + ')'; ctx.lineWidth = r.zap ? 3 : 5; ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, 6.2832); ctx.stroke(); if (!r.zap) { ctx.fillStyle = 'rgba(' + r.color + ',' + Math.max(0, r.life) * 0.18 + ')'; ctx.fill(); } }
   for (const w of warns) {      // 側邊橫衝的警示：一條虛線加邊緣的驚嘆號
     const a = 0.5 + 0.5 * Math.sin(clock * 22), band = T.can.r + CONFIG.kite.r; hazard(0, w.y - band, W, band * 2);      // 紅帶的寬度 = 鐵罐半徑 + 小鳶半徑
@@ -2290,7 +2347,7 @@ function renderMap() {
     const line = document.createElement('span');
     line.textContent = s.locked ? s.time + '　製作中' : !open ? s.time + '　過了第 ' + (s.id - 1) + ' 關就開放' : s.time + '　' + [0, 1, 2].map((k) => (st[k] ? '★' : '☆')).join('') + (best ? '　最佳 ' + (best.score !== undefined ? best.score + ' 分' : best.pct + '%') : '');
     btn.append(title, line); btn.disabled = !open; if (!open) btn.classList.add('locked');
-    btn.onclick = () => { stageNo = s.id; $('stageTitle').textContent = '第 ' + s.id + ' 關　' + s.name; $('stageIntro').textContent = s.time + '。' + s.intro; const nm = s.theme === 'market'; $('howDodge').textContent = nm ? '雨棚打不掉；攤位前出現紅區就是要噴熱氣，先離開；灰色油煙會擋住視線' : '漂流木打不掉；看到紅色區域就整隻離開'; $('howBarrelK').textContent = nm ? '爆米香' : '油桶'; $('howBarrel').textContent = nm ? '打爆會「碰！」一聲炸開，炸掉旁邊的妖怪，自己別靠太近' : '打爆會炸掉旁邊的垃圾，自己別靠太近'; $('howFriendT').textContent = nm ? '打破包住牠們的塑膠袋。黑輪補體力、石花凍送護盾、小卷米粉派小卷幫忙、大腸圈繞著你轉' : '清掉纏住牠們的垃圾。小卷會來幫忙，海龜送你護盾'; $('howUltK').textContent = nm ? '擲筊' : '鯨鯊'; $('howUlt').textContent = nm ? '右下角集滿後按一下，擲筊祈福，全畫面淨化；擲出的結果再送回禮' : '右下角集滿後按一下，全畫面大掃除'; if (s.how) { $('howDodge').textContent = s.how.dodge; $('howBarrelK').textContent = s.how.barrelK; $('howBarrel').textContent = s.how.barrel; $('howFriendT').textContent = s.how.friend; $('howUltK').textContent = s.how.ultK; $('howUlt').textContent = s.how.ult; } reset(); mode = 'start'; show('startPanel'); };
+    btn.onclick = () => { stageNo = s.id; $('stageTitle').textContent = '第 ' + s.id + ' 關　' + s.name; $('stageIntro').textContent = s.time + '。' + s.intro; const nm = s.theme === 'market'; $('howDodge').textContent = nm ? '攤位照節拍噴熱氣：兩邊的燈先閃一次給你看，燈亮的那一邊就要噴。上方菜單照順序淨化，三道都完成回禮加倍。雨棚打不掉，油煙會擋住視線' : '漂流木打不掉；看到紅色區域就整隻離開'; $('howBarrelK').textContent = nm ? '爆米香' : '油桶'; $('howBarrel').textContent = nm ? '打爆會「碰！」一聲炸開，炸掉旁邊的妖怪，自己別靠太近' : '打爆會炸掉旁邊的垃圾，自己別靠太近'; $('howFriendT').textContent = nm ? '打破包住牠們的塑膠袋。黑輪補體力、石花凍送護盾、小卷米粉派小卷幫忙、大腸圈繞著你轉' : '清掉纏住牠們的垃圾。小卷會來幫忙，海龜送你護盾'; $('howUltK').textContent = nm ? '擲筊' : '鯨鯊'; $('howUlt').textContent = nm ? '右下角集滿後按一下，擲筊祈福，全畫面淨化；擲出的結果再送回禮' : '右下角集滿後按一下，全畫面大掃除'; if (s.how) { $('howDodge').textContent = s.how.dodge; $('howBarrelK').textContent = s.how.barrelK; $('howBarrel').textContent = s.how.barrel; $('howFriendT').textContent = s.how.friend; $('howUltK').textContent = s.how.ultK; $('howUlt').textContent = s.how.ult; } reset(); mode = 'start'; show('startPanel'); };
     box.append(btn);
   });
 }
