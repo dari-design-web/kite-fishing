@@ -10,7 +10,7 @@
 html,body{margin:0;height:100%;overflow:hidden;background:#2A1E16;color:var(--ink);font-family:var(--display);-webkit-tap-highlight-color:transparent}
 #app{max-width:430px;height:100%;margin:0 auto;background:var(--paper);position:relative;overflow:hidden}
 /* v0.6：整支手機一個畫面。每個畫面佔滿高度；選單類畫面在自己裡面捲動 */
-.screen{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+.screen{position:absolute;inset:0;z-index:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
 .screen header{position:sticky;top:0;z-index:3;background:var(--paper);padding-top:calc(14px + env(safe-area-inset-top,0px))}
 header{display:flex;align-items:center;gap:8px;padding:14px 16px 6px}
 header h1{font-size:20px;margin:0;flex:1}
@@ -56,7 +56,7 @@ header h1{font-size:20px;margin:0;flex:1}
 .pill{display:inline-flex;align-items:center;gap:4px;background:rgba(255,248,236,.14);border:1px solid rgba(255,248,236,.25);border-radius:999px;padding:3px 9px 3px 4px;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .pill img{width:20px;height:20px;object-fit:contain}
 .gear{border:1px solid rgba(255,248,236,.35);background:rgba(255,248,236,.1);color:#FFF4E2;border-radius:999px;font:inherit;font-size:12px;padding:4px 10px}
-.roomwrap{position:relative;flex:none}
+.roomwrap{position:relative;flex:none;isolation:isolate}      /* v0.8：小鳶、對話、圖示的層級只在小屋裡比，不會蓋過拆信畫面 */
 .roomwrap .chip{position:absolute;left:10px;right:10px;top:8px;margin:0;z-index:3;background:rgba(255,253,248,.92);box-shadow:0 2px 8px rgba(0,0,0,.15);font-size:13px;text-align:center}
 .floor{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-between;gap:10px;padding:12px 14px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(#9C6B45,#7A5134);box-shadow:inset 0 6px 10px rgba(0,0,0,.25)}
 .floor .btn{box-shadow:0 4px 0 #1F5A5F;font-size:17px;padding:14px}
@@ -235,9 +235,9 @@ h3{font-size:15px;margin:14px 16px 6px}
 <div class="toast" id="toast"></div>
 
 <script>
-/* 小鳶去旅行 原型 v0.7（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
+/* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.7',
+  version: '0.8',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -277,7 +277,7 @@ const LOCS = [
     cards: [['山城燈籠', '房子一層一層疊在山上，燈籠亮起來的時候好溫暖。', 'pc_jiufen_a.jpg'], ['一碗芋圓', 'QQ 的芋圓，我吃得好慢好慢，因為窗外的海太漂亮。', 'pc_jiufen_b.jpg'], ['看海的階梯', '走到一半停下來，回頭就看到海。', 'pc_jiufen_c.jpg']] }
 ];
 /* 看稿：網址加 ?v2=1，B 款換成 G-41 小鳶融入場景的樣張（D38，待 Dari 看方向；正式換圖等確認後再改上面的檔名） */
-CFG.look = /[?&]v2=1/.test(location.search);
+CFG.look = !/[?&]v1=1/.test(location.search);      // v0.8：Dari 10/12 回饋，B 款預設用 G-41 小鳶融入的新版；網址加 ?v1=1 看舊圖。A、C 款等 U-30 確認方向後再畫
 if (CFG.look) for (const l of LOCS) l.cards[1][2] = 'pc_' + l.id + '_b_v2.jpg';
 const LIMITED = LOCS.map((l) => ({ id: 'lim-' + l.id, loc: l.id, title: '本週限定・' + l.name + '的小驚喜', note: '這一週特別想來' + l.name + '，果然遇到了特別的事！' }));
 const SAYS = {
@@ -354,7 +354,7 @@ setInterval(tick, 1000);
 
 function renderHome() {
   tick();
-  $('ver').textContent = 'v' + CFG.version + (CFG.fast ? '・快速' : '') + (CFG.look ? '・B 款新版看稿' : '');
+  $('ver').textContent = 'v' + CFG.version + (CFG.fast ? '・快速' : '') + (CFG.look ? '' : '・B 款舊圖');
   const st = S.state, b = $('bird'), note = $('note'), env = $('envIcon'), main = $('mainBtn');
   note.hidden = true; env.hidden = true; b.style.display = 'block'; b.className = 'bird'; $('quickBack').hidden = st !== 'away';
   if (!S.firstDone && st === 'home') { $('chip').textContent = '第一次見面！先帶小鳶在附近走走吧'; b.style.backgroundImage = 'url(assets/kite_wave.png)'; $('say').textContent = '你好！我是小鳶。'; main.textContent = '第一次，先在附近走走吧（3 分鐘）'; main.onclick = startFirst; }
@@ -464,6 +464,7 @@ const PET = (() => {
   }
   requestAnimationFrame(frame);
   return {
+    hide() { $('sayBox').classList.add('off'); $('emote').hidden = true; p.sayT = 0; p.emoT = 0; },
     reset(line) {      // renderHome 呼叫：換狀態時重新開始
       const b = $('bird'); b.onclick = tap; p.then = null; b.dataset.k = '';
       if (line) say(line, 3.2); else $('sayBox').classList.add('off');
@@ -574,7 +575,7 @@ function cardHTML(l, i, opts) {
 function openLetter() {
   if (S.state !== 'back' || !S.trip) return;
   const tr = S.trip, l = LOCS.find((x) => x.id === tr.dest);
-  const L = document.createElement('div'); L.className = 'letter';
+  PET.hide(); const L = document.createElement('div'); L.className = 'letter';
   L.innerHTML = '<button class="skip" id="skipL">略過 ››</button><div class="env" id="envL"><img class="closed" src="assets/letter_env.png" alt=""><img class="opened" src="assets/letter_open.png" alt=""><img class="seal" src="assets/letter_seal.png" alt=""></div><p class="tapme" id="tapme">點一下打開信封</p>';
   document.body.appendChild(L);
   const queue = tr.got.map((i) => ({ i })).concat(tr.limited ? [{ lim: LIMITED.find((x) => x.id === tr.limited) }] : []);
