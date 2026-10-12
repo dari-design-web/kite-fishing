@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>港灣蓋章散步原型</title>
+<style>
+/* P3 港灣蓋章散步 原型 v0.1（工作單 11 v4 第三節，C-83）。只做手機版（D55）。章與護照頁是程式畫的暫用圖，等 ChatGPT 正式圖 */
+:root{--paper:#F4EFE6;--card:#FFFDF8;--ink:#3E2B1D;--muted:#8A7565;--teal:#2F7F86;--teal-d:#1F5A5F;--red:#C9473A;--line:#E2D6C6;--gold:#E8B879;
+  --f:'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:#1D2F36;color:var(--ink);font-family:var(--f)}
+#app{max-width:430px;min-height:100vh;min-height:100dvh;margin:0 auto;background:var(--paper) linear-gradient(180deg,#DCEFF0 0,#F4EFE6 220px);padding:calc(16px + env(safe-area-inset-top,0px)) 14px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+header{display:flex;align-items:center;gap:10px}
+header img{width:64px;height:64px;object-fit:contain;flex:none}
+header h1{margin:0;font-size:24px;letter-spacing:.04em}
+header p{margin:2px 0 0;font-size:13px;color:var(--muted)}
+.bar{height:12px;border-radius:999px;background:#E4D8C6;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#E8A33A,#C9473A);border-radius:999px;transition:width .5s}
+.book{background:var(--card);border-radius:18px;padding:14px;box-shadow:0 6px 18px rgba(62,43,29,.12);border:1px solid var(--line);
+  background-image:repeating-linear-gradient(0deg,transparent 0 27px,rgba(226,214,198,.35) 27px 28px)}
+.book h2{margin:0 0 10px;font-size:16px;display:flex;justify-content:space-between;align-items:baseline}
+.book h2 small{font-size:12px;color:var(--muted);font-weight:400}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.cell{border:0;background:none;font:inherit;padding:0;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--ink)}
+.slot{width:100%;aspect-ratio:1;border-radius:50%;border:2.5px dashed #CDBDA6;display:flex;align-items:center;justify-content:center;position:relative;background:rgba(255,255,255,.5)}
+.slot .n{font-size:22px;font-weight:700;color:#CDBDA6}
+.cell small{font-size:11px;line-height:1.35;color:var(--muted);text-align:center;min-height:30px}
+.cell b{font-size:12.5px}
+.stamp{width:100%;height:100%;border-radius:50%;border:4px double var(--red);color:var(--red);display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(-8deg);background:rgba(201,71,58,.04);position:relative}
+.stamp svg{width:52%;height:52%}
+.stamp span{font-size:10px;font-weight:700;letter-spacing:.06em;margin-top:2px}
+.slot.done{border:0}
+.reward{display:flex;gap:12px;align-items:center;background:#FFF3DA;border:1.5px solid #E8C98A;border-radius:16px;padding:12px}
+.reward[hidden]{display:none}
+.reward img{width:56px;height:56px;object-fit:contain}
+.reward p{margin:0;font-size:13.5px;line-height:1.55}
+.btn{display:block;width:100%;border:0;border-radius:14px;padding:14px;font:inherit;font-size:16px;font-weight:700;background:var(--teal);color:#fff;box-shadow:0 4px 0 var(--teal-d);text-align:center;text-decoration:none}
+.btn.light{background:#FFF7EA;color:var(--ink);box-shadow:0 4px 0 #C9A57E}
+details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px}
+summary{font-weight:700;font-size:14px;cursor:pointer}
+.tools{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.tools button{font:inherit;font-size:13px;min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--paper)}
+.note{font-size:12px;color:var(--muted);line-height:1.6;margin:8px 0 0}
+/* 蓋章畫面 */
+.ov{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(20,30,36,.72);padding:18px}
+.ov[hidden]{display:none}
+.sheet{width:100%;max-width:400px;background:var(--card);border-radius:22px;padding:20px 18px 18px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.4)}
+.sheet .big{width:150px;height:150px;position:relative}
+.sheet .big .stamp{animation:slam .45s cubic-bezier(.3,1.6,.6,1) both}
+@keyframes slam{0%{transform:scale(2.2) rotate(-20deg);opacity:0}60%{transform:scale(.92) rotate(-6deg);opacity:1}100%{transform:scale(1) rotate(-8deg)}}
+.sheet h3{margin:0;font-size:20px}
+.say{display:flex;gap:10px;align-items:flex-end;text-align:left;width:100%}
+.say img{width:64px;flex:none}
+.say p{margin:0;background:#EAF5F4;border-radius:14px 14px 14px 4px;padding:10px 12px;font-size:15px;line-height:1.6}
+.rec{width:100%;font-size:13px;background:#FFF3DA;border-radius:12px;padding:8px 10px;text-align:left}
+.again{font-size:12px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <img src="../travel/assets/kite_wave.png" alt="">
+    <div><h1>港灣蓋章散步</h1><p>在東三東四走一圈，掃 QR 蓋章、聽小鳶說故事</p></div>
+  </header>
+  <div>
+    <div class="bar"><i id="prog" style="width:0"></i></div>
+    <p class="note" id="progTxt" style="margin-top:6px"></p>
+  </div>
+  <section class="book">
+    <h2>港灣探險護照 <small id="count"></small></h2>
+    <div class="grid" id="grid"></div>
+  </section>
+  <div class="reward" id="reward" hidden></div>
+  <a class="btn light" href="../travel/" id="toTravel">回小鳶的小屋</a>
+  <details>
+    <summary>測試：模擬掃 QR</summary>
+    <div class="tools" id="tools"></div>
+    <p class="note">正式版是在現場掃 QR，網址會帶點的編號（例如 <code>?spot=3</code>）。原型 <span id="ver"></span>：章與護照頁是暫用圖；蓋章只存在這支手機。</p>
+  </details>
+</div>
+<div class="ov" id="ov" hidden><div class="sheet" id="sheet"></div></div>
+<script>
+const CFG = { version: '0.1', key: 'kiteStamp1' };
+/* 6 個蓋章點（工作單 11 v4 第三節；實際位置待 Dari 現勘）。小鳶的話照 D42：4 到 7 歲小小孩的語氣 */
+const SPOTS = [
+  { id: 1, name: '小鳶', hint: '旅客服務中心入口的小鳶', icon: 'kite', lines: ['我第一次飛來這裡的時候，好緊張喔！', '後來發現大家都好親切。', '歡迎你也來玩～'] },
+  { id: 2, name: '郵輪', hint: '看得到郵輪的碼頭邊', icon: 'ship', lines: ['你看你看，大船來了！', '我每天都在數有幾艘船，', '數到手指不夠用啦！'] },
+  { id: 3, name: '鯨鯊', hint: '鯨鯊拍照點', icon: 'shark', lines: ['這裡是我跟鯨鯊好朋友拍照的地方。', '牠游得慢慢的，可是好溫柔喔。'] },
+  { id: 4, name: '碗筷', hint: '美食區的專櫃前', icon: 'bowl', lines: ['肚子咕嚕咕嚕叫了嗎？', '這裡有好多好吃的，', '我最喜歡港邊的點心了！'], rec: '今天的推薦：剛起鍋的炸蝦捲，酥酥的！（示範文字，正式版由專櫃自己改）' },
+  { id: 5, name: '椅子', hint: '室內休息區', icon: 'chair', lines: ['下雨的時候，我都躲在這裡等雨停。', '坐一下，休息一下下吧。'] },
+  { id: 6, name: '小車', hint: '停車場出口', icon: 'car', lines: ['要回家了嗎？', '下次再來找我玩喔，', '我會在港口等你！'] }
+];
+const ICON = {      // 暫用的章圖（單色線條），等 ChatGPT 正式圖
+  kite: '<path d="M12 4c3 0 5 2.2 5 5 0 2-1 3.4-2.4 4.2L18 17h-3.2L12 15l-2.8 2H6l3.4-3.8C8 12.4 7 11 7 9c0-2.8 2-5 5-5z"/><circle cx="10.2" cy="8.6" r=".9" fill="currentColor"/><circle cx="13.8" cy="8.6" r=".9" fill="currentColor"/><path d="M11 10.6l1 1 1-1"/>',
+  ship: '<path d="M3 15h18l-2.5 4h-13z"/><path d="M6 15V10h12v5"/><path d="M8 10V7h7v3"/><circle cx="9.5" cy="12.5" r=".7" fill="currentColor"/><circle cx="12" cy="12.5" r=".7" fill="currentColor"/><circle cx="14.5" cy="12.5" r=".7" fill="currentColor"/><path d="M11 7V4.5"/>',
+  shark: '<path d="M2.5 13c3-4 9-5.5 14-3l3-2.5v8l-3-2.5c-5 2.5-11 1-14-0z"/><path d="M10 9.5l1.5-3 1.5 3"/><circle cx="6" cy="12.6" r=".8" fill="currentColor"/><circle cx="9" cy="11.5" r=".5" fill="currentColor"/><circle cx="11.5" cy="12.8" r=".5" fill="currentColor"/><circle cx="13.6" cy="11.6" r=".5" fill="currentColor"/>',
+  bowl: '<path d="M4 12h16c0 4-3.5 7-8 7s-8-3-8-7z"/><path d="M14 4l-3 7M17 5l-4 6"/><path d="M8 9c.5-1 1.5-1 2 0"/>',
+  chair: '<path d="M7 4h10v8H7z"/><path d="M5 12h14v3H5z"/><path d="M7 15v5M17 15v5"/>',
+  car: '<path d="M4 15l1.5-4.5C6 9 7 8.5 8.5 8.5h7c1.5 0 2.5.5 3 2L20 15v3H4z"/><circle cx="8" cy="18" r="1.6"/><circle cx="16" cy="18" r="1.6"/><path d="M7 11.5h10"/>'
+};
+const $ = (id) => document.getElementById(id);
+function load() { try { const q = JSON.parse(localStorage.getItem(CFG.key) || 'null'); if (q && q.spots) return q; } catch (e) {} return { v: 1, spots: {}, complete: false, rewarded: false }; }
+let P = load();
+const save = () => { try { localStorage.setItem(CFG.key, JSON.stringify(P)); } catch (e) {} };
+const n = () => Object.keys(P.spots).length;
+const fmt = (ms) => { const d = new Date(ms); return (d.getMonth() + 1) + '/' + d.getDate(); };
+function stampHTML(s, withDate) { return '<div class="stamp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + ICON[s.icon] + '</svg><span>' + s.name + (withDate && P.spots[s.id] ? '・' + fmt(P.spots[s.id]) : '') + '</span></div>'; }
+function render() {
+  $('ver').textContent = 'v' + CFG.version;
+  $('grid').innerHTML = SPOTS.map((s) => { const done = !!P.spots[s.id]; return '<button class="cell" type="button" data-id="' + s.id + '"><span class="slot' + (done ? ' done' : '') + '">' + (done ? stampHTML(s, true) : '<span class="n">' + s.id + '</span>') + '</span><b>' + (done ? s.name : '還沒蓋') + '</b><small>' + (done ? '點一下再聽一次' : '在' + s.hint) + '</small></button>'; }).join('');
+  $('grid').querySelectorAll('.cell').forEach((b) => (b.onclick = () => { const s = SPOTS.find((x) => x.id === +b.dataset.id); if (P.spots[s.id]) showStory(s, false); }));
+  $('count').textContent = n() + ' / 6'; $('prog').style.width = (n() / 6 * 100) + '%';
+  $('progTxt').textContent = n() === 6 ? '6 個章都蓋好了！' : '再蓋 ' + (6 - n()) + ' 個就集滿，可以拿到護照明信片和小鳶的雨傘';
+  const r = $('reward'); r.hidden = !P.complete;
+  r.innerHTML = '<img src="../travel/assets/item_umbrella.png" alt=""><p><b>集滿獎勵已收下</b><br>小鳶的雨傘已經放進小屋的背包，帶著出門比較容易拿到還沒拿過的明信片。護照明信片之後會放進收藏冊。</p>';
+  $('tools').innerHTML = SPOTS.map((s) => '<button type="button" data-s="' + s.id + '">掃第 ' + s.id + ' 點</button>').join('') + '<button type="button" data-s="all">全部蓋好</button><button type="button" data-s="clear" style="grid-column:span 2">清除蓋章紀錄</button>';
+  $('tools').querySelectorAll('button').forEach((b) => (b.onclick = () => { const v = b.dataset.s; if (v === 'clear') { P = { v: 1, spots: {}, complete: false, rewarded: false }; save(); render(); return; } if (v === 'all') { SPOTS.forEach((s) => { if (!P.spots[s.id]) P.spots[s.id] = Date.now(); }); save(); checkDone(); render(); return; } scan(+v); }));
+}
+let ac = null;
+function thump() { try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime; o.frequency.setValueAtTime(160, t); o.frequency.exponentialRampToValueAtTime(50, t + 0.18); g.gain.setValueAtTime(0.5, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.25); o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + 0.3); } catch (e) {} }
+function scan(id) {
+  const s = SPOTS.find((x) => x.id === id); if (!s) return;
+  const first = !P.spots[s.id]; if (first) { P.spots[s.id] = Date.now(); save(); }
+  showStory(s, first);
+}
+function showStory(s, first) {
+  $('sheet').innerHTML = '<div class="big">' + stampHTML(s, false) + '</div><h3>' + (first ? '蓋到「' + s.name + '」章了！' : '這個章已經收下囉') + '</h3>' +
+    '<div class="say"><img src="../travel/assets/' + (first ? 'kite_happy' : 'kite_home') + '.png" alt=""><p>' + s.lines.join('<br>') + '</p></div>' +
+    (s.rec ? '<div class="rec">' + s.rec + '</div>' : '') +
+    '<p class="again">' + (n() < 6 ? '還差 ' + (6 - n()) + ' 個：' + SPOTS.filter((x) => !P.spots[x.id]).map((x) => x.hint).join('、') : '6 個都蓋好了！') + '</p>' +
+    '<button class="btn" type="button" id="ovOk">看護照</button>';
+  $('ov').hidden = false; if (first) setTimeout(thump, 180);
+  $('ovOk').onclick = () => { $('ov').hidden = true; render(); checkDone(); };
+}
+function checkDone() {
+  if (n() < 6 || P.rewarded) return;
+  P.complete = true; P.rewarded = true; save();
+  $('sheet').innerHTML = '<img src="../travel/assets/kite_happy.png" alt="" style="width:120px"><h3>港灣探險護照集滿了！</h3>' +
+    '<div class="say"><img src="../travel/assets/item_umbrella.png" alt=""><p>謝謝你陪我走完一圈！<br>這把雨傘送給你，<br>下雨天也可以帶我去旅行喔～</p></div>' +
+    '<p class="again">拿到：護照明信片（之後放進收藏冊）、小鳶的雨傘（已放進小屋背包）</p><button class="btn" type="button" id="ovOk">好耶！</button>';
+  $('ov').hidden = false; $('ovOk').onclick = () => { $('ov').hidden = true; render(); };
+}
+render();
+const m = /[?&](?:spot|s)=(\d)/.exec(location.search);
+if (m) { scan(+m[1]); history.replaceState(null, '', location.pathname); }
+window.__stamp = { P: () => P, scan };
+</script>
+</body>
+</html>
