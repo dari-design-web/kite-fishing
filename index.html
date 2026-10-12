@@ -118,7 +118,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
         <li><b>便當</b><span>一局抓到小卷 3 隻、白帶魚 2 條，就做成便當讓小鳶去旅行</span></li>
       </ul>
       <button class="btn" id="startBtn">開始</button>
-      <p class="note">原型 v0.9：暫用素材、不發點數。進度只存在這支手機的瀏覽器</p>
+      <p class="note">原型 v0.10：暫用素材、不發點數。進度只存在這支手機的瀏覽器</p>
     </div>
   </div>
 
@@ -158,7 +158,8 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.9',
+  version: '0.10',
+  paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
   bento: { squid: 3, hairtail: 2 },      // 一局抓到幾隻以上，結算時直接得到 1 份便當給小鳶去旅行（工作單 11 v4；每局每種最多 1 份）
   duration: 60,                 // 一局秒數
   W: 360, H: 640,               // 邏輯畫布尺寸
@@ -197,7 +198,7 @@ const CONFIG = {
   diveSpriteAngle: 35           // kite_dive.png 本身朝右下的角度（度），繪製時扣回，讓喙對準目標
 };
 /* 素材：assets/ 裡的同名檔案。拿掉其中一行，那一項就會退回程式畫的佔位圖（全部朝右、透明背景） */
-const ASSET_FILES = { bg_dusk: 'bg_dusk.jpg', bg_night: 'bg_night.jpg', kite_glide: 'kite_glide.png', kite_dive: 'kite_dive.png', fish_small: 'fish_small.png', fish_mid: 'fish_mid.png', fish_big: 'fish_big.png', trash: 'trash.png', whaleshark: 'whaleshark.png', bg: 'bg.jpg', fish_squid: 'fish_squid.png', fish_hairtail: 'fish_hairtail.png', fish_amber: 'fish_amber.png' };
+const ASSET_FILES = { bg_dusk: 'bg_dusk_v2.jpg', bg_night: 'bg_night_v2.jpg', kite_glide: 'kite_glide_v2.png', kite_dive: 'kite_dive_v2.png', fish_small: 'fish_small_v2.png', fish_mid: 'fish_mid_v2.png', fish_big: 'fish_big_v2.png', trash: 'trash.png', whaleshark: 'whaleshark.png', bg: 'bg_v2.jpg', fish_squid: 'fish_squid_v2.png', fish_hairtail: 'fish_hairtail_v2.png', fish_amber: 'fish_amber_v2.png' };      // v0.10：ChatGPT G-42 新底圖、漁獲與小鳶（鍵不變，只換檔名）
 
 const $ = (id) => document.getElementById(id);
 const stage = $('stage'), cv = $('world'), ctx = cv.getContext('2d');
@@ -446,13 +447,14 @@ function drawWater() {
   if (c.rayA > 0) {
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
     for (let i = 0; i < 6; i++) {
-      const x0 = 20 + i * 66 + Math.sin(clock * 0.35 + i * 1.9) * 18, w0 = 18 + (i % 3) * 10, lean = 90, a = c.rayA * (0.55 + 0.45 * Math.sin(clock * 0.6 + i * 2.3));
+      const x0 = 20 + i * 66 + Math.sin(clock * 0.35 + i * 1.9) * 18, w0 = 18 + (i % 3) * 10, lean = 90, a = c.rayA * (CONFIG.paintedSea ? 0.45 : 1) * (0.55 + 0.45 * Math.sin(clock * 0.6 + i * 2.3));
       const g = ctx.createLinearGradient(0, s, 0, s + 360); g.addColorStop(0, 'rgba(' + c.ray + ',' + a + ')'); g.addColorStop(1, 'rgba(' + c.ray + ',0)');
       ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x0, s); ctx.lineTo(x0 + w0, s); ctx.lineTo(x0 + w0 + lean + 40, s + 360); ctx.lineTo(x0 + lean - 30, s + 360); ctx.closePath(); ctx.fill();
     }
     ctx.restore();
   }
   // 深度：越往下越暗
+  if (!CONFIG.paintedSea) {
   const g = ctx.createLinearGradient(0, s + 40, 0, H); g.addColorStop(0, 'rgba(' + c.deep + ',0)'); g.addColorStop(1, 'rgba(' + c.deep + ',' + c.deepA + ')');
   ctx.fillStyle = g; ctx.fillRect(0, s + 40, W, H - s - 40);
   // 海底與搖動的海草
@@ -466,10 +468,11 @@ function drawWater() {
       ctx.bezierCurveTo(bx + k * 4 + sw * 0.4, by - hgt * 0.4, bx + k * 4 - sw * 0.6, by - hgt * 0.7, bx + k * 4 + sw, by - hgt * (1 - k * 0.2)); ctx.stroke();
     }
   });
+  }
   // 遠處的小魚群剪影（只是背景，點不到）
   for (let gI = 0; gI < 2; gI++) {
     const dir = gI ? -1 : 1, span = W + 160, cx = ((clock * (9 + gI * 4) * dir + gI * 210) % span + span) % span - 80, cy = 400 + gI * 70 + Math.sin(clock * 0.4 + gI) * 10;
-    ctx.fillStyle = 'rgba(' + c.deep + ',' + (id === 'night' ? 0.35 : 0.22) + ')';
+    ctx.fillStyle = 'rgba(' + c.deep + ',' + (CONFIG.paintedSea ? 0.12 : id === 'night' ? 0.35 : 0.22) + ')';
     for (let k = 0; k < 11; k++) {
       const fx = cx + ((k * 37) % 70) - 35, fy = cy + ((k * 23) % 34) - 17 + Math.sin(clock * 2 + k) * 1.5;
       ctx.save(); ctx.translate(fx, fy); ctx.scale(dir, 1); ctx.beginPath(); ctx.ellipse(0, 0, 5, 2, 0, 0, 6.2832); ctx.moveTo(-4, 0); ctx.lineTo(-8, -2.4); ctx.lineTo(-8, 2.4); ctx.closePath(); ctx.fill(); ctx.restore();
@@ -485,7 +488,7 @@ function drawWater() {
     ctx.strokeStyle = 'rgba(255,255,255,' + (0.5 * (1 - u)) + ')'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.stroke();
   }
   // 四邊微暗，視線集中在中間
-  const v = ctx.createRadialGradient(W / 2, s + 200, 120, W / 2, s + 200, 380); v.addColorStop(0, 'rgba(0,10,30,0)'); v.addColorStop(1, 'rgba(0,10,30,.28)');
+  const v = ctx.createRadialGradient(W / 2, s + 200, 120, W / 2, s + 200, 380); v.addColorStop(0, 'rgba(0,10,30,0)'); v.addColorStop(1, 'rgba(0,10,30,' + (CONFIG.paintedSea ? 0.16 : 0.28) + ')');
   ctx.fillStyle = v; ctx.fillRect(0, s, W, H - s);
 }
 function drawBackground() {
@@ -510,7 +513,7 @@ function drawBackground() {
 }
 function drawLamp() {      // 夜釣：海面上方的燈光照進上層水域，一明一暗
   const s = CONFIG.surfaceY, a = calm ? 0.3 : 0.26 + 0.06 * Math.sin(clock * 1.6), g = ctx.createRadialGradient(W / 2, s - 20, 10, W / 2, s + 40, 230);
-  g.addColorStop(0, 'rgba(200,245,255,' + a + ')'); g.addColorStop(1, 'rgba(200,245,255,0)'); ctx.fillStyle = g; ctx.fillRect(0, s - 40, W, 300);
+  g.addColorStop(0, 'rgba(200,245,255,' + a + ')'); g.addColorStop(1, 'rgba(200,245,255,0)'); ctx.fillStyle = g; ctx.fillRect(0, s, W, 260);      // 只照亮水面以下
 }
 /* 鯨鯊時段：海面灑下的光束與鯨鯊身邊的光暈。a 是 0 到 1 的淡入淡出 */
 function drawEventLight(a) {
