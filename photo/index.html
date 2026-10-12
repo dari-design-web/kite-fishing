@@ -76,7 +76,7 @@ button{font-family:inherit}
 <body>
 <div id="app">
   <section class="screen on" id="home">
-    <img class="homekite" src="assets/kite_wave.png" alt="">
+    <img class="homekite" src="assets/stk_kite_wave.png" alt="">
     <div class="homein">
       <h1>小鳶合照館</h1>
       <p>和小鳶、鯨鯊，還有你在遊戲裡救過的朋友拍一張。貼紙可以拖、轉、放大，三款相框隨你換。</p>
@@ -129,7 +129,7 @@ button{font-family:inherit}
 
 <script>
 /* 小鳶合照館 原型 v0.1（工作單 11 v4 P2）。貼紙、相框、解鎖方式都是建議，等 Dari 確認；正式素材之後開單給 ChatGPT */
-const CFG = { version: '0.1', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
+const CFG = { version: '0.2', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
 const $ = (id) => document.getElementById(id);
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = 'none'), 2400); }
@@ -141,21 +141,22 @@ const caught = (k) => CFG.all || !!dex[k];
 const hasSv = (k) => CFG.all || !!(trip.souvenirs && trip.souvenirs[k]);
 const LOCS = [['home', '東三東四', '小鯨鯊吊飾'], ['miaokou', '基隆廟口', '小燈籠'], ['zhengbin', '正濱漁港', '彩色小木屋'], ['heping', '和平島', '小貝殼'], ['badouzi', '八斗子', '小車票'], ['shenao', '深澳', '豆腐岩小石頭'], ['chaojing', '潮境公園', '海星小飾品'], ['jiufen', '九份', '芋圓碗']];
 const STK = [
-  { tab: '小鳶與鯨鯊', id: 'kite_wave', name: '小鳶揮手', s: 0.34 },
-  { tab: '小鳶與鯨鯊', id: 'kite_home', name: '小鳶', s: 0.32 },
+  // v0.2：換成 G-44 合照館專用貼紙（全部暫用）；新增小鳶比耶、鯨鯊躍起
+  { tab: '小鳶與鯨鯊', id: 'stk_kite_wave', name: '小鳶揮手', s: 0.36 },
+  { tab: '小鳶與鯨鯊', id: 'stk_kite_peace', name: '小鳶比耶', s: 0.36 },
+  { tab: '小鳶與鯨鯊', id: 'stk_kite_fly', name: '飛翔小鳶', s: 0.42 },
   { tab: '小鳶與鯨鯊', id: 'kite_pack', name: '背包小鳶', s: 0.32 },
-  { tab: '小鳶與鯨鯊', id: 'kite_fly', name: '飛翔小鳶', s: 0.42 },
-  { tab: '小鳶與鯨鯊', id: 'shark_side', name: '鯨鯊', s: 0.7 },
-  { tab: '小鳶與鯨鯊', id: 'shark_top', name: '鯨鯊（俯視）', s: 0.45 },
-  { tab: '飛行朋友', id: 'turtle_top', name: '海龜', s: 0.26, ok: () => cleared(1), how: '飛行冒險第 1 關過關' },
-  { tab: '飛行朋友', id: 'f_oden', name: '黑輪', s: 0.2, ok: () => cleared(2), how: '飛行冒險第 2 關過關' },
-  { tab: '飛行朋友', id: 'f_jelly', name: '石花凍', s: 0.2, ok: () => cleared(2), how: '飛行冒險第 2 關過關' },
-  { tab: '飛行朋友', id: 'p_bird', name: '守望鳥', s: 0.22, ok: () => cleared(3), how: '飛行冒險第 3 關過關' },
-  { tab: '飛行朋友', id: 'p_cat', name: '水母貓', s: 0.22, ok: () => cleared(3), how: '飛行冒險第 3 關過關' },
-  { tab: '飛行朋友', id: 'p_otter', name: '海瀨工', s: 0.22, ok: () => cleared(3), how: '飛行冒險第 3 關過關' },
-  { tab: '飛行朋友', id: 'm_tofu', name: '豆腐君', s: 0.28, ok: () => cleared(4), how: '飛行冒險第 4 關過關' },
-  { tab: '飛行朋友', id: 'm_ele', name: '象鼻君', s: 0.28, ok: () => cleared(4), how: '飛行冒險第 4 關過關' },
-  { tab: '飛行朋友', id: 'm_forest', name: '山野君', s: 0.28, ok: () => cleared(4), how: '飛行冒險第 4 關過關' },
+  { tab: '小鳶與鯨鯊', id: 'stk_shark_side', name: '鯨鯊', s: 0.7 },
+  { tab: '小鳶與鯨鯊', id: 'stk_shark_jump', name: '鯨鯊躍起', s: 0.7 },
+  { tab: '飛行朋友', id: 'stk_turtle', name: '海龜', s: 0.3, ok: () => cleared(1), how: '飛行冒險第 1 關過關' },
+  { tab: '飛行朋友', id: 'stk_oden', name: '黑輪', s: 0.26, ok: () => cleared(2), how: '飛行冒險第 2 關過關' },
+  { tab: '飛行朋友', id: 'stk_jelly', name: '石花凍', s: 0.26, ok: () => cleared(2), how: '飛行冒險第 2 關過關' },
+  { tab: '飛行朋友', id: 'stk_bird', name: '守望鳥', s: 0.3, ok: () => cleared(3), how: '飛行冒險第 3 關過關' },
+  { tab: '飛行朋友', id: 'stk_cat', name: '水母貓', s: 0.28, ok: () => cleared(3), how: '飛行冒險第 3 關過關' },
+  { tab: '飛行朋友', id: 'stk_otter', name: '海瀨工', s: 0.28, ok: () => cleared(3), how: '飛行冒險第 3 關過關' },
+  { tab: '飛行朋友', id: 'stk_tofu', name: '豆腐君', s: 0.28, ok: () => cleared(4), how: '飛行冒險第 4 關過關' },
+  { tab: '飛行朋友', id: 'stk_ele', name: '象鼻君', s: 0.3, ok: () => cleared(4), how: '飛行冒險第 4 關過關' },
+  { tab: '飛行朋友', id: 'stk_forest', name: '山野君', s: 0.28, ok: () => cleared(4), how: '飛行冒險第 4 關過關' },
   { tab: '漁獲', id: 'fish_squid_v2', name: '小卷', s: 0.3, ok: () => caught('squid'), how: '捕魚抓過小卷' },
   { tab: '漁獲', id: 'fish_small_v2', name: '鯖魚', s: 0.3, ok: () => caught('saba'), how: '捕魚抓過鯖魚' },
   { tab: '漁獲', id: 'fish_hairtail_v2', name: '白帶魚', s: 0.5, ok: () => caught('hairtail'), how: '捕魚抓過白帶魚' },
@@ -163,11 +164,12 @@ const STK = [
 ].concat(LOCS.map(([id, loc, nm]) => ({ tab: '紀念品', id: 'sv_' + id, name: nm, s: 0.2, ok: () => hasSv(id), how: '小鳶去旅行從' + loc + '帶回來' })));
 const TABS = ['小鳶與鯨鯊', '飛行朋友', '漁獲', '紀念品'];
 const IMG = {};
-function img(id) { if (!IMG[id]) { IMG[id] = new Image(); IMG[id].src = 'assets/' + id + '.png'; } return IMG[id]; }
+function img(id, ext) { if (!IMG[id]) { IMG[id] = new Image(); IMG[id].src = 'assets/' + id + '.' + (ext || 'png'); } return IMG[id]; }
 
-/* ---- 相框：程式畫在 1080×1440 的透明畫布上（暫用，正式框之後請 ChatGPT 畫） ---- */
+/* ---- 相框：v0.2 用 G-44 的 1080×1440 透明 PNG（暫用），文字與郵票地點圖由程式放 ---- */
 const weekIdx = Math.floor((Date.now() / 86400000 + 3) / 7) % 8, WEEK = LOCS[weekIdx];
 const SEASONS = [['清晨', '#F6C9A6', '#7FB6C9'], ['午後', '#7FC4D6', '#2F7F86'], ['黃昏', '#F2A26B', '#6B4A7A'], ['雨夜', '#3B5168', '#18222E']];
+const SEASON_IMG = ['frame_season_dawn', 'frame_season_noon', 'frame_season_dusk', 'frame_season_rain'];
 let seasonI = (() => { const h = new Date().getHours(); return h < 9 ? 0 : h < 16 ? 1 : h < 19 ? 2 : 3; })();
 const FRAMES = ['碼頭', '港灣四時', '本週主題'];
 let frameI = 0;
@@ -176,29 +178,18 @@ function today() { const d = new Date(); return d.getFullYear() + '.' + (d.getMo
 function drawFrame(c) {
   const W = CFG.W, H = CFG.H; c.clearRect(0, 0, W, H); c.textBaseline = 'middle';
   const font = (w, s) => w + ' ' + s + "px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif";
-  if (frameI === 0) {      // 碼頭：下緣海面與郵輪剪影、右上小鳶
-    c.save(); c.strokeStyle = 'rgba(255,255,255,.95)'; c.lineWidth = 10; roundRect(c, 28, 28, W - 56, H - 56, 26); c.stroke(); c.restore();
-    const y0 = H - 230, g = c.createLinearGradient(0, y0, 0, H); g.addColorStop(0, 'rgba(47,127,134,0)'); g.addColorStop(.35, 'rgba(47,127,134,.85)'); g.addColorStop(1, 'rgba(23,64,78,.98)');
-    c.fillStyle = g; c.fillRect(0, y0, W, H - y0);
-    c.fillStyle = 'rgba(255,255,255,.95)'; c.beginPath(); c.moveTo(560, H - 150); c.lineTo(1000, H - 150); c.lineTo(970, H - 105); c.lineTo(590, H - 105); c.closePath(); c.fill();      // 郵輪
-    c.fillRect(640, H - 182, 280, 34); c.fillRect(700, H - 208, 150, 28); c.fillStyle = '#17405E'; for (let i = 0; i < 9; i++) c.fillRect(655 + i * 29, H - 172, 14, 12);
-    c.fillStyle = '#E8674A'; c.fillRect(800, H - 232, 22, 26);
-    c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 5; for (let k = 0; k < 3; k++) { c.beginPath(); for (let x = 0; x <= W; x += 20) { const y = H - 90 + k * 26 + Math.sin(x / 60 + k) * 6; x ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke(); }
-    c.fillStyle = '#fff'; c.font = font('900', 64); c.fillText('基隆・東三東四', 60, H - 150); c.font = font('500', 34); c.fillText('小鳶合照館　' + today(), 62, H - 92);
-    const k = img('kite_wave'); if (k.complete && k.naturalWidth) c.drawImage(k, W - 270, 36, 230, 230);
-  } else if (frameI === 1) {      // 港灣四時：四種配色的厚邊框
-    const [nm, a, b2] = SEASONS[seasonI], g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, a); g.addColorStop(1, b2);
-    c.save(); c.fillStyle = g; c.fillRect(0, 0, W, H); c.globalCompositeOperation = 'destination-out'; roundRect(c, 56, 56, W - 112, H - 240, 40); c.fill(); c.restore();
-    if (seasonI === 3) { c.strokeStyle = 'rgba(200,225,255,.5)'; c.lineWidth = 3; for (let i = 0; i < 70; i++) { const x = (i * 157) % W, y = (i * 263) % H; if (x > 56 && x < W - 56 && y > 56 && y < H - 184) continue; c.beginPath(); c.moveTo(x, y); c.lineTo(x - 8, y + 26); c.stroke(); } }
-    else { c.fillStyle = 'rgba(255,255,255,.55)'; for (let i = 0; i < 40; i++) { const x = (i * 211) % W, y = (i * 137) % H; if (x > 56 && x < W - 56 && y > 56 && y < H - 184) continue; c.beginPath(); c.arc(x, y, 4 + (i % 3) * 2, 0, 6.3); c.fill(); } }
-    c.fillStyle = '#fff'; c.font = font('900', 60); c.fillText('港灣四時・' + nm, 70, H - 96); c.font = font('500', 32); c.textAlign = 'right'; c.fillText('基隆・東三東四　' + today(), W - 70, H - 96); c.textAlign = 'left';
-  } else {      // 本週主題：明信片樣式、右下郵票是本週地點
-    c.save(); c.fillStyle = '#FFFDF8'; c.fillRect(0, 0, W, H); c.globalCompositeOperation = 'destination-out'; c.fillRect(44, 44, W - 88, H - 300); c.restore();
-    c.strokeStyle = '#E2D6C6'; c.lineWidth = 3; c.strokeRect(44, 44, W - 88, H - 300);
-    c.fillStyle = '#3E2B1D'; c.font = font('900', 58); c.fillText('本週小鳶在' + WEEK[1], 60, H - 190); c.font = font('500', 32); c.fillStyle = '#8A7565'; c.fillText('一起來' + WEEK[1] + '走走吧　' + today(), 62, H - 120);
-    const p = img('pc_' + WEEK[0] + '_a'), sx = W - 260, sy = H - 240;
-    c.save(); c.translate(sx + 100, sy + 100); c.rotate(0.06); c.fillStyle = '#fff'; c.shadowColor = 'rgba(0,0,0,.25)'; c.shadowBlur = 14; c.fillRect(-100, -80, 200, 160); c.shadowBlur = 0;
-    if (p.complete && p.naturalWidth) c.drawImage(p, -88, -68, 176, 136); c.strokeStyle = '#C9473A'; c.lineWidth = 6; c.setLineDash([10, 8]); c.beginPath(); c.arc(70, 50, 54, 0, 6.3); c.stroke(); c.restore();
+  const put = (id) => { const f = img(id); if (f.complete && f.naturalWidth) c.drawImage(f, 0, 0, W, H); };
+  const label = (t) => { c.save(); c.font = font('700', 34); c.fillStyle = '#fff'; c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 8; c.fillText(t, 64, 84); c.restore(); };      // 上緣安全區外的小字
+  if (frameI === 0) {      // 碼頭（G-44 frame_pier；不預畫小鳶，貼紙另放）
+    put('frame_pier'); label('基隆・東三東四　' + today());
+  } else if (frameI === 1) {      // 港灣四時（G-44 四色，沿用 G-25 配色）
+    put(SEASON_IMG[seasonI]); label('港灣四時・' + SEASONS[seasonI][0] + '　' + today());
+  } else {      // 本週主題（G-44 frame_week_base；郵票洞與兩行字由程式放）
+    put('frame_week_base');
+    const p = img('pc_' + WEEK[0] + '_a_v2', 'jpg'), [x0, y0, x1, y1] = [805, 1215, 1025, 1395];
+    if (p.complete && p.naturalWidth) { const bw = x1 - x0, bh = y1 - y0, r = Math.max(bw / p.naturalWidth, bh / p.naturalHeight), sw = bw / r, sh = bh / r; c.drawImage(p, (p.naturalWidth - sw) / 2, (p.naturalHeight - sh) / 2, sw, sh, x0, y0, bw, bh); }
+    c.fillStyle = '#3E2B1D'; c.font = font('900', 34); c.fillText('本週小鳶在' + WEEK[1], 96, 1320);
+    c.fillStyle = '#8A7565'; c.font = font('500', 28); c.fillText('一起來' + WEEK[1] + '走走吧　' + today(), 96, 1370);
   }
   $('fname').textContent = '相框：' + FRAMES[frameI] + (frameI === 1 ? '（' + SEASONS[seasonI][0] + '）' : '');
 }
@@ -314,7 +305,8 @@ $('flipBtn').onclick = () => { if (src !== 'cam') { toast('用相機時才能翻
 $('clearBtn').onclick = () => { stks.forEach((o) => o.el.remove()); stks = []; sel = null; $('hint').hidden = false; };
 $('shutter').onclick = () => { select(null); capture(); };
 $('saveBtn').onclick = save; $('shareBtn').onclick = share; $('againBtn').onclick = () => show('shoot');
-['kite_wave'].concat(LOCS.map((l) => 'pc_' + l[0] + '_a')).forEach((id) => { const i = id.startsWith('pc_') ? (IMG[id] = Object.assign(new Image(), { src: 'assets/' + id + '.jpg' })) : img(id); i.onload = () => { if ($('shoot').classList.contains('on')) redrawFrame(); }; });
+['frame_pier', 'frame_week_base'].concat(SEASON_IMG).forEach((id) => { img(id).onload = () => { if ($('shoot').classList.contains('on')) redrawFrame(); }; });
+LOCS.forEach((l) => { img('pc_' + l[0] + '_a_v2', 'jpg').onload = () => { if ($('shoot').classList.contains('on')) redrawFrame(); }; });
 window.__photo = { stks: () => stks, add: (id) => addSticker(STK.find((d) => d.id === id)), capture, setFrame: (i, s) => { frameI = i; if (s !== undefined) seasonI = s; redrawFrame(); }, useImage };
 </script>
 </body>
