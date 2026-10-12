@@ -167,7 +167,7 @@ h3{font-size:15px;margin:14px 16px 6px}
   <section class="screen" id="home">
     <div class="hud">
       <h1>小鳶的小屋<small id="ver"></small></h1>
-      <span class="pill" title="明信片"><img src="assets/pc_home_a.jpg" alt="" style="border-radius:3px;height:14px;width:22px;object-fit:cover"><span id="hCards">0/24</span></span>
+      <span class="pill" title="明信片"><img src="assets/pc_home_a_v2.jpg" alt="" style="border-radius:3px;height:14px;width:22px;object-fit:cover"><span id="hCards">0/24</span></span>
       <span class="pill" title="便當"><img src="assets/bento_rice.png" alt=""><span id="hBento">0</span></span>
       <button class="gear" id="gearBtn" type="button">測試</button>
     </div>
@@ -190,7 +190,7 @@ h3{font-size:15px;margin:14px 16px 6px}
       <div class="weekly" id="weekly"></div>
       <button class="btn" id="mainBtn"></button>
       <div class="iconrow">
-        <button class="ibtn" id="albumBtn" type="button"><img src="assets/pc_zhengbin_a.jpg" alt="" style="width:46px;height:30px;object-fit:cover;border-radius:3px;margin:4px 0;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3)">收藏冊<small id="iCards">0 / 24</small></button>
+        <button class="ibtn" id="albumBtn" type="button"><img src="assets/pc_zhengbin_a_v2.jpg" alt="" style="width:46px;height:30px;object-fit:cover;border-radius:3px;margin:4px 0;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3)">收藏冊<small id="iCards">0 / 24</small></button>
         <button class="ibtn" id="shelfBtn" type="button"><img src="assets/sv_home.png" alt="">紀念品櫃<small id="iSv">0 / 8</small></button>
         <button class="ibtn" id="infoBtn" type="button"><img src="assets/item_camera.png" alt="">旅行紀錄<small id="iTrips">0 次</small></button>
       </div>
@@ -237,7 +237,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.8',
+  version: '0.9',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -276,9 +276,20 @@ const LOCS = [
   { id: 'jiufen', name: '九份', dist: 'farthest', tone: ['#F08A3C', '#4A3A5E'], souvenir: '芋圓碗', sv: '用它裝點心，好像又回到山上。', unlock: 'special',
     cards: [['山城燈籠', '房子一層一層疊在山上，燈籠亮起來的時候好溫暖。', 'pc_jiufen_a.jpg'], ['一碗芋圓', 'QQ 的芋圓，我吃得好慢好慢，因為窗外的海太漂亮。', 'pc_jiufen_b.jpg'], ['看海的階梯', '走到一半停下來，回頭就看到海。', 'pc_jiufen_c.jpg']] }
 ];
-/* 看稿：網址加 ?v2=1，B 款換成 G-41 小鳶融入場景的樣張（D38，待 Dari 看方向；正式換圖等確認後再改上面的檔名） */
-CFG.look = !/[?&]v1=1/.test(location.search);      // v0.8：Dari 10/12 回饋，B 款預設用 G-41 小鳶融入的新版；網址加 ?v1=1 看舊圖。A、C 款等 U-30 確認方向後再畫
-if (CFG.look) for (const l of LOCS) l.cards[1][2] = 'pc_' + l.id + '_b_v2.jpg';
+/* v0.9：常設 24 張全部換成小鳶融入場景版（G-41 B 六張＋G-43 A 八張、C 八張、潮境與深澳 B v3；D38、D41，全部暫用）。
+   札記依新擺拍改寫。網址加 ?v1=1 可回看舊圖與舊札記 */
+CFG.look = !/[?&]v1=1/.test(location.search);
+const LOOK = {   // [A, B, C]：[檔名, 札記]
+  home:     [['pc_home_a_v2.jpg', '我戴上水手帽站在繫船柱上，對大船敬了個禮。它嗚的一聲，應該是回禮吧。'], ['pc_home_b_v2.jpg'], ['pc_home_c_v2.jpg', '背著小背包靠在欄杆邊，太陽慢慢沉下去，水面上鋪了一條金色的路。']],
+  miaokou:  [['pc_miaokou_a_v2.jpg', '一整排黃色燈籠亮起來，我走在中間，好像走在星星排的隊伍裡。'], ['pc_miaokou_b_v2.jpg'], ['pc_miaokou_c_v2.jpg', '穿上黃色雨衣，在騎樓下把傘收好，伸出翅膀接一點雨。雨聲和人聲一起在唱歌。']],
+  zhengbin: [['pc_zhengbin_a_v2.jpg', '我戴上畫家帽，把彩色屋畫下來。水裡那一排也想畫，可是它一直晃。'], ['pc_zhengbin_b_v2.jpg'], ['pc_zhengbin_c_v2.jpg', '我抱著一顆橘色浮球比了一下。嗯……還是我比較圓。']],
+  heping:   [['pc_heping_a_v2.jpg', '戴著探險帽、拿著小地圖，一層一層數海浪磨出來的石頭。'], ['pc_heping_b_v2.jpg', '戴好泳鏡、套上泳圈，準備好了！……結果還是只敢把腳伸進去。'], ['pc_heping_c_v2.jpg', '海邊長了好多石頭香菇。我也戴一頂蘑菇帽站在旁邊，假裝是其中一朵。']],
+  badouzi:  [['pc_badouzi_a_v2.jpg', '戴上小站帽，乖乖站在黃線後面等車。月台旁邊就是海，等車的時候可以看浪。'], ['pc_badouzi_b_v2.jpg'], ['pc_badouzi_c_v2.jpg', '鐵軌一直延伸到很遠。我坐在旁邊的步道上，畫了一張小地圖。']],
+  shenao:   [['pc_shenao_a_v2.jpg', '坐進紅色的螃蟹車，我從窗戶揮揮翅膀，它好像也在笑。'], ['pc_shenao_b_v3.jpg', '一塊一塊方方的石頭，像海邊排好的豆腐。我站在乾乾的那一塊，離浪花遠一點。'], ['pc_shenao_c_v2.jpg', '拿起望遠鏡看岬角上的石頭。它換了新的樣子，大家都在猜像什麼。']],
+  chaojing: [['pc_chaojing_a_v2.jpg', '退潮了，我蹲在石頭邊慢慢看，石頭縫裡藏著好多小秘密。'], ['pc_chaojing_b_v3.jpg', '小水窪裡有一位很害羞的朋友。我趴在旁邊不出聲，我們互看了好久。'], ['pc_chaojing_c_v2.jpg', '戴著草帽坐在草地上，風好大，羽毛都翹起來了，可是好舒服。']],
+  jiufen:   [['pc_jiufen_a_v2.jpg', '房子一層一層疊在山上。我一階一階往上走，燈籠亮起來的時候好溫暖。'], ['pc_jiufen_b_v2.jpg'], ['pc_jiufen_c_v2.jpg', '走到一半坐下來休息，背包放旁邊，回頭就看到海。']]
+};
+if (CFG.look) for (const l of LOCS) LOOK[l.id].forEach(([f, n], i) => { l.cards[i][2] = f; if (n) l.cards[i][1] = n; });
 const LIMITED = LOCS.map((l) => ({ id: 'lim-' + l.id, loc: l.id, title: '本週限定・' + l.name + '的小驚喜', note: '這一週特別想來' + l.name + '，果然遇到了特別的事！' }));
 const SAYS = {
   home: ['今天天氣好像不錯，要不要一起出門？', '上次的明信片你看了嗎？', '便當準備好了嗎？我隨時可以出發！', '我好想去看海喔。'],
@@ -354,7 +365,7 @@ setInterval(tick, 1000);
 
 function renderHome() {
   tick();
-  $('ver').textContent = 'v' + CFG.version + (CFG.fast ? '・快速' : '') + (CFG.look ? '' : '・B 款舊圖');
+  $('ver').textContent = 'v' + CFG.version + (CFG.fast ? '・快速' : '') + (CFG.look ? '' : '・舊圖');
   const st = S.state, b = $('bird'), note = $('note'), env = $('envIcon'), main = $('mainBtn');
   note.hidden = true; env.hidden = true; b.style.display = 'block'; b.className = 'bird'; $('quickBack').hidden = st !== 'away';
   if (!S.firstDone && st === 'home') { $('chip').textContent = '第一次見面！先帶小鳶在附近走走吧'; b.style.backgroundImage = 'url(assets/kite_wave.png)'; $('say').textContent = '你好！我是小鳶。'; main.textContent = '第一次，先在附近走走吧（3 分鐘）'; main.onclick = startFirst; }
