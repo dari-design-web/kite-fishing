@@ -237,7 +237,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.10',
+  version: '0.11',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -290,11 +290,23 @@ const LOOK = {   // [A, B, C]：[檔名, 札記]
   jiufen:   [['pc_jiufen_a_v2.jpg', '房子一層一層疊在山上。我一階一階往上走，燈籠亮起來的時候好溫暖。'], ['pc_jiufen_b_v2.jpg'], ['pc_jiufen_c_v2.jpg', '走到一半坐下來休息，背包放旁邊，回頭就看到海。']]
 };
 if (CFG.look) for (const l of LOCS) LOOK[l.id].forEach(([f, n], i) => { l.cards[i][2] = f; if (n) l.cards[i][1] = n; });
-const LIMITED = LOCS.map((l) => ({ id: 'lim-' + l.id, loc: l.id, title: '本週限定・' + l.name + '的小驚喜', note: '這一週特別想來' + l.name + '，果然遇到了特別的事！' }));
+/* v0.11（D42）：小鳶的話改成 4 到 7 歲小朋友的語氣（可愛、帶點稚氣）。卡背札記與紀念品的話都用這份；?v1=1 仍看舊圖舊札記 */
+const VOICE = {
+  home:     { sv: '鯨鯊說，下次要帶我去更遠的地方！', n: ['我戴水手帽，跟大船敬禮！大船「嗚——」一聲，也跟我說你好！', '鯨鯊大哥哥跟我揮揮手，我也揮揮翅膀，嘿嘿！', '太陽要去睡覺了，海變成金色的，好漂亮喔！'] },
+  miaokou:  { sv: '掛在床邊，晚上就不怕黑了。', n: ['好多黃色燈籠！像星星掉下來排排站耶！', '鼎邊趖好燙，呼呼呼……好好吃！', '下雨了！我穿黃雨衣，用翅膀接雨，滴答滴答～'] },
+  zhengbin: { sv: '小小的房子，跟港邊的一模一樣耶！', n: ['我是小畫家！房子在水裡也有一間，一直晃來晃去。', '漁船早安！要平平安安回來喔～', '我抱著浮球比比看……我比較圓！嘿嘿。'] },
+  heping:   { sv: '放在耳朵旁邊，聽到海的聲音了！', n: ['戴上探險帽出發！石頭一層一層，好像蛋糕耶。', '泳圈套好了！……可是我只敢踩一下下。', '石頭香菇！我也戴蘑菇帽，你找得到我嗎？'] },
+  badouzi:  { sv: '車票上有大海，我捨不得剪。', n: ['我站在黃線後面乖乖等火車，旁邊就是大海！', '步道彎彎的，走到最上面……哇，海好大！', '我坐在旁邊畫地圖，鐵軌好長好長喔。'] },
+  shenao:   { sv: '方方的小石頭，豆腐君說像牠！', n: ['我坐上螃蟹車了！叭叭～螃蟹車在笑耶！', '方方的石頭像豆腐。我站在乾乾的地方，不去碰浪浪。', '我用望遠鏡看大石頭，它像什麼呢？你猜猜看！'] },
+  chaojing: { sv: '看到海星，就想起潮池的小朋友。', n: ['退潮了！我蹲下來看，石頭縫裡有好多小秘密。', '小螃蟹在看我，我也在看牠。噓～不要吵牠。', '戴草帽坐草地，風好大，羽毛都翹起來了！'] },
+  jiufen:   { sv: '用它裝點心，好像又去山上玩了。', n: ['一階、兩階、三階……燈籠亮了，好溫暖喔。', '芋圓 QQ 的！我要慢慢吃，一口一口。', '走累了坐一下，回頭一看……哇，是大海！'] }
+};
+if (CFG.look) for (const l of LOCS) { const v = VOICE[l.id]; l.sv = v.sv; v.n.forEach((n, i) => { l.cards[i][1] = n; }); }
+const LIMITED = LOCS.map((l) => ({ id: 'lim-' + l.id, loc: l.id, title: '本週限定・' + l.name + '的小驚喜', note: '這個禮拜好想去' + l.name + '，真的遇到好特別的事！' }));
 const SAYS = {
-  home: ['今天天氣好像不錯，要不要一起出門？', '上次的明信片你看了嗎？', '便當準備好了嗎？我隨時可以出發！', '我好想去看海喔。'],
-  away: ['去看海了，晚點見。', '聽說那裡有好吃的，我去看看。', '我會寄風景回來給你。', '出門囉，記得幫我看家！'],
-  back: ['我回來了！幫你帶了一封信。', '好累喔，可是好好玩！', '你猜我這次去了哪裡？']
+  home: ['今天天氣好好，我們出門玩好不好？', '你看了我寄的明信片嗎？', '便當準備好了嗎？我隨時可以出發！', '我好想去看海喔！'],
+  away: ['我去看海囉，等我喔！', '聽說那裡有好吃的，我去看看！', '我會寄漂亮的風景給你！', '出門囉，幫我看家喔！'],
+  back: ['我回來了！有一封信給你！', '好累喔，可是好好玩！', '你猜猜我去了哪裡？']
 };
 const KEY = 'kiteTravel1';
 const $ = (id) => document.getElementById(id);
@@ -430,8 +442,8 @@ const PET = (() => {
       [svs.length ? 1.1 : 0.3, () => { go(28, 84); p.then = () => { p.face = -1; p.act = 'look'; p.dur = 2.6; if (svs.length) { const id = pick(svs), l = LOCS.find((z) => z.id === id); emote('spark'); say(l.souvenir + '～' + l.sv); } else { emote('q'); say('架子上還沒有東西。'); } }; }],
       [0.8, () => { p.act = 'nap'; p.dur = rnd(4, 6); emote('zzz'); say('呼…呼…', 2); }],
       [0.9, () => { p.act = 'sing'; p.dur = 2.4; emote('note', true); say(pick(['啦啦啦～', '今天天氣真好～', '海風的味道～'])); }],
-      [0.8, () => { p.act = 'busy'; p.dur = 2.4; p.pose = 'pack'; emote('sweat'); say(pick(['整理背包好忙…', '要帶什麼出門呢…', '地圖收在哪裡了…'])); }],
-      [nb ? 0.7 : 0.5, () => { p.act = 'idle'; p.dur = 2.4; emote('food'); say(nb ? '便當好香，想出門了！' : riceLeft() ? '今天的飯糰還在喔！' : '肚子有點餓…'); }],
+      [0.8, () => { p.act = 'busy'; p.dur = 2.4; p.pose = 'pack'; emote('sweat'); say(pick(['背包好亂喔…', '要帶什麼出門呢…', '地圖跑去哪裡了…'])); }],
+      [nb ? 0.7 : 0.5, () => { p.act = 'idle'; p.dur = 2.4; emote('food'); say(nb ? '便當好香，想出門了！' : riceLeft() ? '今天的飯糰還在喔！' : '肚子咕嚕咕嚕叫了…'); }],
       [0.6, () => { go(rnd(44, 56), 95); p.then = () => { p.face = 1; p.act = 'idle'; p.dur = 2.2; emote('q'); say(pick(['你在看我嗎？', '嘿嘿～', '要一起去旅行嗎？'])); }; }],
       [1.4, () => { p.act = 'idle'; p.dur = rnd(1.5, 3.5); }]
     ];
@@ -501,7 +513,7 @@ function showIntro() {
 function startFirst() {
   if (S.firstDone || S.state !== 'home') return;
   const r = rollTrip('walk', [], 'home'); r.got = [0]; r.stamps = 0;      // 第一次固定拿東三東四的第一張
-  S.trip = Object.assign(r, { bento: 'first', items: [], start: Date.now(), end: Date.now() + CFG.firstMin * 60000 * (CFG.fast ? 1 / 360 : 1), first: true, say: '第一次出門，我先在港邊走走！' });
+  S.trip = Object.assign(r, { bento: 'first', items: [], start: Date.now(), end: Date.now() + CFG.firstMin * 60000 * (CFG.fast ? 1 / 360 : 1), first: true, say: '第一次出門，我先在港邊走走喔！' });
   S.firstDone = true; S.state = 'away'; save(); departAnim();
 }
 

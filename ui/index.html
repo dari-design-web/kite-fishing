@@ -161,7 +161,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
 <div class="app">
   <header class="top">
     <div>
-      <h1>小鳶來港介面原型 v0.3</h1>
+      <h1>小鳶來港介面原型 v0.4</h1>
       <p>三條路徑都能點著走。畫面裡的店家、金額、贈品與點數都是示範值，素材為暫用。</p>
     </div>
     <div class="tabs" role="tablist" aria-label="路徑" id="tabs"></div>
@@ -239,7 +239,7 @@ const SC = {
   /* ===== A：DP 入會 ===== */
   a1: { path: 'a', dev: 'guest', kind: 'main', name: '活動頁', pre: () => fresh(),
     notes: ['掃 DP 上的 QR 就到這裡。不登入也看得到活動內容。', '掃 QR 只代表進站，不當作已到場的證明。', '領紀念卡才需要加入會員。'], assets: ['kite_hello（暫用）'],
-    html: () => wrap(guestBar(), `${img('kite_hello', 'art', '小鳶招手')}<h2>歡迎來到基隆港</h2><p class="lead">我是小鳶。加入會員，送你一張今天的港灣紀念卡。</p><div class="box"><dl class="kv"><dt>活動</dt><dd>小鳶來港</dd><dt>地點</dt><dd>東岸旅客中心</dd><dt>紀念卡</dt><dd>每人 1 張</dd></dl></div><div class="spacer"></div>${btn('用 LINE 登入，領紀念卡', 'a-login', 'line')}${btn('先看逛港資訊', 'todo', 'text')}`, 'center') },
+    html: () => wrap(guestBar(), `${img('kite_hello', 'art', '小鳶招手')}<h2>歡迎來到基隆港</h2><p class="lead">我是小鳶！加入會員，我送你一張今天的港灣紀念卡喔！</p><div class="box"><dl class="kv"><dt>活動</dt><dd>小鳶來港</dd><dt>地點</dt><dd>東岸旅客中心</dd><dt>紀念卡</dt><dd>每人 1 張</dd></dl></div><div class="spacer"></div>${btn('用 LINE 登入，領紀念卡', 'a-login', 'line')}${btn('先看逛港資訊', 'todo', 'text')}`, 'center') },
   a2: { path: 'a', dev: 'guest', kind: 'main', name: 'LINE 登入', pre: () => fresh(),
     notes: ['這一頁是 LINE 自己的授權畫面，樣式由 LINE 決定，這裡只是示意。', 'LINE 登入、加好友、同意會員條款是三件事，分開記錄。'], assets: [],
     html: () => loginScreen() },
