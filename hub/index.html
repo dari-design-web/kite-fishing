@@ -71,12 +71,12 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--teal);outline-offse
 .path{border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px;min-width:0}
 .path b{display:block;font-family:var(--f-mono);font-size:12px;color:var(--teal)}
 .member .go{align-self:flex-start;padding-inline:22px}
-@media (max-width:640px){.member{grid-template-columns:1fr}.member .shot{aspect-ratio:4/3;border-right:0;border-bottom:1px solid var(--line);background-position:center 30%}.paths{grid-template-columns:1fr}.member .go{align-self:stretch}}
+
 
 /* 三款遊戲 */
 .games{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 @media (max-width:860px){.games{grid-template-columns:repeat(2,1fr)}}
-@media (max-width:560px){.games{grid-template-columns:1fr}.games .shot{aspect-ratio:4/3;background-position:center 20%}}
+@media (max-width:640px){.games{grid-template-columns:1fr}}
 
 /* 護照三站：真正的先後順序（D36） */
 .track{display:grid;grid-template-columns:repeat(3,1fr);gap:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
@@ -104,6 +104,42 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--teal);outline-offse
 .notice{font-size:13px;color:var(--muted);border-left:3px solid var(--buoy);padding:4px 0 4px 12px}
 .notice a{color:var(--teal);font-weight:700}
 
+/* 桌機：右上角 QR，用手機掃了直接開 */
+.qr{display:flex;align-items:center;gap:10px;justify-content:flex-end}
+.qr #qr{width:84px;height:84px;padding:6px;background:#FFFFFF;border-radius:8px;border:1px solid var(--line)}
+.qr #qr img,.qr #qr canvas{width:100%!important;height:100%!important}
+.qr span{font-size:12px;color:var(--muted);max-width:9em;text-align:left;line-height:1.5}
+.qr span b{color:var(--ink);word-break:break-all}
+/* 手機：底部快速開啟列 */
+.quick{display:none}
+@media (max-width:640px){
+  .qr{display:none}
+  .wrap{padding-block:18px calc(96px + env(safe-area-inset-bottom,0px));gap:28px}
+  .top{border-bottom-width:1.5px;padding-bottom:14px}
+  .top .lead{font-size:14px}
+  .board{flex-direction:row;flex-wrap:wrap;gap:2px 12px;font-size:12px}
+  .sh h2{font-size:20px}
+  .sh p{font-size:12px}
+  /* 卡片改成橫列：左邊縮圖、右邊文字，按鈕排在下面 */
+  .card,.member{display:grid;grid-template-columns:92px 1fr;grid-template-areas:"shot body"}
+  .card .shot,.member .shot{grid-area:shot;aspect-ratio:3/4;height:auto;align-self:start;margin:12px 0 12px 12px;border:1px solid var(--line);border-radius:10px;background-position:center top}
+  .card .body{grid-area:body;padding:12px;gap:8px}
+  .name h3{font-size:18px}
+  .desc{font-size:13px;line-height:1.55}
+  .paths{grid-template-columns:repeat(3,1fr);gap:6px}
+  .path{padding:6px 8px;font-size:12px}
+  .go{min-height:42px;font-size:15px}
+  .member .go{align-self:stretch}
+  .games{gap:12px}
+  .stop{padding:12px 14px;display:grid;grid-template-columns:auto 1fr;gap:2px 10px;align-items:baseline}
+  .stop .n{grid-row:span 3}
+  .stop h3{font-size:17px}
+  .stop .state,.stop p,.stop a{grid-column:2;justify-self:start}
+  .quick{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:5;gap:6px;padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(0,0,0,.08)}
+  .quick a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;font-size:11px;color:var(--muted);padding:4px 0;border-radius:10px;min-width:0}
+  .quick a b{font-family:var(--f-display);font-size:16px;color:var(--ink);font-weight:700}
+  .quick a:active{background:var(--soft)}
+}
 footer{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between;color:var(--muted);font-size:13px}
 @media (prefers-reduced-motion:no-preference){.go,.flag{transition:filter .15s,border-color .15s}}
 </style>
@@ -121,6 +157,7 @@ footer{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-wrap:
       <span>整理日期 <b class="mono">2026-10-12</b></span>
       <span>捕魚 <b class="mono">v0.8</b>・飛行 <b class="mono">v0.19</b>・去旅行 <b class="mono">v0.4</b></span>
       <span>介面 <b class="mono">v0.3</b></span>
+      <div class="qr"><span>用手機掃這裡，直接開手機版</span><div id="qr" role="img" aria-label="測試首頁網址的 QR code"></div></div>
     </div>
   </header>
 
@@ -207,12 +244,20 @@ footer{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-wrap:
     </div>
   </section>
 
+  <nav class="quick" aria-label="快速開啟">
+    <a data-href="ui/"><b>會員</b>介面原型</a>
+    <a data-href=""><b>捕魚</b>v0.8</a>
+    <a data-href="fly/"><b>飛行</b>v0.19</a>
+    <a data-href="travel/"><b>旅行</b>v0.4</a>
+  </nav>
+
   <footer>
     <span>原型全部使用暫用素材、不發點數；正式上線前都會再改。</span>
     <a href="https://github.com/dari-design-web/kite-fishing">GitHub 原始檔</a>
   </footer>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 (function () {
   var ONLINE = 'https://dari-design-web.github.io/kite-fishing/';
@@ -221,6 +266,8 @@ footer{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-wrap:
   var base = onSite ? '../' : ONLINE;
   document.querySelectorAll('[data-href]').forEach(function (a) { a.href = base + a.getAttribute('data-href'); if (!onSite) a.target = '_blank'; if (!onSite) a.rel = 'noopener'; });
 
+  var qrBox = document.querySelector('.qr');
+  try { if (!window.QRCode) throw 0; new QRCode(document.getElementById('qr'), { text: ONLINE + 'hub/', width: 168, height: 168, colorDark: '#13303A', colorLight: '#FFFFFF', correctLevel: QRCode.CorrectLevel.M }); } catch (e) { qrBox.innerHTML = '<span>手機打開<br><b class="mono">dari-design-web.github.io/kite-fishing/hub/</b></span>'; }
   function read(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
   function set(id, html) { var el = document.getElementById(id); if (el) el.innerHTML = html; }
   if (!onSite) {
