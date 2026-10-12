@@ -7,8 +7,11 @@
 <style>
 :root{--paper:#F4EFE6;--card:#FFFDF8;--ink:#4A3426;--muted:#8A7565;--teal:#2F7F86;--teal2:#D9ECEA;--gold:#E8B879;--line:#E2D6C6;--red:#C9473A;--display:'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif}
 *{box-sizing:border-box}
-html,body{margin:0;background:#E9E1D3;color:var(--ink);font-family:var(--display);-webkit-tap-highlight-color:transparent}
-#app{max-width:430px;min-height:100vh;margin:0 auto;background:var(--paper);position:relative;overflow:hidden;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+html,body{margin:0;height:100%;overflow:hidden;background:#2A1E16;color:var(--ink);font-family:var(--display);-webkit-tap-highlight-color:transparent}
+#app{max-width:430px;height:100%;margin:0 auto;background:var(--paper);position:relative;overflow:hidden}
+/* v0.6：整支手機一個畫面。每個畫面佔滿高度；選單類畫面在自己裡面捲動 */
+.screen{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+.screen header{position:sticky;top:0;z-index:3;background:var(--paper);padding-top:calc(14px + env(safe-area-inset-top,0px))}
 header{display:flex;align-items:center;gap:8px;padding:14px 16px 6px}
 header h1{font-size:20px;margin:0;flex:1}
 .back{border:0;background:none;font-size:15px;color:var(--teal);padding:6px 4px;font-weight:700}
@@ -23,8 +26,9 @@ header h1{font-size:20px;margin:0;flex:1}
 .muted{color:var(--muted);font-size:13px}
 .screen{display:none}
 .screen.on{display:block}
+#home.on{display:flex}
 /* 小屋 */
-.room{position:relative;margin:0 16px 12px;aspect-ratio:1080/990;border-radius:18px;overflow:hidden;background:#EADFCB url(assets/room_bg.jpg) center/100% 100% no-repeat;border:2px solid var(--line)}
+.room{position:relative;width:100%;aspect-ratio:1080/990;overflow:hidden;background:#EADFCB url(assets/room_bg.jpg) center/100% 100% no-repeat}
 /* 位置照 ChatGPT 小屋置入位置_v1.json（1080×990 底圖換算成百分比）；底圖的空掛位、空架只是背景，實際收藏由玩家資料放上去 */
 .wallhit{position:absolute;left:50%;top:14.6%;width:32.9%;height:9.9%;cursor:pointer}
 .wallcards span{position:absolute;top:16.8%;width:8.5%;height:6.4%;border-radius:2px;background-size:100% 100%;box-shadow:0 1px 3px rgba(0,0,0,.3);border:1.5px solid #FFFDF8;transform:rotate(-3deg)}
@@ -36,7 +40,31 @@ header h1{font-size:20px;margin:0;flex:1}
 @keyframes bob{50%{transform:translateY(-6px)}}
 .note{position:absolute;left:50%;bottom:9%;transform:translateX(-50%) rotate(-3deg);width:56%;padding:10px 12px;background:#FFF8D9;border:1.5px solid #E5D49B;box-shadow:0 3px 8px rgba(0,0,0,.12);font-size:14px;line-height:1.5}
 .envelope{position:absolute;left:69.4%;top:76.8%;width:22.2%;height:16.2%;background:url(assets/letter_seal.png) center/contain no-repeat,url(assets/letter_env.png) center/contain no-repeat;animation:bob 1.6s infinite;cursor:pointer}
-.say{position:absolute;left:16px;right:16px;top:-2px;transform:translateY(-100%);text-align:center}
+.say{position:absolute;left:8%;right:8%;top:41%;text-align:center;pointer-events:none;z-index:2}
+#home{flex-direction:column;overflow:hidden;padding:0;background:linear-gradient(#5A3F2A,#3E2B1D)}
+.hud{display:flex;align-items:center;gap:6px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 8px;color:#FFF4E2}
+.hud h1{font-size:17px;margin:0;flex:1;white-space:nowrap;letter-spacing:.04em}
+.hud h1 small{font-size:11px;font-weight:400;opacity:.7;margin-left:6px;letter-spacing:0}
+.pill{display:inline-flex;align-items:center;gap:4px;background:rgba(255,248,236,.14);border:1px solid rgba(255,248,236,.25);border-radius:999px;padding:3px 9px 3px 4px;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill img{width:20px;height:20px;object-fit:contain}
+.gear{border:1px solid rgba(255,248,236,.35);background:rgba(255,248,236,.1);color:#FFF4E2;border-radius:999px;font:inherit;font-size:12px;padding:4px 10px}
+.roomwrap{position:relative;flex:none}
+.roomwrap .chip{position:absolute;left:10px;right:10px;top:8px;margin:0;z-index:3;background:rgba(255,253,248,.92);box-shadow:0 2px 8px rgba(0,0,0,.15);font-size:13px;text-align:center}
+.floor{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-between;gap:10px;padding:12px 14px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(#9C6B45,#7A5134);box-shadow:inset 0 6px 10px rgba(0,0,0,.25)}
+.floor .btn{box-shadow:0 4px 0 #1F5A5F;font-size:17px;padding:14px}
+.floor .btn:active{transform:translateY(2px);box-shadow:0 2px 0 #1F5A5F}
+.weekly{display:flex;align-items:center;gap:10px;background:rgba(255,247,234,.14);border:1px dashed rgba(255,247,234,.45);border-radius:14px;padding:8px 10px;color:#FFF4E2;font-size:13px;line-height:1.45}
+.weekly img{width:64px;height:40px;object-fit:cover;border-radius:4px;border:2px solid #FFF7EA;flex:none}
+.weekly b{color:#FFE2A8}
+@media (max-height:640px){.weekly{display:none}}
+.iconrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ibtn{display:flex;flex-direction:column;align-items:center;gap:2px;border:0;border-radius:14px;padding:8px 4px 7px;background:#FFF7EA;color:var(--ink);font:inherit;font-size:13px;font-weight:700;box-shadow:0 3px 0 #C9A57E}
+.ibtn:active{transform:translateY(2px);box-shadow:0 1px 0 #C9A57E}
+.ibtn img{width:38px;height:38px;object-fit:contain}
+.ibtn small{font-size:11px;font-weight:400;color:var(--muted)}
+.quickback{position:absolute;right:10px;bottom:10px;z-index:3;border:0;border-radius:999px;background:#2B3A40;color:#fff;font:inherit;font-size:12px;padding:6px 12px;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.devsheet{position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(30,40,44,.55);z-index:45;display:flex;align-items:flex-end}
+.devsheet .dev{margin:0;width:100%;background:var(--paper);border:0;border-radius:18px 18px 0 0;padding:14px 14px calc(16px + env(safe-area-inset-bottom,0px));max-height:70%;overflow:auto}
 .bubble{display:inline-block;background:#fff;border:2px solid var(--line);border-radius:14px;padding:6px 12px;font-size:14px}
 .stats{display:flex;gap:8px;margin:10px 16px 0;flex-wrap:wrap}
 .stats span{font-size:12px;background:var(--card);border:1.5px solid var(--line);border-radius:999px;padding:3px 10px}
@@ -54,6 +82,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 .opt .tx{flex:1;font-size:14px;line-height:1.4}
 .opt .tx small{display:block;color:var(--muted);font-size:12px}
 .opt .n{font-weight:700;font-size:14px}
+.gobar{position:sticky;bottom:calc(-16px - env(safe-area-inset-bottom,0px));padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(rgba(244,239,230,0),var(--paper) 30%);margin-top:6px}
 .dest{margin:10px 16px;padding:10px 12px;border-radius:12px;background:#FFF8D9;font-size:13px;line-height:1.55}
 /* 出門 */
 .depart{position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(244,239,230,.97);display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:20}
@@ -103,6 +132,8 @@ h3{font-size:15px;margin:14px 16px 6px}
 .cardth .new{position:absolute;right:3px;top:3px;width:8px;height:8px;border-radius:50%;background:var(--red)}
 .modal{position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(30,40,44,.92);z-index:40;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px}
 .modal.on{display:flex}
+.sheet2{background:var(--paper);border-radius:18px;padding:18px 16px;width:min(340px,88vw);font-size:14px;line-height:1.7}
+.sheet2 p{margin:0 0 6px}
 /* 紀念品櫃 */
 .shelfgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 16px}
 .sv{aspect-ratio:1;border-radius:12px;background:var(--card);border:2px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;text-align:center;padding:4px;font-family:inherit;color:var(--ink)}
@@ -116,9 +147,9 @@ h3{font-size:15px;margin:14px 16px 6px}
 .intro .sheet{background:var(--paper);width:100%;border-radius:20px 20px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px))}
 .intro p{font-size:16px;line-height:1.6;margin:0 0 14px}
 /* 測試面板 */
-.dev{margin:16px;padding:10px;border:2px dashed #C9B8A4;border-radius:12px;font-size:12px}
+.dev{margin:0;padding:10px;border:2px dashed #C9B8A4;border-radius:12px;font-size:12px}
 .dev button{margin:3px 2px;border:1.5px solid #C9B8A4;background:#fff;border-radius:8px;padding:4px 8px;font-family:inherit;font-size:12px}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#2B3A40;color:#fff;border-radius:999px;padding:8px 16px;font-size:14px;z-index:50;display:none;white-space:nowrap}
+.toast{position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#2B3A40;color:#fff;border-radius:999px;padding:8px 16px;font-size:14px;z-index:50;display:none;white-space:nowrap}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -126,28 +157,36 @@ h3{font-size:15px;margin:14px 16px 6px}
 <div id="app">
   <!-- 小屋 -->
   <section class="screen" id="home">
-    <header><h1>小鳶的小屋</h1><span class="muted" id="ver"></span></header>
-    <div class="chip" id="chip"></div>
-    <div class="room" id="room">
-      <div class="wallcards" id="wall"></div>
-      <div class="wallhit" id="wallHit" role="button" aria-label="明信片牆，打開收藏冊"></div>
-      <div class="shelfitems" id="miniShelf"></div>
-      <div class="shelfhit" id="shelfHit" role="button" aria-label="紀念品架，打開紀念品櫃"></div>
-      <div class="bird" id="bird"></div>
-      <div class="note" id="note" hidden></div>
-      <div class="envelope" id="envIcon" hidden></div>
+    <div class="hud">
+      <h1>小鳶的小屋<small id="ver"></small></h1>
+      <span class="pill" title="明信片"><img src="assets/pc_home_a.jpg" alt="" style="border-radius:3px;height:14px;width:22px;object-fit:cover"><span id="hCards">0/24</span></span>
+      <span class="pill" title="便當"><img src="assets/bento_rice.png" alt=""><span id="hBento">0</span></span>
+      <button class="gear" id="gearBtn" type="button">測試</button>
     </div>
-    <div class="pad" style="position:relative;margin-top:28px">
-      <div class="say"><span class="bubble" id="say"></span></div>
-      <button class="btn" id="mainBtn"></button>
-      <div class="row" style="margin-top:10px">
-        <button class="btn ghost" id="albumBtn">收藏冊</button>
-        <button class="btn ghost" id="shelfBtn">紀念品櫃</button>
+    <div class="roomwrap">
+      <div class="chip" id="chip"></div>
+      <div class="room" id="room">
+        <div class="wallcards" id="wall"></div>
+        <div class="wallhit" id="wallHit" role="button" aria-label="明信片牆，打開收藏冊"></div>
+        <div class="shelfitems" id="miniShelf"></div>
+        <div class="shelfhit" id="shelfHit" role="button" aria-label="紀念品架，打開紀念品櫃"></div>
+        <div class="bird" id="bird"></div>
+        <div class="say"><span class="bubble" id="say"></span></div>
+        <div class="note" id="note" hidden></div>
+        <div class="envelope" id="envIcon" hidden></div>
+        <button class="quickback" id="quickBack" type="button" hidden>⏩ 馬上回來（測試）</button>
       </div>
     </div>
-    <div class="stats" id="stats"></div>
-    <p class="muted pad" style="margin-top:12px">原型 v0.5：暫用圖（ChatGPT G-39、G-40）、不發點數。資料只存在這支手機的瀏覽器。</p>
-    <div class="dev" id="dev" hidden></div>
+    <div class="floor">
+      <div class="weekly" id="weekly"></div>
+      <button class="btn" id="mainBtn"></button>
+      <div class="iconrow">
+        <button class="ibtn" id="albumBtn" type="button"><img src="assets/pc_zhengbin_a.jpg" alt="" style="width:46px;height:30px;object-fit:cover;border-radius:3px;margin:4px 0;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3)">收藏冊<small id="iCards">0 / 24</small></button>
+        <button class="ibtn" id="shelfBtn" type="button"><img src="assets/sv_home.png" alt="">紀念品櫃<small id="iSv">0 / 8</small></button>
+        <button class="ibtn" id="infoBtn" type="button"><img src="assets/item_camera.png" alt="">旅行紀錄<small id="iTrips">0 次</small></button>
+      </div>
+    </div>
+    <div id="dev" hidden></div>
   </section>
 
   <!-- 打包 -->
@@ -164,7 +203,7 @@ h3{font-size:15px;margin:14px 16px 6px}
     <div class="list" id="itemList"></div>
     <div id="stampBox"></div>
     <div class="dest" id="destInfo">先選一個便當，這裡會告訴你這趟可能去哪裡、大約幾點回來。</div>
-    <div class="pad"><button class="btn" id="goBtn" disabled>出發</button></div>
+    <div class="gobar"><button class="btn" id="goBtn" disabled>出發</button></div>
   </section>
 
   <!-- 收藏冊 -->
@@ -187,9 +226,9 @@ h3{font-size:15px;margin:14px 16px 6px}
 <div class="toast" id="toast"></div>
 
 <script>
-/* 小鳶去旅行 原型 v0.5（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
+/* 小鳶去旅行 原型 v0.6（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.5',
+  version: '0.6',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -295,7 +334,7 @@ function rollTrip(bentoKey, items, forced) {
 function pickFriend() { const p = readJSON('kiteFlyProgress1'); const pool = ['小卷', '海龜']; if (p && p.stars && p.stars[2] && p.stars[2][0]) pool.push('基隆黑輪'); if (flyCleared(4)) pool.push('豆腐君'); return pool[Math.floor(rnd() * pool.length)]; }
 
 /* ====== 畫面 ====== */
-function go(id) { for (const s of document.querySelectorAll('.screen')) s.classList.toggle('on', s.id === id); window.scrollTo(0, 0); if (id === 'home') renderHome(); if (id === 'pack') renderPack(); if (id === 'album') renderAlbum(); if (id === 'shelf') renderShelf(); }
+function go(id) { for (const s of document.querySelectorAll('.screen')) s.classList.toggle('on', s.id === id); const sc = $(id); if (sc) sc.scrollTop = 0; if (id === 'home') renderHome(); if (id === 'pack') renderPack(); if (id === 'album') renderAlbum(); if (id === 'shelf') renderShelf(); }
 document.querySelectorAll('[data-go]').forEach((b) => (b.onclick = () => go(b.dataset.go)));
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = 'none'), 2200); }
 function fmtTime(ms) { const d = new Date(ms); return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'); }
@@ -308,7 +347,7 @@ function renderHome() {
   tick();
   $('ver').textContent = 'v' + CFG.version + (CFG.fast ? '・快速' : '') + (CFG.look ? '・B 款新版看稿' : '');
   const st = S.state, b = $('bird'), note = $('note'), env = $('envIcon'), main = $('mainBtn');
-  note.hidden = true; env.hidden = true; b.style.display = 'block'; b.className = 'bird bob';
+  note.hidden = true; env.hidden = true; b.style.display = 'block'; b.className = 'bird bob'; $('quickBack').hidden = st !== 'away';
   if (!S.firstDone && st === 'home') { $('chip').textContent = '第一次見面！先帶小鳶在附近走走吧'; b.style.backgroundImage = 'url(assets/kite_wave.png)'; $('say').textContent = '你好！我是小鳶。'; main.textContent = '第一次，先在附近走走吧（3 分鐘）'; main.onclick = startFirst; }
   else if (st === 'home') { $('chip').textContent = '小鳶在家，還沒出發'; b.style.backgroundImage = 'url(assets/kite_home.png)'; $('say').textContent = sayOne('home'); main.textContent = '打包出門'; main.onclick = () => go('pack'); }
   else if (st === 'away') { b.style.display = 'none'; note.hidden = false; note.textContent = '「' + (S.trip.say || sayOne('away')) + '」　— 小鳶'; $('chip').textContent = '小鳶正在旅行，大約 ' + fmtTime(S.trip.end) + ' 回來；信會等你，不會過期'; $('say').textContent = ''; main.textContent = '大約 ' + fmtTime(S.trip.end) + ' 回來'; main.onclick = () => toast('小鳶還在路上，晚點再來看看'); }
@@ -322,9 +361,24 @@ function renderHome() {
   const SHELF_X = [4.44, 11.67, 18.8];      // 架上三格的左緣（%）
   $('miniShelf').innerHTML = Object.entries(S.souvenirs).sort((a, b2) => b2[1] - a[1]).slice(0, 3).map(([k], n) => '<img src="assets/sv_' + k + '.png" alt="' + LOCS.find((l) => l.id === k).souvenir + '" style="left:' + SHELF_X[n] + '%">').join('');
   $('shelfHit').onclick = () => go('shelf');
-  $('stats').innerHTML = ['明信片 ' + ownedCount() + ' / 24', '旅行 ' + S.trips + ' 次', '郵票 ' + S.stamps, '遠行便當 還差 ' + (CFG.farEvery - S.farAcc) + ' 趟'].map((t) => '<span>' + t + '</span>').join('');
-  renderDev();
+  const nb = (S.bento.far || 0) + (S.bento.squid || 0) + (S.bento.hair || 0) + (S.bento.special || 0) + riceLeft();
+  $('hCards').textContent = ownedCount() + '/24'; $('hBento').textContent = nb;
+  $('iCards').textContent = ownedCount() + ' / 24'; $('iSv').textContent = Object.keys(S.souvenirs).length + ' / 8'; $('iTrips').textContent = S.trips + ' 次';
+  const wk = weekLoc(); $('weekly').innerHTML = '<img src="assets/' + wk.cards[0][2] + '" alt=""><span>本週小鳶特別想去<b>' + wk.name + '</b><br>機會加倍，還有本週限定明信片' + (locOpen(wk) ? '' : '（' + openHow(wk) + '才會開）') + '</span>';
+  $('albumBtn').onclick = () => go('album'); $('shelfBtn').onclick = () => go('shelf');
+  $('infoBtn').onclick = showTrips;
+  $('quickBack').onclick = () => { if (S.trip) { S.trip.end = Date.now(); tick(); renderHome(); } };
+  $('gearBtn').onclick = openDev;
   if (!S.seen.intro) showIntro();
+}
+function showTrips() {      // 旅行紀錄：郵票、遠行便當、稱號一眼看完
+  const t = Object.values(calcTitles());
+  const m = $('modal'); m.innerHTML = '<div class="sheet2"><h3 style="margin:0 0 10px">旅行紀錄</h3><p>旅行 <b>' + S.trips + '</b> 次・郵票 <b>' + S.stamps + '</b> 枚（滿 ' + CFG.stampsToPick + ' 枚可以指定地點）</p><p>遠行便當：再旅行 <b>' + (CFG.farEvery - S.farAcc) + '</b> 趟，小鳶會自己存下 1 份</p><p>便當：遠行 ' + (S.bento.far || 0) + '、小卷 ' + (S.bento.squid || 0) + '、白帶魚 ' + (S.bento.hair || 0) + '、特製 ' + (S.bento.special || 0) + '；今天的飯糰' + (riceLeft() ? '還在' : '已經用了') + '</p><p>稱號：' + (t.length ? t.join('、') : '還沒有') + '</p><button class="btn" id="tClose" style="margin-top:12px">好</button></div>';
+  m.classList.add('on'); $('tClose').onclick = () => m.classList.remove('on');
+}
+function openDev() {      // 測試面板改成從右上「測試」打開（原型階段一直可以用）
+  CFG.dev = true; const sh = document.createElement('div'); sh.className = 'devsheet'; const d = $('dev'); d.className = 'dev'; d.hidden = false; sh.appendChild(d); document.body.appendChild(sh);
+  renderDev(); sh.onclick = (e) => { if (e.target === sh) { d.hidden = true; $('home').appendChild(d); sh.remove(); } };
 }
 function showIntro() {
   const d = document.createElement('div'); d.className = 'intro';
@@ -482,15 +536,15 @@ function renderShelf() {
 
 /* 測試面板（網址加 ?dev=1 或 ?fast=1） */
 function renderDev() {
-  const d = $('dev'); d.hidden = !CFG.dev; if (!CFG.dev) return;
-  d.innerHTML = '<b>測試面板</b>（只在網址加 ?dev=1 或 ?fast=1 時出現）<br>' +
+  const d = $('dev'); if (!CFG.dev || !d.parentElement || !d.parentElement.classList.contains('devsheet')) return;
+  d.innerHTML = '<b>測試面板</b>（原型用；網址加 ?fast=1 時一小時變 10 秒）<br>' +
     ['far', 'squid', 'hair', 'special'].map((k) => '<button data-b="' + k + '">+1 ' + CFG.bentos[k].name + '</button>').join('') +
     '<button data-x="rice">飯糰重置</button><br>' + ['camera', 'telescope', 'umbrella'].map((k) => '<button data-i="' + k + '">' + (S.testItems[k] ? '收回' : '給') + CFG.items[k].name + '</button>').join('') +
     '<br><button data-x="all">拿到全部 24 張</button><button data-x="now">馬上回來</button><button data-x="trips">旅行次數 +5</button><button data-x="stamps">郵票 +5</button><button data-x="reset">全部清除</button>' +
     '<br>現在：飛行過關 ' + (flyAnyCleared() ? '有' : '無') + '、第 4 關 ' + (flyCleared(4) ? '已過' : '未過') + '、捕魚圖鑑 ' + dexCount() + ' 種';
-  d.querySelectorAll('[data-b]').forEach((b) => (b.onclick = () => { S.bento[b.dataset.b]++; save(); renderHome(); }));
-  d.querySelectorAll('[data-i]').forEach((b) => (b.onclick = () => { S.testItems[b.dataset.i] = !S.testItems[b.dataset.i]; save(); renderHome(); }));
-  d.querySelectorAll('[data-x]').forEach((b) => (b.onclick = () => { const x = b.dataset.x; if (x === 'rice') S.riceDay = ''; if (x === 'now' && S.trip) S.trip.end = Date.now(); if (x === 'trips') S.trips += 5; if (x === 'stamps') S.stamps += 5; if (x === 'all') { let n = Date.now(); for (const l of LOCS) for (let i = 0; i < 3; i++) if (!S.cards[l.id + '-' + i]) S.cards[l.id + '-' + i] = n--; } if (x === 'reset') { S = fresh(); } save(); renderHome(); }));
+  d.querySelectorAll('[data-b]').forEach((b) => (b.onclick = () => { S.bento[b.dataset.b]++; save(); renderHome(); renderDev(); }));
+  d.querySelectorAll('[data-i]').forEach((b) => (b.onclick = () => { S.testItems[b.dataset.i] = !S.testItems[b.dataset.i]; save(); renderHome(); renderDev(); }));
+  d.querySelectorAll('[data-x]').forEach((b) => (b.onclick = () => { const x = b.dataset.x; if (x === 'rice') S.riceDay = ''; if (x === 'now' && S.trip) S.trip.end = Date.now(); if (x === 'trips') S.trips += 5; if (x === 'stamps') S.stamps += 5; if (x === 'all') { let n = Date.now(); for (const l of LOCS) for (let i = 0; i < 3; i++) if (!S.cards[l.id + '-' + i]) S.cards[l.id + '-' + i] = n--; } if (x === 'reset') { S = fresh(); } save(); renderHome(); renderDev(); }));
 }
 window.__travel = { S: () => S, CFG, LOCS, rollTrip, setRnd: (f) => { rnd = f; }, go, commitTrip, depart: (k, items, pick) => { pk = { bento: k, items: items || [], pick: pick || '' }; depart(); }, finishNow: () => { if (S.trip) S.trip.end = Date.now(); tick(); }, open: openLetter };
 go('home');
