@@ -259,7 +259,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.16',
+  version: '0.17',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -755,8 +755,12 @@ function renderAlbum() {
     for (const lim of LIMITED) { const l = LOCS.find((x) => x.id === lim.loc), own = S.limited[lim.id], b = document.createElement('button'); b.className = 'cardth'; b.innerHTML = own ? sceneHTML(l, 0, '', lim) : '<span class="lock">' + l.name + '<br>限定</span>'; b.onclick = () => { if (own) showCardModal(l, 0, lim); }; cs.appendChild(b); }
     body.appendChild(d);
   }
-  else if (tab === 'pass') body.innerHTML = '<p class="pad muted">港灣蓋章散步（P3）集滿 6 個章拿到的明信片會放在這裡。蓋章原型還沒做。</p>';
-  else body.innerHTML = '<p class="pad muted">合照館（P2）拍的照片只存在這支手機，換手機就沒有。合照館原型還沒做。</p>';
+  else if (tab === 'pass') {      // v0.17：港灣蓋章散步集滿 6 個章拿到的護照明信片（G-49 pc_passport，暫用）
+    if (stampsDone()) { body.innerHTML = '<p class="pad muted">港灣蓋章散步集滿 6 個章的紀念明信片。點一下看大圖。</p><div class="loc"><div class="cards"><button class="cardth" type="button" id="passCard" style="grid-column:1/-1;width:100%;height:auto;background:url(assets/pc_passport.jpg) center/cover;aspect-ratio:1200/750"></button></div></div>';
+      $('passCard').onclick = () => { const m = $('modal'); m.innerHTML = '<img src="assets/pc_passport.jpg" alt="港灣探險護照紀念明信片" style="width:min(360px,90vw);border-radius:8px;border:6px solid #FFFDF8;box-shadow:0 10px 30px rgba(0,0,0,.4)"><p style="color:#FFF4E2;font-size:14px;margin:12px 0 0">港灣探險護照・集滿紀念</p><div class="row" style="width:min(340px,86vw);margin-top:14px"><button class="btn gold" id="mc">回收藏冊</button></div>'; m.classList.add('on'); $('mc').onclick = () => m.classList.remove('on'); }; }
+    else body.innerHTML = '<p class="pad muted">在東三東四港邊走一圈，6 個點掃 QR 蓋章，集滿就拿到「港灣探險護照」紀念明信片和小鳶的雨傘。</p><div class="pad"><a class="btn ghost" href="../stamp/" style="text-decoration:none;text-align:center">去港灣蓋章散步</a></div>';
+  }
+  else body.innerHTML = '<p class="pad muted">合照館拍的照片只存在這支手機，換手機就沒有；收進收藏冊之後再做。</p>';
 }
 function showCardModal(l, i, lim) {
   const m = $('modal'); m.innerHTML = cardHTML(l, i, { lim }) + '<div class="row" style="width:min(340px,86vw);margin-top:14px"><button class="btn ghost" id="mf" style="color:#fff;border-color:#fff">看背面</button><button class="btn gold" id="mc">回收藏冊</button></div>'; m.classList.add('on');
