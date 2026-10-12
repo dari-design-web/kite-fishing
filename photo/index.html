@@ -301,8 +301,8 @@ function stopCam() { if (stream) { stream.getTracks().forEach((t) => t.stop()); 
 function useImage(url) { stopCam(); const b = $('bgimg'); b.src = url; b.hidden = false; $('iblur').src = url; $('iblur').hidden = false; $('vblur').hidden = true; $('video').hidden = true; src = 'img'; VIEW.hw = null; VIEW.fit = false;      // 照片預設填滿（相機才預設完整畫面）
  const r = $('zoom'); r.min = 1; r.max = 3; r.step = 0.05; r.value = VIEW.z = 1; applyView(); show('shoot'); }
 /* v0.3：舞台寬高一起按 3:4 放進可用空間，預覽和 1080×1440 匯出比例一致（ChatGPT 複查第 4 點） */
-function fitStage() { const w = document.querySelector('.stagewrap'), st = $('stage'); if (!w || !w.clientHeight) return; const W = w.clientWidth - 16, H = w.clientHeight, sw = Math.min(W, H * 3 / 4); st.style.width = sw + 'px'; st.style.height = (sw * 4 / 3) + 'px'; }
-function show(id) { for (const s of document.querySelectorAll('.screen')) s.classList.toggle('on', s.id === id); if (id === 'shoot') { fitStage(); redrawFrame(); renderTray(); stks.forEach(place); } }
+function fitStage() { const w = document.querySelector('.stagewrap'), st = $('stage'); if (!w) return; st.style.width = st.style.height = '0px'; const W = w.clientWidth - 16, H = w.clientHeight; if (!H) return; const sw = Math.min(W, H * 3 / 4); st.style.width = sw + 'px'; st.style.height = (sw * 4 / 3) + 'px'; }      // v0.6：先把舞台縮成 0 再量可用空間，避免矮螢幕舞台蓋到上方按鈕
+function show(id) { for (const s of document.querySelectorAll('.screen')) s.classList.toggle('on', s.id === id); if (id === 'shoot') { fitStage(); requestAnimationFrame(() => { fitStage(); stks.forEach(place); }); redrawFrame(); renderTray(); stks.forEach(place); } }
 
 /* ---- 貼紙：放上、拖曳、兩指縮放旋轉、右下角把手縮放旋轉、左上刪除 ---- */
 let stks = [], sel = null, tab = TABS[0];
