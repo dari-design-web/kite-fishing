@@ -79,8 +79,8 @@ button{font-family:inherit}
 .fcell.on{border-color:#2F7F86}
 .fcell .fimg{width:100%;aspect-ratio:3/4;border-radius:8px;background:linear-gradient(160deg,#BFE3F0,#7FB6C9) center/cover;position:relative;overflow:hidden}
 .fcell .fimg img{position:absolute;inset:0;width:100%;height:100%}
-.tabs{display:flex;gap:6px;padding:0 10px 6px;overflow-x:auto}
-.tabs button{flex:none;border:1px solid rgba(255,244,226,.35);background:transparent;color:#FFF4E2;border-radius:999px;padding:4px 11px;font-size:12px}
+.tabs{display:flex;gap:4px;padding:0 8px 6px;overflow-x:auto}
+.tabs button{flex:none;border:1px solid rgba(255,244,226,.35);background:transparent;color:#FFF4E2;border-radius:999px;padding:6px 8px;font-size:12px}
 .tabs button[aria-pressed="true"]{background:#FFF4E2;color:var(--ink);border-color:#FFF4E2;font-weight:700}
 .items{display:flex;gap:8px;padding:2px 10px 8px;overflow-x:auto;scrollbar-width:none}
 .items::-webkit-scrollbar{display:none}
@@ -377,7 +377,7 @@ const SND_ICON = (() => {
 </script>
 <script>
 /* 小鳶合照館 原型 v0.1（工作單 11 v4 P2）。貼紙、相框、解鎖方式都是建議，等 Dari 確認；正式素材之後開單給 ChatGPT */
-const CFG = { version: '0.12', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
+const CFG = { version: '0.13', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
 const $ = (id) => document.getElementById(id);
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = 'none'), 2400); }
@@ -386,6 +386,7 @@ function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = '
 const fly = read('kiteFlyProgress1') || {}, dex = read('kiteFishingDex2') || {}, trip = read('kiteTravel1') || {};
 const cleared = (n) => CFG.all || !!(fly.stars && fly.stars[n] && fly.stars[n][0]);
 const caught = (k) => CFG.all || !!dex[k];
+const friends = read('kiteFriends1') || {}, metPal = (n) => CFG.all || !!friends[n];      // v0.13（C-128）：在現場見過的港口朋友變成貼紙
 const hasSv = (k) => CFG.all || !!(trip.souvenirs && trip.souvenirs[k]);
 const LOCS = [['home', '東三東四', '小鯨鯊吊飾'], ['miaokou', '基隆廟口', '小燈籠'], ['zhengbin', '正濱漁港', '彩色小木屋'], ['heping', '和平島', '小貝殼'], ['badouzi', '八斗子', '小車票'], ['shenao', '深澳', '豆腐岩小石頭'], ['chaojing', '潮境公園', '海星小飾品'], ['jiufen', '九份', '芋圓碗']];
 const STK = [
@@ -409,8 +410,8 @@ const STK = [
   { tab: '漁獲', id: 'fish_small_v2', name: '鯖魚', s: 0.3, ok: () => caught('saba'), how: '捕魚抓過鯖魚' },
   { tab: '漁獲', id: 'fish_hairtail_v2', name: '白帶魚', s: 0.5, ok: () => caught('hairtail'), how: '捕魚抓過白帶魚' },
   { tab: '漁獲', id: 'fish_amber_v2', name: '紅魽', s: 0.45, ok: () => caught('amber'), how: '捕魚抓過紅魽' }
-].concat(LOCS.map(([id, loc, nm]) => ({ tab: '紀念品', id: 'sv_' + id, name: nm, s: 0.2, ok: () => hasSv(id), how: '小鳶去旅行從' + loc + '帶回來' })));
-const TABS = ['小鳶與鯨鯊', '飛行朋友', '漁獲', '紀念品'];
+].concat([['探頭小鳶', 0.36], ['打盹小鳶', 0.42], ['剛到港口的小鳶', 0.36], ['鯨鯊', 0.5], ['海龜', 0.34], ['小卷', 0.34]].map(([nm, sc], i) => ({ tab: '港口朋友', id: 'pal_f' + (i + 1), name: nm, s: sc, ok: () => metPal(i + 1), how: '在館內找到充氣的' + nm + '，掃旁邊的 QR' }))).concat(LOCS.map(([id, loc, nm]) => ({ tab: '紀念品', id: 'sv_' + id, name: nm, s: 0.2, ok: () => hasSv(id), how: '小鳶去旅行從' + loc + '帶回來' })));
+const TABS = ['小鳶與鯨鯊', '港口朋友', '飛行朋友', '漁獲', '紀念品'];
 const IMG = {};
 function img(id, ext) { if (!IMG[id]) { IMG[id] = new Image(); IMG[id].src = 'assets/' + id + '.' + (ext || 'png'); } return IMG[id]; }
 
