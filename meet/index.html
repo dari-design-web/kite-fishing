@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>港口朋友</title>
+<style>
+/* v0.1（C-114，工作單 21 ④）：現場充氣角色彩蛋。每隻充氣角色旁的 QR（正式版可換感應章）打開 ?f=1～6，遇到那隻朋友：專屬動畫＋三句話，收進小鳶背包。只做手機版（D55）；圖都是暫用，角色不定稿 */
+:root{--paper:#F6F0E5;--ink:#2B2620;--muted:#857563;--teal:#2F7F86;--buoy:#E2702A;--f:'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:#1D2F36;color:var(--ink);font:15px/1.6 var(--f)}
+.phone{position:relative;max-width:430px;min-height:100vh;min-height:100dvh;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;background:linear-gradient(180deg,var(--s1,#BFE6F2) 0%,var(--s2,#E7F5F4) 55%,var(--s3,#8CCFD6) 56%,var(--s4,#4FA9B8) 100%)}
+.phone.night{--s1:#1B2A4A;--s2:#3A4F7A;--s3:#21445E;--s4:#0F2A3C}
+header{position:relative;z-index:2;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 0;display:flex;align-items:center;gap:8px}
+header a{flex:none;text-decoration:none;font-size:13px;font-weight:700;background:rgba(255,253,248,.88);color:#1F5A5F;border-radius:999px;padding:4px 12px}
+header .t{flex:1;text-align:right;font-size:12px;font-weight:700;color:#1F5A5F}
+.night header .t{color:#DCE8F5}
+.stage{position:relative;flex:1;min-height:300px;display:flex;align-items:flex-end;justify-content:center}
+.hello{position:absolute;top:10px;left:0;right:0;text-align:center;font-weight:900;font-size:26px;letter-spacing:.06em;color:#14414A;text-shadow:0 2px 0 #fff;opacity:0;animation:fadeUp .6s ease-out .2s forwards}
+.night .hello{color:#FFF4C2;text-shadow:0 2px 0 #1B2A4A}
+.hello small{display:block;font-size:13px;font-weight:700;letter-spacing:0;color:#1F5A5F;text-shadow:none}
+.night .hello small{color:#DCE8F5}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1}}
+.who{position:relative;width:78%;max-width:320px;margin-bottom:20px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.who img{display:block;width:100%;height:auto;filter:drop-shadow(0 10px 10px rgba(0,0,0,.2))}
+.who .fx{position:absolute;inset:0;pointer-events:none}
+/* 每隻朋友的登場與待機動作 */
+.a-peek .who{width:70%;overflow:hidden;padding:0 6%;margin-left:-6%;margin-right:-6%;box-sizing:content-box}.a-peek .wall{position:absolute;left:0;right:0;bottom:0;height:34%;border-radius:18px 18px 6px 6px;background:linear-gradient(#F6E7C9,#E8CFA0);box-shadow:inset 0 -6px 0 #CFAF78;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;letter-spacing:.12em;color:#8C5A33}
+.a-peek .who img{animation:peekIn 1s cubic-bezier(.3,1.4,.5,1) .3s both,peekIdle 3s ease-in-out 1.4s infinite}
+@keyframes peekIn{from{transform:translateY(60%)}}
+@keyframes peekIdle{50%{transform:translateY(-6px) rotate(-3deg)}}
+.a-nap .who img{animation:popIn .7s ease-out .3s both,breathe 2.8s ease-in-out 1s infinite;transform-origin:50% 90%}
+.a-nap .fx i{position:absolute;right:16%;top:12%;font-style:normal;font-weight:900;color:#2F7F86;opacity:0;animation:zzz 3s ease-in-out infinite}
+.night.a-nap .fx i{color:#FFF4C2}
+.a-nap .fx i:nth-child(2){animation-delay:1s;font-size:20px}.a-nap .fx i:nth-child(3){animation-delay:2s;font-size:26px}
+@keyframes breathe{50%{transform:scale(1.04,.96)}}
+@keyframes zzz{0%{opacity:0;transform:translate(0,0)}30%{opacity:1}100%{opacity:0;transform:translate(26px,-44px)}}
+.a-arrive .who img{animation:walkIn 1.1s ease-out .3s both,hop 1.6s ease-in-out 1.5s infinite}
+@keyframes walkIn{from{transform:translateX(-90%) rotate(-6deg);opacity:0}}
+@keyframes hop{20%{transform:translateY(-10px)}40%{transform:none}}
+.a-swim .who{width:94%}
+.a-swim .who img{animation:swimIn 1.4s ease-out .3s both,swim 4s ease-in-out 1.8s infinite}
+.a-swim .fx b{position:absolute;bottom:40%;width:10px;height:10px;border-radius:50%;border:2px solid rgba(255,255,255,.85);opacity:0;animation:bub 3s ease-in infinite}
+.a-swim .fx b:nth-child(2){left:30%;animation-delay:.8s}.a-swim .fx b:nth-child(1){left:18%}.a-swim .fx b:nth-child(3){left:42%;animation-delay:1.6s}
+@keyframes swimIn{from{transform:translateX(110%)}}
+@keyframes swim{50%{transform:translateY(-8px) rotate(1.5deg)}}
+@keyframes bub{0%{opacity:0;transform:none}20%{opacity:1}100%{opacity:0;transform:translateY(-120px)}}
+.a-wave .who{width:66%}
+.a-wave .who img{animation:popIn .8s cubic-bezier(.3,1.5,.5,1) .3s both,wave 1.4s ease-in-out 1.2s infinite;transform-origin:50% 100%}
+@keyframes wave{25%{transform:rotate(-5deg)}75%{transform:rotate(5deg)}}
+.a-glow .who{width:84%}
+.a-glow .who img{animation:popIn .8s ease-out .3s both,dance 1.8s ease-in-out 1.2s infinite}
+.a-glow .fx{inset:-25%;border-radius:50%;background:radial-gradient(closest-side,rgba(255,244,194,.7),rgba(255,244,194,0));animation:glow 1.8s ease-in-out infinite}
+@keyframes dance{25%{transform:translateY(-8px) rotate(-6deg)}75%{transform:translateY(-4px) rotate(6deg)}}
+@keyframes glow{50%{opacity:.35}}
+@keyframes popIn{from{transform:scale(.3);opacity:0}}
+.heart{position:absolute;z-index:3;font-size:26px;pointer-events:none;animation:heart 1s ease-out forwards}
+@keyframes heart{to{transform:translateY(-70px) scale(1.4);opacity:0}}
+/* 對話 */
+.panel{position:relative;z-index:2;background:#FFFDF8;border-radius:22px 22px 0 0;padding:14px 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;box-shadow:0 -6px 18px rgba(0,0,0,.12)}
+.bubble{min-height:64px;font-size:16.5px;font-weight:700;line-height:1.55}
+.bubble b{display:block;font-size:12.5px;color:var(--teal);margin-bottom:2px}
+.dots{display:flex;gap:6px;justify-content:center}.dots i{width:7px;height:7px;border-radius:50%;background:#E4D8C6}.dots i.on{background:var(--buoy)}
+.go{font:inherit;font-weight:700;font-size:16px;border:0;border-radius:14px;padding:12px;background:var(--buoy);color:#fff;box-shadow:0 4px 0 #B4541B}
+.go:active{transform:translateY(2px);box-shadow:0 2px 0 #B4541B}
+.go.alt{background:#F1E8DA;color:#5B3F25;box-shadow:0 4px 0 #D6C6AD}
+.got{display:none;flex-direction:column;gap:10px}
+.got.on{display:flex}
+.got .msg{font-size:15px;font-weight:700;text-align:center}
+.got .msg em{font-style:normal;color:var(--buoy)}
+.row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.slot{aspect-ratio:1;border-radius:12px;background:#F6F0E5;display:flex;align-items:center;justify-content:center;position:relative}
+.slot img{width:84%;height:84%;object-fit:contain}
+.slot.no img{filter:grayscale(1) brightness(1.3);opacity:.3}
+.slot.now{box-shadow:0 0 0 3px var(--buoy)}
+.cap{font-size:10.5px;text-align:center;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btns{display:flex;gap:8px}.btns .go{flex:1;text-decoration:none;text-align:center}
+.note{font-size:11px;color:var(--muted);text-align:center;margin:0}
+.pick{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 16px 16px}
+.pick a{display:flex;flex-direction:column;align-items:center;text-decoration:none;color:var(--ink);background:#FFFDF8;border-radius:16px;padding:8px 4px;font-size:12.5px;font-weight:700}
+.pick img{width:72%;aspect-ratio:1;object-fit:contain}
+@media (max-height:700px){.hello{font-size:22px}.who{margin-bottom:10px}.bubble{font-size:15.5px;min-height:56px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<main class="phone" id="app">
+  <header><a href="../hub/">‹ 首頁</a><span class="t">港口朋友・原型 v0.1・圖都是暫用</span></header>
+  <div class="stage" id="stage"></div>
+  <section class="panel" id="panel"></section>
+</main>
+<script>
+(function () {
+  /* 六位朋友（工作單 20 v2，Dari 10/13 21:38 D70；角色不定稿，台詞是建議）。現場正式版：每隻充氣角色旁一個 QR，網址帶 ?f=編號 */
+  var FRIENDS = [
+    { id: 1, name: '小鳶', tag: '探頭小鳶', anim: 'peek', img: '../travel/assets/kite_hello.png', wall: 'KEELUNG 基隆',
+      lines: ['嘿！你發現我了！', '我常常躲在牆後面偷看港口，大船一來就探頭。', '要不要跟我一起拍照？站到牆前面就跟我一樣高喔！'] },
+    { id: 2, name: '小鳶', tag: '打盹小鳶', anim: 'nap', img: '../travel/assets/kite_nap.png',
+      lines: ['呼……呼……', '啊！被你吵醒了，嘿嘿，我剛剛夢到好多魚。', '你也走累了吧？在這裡坐一下，休息一下下。'] },
+    { id: 3, name: '小鳶', tag: '剛到港口的小鳶', anim: 'arrive', img: '../travel/assets/kite_pack.png',
+      lines: ['我到啦！這裡就是基隆港！', '我揹著背包、帶著明信片，從好遠的地方飛來。', '在手機裡帶便當給我，我就會再出門旅行，寄明信片給你喔！'] },
+    { id: 4, name: '鯨鯊', tag: '小鳶的好朋友', anim: 'swim', img: '../assets/whaleshark.png',
+      lines: ['你好～我是鯨鯊，小鳶的好朋友。', '我身體很大，可是很溫柔，只吃小小的浮游生物。', '小鳶抓魚的時候，我都在旁邊幫他加油！'] },
+    { id: 5, name: '海龜', tag: '被小鳶救過的海龜', anim: 'wave', img: '../photo/assets/stk_turtle.png',
+      lines: ['謝謝你來看我！', '上次我被塑膠袋纏住，是小鳶飛下來救了我。', '你也幫幫我們：垃圾不要丟進海裡，好嗎？'] },
+    { id: 6, name: '小卷', tag: '會發光的小卷', anim: 'glow', img: '../assets/fish_squid_v2.png',
+      lines: ['咻咻～我是小卷，基隆夜裡最亮的小傢伙！', '漁船的燈一亮，我們就一群一群游過來。', '晚上再來看我，我會發光跳舞給你看！'] }
+  ];
+  var KEY = 'kiteFriends1';
+  function read() { try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { return {}; } }
+  function write(o) { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} }
+  var q = new URLSearchParams(location.search), fid = +q.get('f'), F = FRIENDS.filter(function (x) { return x.id === fid; })[0];
+  var app = document.getElementById('app'), stage = document.getElementById('stage'), panel = document.getElementById('panel');
+  var h = new Date().getHours(); if (h >= 18 || h < 6) app.classList.add('night');
+  function slots(met, now) {
+    return '<div class="row">' + FRIENDS.map(function (x) { var ok = !!met[x.id]; return '<div><div class="slot' + (ok ? '' : ' no') + (x.id === now ? ' now' : '') + '"><img src="' + x.img + '" alt=""></div><div class="cap">' + (ok ? x.tag : '？？？') + '</div></div>'; }).join('') + '</div>';
+  }
+  if (!F) {
+    /* 沒帶編號：測試用的六位朋友選單（正式版現場掃 QR 直接進到那一位） */
+    var met0 = read(), n0 = Object.keys(met0).length;
+    stage.innerHTML = '<div class="hello" style="position:relative;top:0;padding-top:24px">港口朋友<small>在館內找到 ' + n0 + ' / 6 位・測試時點一位直接見面</small></div>';
+    stage.style.alignItems = 'flex-start';
+    panel.innerHTML = '';
+    var pk = document.createElement('div'); pk.className = 'pick';
+    pk.innerHTML = FRIENDS.map(function (x) { return '<a href="?f=' + x.id + '"><img src="' + x.img + '" alt="">' + 'F' + x.id + ' ' + x.tag + (met0[x.id] ? ' ✓' : '') + '</a>'; }).join('');
+    panel.appendChild(pk);
+    panel.insertAdjacentHTML('beforeend', '<p class="note">正式版：每隻充氣角色旁放一個 QR（或感應章），網址帶 ?f=1～6。位置與數量等 Dari 決定。</p>');
+    return;
+  }
+  var met = read(), first = !met[F.id];
+  app.classList.add('a-' + F.anim);
+  stage.innerHTML = '<div class="hello">遇到' + F.name + '了！<small>' + F.tag + (first ? '' : '・又見面了') + '</small></div>' +
+    '<div class="who" id="who"><img src="' + F.img + '" alt="' + F.tag + '">' + (F.wall ? '<span class="wall">' + F.wall + '</span>' : '') +
+    '<span class="fx">' + (F.anim === 'nap' ? '<i>z</i><i>z</i><i>Z</i>' : F.anim === 'swim' ? '<b></b><b></b><b></b>' : '') + '</span></div>';
+  var lines = first ? F.lines : [F.lines[0].replace('你發現我了', '你又來了'), F.lines[2]];
+  if (F.id === 6 && !app.classList.contains('night')) lines = lines.concat(['（偷偷說：晚上 6 點以後再來，我會變亮喔）']);
+  var k = 0;
+  panel.innerHTML = '<div class="bubble" id="bb"></div><span class="dots" id="dots">' + lines.map(function () { return '<i></i>'; }).join('') + '</span><button class="go" type="button" id="next"></button>' +
+    '<div class="got" id="got"></div>';
+  var bb = document.getElementById('bb'), nx = document.getElementById('next');
+  function chime(n) { try { var C = window.__ac || (window.__ac = new (window.AudioContext || window.webkitAudioContext)()); var t = C.currentTime; [0, 4, 7, 12].slice(0, n).forEach(function (s, i) { var o = C.createOscillator(), g = C.createGain(); o.type = 'triangle'; o.frequency.value = 523.25 * Math.pow(2, s / 12); g.gain.setValueAtTime(0.0001, t + i * 0.09); g.gain.exponentialRampToValueAtTime(0.18, t + i * 0.09 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.09 + 0.5); o.connect(g); g.connect(C.destination); o.start(t + i * 0.09); o.stop(t + i * 0.09 + 0.55); }); } catch (e) {} }
+  function heart(x, y) { var s = document.createElement('span'); s.className = 'heart'; s.textContent = ['💛', '🧡', '💙', '✨'][Math.floor(Math.random() * 4)]; s.style.left = x + 'px'; s.style.top = y + 'px'; app.appendChild(s); setTimeout(function () { s.remove(); }, 1000); }
+  function show() {
+    bb.innerHTML = '<b>' + F.name + '</b>' + lines[k];
+    document.querySelectorAll('#dots i').forEach(function (d, i) { d.classList.toggle('on', i === k); });
+    nx.textContent = k < lines.length - 1 ? '下一句' : (first ? '收進小鳶背包' : '好！');
+  }
+  function finish() {
+    met[F.id] = met[F.id] || Date.now(); write(met);
+    var n = Object.keys(met).length;
+    nx.style.display = 'none'; document.getElementById('dots').style.display = 'none';
+    bb.innerHTML = '<b>小鳶</b>' + (n >= 6 ? '六位港口朋友你都見過了！你是我們大家的好朋友！' : first ? '耶！' + F.tag + '跟你變成朋友了。館內還有 ' + (6 - n) + ' 位朋友等你找喔！' : '再來找我們玩～館內還有 ' + (6 - n) + ' 位朋友沒見過喔！');
+    var g = document.getElementById('got'); g.classList.add('on');
+    g.innerHTML = '<div class="msg">港口朋友 <em>' + n + ' / 6</em></div>' + slots(met, F.id) +
+      '<div class="btns"><a class="go alt" href="../hub/">回首頁看背包</a><a class="go" href="../stamp/">去蓋章</a></div><p class="note">只存在這支手機・圖都是暫用</p>';
+    chime(first ? 4 : 2);
+    var r = document.getElementById('who').getBoundingClientRect(), a = app.getBoundingClientRect();
+    for (var i = 0; i < 5; i++) setTimeout(function () { heart(r.left - a.left + r.width * (0.2 + Math.random() * 0.6), r.top - a.top + r.height * 0.3); }, i * 120);
+  }
+  nx.onclick = function () { chime(1); if (k < lines.length - 1) { k++; show(); return; } finish(); };
+  document.getElementById('who').onclick = function (e) { var a = app.getBoundingClientRect(); heart(e.clientX - a.left - 12, e.clientY - a.top - 20); chime(1); };
+  show();
+  window.__meet = { finish: finish, friends: FRIENDS };
+})();
+</script>
+</body>
+</html>

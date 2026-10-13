@@ -153,7 +153,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
     <button class="bagBtn" type="button" id="bagBtn" aria-label="打開小鳶背包"><span class="ic">🎒</span>背包</button><span class="sun"></span><span class="cloud c1"></span><span class="cloud c2"></span>
     <h1>小鳶來港</h1>
     <p>今天想和小鳶玩什麼？</p>
-    <span class="chip">測試首頁 v49・素材都是暫用</span>
+    <span class="chip">測試首頁 v50・素材都是暫用</span>
     <div class="say" id="say" hidden></div>
     <img class="kite" src="../travel/assets/kite_wave.png" alt="">
   </header>
@@ -196,6 +196,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
       <a class="flag" data-href="travel/?fast=1&amp;v1=1">旅行對照舊圖</a>
       <a class="flag" data-href="stamp/?spot=1">模擬掃第 1 點</a>
       <a class="flag" data-href="stamp/print.html">蓋章 QR 立牌版面</a>
+      <a class="flag" data-href="meet/">港口朋友（現場充氣角色彩蛋）</a>
     </div>
   </details>
 
@@ -207,8 +208,9 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
       <button type="button" data-keys="kiteFlyProgress1">清除飛行</button>
       <button type="button" data-keys="kiteTravel1">清除旅行</button>
       <button type="button" data-keys="kiteStamp1">清除蓋章</button>
+      <button type="button" data-keys="kiteFriends1">清除港口朋友</button>
       <button type="button" data-keys="kiteHubIntro1">重看小鳶自我介紹</button>
-      <button type="button" data-keys="kiteFishingDex2,kiteFishingProg1,kiteFlyProgress1,kiteTravel1,kiteStamp1,kiteHubIntro1,kiteBag1">全部清除</button>
+      <button type="button" data-keys="kiteFishingDex2,kiteFishingProg1,kiteFlyProgress1,kiteTravel1,kiteStamp1,kiteHubIntro1,kiteBag1,kiteFriends1">全部清除</button>
     </div>
   </details>
 
@@ -279,11 +281,12 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
   var SPOT = [[1, 'kite', '港口新朋友'], [2, 'ship', '數船小達人'], [3, 'shark', '鯨鯊的好朋友'], [4, 'bowl', '港邊小吃家'], [5, 'chair', '躲雨小專家'], [6, 'car', '下次見大使']];
   var COMBO = [[[1, 3], '海洋小夥伴'], [[2, 6], '港口交通通'], [[4, 5], '吃飽睡飽隊'], [[1, 2, 3, 4, 5, 6], '東三東四港灣探險家']];
   var LOC = [['home', '東三東四'], ['miaokou', '基隆廟口'], ['zhengbin', '正濱漁港'], ['heping', '和平島'], ['badouzi', '八斗子'], ['shenao', '深澳'], ['chaojing', '潮境公園'], ['jiufen', '九份']];
+  var PAL = [[1, '探頭小鳶', '../travel/assets/kite_hello.png'], [2, '打盹小鳶', '../travel/assets/kite_nap.png'], [3, '剛到港口的小鳶', '../travel/assets/kite_pack.png'], [4, '鯨鯊', '../assets/whaleshark.png'], [5, '海龜', '../photo/assets/stk_turtle.png'], [6, '小卷', '../assets/fish_squid_v2.png']];
   var STAGE = ['叁肆行', '基隆廟口夜市', '正濱漁港', '深澳鐵道自行車'];
   function bagData() {
-    var dex = read('kiteFishingDex2') || {}, t = read('kiteTravel1') || {}, fly = read('kiteFlyProgress1') || {}, sp = read('kiteStamp1') || {};
+    var dex = read('kiteFishingDex2') || {}, fr = read('kiteFriends1') || {}, t = read('kiteTravel1') || {}, fly = read('kiteFlyProgress1') || {}, sp = read('kiteStamp1') || {};
     var spots = sp.spots || {}, cards = t.cards || {}, b = t.bento || {}, stars = fly.stars || {};
-    var d = { fish: FISH.map(function (f) { return [f, !!dex[f[0]]]; }), bento: BENTO.map(function (x) { return [x, b[x[0]] || 0]; }),
+    var d = { pals: PAL.map(function (x) { return [x, !!fr[x[0]]]; }), fish: FISH.map(function (f) { return [f, !!dex[f[0]]]; }), bento: BENTO.map(function (x) { return [x, b[x[0]] || 0]; }),
       spots: SPOT.map(function (x) { return [x, !!spots[x[0]]]; }), secret: !!sp.secret,
       locs: LOC.map(function (l) { var n = 0; for (var i = 0; i < 3; i++) if (cards[l[0] + '-' + i]) n++; return [l, n]; }),
       stages: STAGE.map(function (nm, i) { var s = stars[i + 1] || stars[String(i + 1)] || []; return [nm, [0, 1, 2].map(function (j) { return !!s[j]; })]; }) };
@@ -295,7 +298,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
     var cnt = function (a) { return a.filter(function (x) { return x[1]; }).length; };
     d.nFish = cnt(d.fish); d.nSpot = cnt(d.spots) + (d.secret ? 1 : 0); d.nCard = d.locs.reduce(function (s, x) { return s + x[1]; }, 0);
     d.nStar = d.stages.reduce(function (s, x) { return s + x[1].filter(Boolean).length; }, 0); d.nBento = d.bento.reduce(function (s, x) { return s + x[1]; }, 0);
-    d.nTitle = cnt(d.titles); d.total = d.nFish + d.nSpot + d.nCard + d.nStar + d.nTitle;
+    d.nTitle = cnt(d.titles); d.nPal = cnt(d.pals); d.total = d.nPal + d.nFish + d.nSpot + d.nCard + d.nStar + d.nTitle;
     return d;
   }
   function bagLine(d) {
@@ -305,6 +308,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
     if (d.nSpot) a.push('章 ' + d.nSpot + ' 個');
     if (d.nFish) a.push('魚 ' + d.nFish + ' 種');
     if (d.nStar) a.push('星星 ' + d.nStar + ' 顆');
+    if (d.nPal) a.push('港口朋友 ' + d.nPal + ' 位');
     return '哇，我們已經收集了' + a.join('、') + '！' + (d.nFish < 6 ? '港邊還有沒見過的魚喔。' : d.nSpot < 6 ? '港口還有章在等你。' : d.nCard < 24 ? '我還想去更多地方旅行～' : '你真的是我最好的朋友！');
   }
   function bagDot() { var d = bagData(), last = null; try { last = localStorage.getItem('kiteBag1'); } catch (e) {} var btn = document.getElementById('bagBtn'), dot = btn.querySelector('.dot'); var on = last === null ? d.total > 0 : d.total > +last; if (on && !dot) { dot = document.createElement('span'); dot.className = 'dot'; btn.appendChild(dot); } if (!on && dot) dot.remove(); }
@@ -312,6 +316,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
     var d = bagData(), it = function (src, ok, cap, badge) { return '<div><div class="it' + (ok ? '' : ' no') + '"><img src="' + src + '" alt="">' + (badge ? '<em>' + badge + '</em>' : '') + '</div><div class="cap">' + (ok ? cap : '？？？') + '</div></div>'; };
     var h = '<div class="sheet" role="dialog" aria-label="小鳶背包"><div class="top"><img src="../travel/assets/kite_pack.png" alt=""><div class="line">' + bagLine(d) + '</div><button class="x" type="button" aria-label="關閉">✕</button></div>';
     h += '<h3>港灣章<small>' + d.nSpot + ' / 7</small></h3><div class="row">' + d.spots.map(function (x) { return it('../stamp/assets/stamp_c_' + x[0][1] + '.png', x[1], x[0][2]); }).join('') + '</div>';
+    h += '<h3>港口朋友<small>' + d.nPal + ' / 6</small></h3><div class="row">' + d.pals.map(function (x) { return it(x[0][2], x[1], x[0][1]); }).join('') + '</div>' + (d.nPal < 6 ? '<p class="empty">在館內找大大的充氣朋友，掃旁邊的 QR 就能見面（測試：首頁「測試選項」）</p>' : '');
     h += '<h3>漁獲圖鑑<small>' + d.nFish + ' / 6</small></h3><div class="row">' + d.fish.map(function (x) { return it('../assets/' + x[0][2] + '_v2.png', x[1], x[0][1]); }).join('') + '</div>';
     h += '<h3>明信片<small>' + d.nCard + ' / 24</small></h3><div class="list">' + d.locs.map(function (x) { return '<div class="li"><b>' + x[0][1] + '</b><span class="bar"><i style="width:' + Math.round(x[1] / 3 * 100) + '%"></i></span><span>' + x[1] + ' / 3</span></div>'; }).join('') + '</div>';
     h += '<h3>便當<small>共 ' + d.nBento + ' 份</small></h3><div class="tags">' + d.bento.map(function (x) { return '<span class="tag' + (x[1] ? '' : ' no') + '">' + x[0][1] + '便當 × ' + x[1] + '</span>'; }).join('') + '</div>';
