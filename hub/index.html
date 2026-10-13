@@ -37,7 +37,13 @@ a{color:inherit}
 .gb .tile .main{left:12%;top:12%;width:76%;height:76%;animation:bob 3.4s ease-in-out infinite}
 .gb:nth-child(2n) .tile .main{animation-delay:-1.2s}
 .gb .tile .acc{width:34%;height:34%;right:6%;bottom:6%}
-.gb .tile.art img.main{left:0;top:0;width:100%;height:100%;animation:none;filter:none}      /* G-51 正式按鈕圖：整張填滿 */
+.gb .tile.art{background:none;box-shadow:none;border-radius:0;overflow:visible} /* G-51 正式按鈕圖自帶圓角與底邊，外框拿掉 */
+.gb .tile.art::before{display:none}
+.gb .tile.art img.main{left:0;top:0;width:100%;height:100%;object-fit:contain;animation:none;filter:drop-shadow(0 5px 6px rgba(43,38,32,.16));transition:transform .12s}
+.gb .tile.art .ver{left:13%;top:11%}
+.gb:active .tile.art{transform:none;box-shadow:none}
+.gb:active .tile.art img.main{transform:translateY(4px) scale(.95)}
+.gb.wide .tile.art{box-shadow:none}
 .gb .tile .ver{position:absolute;left:8%;top:7%;z-index:2;font-size:10.5px;font-weight:700;background:rgba(255,253,248,.9);color:var(--c3);border-radius:999px;padding:0 7px}
 .gb:active .tile{transform:translateY(5px);box-shadow:0 2px 0 var(--c3),0 4px 8px rgba(43,38,32,.18),inset 0 3px 0 rgba(255,255,255,.45)}
 .gb b{font-size:17px;line-height:1.25;padding:0 2px}
@@ -74,7 +80,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
     <span class="sun"></span><span class="cloud c1"></span><span class="cloud c2"></span>
     <h1>小鳶來港</h1>
     <p>今天想和小鳶玩什麼？</p>
-    <span class="chip">測試首頁 v36・素材都是暫用</span>
+    <span class="chip">測試首頁 v37・素材都是暫用</span>
     <img class="kite" src="../travel/assets/kite_wave.png" alt="">
   </header>
   <div class="wrap">
