@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>港灣蓋章散步原型</title>
 <style>
-/* P3 港灣蓋章散步 原型 v0.12（v0.12：Dari 10/13 16:58 決定——夜間章 18:00–22:00、祕密章改成六章蓋滿＋三款遊戲玩到一定程度（抽屜裡看得到進度）；v0.10：照 ChatGPT 實測意見 v3 修兩句舊文案；v0.9：照 ChatGPT 實測意見——主進度只看 6 站、建議下一站、亮線加白邊、直接看結果會記住、地圖以外收進抽屜、親子觀察接力；G-50 正式夜間章；v0.8：G-50 港區小地圖當護照內頁、章照地圖圓圈對位、走過的路段沿小路亮起來；v0.7：G-50 正式彩色章、存檔失敗提示、中途離開補發集滿、壓印說明改成章已收好；v0.6：先存進度再演出、集滿等最後一章落下、港口札記；工作單 18 港灣護照升級提案 v1，D62，C-89）。只做手機版（D55）。
+/* P3 港灣蓋章散步 原型 v0.13（v0.13：感應印章測試模式（C-106，D65⑨），三指模擬實體感應章；v0.12：Dari 10/13 16:58 決定——夜間章 18:00–22:00、祕密章改成六章蓋滿＋三款遊戲玩到一定程度（抽屜裡看得到進度）；v0.10：照 ChatGPT 實測意見 v3 修兩句舊文案；v0.9：照 ChatGPT 實測意見——主進度只看 6 站、建議下一站、亮線加白邊、直接看結果會記住、地圖以外收進抽屜、親子觀察接力；G-50 正式夜間章；v0.8：G-50 港區小地圖當護照內頁、章照地圖圓圈對位、走過的路段沿小路亮起來；v0.7：G-50 正式彩色章、存檔失敗提示、中途離開補發集滿、壓印說明改成章已收好；v0.6：先存進度再演出、集滿等最後一章落下、港口札記；工作單 18 港灣護照升級提案 v1，D62，C-89）。只做手機版（D55）。
    v0.5：彩色墨水（每站一色，正式彩色章等 ChatGPT）、章＋稱號、組合稱號、按住蓋章、稀有章（金／彩虹）、夜間章、
    回訪升級（銅→銀→金框）、護照上畫出散步路線、第 7 個祕密章、存成「我的港灣護照」圖片。稱號名稱與機率都是建議，等 Dari */
 :root{--paper:#F4EFE6;--card:#FFFDF8;--ink:#3E2B1D;--muted:#8A7565;--teal:#2F7F86;--teal-d:#1F5A5F;--red:#C9473A;--line:#E2D6C6;--gold:#E8B879;
@@ -98,6 +98,14 @@ summary{font-weight:700;font-size:14px;cursor:pointer}
 .tools button{font:inherit;font-size:12.5px;min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--paper)}
 .tools button[aria-pressed="true"]{background:#2B3A40;color:#fff}
 /* 跳出畫面 */
+.tp{position:fixed;inset:0;z-index:25;background:#F6F0E5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;text-align:center;touch-action:none;-webkit-user-select:none;user-select:none}
+.tp h3{margin:0;font-size:20px;color:#3E2B1D}.tp p{margin:0;font-size:13.5px;line-height:1.55;color:#6D5A48;max-width:320px}
+.tp .pad{position:relative;width:min(78vw,300px);aspect-ratio:1;border-radius:50%;border:3px dashed #C9A27A;background:radial-gradient(circle,#FFF8EC,#F3E4CC);display:flex;align-items:center;justify-content:center;color:#B08A63;font-weight:700;font-size:15px;transition:transform .15s,background .2s}
+.tp .pad.on{transform:scale(.97);background:radial-gradient(circle,#FFE9C4,#F2C98E)}
+.tp .dot{position:fixed;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:rgba(201,71,58,.35);border:2px solid #C9473A;pointer-events:none}
+.tp .sim{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:340px}.tp .sim button{font:inherit;font-size:12.5px;border:1.5px solid #C9A27A;background:#fff;border-radius:999px;padding:4px 10px;color:#6D5A48}
+.tp .x{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:14px;font-size:15px;border:0;background:none;color:#6D5A48;padding:8px}
+.tp svg{width:64px;height:64px}
 .ov{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(20,30,36,.72);padding:18px}
 .ov[hidden]{display:none}
 .sheet{width:100%;max-width:400px;max-height:92vh;overflow:auto;background:var(--card);border-radius:22px;padding:20px 18px 18px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.4);animation:sheetin .35s cubic-bezier(.2,1.3,.5,1) both}
@@ -189,7 +197,7 @@ summary{font-weight:700;font-size:14px;cursor:pointer}
     <a class="btn light" href="../travel/" id="toTravel">回小鳶的小屋</a>
   </div>
   <details>
-    <summary>測試：模擬掃 QR</summary>
+    <summary>測試：模擬掃 QR／感應印章</summary>
     <div class="tools" id="tools"></div>
     <p class="note" style="margin-top:8px">正式版是在現場掃 QR，網址會帶點的編號（例如 <code>?spot=3</code>）。原型 <span id="ver"></span>：彩色章、夜間章、港區小地圖都已換上 ChatGPT（G-50）的暫用正式圖；稱號名稱、稀有機率、夜間時間、祕密章條件都是建議，等 Dari 決定。蓋章只存在這支手機。</p>
   </details>
@@ -390,7 +398,7 @@ const SND_ICON = (() => {
 /* BGM-END */
 </script>
 <script>
-const CFG = { version: '0.12', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
+const CFG = { version: '0.13', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
 const FRAMES = [[53.3333, 40.4444], [25.0463, 46.1481], [18.9352, 75.4815], [44.4907, 86.7407], [75.9722, 77.4815], [80.5093, 56.037]], FRAME_R = 10.37;      // v0.8：G-50 港區小地圖六圈中心（%）；章容器 224px＝寬 20.74%（ChatGPT 地圖位置 JSON）
 const ROUTE = [[1, 2, [[[462.8, 559.4], [449.0, 561.0], [429.0, 568.0], [410.0, 578.0], [378.3, 588.2]]]], [2, 3, [[[330.7, 717.1], [339.0, 730.0], [337.8, 734.0]], [[294.0, 784.0], [285.0, 790.0], [301.0, 820.0], [313.0, 859.0], [313.0, 902.0], [299.0, 934.0], [287.3, 944.5]]]], [3, 4, [[[290.9, 1089.4], [315.0, 1109.0], [339.0, 1130.0], [360.0, 1145.0], [372.6, 1147.7]]]], [4, 5, [[[590.5, 1181.6], [615.0, 1184.0], [638.0, 1178.0], [662.0, 1171.0], [688.0, 1157.0], [709.0, 1138.0], [736.5, 1115.3]]]], [5, 6, [[[750.1, 963.3], [721.0, 929.0], [730.0, 903.0], [740.0, 879.0], [752.0, 857.0], [786.2, 827.8]]]], [6, 1, [[[797.0, 674.6], [784.0, 660.0], [760.0, 636.0], [742.0, 613.0], [718.0, 591.0], [700.0, 579.0], [686.0, 575.3]]]]];      // 每段 [起站, 終站, 可見路段（原圖像素）]；稱號帶的斷口不補線
 /* 6 個蓋章點（實際位置待 Dari 現勘）。color：每站主色（工作單 18）；title：蓋到就拿到的稱號（建議）；riddle：還沒去時的提示 */
@@ -625,14 +633,43 @@ function noteSheet() {
     $('ov').hidden = true; renderNotes(); sfx('pop');
   };
 }
+/* ===== v0.13（C-106，D65⑨）：感應印章測試模式 =====
+   正式版想法：館內每站放一顆實體感應章，章底有 3 個導電點，每顆的三角形排法不同；章壓在手機螢幕上，網頁讀到 3 個觸控點，
+   用三角形的邊長比例認出是哪一站。現在用三根手指模擬（排法對不準時，取最接近的那一站），電腦上可用下面的按鈕模擬。 */
+const STAMP_TRI = { 1: [0.45, 0.62], 2: [0.55, 0.88], 3: [0.72, 0.76], 4: [0.5, 1], 5: [0.86, 0.95], 6: [0.34, 0.96] };      // 三邊由短到長，除以最長邊
+function triSig(pts) { const d = (a, b) => Math.hypot(a.x - b.x, a.y - b.y); const L = [d(pts[0], pts[1]), d(pts[1], pts[2]), d(pts[0], pts[2])].sort((a, b) => a - b); return [L[0] / L[2], L[1] / L[2], L[2]]; }
+function matchTri(sig) { let best = 1, bd = 9; for (const id in STAMP_TRI) { const t = STAMP_TRI[id], e = Math.hypot(t[0] - sig[0], t[1] - sig[1]); if (e < bd) { bd = e; best = +id; } } return { id: best, err: bd }; }
+function triSvg(id) { const t = STAMP_TRI[id], c = 1, a = t[0], b = t[1]; const x = (b * b + c * c - a * a) / (2 * c), y = Math.sqrt(Math.max(0, b * b - x * x)); const s = 52, ox = 6, oy = 58; const P = [[0, 0], [c, 0], [x, y]].map((q) => [ox + q[0] * s, oy - q[1] * s]); return '<svg viewBox="0 0 64 64"><polygon points="' + P.map((q) => q.join(',')).join(' ') + '" fill="#F2C98E" stroke="#C9473A" stroke-width="2"/>' + P.map((q) => '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="5" fill="#C9473A"/>').join('') + '</svg>'; }
+function openTouchPad() {
+  const w = document.createElement('div'); w.className = 'tp';
+  w.innerHTML = '<button class="x" type="button">✕ 關閉</button><h3>感應印章（測試）</h3><p>正式版：把館內的實體印章壓在螢幕上，就會蓋出那一站的章。<br>現在請用<b>三根手指</b>一起按住圓圈，停一下。</p><div class="pad" id="tpPad">按在這裡</div><p id="tpMsg">還沒感應到</p><div class="sim">' + SPOTS.map((s) => '<button type="button" data-id="' + s.id + '">模擬第 ' + s.id + ' 顆章</button>').join('') + '</div>';
+  document.body.appendChild(w);
+  const pad = w.querySelector('#tpPad'), msg = w.querySelector('#tpMsg'); let hold = 0, done = false, dots = [];
+  const close = () => { w.remove(); };
+  const clearDots = () => { dots.forEach((d) => d.remove()); dots = []; };
+  const fire = (id, note) => { if (done) return; done = true; sfx('stamp'); try { navigator.vibrate && navigator.vibrate(40); } catch (e) {} msg.innerHTML = triSvg(id) + '<br>感應到：<b>第 ' + id + ' 站「' + SPOTS.find((s) => s.id === id).name + '」</b>' + (note || ''); setTimeout(() => { close(); scan(id); }, 650); };
+  w.querySelector('.x').onclick = close;
+  w.querySelectorAll('.sim button').forEach((b) => (b.onclick = () => fire(+b.dataset.id, '')));
+  const onT = (e) => {
+    e.preventDefault(); clearDots();
+    const ts = [...e.touches]; ts.forEach((t) => { const d = document.createElement('i'); d.className = 'dot'; d.style.left = t.clientX + 'px'; d.style.top = t.clientY + 'px'; w.appendChild(d); dots.push(d); });
+    pad.classList.toggle('on', ts.length >= 3);
+    clearTimeout(hold);
+    if (ts.length >= 3) { msg.textContent = '感應中…'; const pts = ts.slice(0, 3).map((t) => ({ x: t.clientX, y: t.clientY })); hold = setTimeout(() => { const sig = triSig(pts); if (sig[2] < 30) { msg.textContent = '手指太靠近了，張開一點再試'; return; } const m = matchTri(sig); fire(m.id, m.err > 0.12 ? '<br><small>（手指排法不準，先算最接近的那一站）</small>' : ''); }, 350); }
+    else msg.textContent = ts.length ? '再多一根手指（要三根）' : '還沒感應到';
+  };
+  ['touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach((k) => w.addEventListener(k, onT, { passive: false }));
+}
+window.__touchStamp = { triSig, matchTri, STAMP_TRI, open: openTouchPad };
 /* ===== 測試工具 ===== */
 function renderTools() {
   $('tools').innerHTML = SPOTS.map((s) => '<button type="button" data-s="' + s.id + '">掃第 ' + s.id + ' 點</button>').join('') +
     ['gold', 'rainbow', 'night'].map((v) => '<button type="button" data-f="' + v + '" aria-pressed="' + (forceVar === v) + '">下次蓋' + VAR_NAME[v] + '</button>').join('') +
-    '<button type="button" data-s="day">模擬隔天（可再蓋）</button><button type="button" data-s="all">全部蓋好</button><button type="button" data-s="clear">清除紀錄</button>';
+    '<button type="button" data-s="touch">感應印章（三指模擬）</button><button type="button" data-s="day">模擬隔天（可再蓋）</button><button type="button" data-s="all">全部蓋好</button><button type="button" data-s="clear">清除紀錄</button>';
   $('tools').querySelectorAll('button').forEach((b) => (b.onclick = () => {
     if (b.dataset.f) { forceVar = forceVar === b.dataset.f ? '' : b.dataset.f; renderTools(); return; }
     const v = b.dataset.s;
+    if (v === 'touch') { openTouchPad(); return; }
     if (v === 'clear') { P = blank(); save(); render(); return; }
     if (v === 'day') { for (const id in P.days) P.days[id] = P.days[id].map((x) => x === today() ? 'old-' + Math.random() : x); save(); render(); return; }
     if (v === 'all') { SPOTS.forEach((s) => { if (!P.spots[s.id]) { P.spots[s.id] = Date.now(); P.order.push(s.id); P.days[s.id] = [today()]; } }); syncTitles(); save(); render(); checkDone(); return; }
