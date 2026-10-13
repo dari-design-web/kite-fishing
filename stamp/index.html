@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>港灣蓋章散步原型</title>
 <style>
-/* P3 港灣蓋章散步 原型 v0.10（v0.10：照 ChatGPT 實測意見 v3 修兩句舊文案；v0.9：照 ChatGPT 實測意見——主進度只看 6 站、建議下一站、亮線加白邊、直接看結果會記住、地圖以外收進抽屜、親子觀察接力；G-50 正式夜間章；v0.8：G-50 港區小地圖當護照內頁、章照地圖圓圈對位、走過的路段沿小路亮起來；v0.7：G-50 正式彩色章、存檔失敗提示、中途離開補發集滿、壓印說明改成章已收好；v0.6：先存進度再演出、集滿等最後一章落下、港口札記；工作單 18 港灣護照升級提案 v1，D62，C-89）。只做手機版（D55）。
+/* P3 港灣蓋章散步 原型 v0.12（v0.12：Dari 10/13 16:58 決定——夜間章 18:00–22:00、祕密章改成六章蓋滿＋三款遊戲玩到一定程度（抽屜裡看得到進度）；v0.10：照 ChatGPT 實測意見 v3 修兩句舊文案；v0.9：照 ChatGPT 實測意見——主進度只看 6 站、建議下一站、亮線加白邊、直接看結果會記住、地圖以外收進抽屜、親子觀察接力；G-50 正式夜間章；v0.8：G-50 港區小地圖當護照內頁、章照地圖圓圈對位、走過的路段沿小路亮起來；v0.7：G-50 正式彩色章、存檔失敗提示、中途離開補發集滿、壓印說明改成章已收好；v0.6：先存進度再演出、集滿等最後一章落下、港口札記；工作單 18 港灣護照升級提案 v1，D62，C-89）。只做手機版（D55）。
    v0.5：彩色墨水（每站一色，正式彩色章等 ChatGPT）、章＋稱號、組合稱號、按住蓋章、稀有章（金／彩虹）、夜間章、
    回訪升級（銅→銀→金框）、護照上畫出散步路線、第 7 個祕密章、存成「我的港灣護照」圖片。稱號名稱與機率都是建議，等 Dari */
 :root{--paper:#F4EFE6;--card:#FFFDF8;--ink:#3E2B1D;--muted:#8A7565;--teal:#2F7F86;--teal-d:#1F5A5F;--red:#C9473A;--line:#E2D6C6;--gold:#E8B879;
@@ -390,7 +390,7 @@ const SND_ICON = (() => {
 /* BGM-END */
 </script>
 <script>
-const CFG = { version: '0.11', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 6 };      // 機率與夜間時間是建議，等 Dari
+const CFG = { version: '0.12', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
 const FRAMES = [[53.3333, 40.4444], [25.0463, 46.1481], [18.9352, 75.4815], [44.4907, 86.7407], [75.9722, 77.4815], [80.5093, 56.037]], FRAME_R = 10.37;      // v0.8：G-50 港區小地圖六圈中心（%）；章容器 224px＝寬 20.74%（ChatGPT 地圖位置 JSON）
 const ROUTE = [[1, 2, [[[462.8, 559.4], [449.0, 561.0], [429.0, 568.0], [410.0, 578.0], [378.3, 588.2]]]], [2, 3, [[[330.7, 717.1], [339.0, 730.0], [337.8, 734.0]], [[294.0, 784.0], [285.0, 790.0], [301.0, 820.0], [313.0, 859.0], [313.0, 902.0], [299.0, 934.0], [287.3, 944.5]]]], [3, 4, [[[290.9, 1089.4], [315.0, 1109.0], [339.0, 1130.0], [360.0, 1145.0], [372.6, 1147.7]]]], [4, 5, [[[590.5, 1181.6], [615.0, 1184.0], [638.0, 1178.0], [662.0, 1171.0], [688.0, 1157.0], [709.0, 1138.0], [736.5, 1115.3]]]], [5, 6, [[[750.1, 963.3], [721.0, 929.0], [730.0, 903.0], [740.0, 879.0], [752.0, 857.0], [786.2, 827.8]]]], [6, 1, [[[797.0, 674.6], [784.0, 660.0], [760.0, 636.0], [742.0, 613.0], [718.0, 591.0], [700.0, 579.0], [686.0, 575.3]]]]];      // 每段 [起站, 終站, 可見路段（原圖像素）]；稱號帶的斷口不補線
 /* 6 個蓋章點（實際位置待 Dari 現勘）。color：每站主色（工作單 18）；title：蓋到就拿到的稱號（建議）；riddle：還沒去時的提示 */
@@ -402,7 +402,7 @@ const SPOTS = [
   { id: 5, name: '椅子', hint: '室內休息區', riddle: '下雨天我都躲在這裡', icon: 'chair', color: '#8A5BC2', title: '躲雨小專家', lines: ['下雨的時候，我都躲在這裡等雨停。', '坐一下，休息一下下吧。'] },
   { id: 6, name: '小車', hint: '停車場出口', riddle: '要回家的時候會經過', icon: 'car', color: '#3E9B4F', title: '下次見大使', lines: ['要回家了嗎？', '下次再來找我玩喔，', '我會在港口等你！'] }
 ];
-/* 組合稱號（隱藏，蓋到才知道）與祕密章（條件是建議：6 章蓋滿、而且至少有一個夜間章） */
+/* 組合稱號（隱藏，蓋到才知道；Dari 10/13 照建議）與祕密章（條件見 SECRET_NEED） */
 const COMBOS = [
   { ids: [1, 3], title: '海洋小夥伴', hint: '某兩站的組合' },
   { ids: [2, 6], title: '港口交通通', hint: '某兩站的組合' },
@@ -411,7 +411,15 @@ const COMBOS = [
 ];
 /* v0.9：親子觀察接力（ChatGPT G-50 創意 A 簡單版）：每站一句、可略過、不評分不拍照，不影響收章 */
 const OBS = { 1: '找一樣黃色的東西，指給對方看～', 2: '你看到的大船有什麼顏色？', 3: '看章上的鯨鯊，找找白色小點～', 4: '小鳶今天在吃什麼呀？', 5: '找到小鳶頭上的三個 Z 了嗎？', 6: '我們一起揮手，說下次見～' };
-const SECRET = { title: '傳說中的小鳶知己', color: '#C9473A', hint: '有一個章藏起來了……聽說要在星星出來以後才找得到' };
+const SECRET = { title: '傳說中的小鳶知己', color: '#C9473A', hint: '六個章蓋滿，再把三款小遊戲都玩到一定程度，藏起來的第 7 個章就會出現' };
+/* v0.12：祕密章條件（Dari 10/13 16:58：遊戲都玩到一定程度＋六章蓋滿）。「一定程度」的門檻是建議：捕魚三個場次都玩過、飛行過兩關、去旅行收到三張明信片 */
+const SECRET_NEED = [
+  { k: 'fish', name: '捕魚三個場次都玩過', need: 3, get: () => { const p = readJ('kiteFishingProg1') || {}; return Object.keys(p.played || {}).length; } },
+  { k: 'fly', name: '飛行冒險過兩關', need: 2, get: () => { const f = readJ('kiteFlyProgress1'); let c = 0; if (f && f.stars) Object.keys(f.stars).forEach((x) => { if ((f.stars[x] || [])[0]) c++; }); return c; } },
+  { k: 'travel', name: '小鳶去旅行收到三張明信片', need: 3, get: () => { const t = readJ('kiteTravel1'); return t && t.cards ? Object.keys(t.cards).length : 0; } }
+];
+function readJ(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+function secretOk() { return n() === 6 && SECRET_NEED.every((q) => q.get() >= q.need); }
 const VAR_NAME = { gold: '金色稀有', rainbow: '彩虹稀有', night: '夜間版' };
 const $ = (id) => document.getElementById(id);
 const today = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
@@ -485,7 +493,7 @@ function render() {
   const nx = nextSpot();
   $('progTxt').innerHTML = n() === 6 ? '<b>6 站都蓋好了！</b>同一站不同天再來蓋，章會升級成銀框、金框。' : '<b>' + n() + ' / 6 站</b>・下一站可以去：' + nx.riddle + '（找現場的 QR 立牌，不用照順序）';
   if (nx) { const c = $('grid').querySelector('.pcell[data-id="' + nx.id + '"]'); if (c) c.classList.add('next'); }
-  $('secret').innerHTML = P.secret ? '<span class="sv">' + secretV() + '</span><p><b>祕密章：' + SECRET.title + '</b><br>你找到藏起來的第 7 個章了！</p>' : '<span class="lock">？</span><p><b>第 7 個祕密章</b><br>' + SECRET.hint + '</p>';
+  $('secret').innerHTML = P.secret ? '<span class="sv">' + secretV() + '</span><p><b>祕密章：' + SECRET.title + '</b><br>你找到藏起來的第 7 個章了！</p>' : '<span class="lock">？</span><p><b>第 7 個祕密章</b><br>' + SECRET.hint + '<br>' + ['<span>六個章 ' + Math.min(n(), 6) + ' / 6' + (n() >= 6 ? ' ✓' : '') + '</span>'].concat(SECRET_NEED.map((q) => { const g = Math.min(q.get(), q.need); return '<span>' + q.name + ' ' + g + ' / ' + q.need + (g >= q.need ? ' ✓' : '') + '</span>'; })).join('<br>') + '</p>';
   const r = $('reward'); r.hidden = !P.complete;
   r.innerHTML = '<img src="assets/pc_passport.jpg" alt="" style="width:96px;height:60px;object-fit:cover;border-radius:4px;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.2)"><p><b>集滿獎勵已收下</b><br>護照紀念明信片在小屋收藏冊（港灣護照），小鳶的雨傘在背包。</p>';
   renderTitleBar(); renderTools(); renderNotes();
@@ -498,7 +506,7 @@ function hintSheet(s) {
 let forceVar = '', saveOk = true;
 function rollVar() {
   if (forceVar) { const v = forceVar; return v; }
-  const h = new Date().getHours(), night = h >= CFG.nightFrom || h < CFG.nightTo, r = Math.random();
+  const h = new Date().getHours(), night = h >= CFG.nightFrom && h < CFG.nightTo, r = Math.random();
   return r < CFG.rare.rainbow ? 'rainbow' : r < CFG.rare.rainbow + CFG.rare.gold ? 'gold' : night ? 'night' : '';
 }
 function scan(id) {
@@ -511,7 +519,7 @@ function scan(id) {
   P.days[s.id] = days.concat([d]);
   const nv = first ? v : (v === 'rainbow' || (v === 'gold' && P.var[s.id] !== 'rainbow') ? v : P.var[s.id] || v);      // 重蓋時保留比較稀有的那款
   if (nv) P.var[s.id] = nv; else delete P.var[s.id];
-  if (n() === 6 && Object.values(P.var).includes('night')) P.secret = P.secret || Date.now();
+  if (secretOk()) P.secret = P.secret || Date.now();
   const fresh = syncTitles(); saveOk = save();
   const toStory = () => showStory(s, true, fresh, first ? '' : '同一站不同天再蓋，章升級到 Lv' + lvOf(s.id) + '！', P.var[s.id]);
   if (P.fast && n() > 1) { sfx('stamp'); if (nv === 'gold' || nv === 'rainbow') setTimeout(() => sfx('chime'), 250); toStory(); return; }      // v0.9：選過「直接看結果」就記住，之後直接看結果（第一章仍有完整演出）
@@ -641,7 +649,7 @@ function confetti() {
   for (let i = 0; i < 70; i++) { const e = document.createElement('i'); e.style.left = (i % 2 ? 75 + Math.random() * 25 : Math.random() * 25) + '%'; /* 彩紙集中兩側，中間留給明信片和按鈕 */ e.style.background = C[i % C.length]; e.style.setProperty('--dx', (Math.random() * 120 - 60) + 'px'); e.style.setProperty('--r', (Math.random() * 900 - 450) + 'deg'); e.style.animationDuration = (1.8 + Math.random() * 1.6) + 's'; e.style.animationDelay = Math.random() * 0.5 + 's'; box.appendChild(e); }
   document.body.appendChild(box); setTimeout(() => box.remove(), 4200);
 }
-if (n() === 6 && Object.values(P.var).includes('night')) P.secret = P.secret || Date.now();
+if (secretOk()) P.secret = P.secret || Date.now();
 syncTitles(); save(); render(); drawSnd();
 if (n() === 6 && !P.rewarded) setTimeout(() => { if ($('ov').hidden) checkDone(); }, 400);      // v0.7：第 6 章蓋完卻沒看到集滿就離開，下次打開補發（ChatGPT C-92 意見）
 $('titleBar').onclick = openTitles;

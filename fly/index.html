@@ -163,7 +163,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
     <canvas class="mapfx" id="mapFx" aria-hidden="true"></canvas>
     <h1 class="maptitle">小鳶飛行冒險</h1>
     <div id="stageButtons"></div>
-    <p class="mapnote">原型 v0.30：暫用圖、不發點數。測試期間四關都開放</p>
+    <p class="mapnote">原型 v0.31：暫用圖、不發點數。測試期間四關都開放</p>
   </div>
 
   <div class="panel" id="startPanel" hidden>
@@ -189,7 +189,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
       </div>
       <button class="btn" id="startBtn">開始</button>
       <button class="btn quiet" id="mapBtn">回關卡地圖</button>
-      <p class="note">原型 v0.30：暫用圖、不發點數</p>
+      <p class="note">原型 v0.31：暫用圖、不發點數</p>
     </div>
   </div>
 
@@ -422,7 +422,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.30',
+  version: '0.31',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -951,7 +951,7 @@ function drawMarket() {
 const NM = () => ST().theme === 'market';
 const ULTN = () => (NM() ? '擲筊' : ST().theme === 'rail' ? '紅蟹車' : ST().theme === 'pier' ? '鏡海' : '鯨鯊');
 const FRIEND_NAME = { rice: '小卷米粉', jelly: '石花凍', ring: '大腸圈', oden: '基隆黑輪' };
-const JIAO = { holy: ['聖筊', '神明答應了！再送一層護盾', [0, 1]], laugh: ['笑筊', '神明笑了！羽毛變強', [0, 0]], yin: ['陰筊', '再擲一次！祈福力留下一半', [1, 1]] };      // 0 平面朝上、1 凸面朝上
+const JIAO = { holy: ['聖杯', '神明答應了！再送一層護盾', [0, 1]], laugh: ['笑筊', '神明笑了！羽毛變強', [0, 0]], yin: ['陰筊', '再擲一次！祈福力留下一半', [1, 1]] };      // 0 平面朝上、1 凸面朝上
 let jiaoForce = '';
 function eyes(y, s, mad) {      // 妖怪的眼睛（朝下，也就是朝著小鳶）
   for (const sx of [-1, 1]) { ell(sx * s, y, s * 0.46, s * 0.56, PAL.line); ell(sx * s + s * 0.14, y - s * 0.2, s * 0.17, s * 0.17, '#fff'); }
@@ -1172,7 +1172,7 @@ function drawRing() {
 }
 /* 擲筊大招：兩片筊從小鳶身邊拋起、落在畫面中央，擲出的結果決定額外的回禮；三種結果都會淨化全畫面 */
 function startJiao() {
-  const r = rnd(), res = jiaoForce || (r < 0.5 ? 'holy' : r < 0.75 ? 'laugh' : 'yin');
+  const res = jiaoForce || 'holy';      /* v0.31：擲筊一律聖杯（D52「笑杯」＝聖杯，Dari 10/13 16:58 確認） */
   ult = { jiao: true, t: 0, count: 0, hitBoss: false, res, sx: kite.x, sy: kite.y, rad: 0, ringAcc: 0 };
   flash = 0.6; $('banner').hidden = true; beep(220, 0.5, 'triangle', 0.07, 200); jingle([523, 659, 784], 110);
 }
