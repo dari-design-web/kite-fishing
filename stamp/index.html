@@ -5,87 +5,126 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>港灣蓋章散步原型</title>
 <style>
-/* P3 港灣蓋章散步 原型 v0.1（工作單 11 v4 第三節，C-83）。只做手機版（D55）。章與護照頁是程式畫的暫用圖，等 ChatGPT 正式圖 */
+/* P3 港灣蓋章散步 原型 v0.5（工作單 18 港灣護照升級提案 v1，D62，C-89）。只做手機版（D55）。
+   v0.5：彩色墨水（每站一色，正式彩色章等 ChatGPT）、章＋稱號、組合稱號、按住蓋章、稀有章（金／彩虹）、夜間章、
+   回訪升級（銅→銀→金框）、護照上畫出散步路線、第 7 個祕密章、存成「我的港灣護照」圖片。稱號名稱與機率都是建議，等 Dari */
 :root{--paper:#F4EFE6;--card:#FFFDF8;--ink:#3E2B1D;--muted:#8A7565;--teal:#2F7F86;--teal-d:#1F5A5F;--red:#C9473A;--line:#E2D6C6;--gold:#E8B879;
   --f:'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;min-height:100%;background:#1D2F36;color:var(--ink);font-family:var(--f)}
-#app{max-width:430px;min-height:100vh;min-height:100dvh;margin:0 auto;background:var(--paper) linear-gradient(180deg,#DCEFF0 0,#F4EFE6 220px);padding:calc(16px + env(safe-area-inset-top,0px)) 14px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+#app{max-width:430px;min-height:100vh;min-height:100dvh;margin:0 auto;background:var(--paper) linear-gradient(180deg,#DCEFF0 0,#F4EFE6 220px);padding:calc(14px + env(safe-area-inset-top,0px)) 14px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
 header{display:flex;align-items:center;gap:10px}
-header img{width:64px;height:64px;object-fit:contain;flex:none}
-header h1{margin:0;font-size:24px;letter-spacing:.04em}
-header p{margin:2px 0 0;font-size:13px;color:var(--muted)}
-.bar{height:12px;border-radius:999px;background:#E4D8C6;overflow:hidden}
-.bar i{display:block;height:100%;background:linear-gradient(90deg,#E8A33A,#C9473A);border-radius:999px;transition:width .5s}
-.book{background:var(--card);border-radius:18px;padding:14px;box-shadow:0 6px 18px rgba(62,43,29,.12);border:1px solid var(--line);
-  background-image:repeating-linear-gradient(0deg,transparent 0 27px,rgba(226,214,198,.35) 27px 28px)}
-.book h2{margin:0 0 10px;font-size:16px;display:flex;justify-content:space-between;align-items:baseline}
-.book h2 small{font-size:12px;color:var(--muted);font-weight:400}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-/* v0.2：護照頁換上 G-49 底圖（1080×1350），六個章照圓框位置 JSON 對位（2 欄 × 3 列） */
+header img{width:58px;height:58px;object-fit:contain;flex:none;animation:hover 3.2s ease-in-out infinite}
+header h1{margin:0;font-size:23px;letter-spacing:.04em}
+header p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
+@keyframes hover{50%{transform:translateY(-5px) rotate(-3deg)}}
+.snd{margin-left:auto;flex:none;width:42px;height:42px;border-radius:50%;border:0;background:#fff;color:var(--teal-d);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(62,43,29,.18)}
+/* 稱號列 */
+.titlebar{display:flex;align-items:center;gap:10px;background:linear-gradient(90deg,#2B3A40,#3E5560);color:#FFF4E2;border-radius:16px;padding:9px 12px;border:0;font:inherit;text-align:left;box-shadow:0 4px 10px rgba(30,40,46,.25)}
+.titlebar .medal{width:40px;height:40px;flex:none;border-radius:50%;background:radial-gradient(circle at 35% 30%,#FFF2B8,#E8B879 45%,#B9852F);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
+.titlebar small{display:block;font-size:11px;opacity:.75}
+.titlebar b{font-size:17px;letter-spacing:.06em}
+.titlebar .cnt{margin-left:auto;font-size:12px;background:rgba(255,244,226,.16);border-radius:999px;padding:3px 9px;white-space:nowrap}
+.bar{height:10px;border-radius:999px;background:#E4D8C6;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#E8A33A,#E0662F,#C9473A,#8A5BC2,#2F6DB5,#1E9E9A);border-radius:999px;transition:width .6s}
+.note{font-size:12px;color:var(--muted);line-height:1.6;margin:0}
+/* 護照頁：G-49 底圖＋圓框對位 */
 .passport{position:relative;width:100%;aspect-ratio:1080/1350;background:url(assets/passport_page.jpg) center/100% 100%;border-radius:14px;box-shadow:0 6px 18px rgba(62,43,29,.15);overflow:hidden}
+.passport.full{animation:glow 1.6s ease-in-out 2}
+@keyframes glow{50%{box-shadow:0 0 0 6px rgba(232,184,121,.7),0 6px 18px rgba(62,43,29,.15)}}
 .passport .ttl{position:absolute;left:0;right:0;top:5%;text-align:center}
 .passport .ttl b{display:block;font-size:22px;letter-spacing:.12em;color:#5A3A24}
 .passport .ttl span{font-size:13px;color:#8A7565}
+.passport svg.route{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.route path{fill:none;stroke:#B98A5A;stroke-width:.9;stroke-linecap:round;stroke-dasharray:.1 2.4}
+.route path.newest{stroke:#C9473A;animation:draw 1.2s ease-out both}
+@keyframes draw{from{stroke-dashoffset:40;opacity:0}to{opacity:1}}
+.route circle{fill:#B98A5A}
 .pcell{position:absolute;transform:translate(-50%,-50%);border:0;background:none;padding:0;font:inherit;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#A08A72}
-.pcell img{width:100%;height:100%;object-fit:contain;transform:rotate(-8deg);mix-blend-mode:multiply}
-.pcell .n{font-size:26px;font-weight:700;color:#C8B79F;line-height:1}
-.pcell small{font-size:11px;line-height:1.35;text-align:center;padding:0 12%;margin-top:4px}
-.pcell .dt{position:absolute;bottom:-4%;font-size:10.5px;font-weight:700;color:#B4483C;background:rgba(255,250,240,.85);border-radius:999px;padding:0 6px}
-.passport .foot{position:absolute;left:0;right:0;bottom:3.2%;text-align:center;font-size:12px;color:#8A7565}
-.big img{width:100%;height:100%;object-fit:contain;animation:slam .45s cubic-bezier(.3,1.6,.6,1) both}
-.cell{border:0;background:none;font:inherit;padding:0;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--ink)}
-.slot{width:100%;aspect-ratio:1;border-radius:50%;border:2.5px dashed #CDBDA6;display:flex;align-items:center;justify-content:center;position:relative;background:rgba(255,255,255,.5)}
-.slot .n{font-size:22px;font-weight:700;color:#CDBDA6}
-.cell small{font-size:11px;line-height:1.35;color:var(--muted);text-align:center;min-height:30px}
-.cell b{font-size:12.5px}
-.stamp{width:100%;height:100%;border-radius:50%;border:4px double var(--red);color:var(--red);display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(-8deg);background:rgba(201,71,58,.04);position:relative}
-.stamp svg{width:52%;height:52%}
-.stamp span{font-size:10px;font-weight:700;letter-spacing:.06em;margin-top:2px}
-.slot.done{border:0}
+.pcell .q{font-size:30px;font-weight:700;color:#C8B79F;line-height:1}
+.pcell small{font-size:10.5px;line-height:1.35;text-align:center;padding:0 10%;margin-top:3px}
+.pcell .tag{position:absolute;bottom:-9%;max-width:120%;white-space:nowrap;font-size:10.5px;font-weight:700;color:#fff;border-radius:999px;padding:1px 7px;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.pcell .lv{position:absolute;right:-2%;top:-2%;font-size:10px;font-weight:700;border-radius:999px;padding:1px 5px;color:#5A3A24;background:#E2E2E2;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.pcell .lv.l3{background:linear-gradient(135deg,#F7E08A,#D9A93A)}
+.pcell .rare{position:absolute;left:-4%;top:-2%;font-size:10px;font-weight:700;border-radius:999px;padding:1px 5px;color:#fff;background:#C9971C}
+.pcell .rare.rainbow{background:linear-gradient(90deg,#E5484D,#F2A33A,#E8D33A,#3EAE5B,#2F6DB5,#8A5BC2)}
+.pcell .rare.night{background:#2B3A6B}
+.pcell.new .stampv{animation:pslam .55s cubic-bezier(.3,1.6,.6,1) both}
+.pcell.new::after{content:'';position:absolute;inset:6%;border-radius:50%;border:3px solid var(--c,#C9473A);opacity:.55;animation:ink .7s ease-out .25s both;pointer-events:none}
+.pcell.ring2 .stampv{box-shadow:0 0 0 3px #C9CED3}
+.pcell.ring3 .stampv{box-shadow:0 0 0 3px #E2B54A,0 0 10px rgba(226,181,74,.7)}
+@keyframes pslam{0%{transform:scale(2.4) rotate(-24deg);opacity:0}55%{transform:scale(.9) rotate(-6deg);opacity:1}100%{transform:scale(1) rotate(-8deg)}}
+@keyframes ink{0%{transform:scale(.8);opacity:.8}100%{transform:scale(1.5);opacity:0}}
+.pcell:not(.done) .q{animation:breathe 2.6s ease-in-out infinite}
+@keyframes breathe{50%{opacity:.45}}
+/* 彩色章：底色淡圓＋章圖當遮罩填色（正式彩色插畫章等 ChatGPT，G-50） */
+.stampv{display:block;position:relative;width:100%;height:100%;border-radius:50%;transform:rotate(-8deg);background:radial-gradient(circle,color-mix(in srgb,var(--c) 18%,#FFFDF8) 0 58%,transparent 59%)}
+.stampv .inkl{position:absolute;inset:0;background:var(--c);-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat}
+.stampv.gold{background:radial-gradient(circle,#FFF4CC 0 58%,transparent 59%)}
+.stampv.gold .inkl{background:linear-gradient(120deg,#9C6B12,#F7D774 30%,#C9971C 50%,#FFF2B8 62%,#B07D1A 80%);background-size:220% 100%;animation:shine 2.4s linear infinite}
+.stampv.rainbow{background:radial-gradient(circle,#FFFFFF 0 58%,transparent 59%)}
+.stampv.rainbow .inkl{background:conic-gradient(from 0deg,#E5484D,#F2A33A,#E8D33A,#3EAE5B,#2F9FB5,#2F6DB5,#8A5BC2,#E5484D);animation:spin 6s linear infinite}
+.stampv.night{background:radial-gradient(circle,#2B3A6B 0 58%,transparent 59%)}
+.stampv.night .inkl{background:linear-gradient(160deg,#FFE7A0,#F2C14E 60%,#FFF6D0)}
+.stampv.night::after{content:'✦ ✧';position:absolute;left:28%;top:24%;font-size:10px;color:#FFF0B0;letter-spacing:6px}
+@keyframes shine{to{background-position:-220% 0}}
+@keyframes spin{to{filter:hue-rotate(360deg)}}
+/* 祕密章 */
+.secret{display:flex;align-items:center;gap:12px;background:#2B3A40;color:#FFF4E2;border-radius:16px;padding:10px 12px}
+.secret .sv{width:62px;height:62px;flex:none}
+.secret .lock{width:62px;height:62px;flex:none;border-radius:50%;border:2.5px dashed rgba(255,244,226,.45);display:flex;align-items:center;justify-content:center;font-size:24px;color:rgba(255,244,226,.6)}
+.secret p{margin:0;font-size:13px;line-height:1.55}
 .reward{display:flex;gap:12px;align-items:center;background:#FFF3DA;border:1.5px solid #E8C98A;border-radius:16px;padding:12px}
 .reward[hidden]{display:none}
-.reward img{width:56px;height:56px;object-fit:contain}
 .reward p{margin:0;font-size:13.5px;line-height:1.55}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .btn{display:block;width:100%;border:0;border-radius:14px;padding:14px;font:inherit;font-size:16px;font-weight:700;background:var(--teal);color:#fff;box-shadow:0 4px 0 var(--teal-d);text-align:center;text-decoration:none}
 .btn.light{background:#FFF7EA;color:var(--ink);box-shadow:0 4px 0 #C9A57E}
 details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px}
 summary{font-weight:700;font-size:14px;cursor:pointer}
 .tools{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
-.tools button{font:inherit;font-size:13px;min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--paper)}
-.note{font-size:12px;color:var(--muted);line-height:1.6;margin:8px 0 0}
-/* 蓋章畫面 */
+.tools button{font:inherit;font-size:12.5px;min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--paper)}
+.tools button[aria-pressed="true"]{background:#2B3A40;color:#fff}
+/* 跳出畫面 */
 .ov{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(20,30,36,.72);padding:18px}
 .ov[hidden]{display:none}
-.sheet{width:100%;max-width:400px;background:var(--card);border-radius:22px;padding:20px 18px 18px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.4)}
-.sheet .big{width:150px;height:150px;position:relative}
-.sheet .big .stamp{animation:slam .45s cubic-bezier(.3,1.6,.6,1) both}
-@keyframes slam{0%{transform:scale(2.2) rotate(-20deg);opacity:0}60%{transform:scale(.92) rotate(-6deg);opacity:1}100%{transform:scale(1) rotate(-8deg)}}
+.sheet{width:100%;max-width:400px;max-height:92vh;overflow:auto;background:var(--card);border-radius:22px;padding:20px 18px 18px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.4);animation:sheetin .35s cubic-bezier(.2,1.3,.5,1) both}
+@keyframes sheetin{from{transform:translateY(40px) scale(.94);opacity:0}}
 .sheet h3{margin:0;font-size:20px}
+.sheet .big{width:150px;height:150px;position:relative}
+.sheet .big .stampv{animation:pslam .45s cubic-bezier(.3,1.6,.6,1) both}
 .say{display:flex;gap:10px;align-items:flex-end;text-align:left;width:100%}
-.say img{width:64px;flex:none}
+.say img{width:64px;flex:none;animation:hover 2.4s ease-in-out infinite}
 .say p{margin:0;background:#EAF5F4;border-radius:14px 14px 14px 4px;padding:10px 12px;font-size:15px;line-height:1.6}
 .rec{width:100%;font-size:13px;background:#FFF3DA;border-radius:12px;padding:8px 10px;text-align:left}
-.again{font-size:12px;color:var(--muted)}
-/* v0.4（C-87）：動畫與配樂 */
-header img{animation:hover 3.2s ease-in-out infinite}
-@keyframes hover{50%{transform:translateY(-5px) rotate(-3deg)}}
-.snd{margin-left:auto;flex:none;width:42px;height:42px;border-radius:50%;border:0;background:#fff;color:var(--teal-d);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(62,43,29,.18)}
-.pcell.new img{animation:pslam .55s cubic-bezier(.3,1.6,.6,1) both}
-.pcell.new::after{content:'';position:absolute;inset:6%;border-radius:50%;border:3px solid rgba(201,71,58,.55);animation:ink .7s ease-out .25s both;pointer-events:none}
-@keyframes pslam{0%{transform:scale(2.4) rotate(-24deg);opacity:0}55%{transform:scale(.9) rotate(-6deg);opacity:1}100%{transform:scale(1) rotate(-8deg)}}
-@keyframes ink{0%{transform:scale(.8);opacity:1}100%{transform:scale(1.5);opacity:0}}
-.pcell:not(.done) .n{animation:breathe 2.6s ease-in-out infinite}
-.pcell:not(.done):nth-child(2n) .n{animation-delay:.8s}
-@keyframes breathe{50%{opacity:.45}}
-.passport.full{animation:glow 1.6s ease-in-out 2}
-@keyframes glow{50%{box-shadow:0 0 0 6px rgba(232,184,121,.7),0 6px 18px rgba(62,43,29,.15)}}
+.again{font-size:12px;color:var(--muted);margin:0}
+.gotT{display:flex;flex-direction:column;gap:6px;width:100%}
+.gotT div{display:flex;align-items:center;gap:8px;background:linear-gradient(90deg,#2B3A40,#3E5560);color:#FFF4E2;border-radius:12px;padding:8px 12px;font-size:14px;text-align:left;animation:sheetin .4s cubic-bezier(.2,1.3,.5,1) both}
+.gotT div:nth-child(2){animation-delay:.15s}.gotT div:nth-child(3){animation-delay:.3s}
+.gotT b{font-size:16px;letter-spacing:.05em}
+.gotT i{font-style:normal;font-size:11px;background:#E8B879;color:#3E2B1D;border-radius:999px;padding:1px 7px;margin-left:auto}
+/* 按住蓋章 */
+.press{position:relative;width:220px;height:230px;touch-action:none;user-select:none;-webkit-user-select:none;border:0;background:none;padding:0;font:inherit}
+.press .paperx{position:absolute;left:10px;right:10px;bottom:0;height:120px;border-radius:12px;background:#FFFDF8 repeating-linear-gradient(0deg,transparent 0 19px,rgba(226,214,198,.5) 19px 20px);box-shadow:inset 0 0 0 1px var(--line),0 4px 10px rgba(0,0,0,.08)}
+.press .mark{position:absolute;left:50%;bottom:10px;width:110px;height:110px;margin-left:-55px;opacity:0}
+.press .handle{position:absolute;left:50%;top:0;width:120px;margin-left:-60px;transition:transform .25s cubic-bezier(.3,1.5,.6,1)}
+.press .handle,.press .grip,.press .base,.press .mark,.secret .sv{display:block}
+.press .handle .grip{width:44px;height:58px;margin:0 auto;border-radius:22px 22px 8px 8px;background:linear-gradient(90deg,#7A4A2A,#A86B3E 45%,#7A4A2A)}
+.press .handle .base{width:120px;height:26px;border-radius:8px;background:linear-gradient(#5A3A24,#3E2B1D);box-shadow:0 4px 0 rgba(0,0,0,.2)}
+.press .ring{position:absolute;left:50%;top:50%;width:200px;height:200px;margin:-100px 0 0 -100px;pointer-events:none}
+.press .ring circle{fill:none;stroke:var(--c,#C9473A);stroke-width:5;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%;stroke-dasharray:597;stroke-dashoffset:597}
+.press.done .mark{opacity:1;animation:pslam .45s cubic-bezier(.3,1.6,.6,1) both}
+.press.done .handle{transform:translateY(-30px)!important;opacity:.0;transition:transform .35s,opacity .35s .1s}
+.hold{font-size:16px;font-weight:700;color:var(--ink);margin:0}
+.skip{border:0;background:none;color:var(--muted);font:inherit;font-size:12px;text-decoration:underline}
+.tlist{width:100%;display:flex;flex-direction:column;gap:6px;text-align:left}
+.tlist button{display:flex;align-items:center;gap:8px;width:100%;border:1px solid var(--line);background:#fff;border-radius:12px;padding:9px 12px;font:inherit;font-size:14px}
+.tlist button[aria-pressed="true"]{border-color:#2B3A40;background:#2B3A40;color:#FFF4E2}
+.tlist button:disabled{opacity:.6;background:var(--paper)}
+.tlist small{margin-left:auto;font-size:11px;color:inherit;opacity:.7;text-align:right}
 .conf{position:fixed;inset:0;pointer-events:none;z-index:30;overflow:hidden}
 .conf i{position:absolute;top:-20px;width:9px;height:14px;border-radius:2px;animation:fall linear forwards}
-@keyframes fall{to{transform:translate(var(--dx),110vh) rotate(var(--r));}}
-.sheet{animation:sheetin .35s cubic-bezier(.2,1.3,.5,1) both}
-@keyframes sheetin{from{transform:translateY(40px) scale(.94);opacity:0}}
-.say img{animation:hover 2.4s ease-in-out infinite}
+@keyframes fall{to{transform:translate(var(--dx),110vh) rotate(var(--r))}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -93,24 +132,29 @@ header img{animation:hover 3.2s ease-in-out infinite}
 <div id="app">
   <header>
     <img src="../travel/assets/kite_wave.png" alt="">
-    <div><h1>港灣蓋章散步</h1><p>在東三東四走一圈，掃 QR 蓋章、聽小鳶說故事</p></div>
+    <div><h1>港灣蓋章散步</h1><p>走一圈、蓋彩色章、收集小鳶給你的稱號</p></div>
     <button class="snd" id="snd" type="button"></button>
   </header>
+  <button class="titlebar" id="titleBar" type="button"></button>
   <div>
     <div class="bar"><i id="prog" style="width:0"></i></div>
     <p class="note" id="progTxt" style="margin-top:6px"></p>
   </div>
   <section class="passport" id="passport">
     <div class="ttl"><b>港灣探險護照</b><span id="count"></span></div>
+    <svg class="route" id="route" viewBox="0 0 100 125" preserveAspectRatio="none" aria-hidden="true"></svg>
     <div id="grid"></div>
-    <div class="foot">點蓋好的章，可以再聽一次小鳶的故事</div>
   </section>
+  <div class="secret" id="secret"></div>
   <div class="reward" id="reward" hidden></div>
-  <a class="btn light" href="../travel/" id="toTravel">回小鳶的小屋</a>
+  <div class="row2">
+    <button class="btn" type="button" id="shareBtn">存成護照圖片</button>
+    <a class="btn light" href="../travel/" id="toTravel">回小鳶的小屋</a>
+  </div>
   <details>
     <summary>測試：模擬掃 QR</summary>
     <div class="tools" id="tools"></div>
-    <p class="note">正式版是在現場掃 QR，網址會帶點的編號（例如 <code>?spot=3</code>）。原型 <span id="ver"></span>：章與護照頁是暫用圖；蓋章只存在這支手機。</p>
+    <p class="note" style="margin-top:8px">正式版是在現場掃 QR，網址會帶點的編號（例如 <code>?spot=3</code>）。原型 <span id="ver"></span>：章先用每站不同顏色的墨水，正式彩色插畫章等 ChatGPT（G-50）；稱號名稱、稀有機率、夜間時間、祕密章條件都是建議，等 Dari 決定。蓋章只存在這支手機。</p>
   </details>
 </div>
 <div class="ov" id="ov" hidden><div class="sheet" id="sheet"></div></div>
@@ -309,84 +353,230 @@ const SND_ICON = (() => {
 /* BGM-END */
 </script>
 <script>
-const CFG = { version: '0.4', key: 'kiteStamp1' };
+const CFG = { version: '0.5', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 6 };      // 機率與夜間時間是建議，等 Dari
 const FRAMES = [[31.2037, 34.1481], [68.7037, 34.1481], [31.2037, 56.2222], [68.7037, 56.1852], [31.1574, 78.2593], [68.7037, 78.2963]], FRAME_R = 12.45;      // G-49 護照頁圓框中心（%）與半徑（佔寬度 %）
-/* 6 個蓋章點（工作單 11 v4 第三節；實際位置待 Dari 現勘）。小鳶的話照 D42：4 到 7 歲小小孩的語氣 */
+/* 6 個蓋章點（實際位置待 Dari 現勘）。color：每站主色（工作單 18）；title：蓋到就拿到的稱號（建議）；riddle：還沒去時的提示 */
 const SPOTS = [
-  { id: 1, name: '小鳶', hint: '旅客服務中心入口的小鳶', icon: 'kite', lines: ['我第一次飛來這裡的時候，好緊張喔！', '後來發現大家都好親切。', '歡迎你也來玩～'] },
-  { id: 2, name: '郵輪', hint: '看得到郵輪的碼頭邊', icon: 'ship', lines: ['你看你看，大船來了！', '我每天都在數有幾艘船，', '數到手指不夠用啦！'] },
-  { id: 3, name: '鯨鯊', hint: '鯨鯊拍照點', icon: 'shark', lines: ['這裡是我跟鯨鯊好朋友拍照的地方。', '牠游得慢慢的，可是好溫柔喔。'] },
-  { id: 4, name: '碗筷', hint: '美食區的專櫃前', icon: 'bowl', lines: ['肚子咕嚕咕嚕叫了嗎？', '這裡有好多好吃的，', '我最喜歡港邊的點心了！'], rec: '今天的推薦：剛起鍋的炸蝦捲，酥酥的！（示範文字，正式版由專櫃自己改）' },
-  { id: 5, name: '椅子', hint: '室內休息區', icon: 'chair', lines: ['下雨的時候，我都躲在這裡等雨停。', '坐一下，休息一下下吧。'] },
-  { id: 6, name: '小車', hint: '停車場出口', icon: 'car', lines: ['要回家了嗎？', '下次再來找我玩喔，', '我會在港口等你！'] }
+  { id: 1, name: '小鳶', hint: '旅客服務中心入口', riddle: '一進門就會看到我', icon: 'kite', color: '#E39A1F', title: '港口新朋友', lines: ['我第一次飛來這裡的時候，好緊張喔！', '後來發現大家都好親切。', '歡迎你也來玩～'] },
+  { id: 2, name: '郵輪', hint: '看得到郵輪的碼頭邊', riddle: '聽得到海浪、看得到大船', icon: 'ship', color: '#2F6DB5', title: '數船小達人', lines: ['你看你看，大船來了！', '我每天都在數有幾艘船，', '數到手指不夠用啦！'] },
+  { id: 3, name: '鯨鯊', hint: '鯨鯊拍照點', riddle: '有個很大很溫柔的朋友', icon: 'shark', color: '#1E9E9A', title: '鯨鯊的好朋友', lines: ['這裡是我跟鯨鯊好朋友拍照的地方。', '牠游得慢慢的，可是好溫柔喔。'] },
+  { id: 4, name: '碗筷', hint: '美食區的專櫃前', riddle: '香香的味道從這裡飄出來', icon: 'bowl', color: '#E0662F', title: '港邊小吃家', lines: ['肚子咕嚕咕嚕叫了嗎？', '這裡有好多好吃的，', '我最喜歡港邊的點心了！'], rec: '今天的推薦：剛起鍋的炸蝦捲，酥酥的！（示範文字，正式版由專櫃自己改）' },
+  { id: 5, name: '椅子', hint: '室內休息區', riddle: '下雨天我都躲在這裡', icon: 'chair', color: '#8A5BC2', title: '躲雨小專家', lines: ['下雨的時候，我都躲在這裡等雨停。', '坐一下，休息一下下吧。'] },
+  { id: 6, name: '小車', hint: '停車場出口', riddle: '要回家的時候會經過', icon: 'car', color: '#3E9B4F', title: '下次見大使', lines: ['要回家了嗎？', '下次再來找我玩喔，', '我會在港口等你！'] }
 ];
-const ICON = {      // 暫用的章圖（單色線條），等 ChatGPT 正式圖
-  kite: '<path d="M12 4c3 0 5 2.2 5 5 0 2-1 3.4-2.4 4.2L18 17h-3.2L12 15l-2.8 2H6l3.4-3.8C8 12.4 7 11 7 9c0-2.8 2-5 5-5z"/><circle cx="10.2" cy="8.6" r=".9" fill="currentColor"/><circle cx="13.8" cy="8.6" r=".9" fill="currentColor"/><path d="M11 10.6l1 1 1-1"/>',
-  ship: '<path d="M3 15h18l-2.5 4h-13z"/><path d="M6 15V10h12v5"/><path d="M8 10V7h7v3"/><circle cx="9.5" cy="12.5" r=".7" fill="currentColor"/><circle cx="12" cy="12.5" r=".7" fill="currentColor"/><circle cx="14.5" cy="12.5" r=".7" fill="currentColor"/><path d="M11 7V4.5"/>',
-  shark: '<path d="M2.5 13c3-4 9-5.5 14-3l3-2.5v8l-3-2.5c-5 2.5-11 1-14-0z"/><path d="M10 9.5l1.5-3 1.5 3"/><circle cx="6" cy="12.6" r=".8" fill="currentColor"/><circle cx="9" cy="11.5" r=".5" fill="currentColor"/><circle cx="11.5" cy="12.8" r=".5" fill="currentColor"/><circle cx="13.6" cy="11.6" r=".5" fill="currentColor"/>',
-  bowl: '<path d="M4 12h16c0 4-3.5 7-8 7s-8-3-8-7z"/><path d="M14 4l-3 7M17 5l-4 6"/><path d="M8 9c.5-1 1.5-1 2 0"/>',
-  chair: '<path d="M7 4h10v8H7z"/><path d="M5 12h14v3H5z"/><path d="M7 15v5M17 15v5"/>',
-  car: '<path d="M4 15l1.5-4.5C6 9 7 8.5 8.5 8.5h7c1.5 0 2.5.5 3 2L20 15v3H4z"/><circle cx="8" cy="18" r="1.6"/><circle cx="16" cy="18" r="1.6"/><path d="M7 11.5h10"/>'
-};
+/* 組合稱號（隱藏，蓋到才知道）與祕密章（條件是建議：6 章蓋滿、而且至少有一個夜間章） */
+const COMBOS = [
+  { ids: [1, 3], title: '海洋小夥伴', hint: '某兩站的組合' },
+  { ids: [2, 6], title: '港口交通通', hint: '某兩站的組合' },
+  { ids: [4, 5], title: '吃飽睡飽隊', hint: '某兩站的組合' },
+  { ids: [1, 2, 3, 4, 5, 6], title: '東三東四港灣探險家', hint: '6 個章全部蓋滿' }
+];
+const SECRET = { title: '傳說中的小鳶知己', color: '#C9473A', hint: '有一個章藏起來了……聽說要在星星出來以後才找得到' };
+const VAR_NAME = { gold: '金色稀有', rainbow: '彩虹稀有', night: '夜間版' };
 const $ = (id) => document.getElementById(id);
-function load() { try { const q = JSON.parse(localStorage.getItem(CFG.key) || 'null'); if (q && q.spots) return q; } catch (e) {} return { v: 1, spots: {}, complete: false, rewarded: false }; }
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+function blank() { return { v: 2, spots: {}, complete: false, rewarded: false, var: {}, days: {}, order: [], titles: [], cur: '', secret: 0 }; }
+function load() {
+  let q = null; try { q = JSON.parse(localStorage.getItem(CFG.key) || 'null'); } catch (e) {}
+  if (!q || !q.spots) return blank();
+  const b = blank(); for (const k in b) if (q[k] === undefined) q[k] = b[k];      // v0.3 的舊紀錄補上新欄位
+  for (const id in q.spots) { if (!q.days[id]) q.days[id] = [today()]; if (!q.order.includes(+id)) q.order.push(+id); }
+  return q;
+}
 let P = load();
 const save = () => { try { localStorage.setItem(CFG.key, JSON.stringify(P)); } catch (e) {} };
 const n = () => Object.keys(P.spots).length;
 const fmt = (ms) => { const d = new Date(ms); return (d.getMonth() + 1) + '/' + d.getDate(); };
-function stampImg(s) { return '<img src="assets/stamp_' + s.icon + '.png" alt="' + s.name + '章">'; }      // v0.2：G-49 正式章（暫用）
-function stampHTML(s, withDate) { return '<div class="stamp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + ICON[s.icon] + '</svg><span>' + s.name + (withDate && P.spots[s.id] ? '・' + fmt(P.spots[s.id]) : '') + '</span></div>'; }
+const lvOf = (id) => Math.min(3, (P.days[id] || []).length);
+/* 彩色章（暫用：章圖當遮罩，填每站主色；稀有／夜間換填色）。正式彩色插畫章來了就換成圖 */
+function stampV(s, variant) { return '<span class="stampv ' + (variant || '') + '" style="--c:' + s.color + ';--m:url(assets/stamp_' + s.icon + '.png)"><span class="inkl"></span></span>'; }
+function secretV() { return '<span class="stampv rainbow" style="--c:' + SECRET.color + ';--m:url(assets/stamp_kite.png)"><span class="inkl"></span></span>'; }
+/* ===== 稱號 ===== */
+function allTitles() {
+  const out = SPOTS.map((s) => ({ t: s.title, how: '蓋到「' + s.name + '」章', ok: !!P.spots[s.id] }));
+  COMBOS.forEach((c) => out.push({ t: c.title, how: c.hint, ok: c.ids.every((i) => P.spots[i]), combo: 1 }));
+  out.push({ t: SECRET.title, how: '祕密章', ok: !!P.secret, combo: 1 });
+  return out;
+}
+function syncTitles() {      // 回傳這次新拿到的稱號
+  const got = allTitles().filter((x) => x.ok).map((x) => x.t), fresh = got.filter((t) => !P.titles.includes(t));
+  P.titles = P.titles.concat(fresh); if (fresh.length) P.cur = fresh[fresh.length - 1]; return fresh;
+}
+function renderTitleBar() {
+  const all = allTitles(), have = all.filter((x) => x.ok).length;
+  $('titleBar').innerHTML = '<span class="medal">' + (have ? '🏅' : '？') + '</span><span><small>我的稱號（點一下可以換）</small><b>' + (P.cur || '還沒有稱號') + '</b></span><span class="cnt">' + have + ' / ' + all.length + '</span>';
+}
+function openTitles() {
+  const list = allTitles().map((x) => '<button type="button" data-t="' + x.t + '" aria-pressed="' + (x.t === P.cur) + '"' + (x.ok ? '' : ' disabled') + '>' + (x.ok ? '🏅 <b>' + x.t + '</b>' : '🔒 ' + (x.combo ? '？？？' : x.t)) + '<small>' + x.how + '</small></button>').join('');
+  $('sheet').innerHTML = '<h3>我的稱號</h3><p class="again">蓋章就會拿到稱號；有些稱號要特定的章湊在一起才會出現。</p><div class="tlist">' + list + '</div><button class="btn" type="button" id="ovOk">好</button>';
+  $('ov').hidden = false;
+  $('sheet').querySelectorAll('.tlist button').forEach((b) => (b.onclick = () => { P.cur = b.dataset.t; save(); openTitles(); renderTitleBar(); }));
+  $('ovOk').onclick = () => { $('ov').hidden = true; };
+}
+/* ===== 畫護照 ===== */
+let justId = 0;
+function routeSVG() {
+  const pts = P.order.filter((id) => P.spots[id]).map((id) => { const [x, y] = FRAMES[id - 1]; return [x, y * 1.25]; }), r = FRAME_R * 0.92;
+  let h = '';
+  for (let i = 1; i < pts.length; i++) {
+    const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], d = Math.hypot(x1 - x0, y1 - y0); if (d < r * 2.2) continue;
+    const ux = (x1 - x0) / d, uy = (y1 - y0) / d, ax = x0 + ux * r, ay = y0 + uy * r, bx = x1 - ux * r, by = y1 - uy * r, mx = (ax + bx) / 2 - uy * 6, my = (ay + by) / 2 + ux * 6;      // 微彎的小路
+    h += '<path class="' + (i === pts.length - 1 && P.order[P.order.length - 1] === justId ? 'newest' : '') + '" d="M' + ax.toFixed(1) + ' ' + ay.toFixed(1) + ' Q' + mx.toFixed(1) + ' ' + my.toFixed(1) + ' ' + bx.toFixed(1) + ' ' + by.toFixed(1) + '"/>';
+  }
+  return h;
+}
 function render() {
   $('ver').textContent = 'v' + CFG.version;
-  $('grid').innerHTML = SPOTS.map((s, i) => { const done = !!P.spots[s.id], [x, y] = FRAMES[i], d = FRAME_R * 2 * 1.02; return '<button class="pcell' + (done ? ' done' : '') + (s.id === justId ? ' new' : '') + '" type="button" data-id="' + s.id + '" style="left:' + x + '%;top:' + y + '%;width:' + d + '%;aspect-ratio:1" aria-label="' + (done ? s.name + '章' : '第 ' + s.id + ' 點，還沒蓋') + '">' + (done ? stampImg(s) + '<span class="dt">' + fmt(P.spots[s.id]) + '</span>' : '<span class="n">' + s.id + '</span><small>' + s.hint + '</small>') + '</button>'; }).join('');
-  $('grid').querySelectorAll('.pcell').forEach((b) => (b.onclick = () => { const s = SPOTS.find((x) => x.id === +b.dataset.id); if (P.spots[s.id]) showStory(s, false); }));
+  $('grid').innerHTML = SPOTS.map((s, i) => {
+    const done = !!P.spots[s.id], [x, y] = FRAMES[i], d = FRAME_R * 2 * 1.02, v = P.var[s.id] || '', lv = lvOf(s.id);
+    const cls = 'pcell' + (done ? ' done' : '') + (s.id === justId ? ' new' : '') + (done && lv >= 2 ? ' ring' + lv : '');
+    const inner = done ? stampV(s, v) + '<span class="tag" style="background:' + (v === 'night' ? '#2B3A6B' : v ? '#B07D1A' : s.color) + '">' + s.title + '</span>' + (lv >= 2 ? '<span class="lv l' + lv + '">Lv' + lv + '</span>' : '') + (v ? '<span class="rare ' + v + '">' + (v === 'night' ? '夜' : v === 'gold' ? '金' : '虹') + '</span>' : '')
+      : '<span class="q">？</span><small>' + s.riddle + '</small>';
+    return '<button class="' + cls + '" type="button" data-id="' + s.id + '" style="left:' + x + '%;top:' + y + '%;width:' + d + '%;aspect-ratio:1;--c:' + s.color + '" aria-label="' + (done ? s.name + '章，稱號' + s.title : '第 ' + s.id + ' 點，還沒蓋：' + s.riddle) + '">' + inner + '</button>';
+  }).join('');
+  $('grid').querySelectorAll('.pcell').forEach((b) => (b.onclick = () => { const s = SPOTS.find((x) => x.id === +b.dataset.id); if (P.spots[s.id]) showStory(s, false, []); else hintSheet(s); }));
+  $('route').innerHTML = routeSVG();
   justId = 0; $('passport').classList.toggle('full', n() === 6 && !!P.complete);
   $('count').textContent = n() + ' / 6'; $('prog').style.width = (n() / 6 * 100) + '%';
-  $('progTxt').textContent = n() === 6 ? '6 個章都蓋好了！' : '再蓋 ' + (6 - n()) + ' 個就集滿，可以拿到護照明信片和小鳶的雨傘';
+  $('progTxt').textContent = n() === 6 ? '6 個章都蓋好了！同一站不同天再來蓋，章會升級成銀框、金框。' : '再蓋 ' + (6 - n()) + ' 個就集滿。點「？」可以看提示。';
+  $('secret').innerHTML = P.secret ? '<span class="sv">' + secretV() + '</span><p><b>祕密章：' + SECRET.title + '</b><br>你找到藏起來的第 7 個章了！</p>' : '<span class="lock">？</span><p><b>第 7 個祕密章</b><br>' + SECRET.hint + '</p>';
   const r = $('reward'); r.hidden = !P.complete;
-  r.innerHTML = '<img src="assets/pc_passport.jpg" alt="" style="width:96px;height:60px;object-fit:cover;border-radius:4px;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.2)"><p><b>集滿獎勵已收下</b><br>護照紀念明信片放進小屋的收藏冊（港灣護照），小鳶的雨傘放進背包了。</p>';
-  $('tools').innerHTML = SPOTS.map((s) => '<button type="button" data-s="' + s.id + '">掃第 ' + s.id + ' 點</button>').join('') + '<button type="button" data-s="all">全部蓋好</button><button type="button" data-s="clear" style="grid-column:span 2">清除蓋章紀錄</button>';
-  $('tools').querySelectorAll('button').forEach((b) => (b.onclick = () => { const v = b.dataset.s; if (v === 'clear') { P = { v: 1, spots: {}, complete: false, rewarded: false }; save(); render(); return; } if (v === 'all') { SPOTS.forEach((s) => { if (!P.spots[s.id]) P.spots[s.id] = Date.now(); }); save(); checkDone(); render(); return; } scan(+v); }));
+  r.innerHTML = '<img src="assets/pc_passport.jpg" alt="" style="width:96px;height:60px;object-fit:cover;border-radius:4px;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.2)"><p><b>集滿獎勵已收下</b><br>護照紀念明信片在小屋收藏冊（港灣護照），小鳶的雨傘在背包。</p>';
+  renderTitleBar(); renderTools();
 }
-/* v0.4：配樂（散步曲＋海浪聲）與音效，音樂鈕和其他遊戲共用開關 */
-let sndOn = SND_ICON.saved, justId = 0;
-function bgmSync() { if (sndOn) BGM.play('stamp_walk'); else BGM.stop(); }
-function drawSnd() { const b = $('snd'); b.innerHTML = SND_ICON[sndOn ? 'on' : 'off']; b.setAttribute('aria-label', sndOn ? '聲音開著，點一下關掉' : '聲音關著，點一下打開'); }
-function sfx(k) { if (sndOn) BGM.sfx(k); }
-function thump() { sfx('stamp'); }
-function confetti() {
-  const box = document.createElement('div'), C = ['#C9473A', '#E8B879', '#2F7F86', '#F4D35E', '#7FB8A8', '#E58F6E']; box.className = 'conf';
-  for (let i = 0; i < 70; i++) { const e = document.createElement('i'); e.style.left = Math.random() * 100 + '%'; e.style.background = C[i % C.length]; e.style.setProperty('--dx', (Math.random() * 120 - 60) + 'px'); e.style.setProperty('--r', (Math.random() * 900 - 450) + 'deg'); e.style.animationDuration = (1.8 + Math.random() * 1.6) + 's'; e.style.animationDelay = Math.random() * 0.5 + 's'; box.appendChild(e); }
-  document.body.appendChild(box); setTimeout(() => box.remove(), 4200);
+function hintSheet(s) {
+  $('sheet').innerHTML = '<span class="q" style="font-size:48px;color:' + s.color + '">？</span><h3>第 ' + s.id + ' 站的提示</h3><div class="say"><img src="../travel/assets/kite_home.png" alt=""><p>' + s.riddle + '～<br>找到那裡的 QR，掃一下就能蓋章！</p></div><p class="again">蓋到可以拿到稱號：' + s.title + '</p><button class="btn" type="button" id="ovOk">好，去找找看</button>';
+  $('ov').hidden = false; $('ovOk').onclick = () => { $('ov').hidden = true; };
+}
+/* ===== 蓋章：先按住印章壓下去，再看小鳶說話與新稱號 ===== */
+let forceVar = '';
+function rollVar() {
+  if (forceVar) { const v = forceVar; return v; }
+  const h = new Date().getHours(), night = h >= CFG.nightFrom || h < CFG.nightTo, r = Math.random();
+  return r < CFG.rare.rainbow ? 'rainbow' : r < CFG.rare.rainbow + CFG.rare.gold ? 'gold' : night ? 'night' : '';
 }
 function scan(id) {
   const s = SPOTS.find((x) => x.id === id); if (!s) return;
-  const first = !P.spots[s.id]; if (first) { P.spots[s.id] = Date.now(); save(); justId = s.id; }
-  showStory(s, first);
+  const first = !P.spots[s.id], d = today(), days = P.days[s.id] || [], newDay = !first && !days.includes(d);
+  if (!first && !newDay) { showStory(s, false, []); return; }
+  const v = rollVar(); forceVar = '';
+  pressSheet(s, first ? v : (v && v !== 'night' ? v : P.var[s.id] || v), () => {
+    if (first) { P.spots[s.id] = Date.now(); P.order.push(s.id); justId = s.id; }
+    P.days[s.id] = days.concat([d]);
+    const nv = first ? v : (v === 'rainbow' || (v === 'gold' && P.var[s.id] !== 'rainbow') ? v : P.var[s.id] || v);      // 重蓋時保留比較稀有的那款
+    if (nv) P.var[s.id] = nv; else delete P.var[s.id];
+    if (n() === 6 && Object.values(P.var).includes('night')) P.secret = P.secret || Date.now();
+    const fresh = syncTitles(); save();
+    showStory(s, true, fresh, first ? '' : '同一站不同天再蓋，章升級到 Lv' + lvOf(s.id) + '！', P.var[s.id]);
+  });
 }
-function showStory(s, first) {
-  $('sheet').innerHTML = '<div class="big">' + stampImg(s) + '</div><h3>' + (first ? '蓋到「' + s.name + '」章了！' : '這個章已經收下囉') + '</h3>' +
-    '<div class="say"><img src="../travel/assets/' + (first ? 'kite_happy' : 'kite_home') + '.png" alt=""><p>' + s.lines.join('<br>') + '</p></div>' +
+function pressSheet(s, v, done) {
+  $('sheet').innerHTML = '<h3>' + s.hint + '</h3><button class="press" type="button" id="press" style="--c:' + s.color + '" aria-label="按住印章蓋下去">' +
+    '<span class="paperx"></span><span class="mark">' + stampV(s, v) + '</span>' +
+    '<svg class="ring" viewBox="0 0 200 200"><circle cx="100" cy="100" r="95"/></svg>' +
+    '<span class="handle" id="handle"><span class="grip"></span><span class="base"></span></span></button>' +
+    '<p class="hold" id="holdTxt">按住印章，用力壓下去！</p><button class="skip" type="button" id="skipBtn">直接蓋</button>';
+  $('ov').hidden = false;
+  const btn = $('press'), hd = $('handle'), ring = btn.querySelector('.ring circle'), NEED = 700;
+  let t0 = 0, raf = 0, fin = false;
+  const set = (k) => { hd.style.transform = 'translateY(' + (k * 92) + 'px) scale(' + (1 - k * 0.06) + ')'; ring.style.strokeDashoffset = String(597 * (1 - k)); };
+  const finish = () => {
+    if (fin) return; fin = true; cancelAnimationFrame(raf); set(1); btn.classList.add('done'); sfx('stamp'); try { navigator.vibrate && navigator.vibrate(35); } catch (e) {}
+    if (v === 'gold' || v === 'rainbow') setTimeout(() => sfx('chime'), 250);
+    $('holdTxt').textContent = v ? '咚！蓋出「' + VAR_NAME[v] + '」章！' : '咚！蓋好了！'; $('skipBtn').hidden = true;
+    setTimeout(done, v === 'gold' || v === 'rainbow' ? 1300 : 800);
+  };
+  const step = () => { const k = Math.min(1, (performance.now() - t0) / NEED); set(k); if (k >= 1) finish(); else raf = requestAnimationFrame(step); };
+  btn.addEventListener('pointerdown', (e) => { if (fin) return; e.preventDefault(); try { btn.setPointerCapture(e.pointerId); } catch (x) {} t0 = performance.now(); raf = requestAnimationFrame(step); if (sndOn && !BGM.on) bgmSync(); });
+  const up = () => { if (fin) return; cancelAnimationFrame(raf); hd.style.transition = 'transform .25s cubic-bezier(.3,1.5,.6,1)'; set(0); setTimeout(() => (hd.style.transition = ''), 260); $('holdTxt').textContent = '再按久一點點～'; };
+  btn.addEventListener('pointerup', up); btn.addEventListener('pointercancel', up);
+  btn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); finish(); } });
+  $('skipBtn').onclick = finish;
+}
+function showStory(s, fresh, newTitles, extra, v) {
+  v = v || P.var[s.id] || '';
+  const got = newTitles.length ? '<div class="gotT">' + newTitles.map((t) => '<div>🏅 <span>拿到稱號<br><b>' + t + '</b></span>' + (COMBOS.some((c) => c.title === t) || t === SECRET.title ? '<i>隱藏稱號</i>' : '') + '</div>').join('') + '</div>' : '';
+  $('sheet').innerHTML = '<div class="big">' + stampV(s, v) + '</div><h3>' + (fresh ? (extra ? '章升級了！' : '蓋到「' + s.name + '」章了！') : s.name + '章・' + s.title) + '</h3>' + (v ? '<p class="again" style="color:#B07D1A;font-weight:700">這是「' + VAR_NAME[v] + '」章</p>' : '') + (extra ? '<p class="again">' + extra + '</p>' : '') + got +
+    '<div class="say"><img src="../travel/assets/' + (fresh ? 'kite_happy' : 'kite_home') + '.png" alt=""><p>' + s.lines.join('<br>') + '</p></div>' +
     (s.rec ? '<div class="rec">' + s.rec + '</div>' : '') +
-    '<p class="again">' + (n() < 6 ? '還差 ' + (6 - n()) + ' 個：' + SPOTS.filter((x) => !P.spots[x.id]).map((x) => x.hint).join('、') : '6 個都蓋好了！') + '</p>' +
-    '<button class="btn" type="button" id="ovOk">看護照</button>';
-  $('ov').hidden = false; if (first) setTimeout(thump, 180);
+    '<p class="again">' + (n() < 6 ? '還差 ' + (6 - n()) + ' 個章' : '6 個都蓋好了！') + '</p><button class="btn" type="button" id="ovOk">看護照</button>';
+  $('ov').hidden = false;
+  if (newTitles.length) setTimeout(() => sfx('pop'), 300);
   $('ovOk').onclick = () => { $('ov').hidden = true; render(); checkDone(); };
 }
 function checkDone() {
   if (n() < 6 || P.rewarded) return;
   P.complete = true; P.rewarded = true; save(); confetti(); sfx('chime');
   $('sheet').innerHTML = '<img src="assets/pc_passport.jpg" alt="港灣探險護照紀念明信片" style="width:100%;border-radius:8px;border:5px solid #fff;box-shadow:0 6px 16px rgba(0,0,0,.25);transform:rotate(-2deg)"><h3>港灣探險護照集滿了！</h3>' +
+    '<div class="gotT"><div>🏅 <span>你現在是<br><b>東三東四港灣探險家</b></span><i>集滿稱號</i></div></div>' +
     '<div class="say"><img src="../travel/assets/item_umbrella.png" alt=""><p>謝謝你陪我走完一圈！<br>這把雨傘送給你，<br>下雨天也可以帶我去旅行喔～</p></div>' +
-    '<p class="again">拿到：護照紀念明信片（在小屋收藏冊「港灣護照」）、小鳶的雨傘（已放進小屋背包）</p><button class="btn" type="button" id="ovOk">好耶！</button>';
+    '<p class="again">拿到：護照紀念明信片（小屋收藏冊「港灣護照」）、小鳶的雨傘（小屋背包）。' + (P.secret ? '' : '聽說還有一個祕密章……') + '</p><button class="btn" type="button" id="ovOk">好耶！</button>';
   $('ov').hidden = false; $('ovOk').onclick = () => { $('ov').hidden = true; render(); };
 }
-render(); drawSnd();
+/* ===== 存成「我的港灣護照」圖片（只在手機上產生，不上傳） ===== */
+function loadImg(src) { return new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; }); }
+function tinted(img, fill, size) { const c = document.createElement('canvas'); c.width = c.height = size; const g = c.getContext('2d'); g.drawImage(img, 0, 0, size, size); g.globalCompositeOperation = 'source-in'; g.fillStyle = fill(g, size); g.fillRect(0, 0, size, size); return c; }
+async function sharePassport() {
+  const W = 1080, H = 1350, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d');
+  const bg = await loadImg('assets/passport_page.jpg'); if (bg) g.drawImage(bg, 0, 0, W, H); else { g.fillStyle = '#F4EFE6'; g.fillRect(0, 0, W, H); }
+  g.fillStyle = '#5A3A24'; g.textAlign = 'center'; g.font = '700 58px ' + getComputedStyle(document.body).fontFamily; g.fillText('港灣探險護照', W / 2, 120);
+  g.font = '700 40px ' + getComputedStyle(document.body).fontFamily; g.fillStyle = '#C9473A'; g.fillText(P.cur ? '稱號：' + P.cur : n() + ' / 6', W / 2, 180);
+  // 路線
+  g.strokeStyle = '#B98A5A'; g.lineWidth = 9; g.lineCap = 'round'; g.setLineDash([1, 26]);
+  const pts = P.order.filter((id) => P.spots[id]).map((id) => [FRAMES[id - 1][0] / 100 * W, FRAMES[id - 1][1] / 100 * H]);
+  if (pts.length > 1) { g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); pts.slice(1).forEach((p) => g.lineTo(p[0], p[1])); g.stroke(); } g.setLineDash([]);
+  const R = FRAME_R / 100 * W;
+  for (const s of SPOTS) {
+    const [x, y] = FRAMES[s.id - 1], cx = x / 100 * W, cy = y / 100 * H;
+    if (!P.spots[s.id]) { g.fillStyle = 'rgba(200,183,159,.9)'; g.font = '700 80px sans-serif'; g.fillText('？', cx, cy + 28); continue; }
+    const v = P.var[s.id] || '', im = await loadImg('assets/stamp_' + s.icon + '.png'); if (!im) continue;
+    g.save(); g.translate(cx, cy); g.rotate(-0.14);
+    g.fillStyle = v === 'night' ? '#2B3A6B' : v === 'gold' ? '#FFF4CC' : v === 'rainbow' ? '#FFFFFF' : s.color + '2E'; g.beginPath(); g.arc(0, 0, R * 0.62, 0, 6.2832); g.fill();
+    const fill = (c, sz) => { if (v === 'gold') { const gr = c.createLinearGradient(0, 0, sz, sz); gr.addColorStop(0, '#9C6B12'); gr.addColorStop(0.4, '#F7D774'); gr.addColorStop(0.6, '#C9971C'); gr.addColorStop(1, '#FFF2B8'); return gr; } if (v === 'rainbow') { const gr = c.createLinearGradient(0, 0, sz, sz); ['#E5484D', '#F2A33A', '#E8D33A', '#3EAE5B', '#2F6DB5', '#8A5BC2'].forEach((col, i) => gr.addColorStop(i / 5, col)); return gr; } if (v === 'night') return '#F2C14E'; return s.color; };
+    g.drawImage(tinted(im, fill, 512), -R, -R, R * 2, R * 2); g.restore();
+    g.fillStyle = v === 'night' ? '#2B3A6B' : s.color; g.font = '700 30px ' + getComputedStyle(document.body).fontFamily;
+    const w = g.measureText(s.title).width + 36; g.beginPath(); g.roundRect ? g.roundRect(cx - w / 2, cy + R * 0.92, w, 46, 23) : g.rect(cx - w / 2, cy + R * 0.92, w, 46); g.fill();
+    g.fillStyle = '#fff'; g.fillText(s.title, cx, cy + R * 0.92 + 33);
+  }
+  g.fillStyle = '#8A7565'; g.font = '30px ' + getComputedStyle(document.body).fontFamily; const d = new Date(); g.fillText('基隆・東三東四　' + d.getFullYear() + '.' + (d.getMonth() + 1) + '.' + d.getDate() + (P.secret ? '　★ 祕密章' : ''), W / 2, H - 40);
+  cv.toBlob(async (blob) => {
+    const f = new File([blob], '我的港灣護照.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: '我的港灣護照' }); return; } catch (e) {} }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = '我的港灣護照.png'; document.body.appendChild(a); a.click(); a.remove();
+  }, 'image/png');
+}
+/* ===== 測試工具 ===== */
+function renderTools() {
+  $('tools').innerHTML = SPOTS.map((s) => '<button type="button" data-s="' + s.id + '">掃第 ' + s.id + ' 點</button>').join('') +
+    ['gold', 'rainbow', 'night'].map((v) => '<button type="button" data-f="' + v + '" aria-pressed="' + (forceVar === v) + '">下次蓋' + VAR_NAME[v] + '</button>').join('') +
+    '<button type="button" data-s="day">模擬隔天（可再蓋）</button><button type="button" data-s="all">全部蓋好</button><button type="button" data-s="clear">清除紀錄</button>';
+  $('tools').querySelectorAll('button').forEach((b) => (b.onclick = () => {
+    if (b.dataset.f) { forceVar = forceVar === b.dataset.f ? '' : b.dataset.f; renderTools(); return; }
+    const v = b.dataset.s;
+    if (v === 'clear') { P = blank(); save(); render(); return; }
+    if (v === 'day') { for (const id in P.days) P.days[id] = P.days[id].map((x) => x === today() ? 'old-' + Math.random() : x); save(); render(); return; }
+    if (v === 'all') { SPOTS.forEach((s) => { if (!P.spots[s.id]) { P.spots[s.id] = Date.now(); P.order.push(s.id); P.days[s.id] = [today()]; } }); syncTitles(); save(); render(); checkDone(); return; }
+    scan(+v);
+  }));
+}
+/* ===== 配樂與音效（和其他遊戲共用開關） ===== */
+let sndOn = SND_ICON.saved;
+function bgmSync() { if (sndOn) BGM.play('stamp_walk'); else BGM.stop(); }
+function drawSnd() { const b = $('snd'); b.innerHTML = SND_ICON[sndOn ? 'on' : 'off']; b.setAttribute('aria-label', sndOn ? '聲音開著，點一下關掉' : '聲音關著，點一下打開'); }
+function sfx(k) { if (sndOn) BGM.sfx(k); }
+function confetti() {
+  const box = document.createElement('div'), C = SPOTS.map((s) => s.color).concat(['#F4D35E', '#E8B879']); box.className = 'conf';
+  for (let i = 0; i < 70; i++) { const e = document.createElement('i'); e.style.left = Math.random() * 100 + '%'; e.style.background = C[i % C.length]; e.style.setProperty('--dx', (Math.random() * 120 - 60) + 'px'); e.style.setProperty('--r', (Math.random() * 900 - 450) + 'deg'); e.style.animationDuration = (1.8 + Math.random() * 1.6) + 's'; e.style.animationDelay = Math.random() * 0.5 + 's'; box.appendChild(e); }
+  document.body.appendChild(box); setTimeout(() => box.remove(), 4200);
+}
+syncTitles(); save(); render(); drawSnd();
+$('titleBar').onclick = openTitles;
+$('shareBtn').onclick = sharePassport;
 $('snd').onclick = (e) => { e.stopPropagation(); sndOn = !sndOn; SND_ICON.save(sndOn); bgmSync(); drawSnd(); };
 document.addEventListener('pointerdown', () => { if (sndOn && !BGM.on) bgmSync(); }, { passive: true });      // 手機要先點一下才能出聲
 const m = /[?&](?:spot|s)=(\d)/.exec(location.search);
 if (m) { scan(+m[1]); history.replaceState(null, '', location.pathname); }
-window.__stamp = { P: () => P, scan };
+window.__stamp = { P: () => P, scan, force: (v) => { forceVar = v; }, share: sharePassport };
 </script>
 </body>
 </html>
