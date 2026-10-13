@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>港灣蓋章散步原型</title>
 <style>
-/* P3 港灣蓋章散步 原型 v0.6（v0.6：先存進度再演出、集滿等最後一章落下、港口札記；工作單 18 港灣護照升級提案 v1，D62，C-89）。只做手機版（D55）。
+/* P3 港灣蓋章散步 原型 v0.7（v0.7：G-50 正式彩色章、存檔失敗提示、中途離開補發集滿、壓印說明改成章已收好；v0.6：先存進度再演出、集滿等最後一章落下、港口札記；工作單 18 港灣護照升級提案 v1，D62，C-89）。只做手機版（D55）。
    v0.5：彩色墨水（每站一色，正式彩色章等 ChatGPT）、章＋稱號、組合稱號、按住蓋章、稀有章（金／彩虹）、夜間章、
    回訪升級（銅→銀→金框）、護照上畫出散步路線、第 7 個祕密章、存成「我的港灣護照」圖片。稱號名稱與機率都是建議，等 Dari */
 :root{--paper:#F4EFE6;--card:#FFFDF8;--ink:#3E2B1D;--muted:#8A7565;--teal:#2F7F86;--teal-d:#1F5A5F;--red:#C9473A;--line:#E2D6C6;--gold:#E8B879;
@@ -57,16 +57,16 @@ header p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
 @keyframes ink{0%{transform:scale(.8);opacity:.8}100%{transform:scale(1.5);opacity:0}}
 .pcell:not(.done) .q{animation:breathe 2.6s ease-in-out infinite}
 @keyframes breathe{50%{opacity:.7}}
-/* 彩色章：底色淡圓＋章圖當遮罩填色（正式彩色插畫章等 ChatGPT，G-50） */
-.stampv{display:block;position:relative;width:100%;height:100%;border-radius:50%;transform:rotate(-8deg);background:radial-gradient(circle,color-mix(in srgb,var(--c) 18%,#FFFDF8) 0 58%,transparent 59%)}
-.stampv .inkl{position:absolute;inset:0;background:var(--c);-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat}
-.stampv.gold{background:radial-gradient(circle,#FFF4CC 0 58%,transparent 59%)}
-.stampv.gold .inkl{background:linear-gradient(120deg,#9C6B12,#F7D774 30%,#C9971C 50%,#FFF2B8 62%,#B07D1A 80%);background-size:220% 100%;animation:shine 2.4s linear infinite}
-.stampv.rainbow{background:radial-gradient(circle,#FFFFFF 0 58%,transparent 59%)}
-.stampv.rainbow .inkl{background:conic-gradient(from 0deg,#E5484D,#F2A33A,#E8D33A,#3EAE5B,#2F9FB5,#2F6DB5,#8A5BC2,#E5484D);animation:spin 6s linear infinite}
-.stampv.night{background:radial-gradient(circle,#2B3A6B 0 58%,transparent 59%)}
-.stampv.night .inkl{background:linear-gradient(160deg,#FFE7A0,#F2C14E 60%,#FFF6D0)}
-.stampv.night::after{content:'✦ ✧';position:absolute;left:28%;top:24%;font-size:10px;color:#FFF0B0;letter-spacing:6px}
+/* v0.7：G-50 正式彩色插畫章（暫用）原色顯示；稀有／夜間的效果放在章外面的光圈，不改圖的顏色（ChatGPT C-92 意見） */
+.stampv{display:block;position:relative;width:100%;height:100%;border-radius:50%;transform:rotate(-4deg)}
+.stampv img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
+.stampv.gold{box-shadow:0 0 0 3px #E2B54A,0 0 14px 3px rgba(247,215,116,.85)}
+.stampv.gold::after{content:'';position:absolute;inset:4%;border-radius:50%;background:linear-gradient(115deg,transparent 35%,rgba(255,250,220,.75) 48%,transparent 60%);background-size:260% 100%;animation:shine 2.6s linear infinite;mix-blend-mode:screen;pointer-events:none}
+.stampv.rainbow{box-shadow:0 0 16px 4px rgba(160,120,255,.55)}
+.stampv.rainbow::before{content:'';position:absolute;inset:-5%;border-radius:50%;background:conic-gradient(#E5484D,#F2A33A,#E8D33A,#3EAE5B,#2F9FB5,#2F6DB5,#8A5BC2,#E5484D);-webkit-mask:radial-gradient(circle,transparent 63%,#000 64%);mask:radial-gradient(circle,transparent 63%,#000 64%);animation:spin 6s linear infinite}
+.stampv.night{box-shadow:0 0 0 3px #2B3A6B,0 0 12px 2px rgba(80,100,200,.6)}
+.stampv.night img{filter:brightness(.82) saturate(.9) hue-rotate(-8deg)}
+.stampv.night::after{content:'✦ ✧ ✦';position:absolute;left:0;right:0;top:-12%;text-align:center;font-size:11px;color:#F2C14E;letter-spacing:4px;text-shadow:0 0 4px #FFE9A0}
 @keyframes shine{to{background-position:-220% 0}}
 @keyframes spin{to{filter:hue-rotate(360deg)}}
 /* 祕密章 */
@@ -365,7 +365,7 @@ const SND_ICON = (() => {
 /* BGM-END */
 </script>
 <script>
-const CFG = { version: '0.6', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 6 };      // 機率與夜間時間是建議，等 Dari
+const CFG = { version: '0.7', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 6 };      // 機率與夜間時間是建議，等 Dari
 const FRAMES = [[31.2037, 34.1481], [68.7037, 34.1481], [31.2037, 56.2222], [68.7037, 56.1852], [31.1574, 78.2593], [68.7037, 78.2963]], FRAME_R = 12.45;      // G-49 護照頁圓框中心（%）與半徑（佔寬度 %）
 /* 6 個蓋章點（實際位置待 Dari 現勘）。color：每站主色（工作單 18）；title：蓋到就拿到的稱號（建議）；riddle：還沒去時的提示 */
 const SPOTS = [
@@ -396,13 +396,13 @@ function load() {
   return q;
 }
 let P = load();
-const save = () => { try { localStorage.setItem(CFG.key, JSON.stringify(P)); } catch (e) {} };
+const save = () => { try { localStorage.setItem(CFG.key, JSON.stringify(P)); return true; } catch (e) { return false; } };      // v0.7：回報有沒有存成功（ChatGPT C-92 意見）
 const n = () => Object.keys(P.spots).length;
 const fmt = (ms) => { const d = new Date(ms); return (d.getMonth() + 1) + '/' + d.getDate(); };
 const lvOf = (id) => Math.min(3, (P.days[id] || []).length);
 /* 彩色章（暫用：章圖當遮罩，填每站主色；稀有／夜間換填色）。正式彩色插畫章來了就換成圖 */
-function stampV(s, variant) { return '<span class="stampv ' + (variant || '') + '" style="--c:' + s.color + ';--m:url(assets/stamp_' + s.icon + '.png)"><span class="inkl"></span></span>'; }
-function secretV() { return '<span class="stampv rainbow" style="--c:' + SECRET.color + ';--m:url(assets/stamp_kite.png)"><span class="inkl"></span></span>'; }
+function stampV(s, variant) { return '<span class="stampv ' + (variant || '') + '" style="--c:' + s.color + '"><img src="assets/stamp_c_' + s.icon + '.png" alt=""></span>'; }      // v0.7：G-50 彩色章
+function secretV() { return '<span class="stampv"><img src="assets/stamp_c_secret.png" alt="祕密章"></span>'; }
 /* ===== 稱號 ===== */
 function allTitles() {
   const out = SPOTS.map((s) => ({ t: s.title, how: '蓋到「' + s.name + '」章', ok: !!P.spots[s.id] }));
@@ -461,7 +461,7 @@ function hintSheet(s) {
   $('ov').hidden = false; $('ovOk').onclick = () => { $('ov').hidden = true; };
 }
 /* ===== 蓋章：先按住印章壓下去，再看小鳶說話與新稱號 ===== */
-let forceVar = '';
+let forceVar = '', saveOk = true;
 function rollVar() {
   if (forceVar) { const v = forceVar; return v; }
   const h = new Date().getHours(), night = h >= CFG.nightFrom || h < CFG.nightTo, r = Math.random();
@@ -478,7 +478,7 @@ function scan(id) {
   const nv = first ? v : (v === 'rainbow' || (v === 'gold' && P.var[s.id] !== 'rainbow') ? v : P.var[s.id] || v);      // 重蓋時保留比較稀有的那款
   if (nv) P.var[s.id] = nv; else delete P.var[s.id];
   if (n() === 6 && Object.values(P.var).includes('night')) P.secret = P.secret || Date.now();
-  const fresh = syncTitles(); save();
+  const fresh = syncTitles(); saveOk = save();
   pressSheet(s, nv || v, () => showStory(s, true, fresh, first ? '' : '同一站不同天再蓋，章升級到 Lv' + lvOf(s.id) + '！', P.var[s.id]));
 }
 function pressSheet(s, v, done) {
@@ -486,7 +486,7 @@ function pressSheet(s, v, done) {
     '<span class="paperx"></span><span class="mark">' + stampV(s, v) + '</span>' +
     '<svg class="ring" viewBox="0 0 200 200"><circle cx="100" cy="100" r="95"/></svg>' +
     '<span class="handle" id="handle"><span class="grip"></span><span class="base"></span></span></button>' +
-    '<p class="hold" id="holdTxt">按住印章，用力壓下去！</p><button class="skip" type="button" id="skipBtn">直接蓋</button>';
+    '<p class="again" style="color:#2F7F86;font-weight:700">' + (saveOk ? '✓ 章已經收好了！' : '這支手機沒辦法存紀錄，章只在這次看得到') + '</p><p class="hold" id="holdTxt">按住印章，看看壓印～</p><button class="skip" type="button" id="skipBtn">直接看結果</button>';
   $('ov').hidden = false;
   const btn = $('press'), hd = $('handle'), ring = btn.querySelector('.ring circle'), NEED = 700;
   let t0 = 0, raf = 0, fin = false;
@@ -499,8 +499,9 @@ function pressSheet(s, v, done) {
   };
   const step = () => { const k = Math.min(1, (performance.now() - t0) / NEED); set(k); if (k >= 1) finish(); else raf = requestAnimationFrame(step); };
   btn.addEventListener('pointerdown', (e) => { if (fin) return; e.preventDefault(); try { btn.setPointerCapture(e.pointerId); } catch (x) {} t0 = performance.now(); raf = requestAnimationFrame(step); if (sndOn && !BGM.on) bgmSync(); });
-  const up = () => { if (fin) return; cancelAnimationFrame(raf); hd.style.transition = 'transform .25s cubic-bezier(.3,1.5,.6,1)'; set(0); setTimeout(() => (hd.style.transition = ''), 260); $('holdTxt').textContent = '再按久一點點～'; };
+  const up = () => { if (fin) return; cancelAnimationFrame(raf); hd.style.transition = 'transform .25s cubic-bezier(.3,1.5,.6,1)'; set(0); setTimeout(() => (hd.style.transition = ''), 260); $('holdTxt').textContent = '再按久一點點～（章已經收好了）'; };
   btn.addEventListener('pointerup', up); btn.addEventListener('pointercancel', up);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) up(); }); window.addEventListener('blur', up, { once: true });      // v0.7：切到背景就取消壓印，回來不會自己蓋完
   btn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); finish(); } });
   $('skipBtn').onclick = finish;
 }
@@ -541,11 +542,10 @@ async function sharePassport() {
   for (const s of SPOTS) {
     const [x, y] = FRAMES[s.id - 1], cx = x / 100 * W, cy = y / 100 * H;
     if (!P.spots[s.id]) { g.fillStyle = 'rgba(200,183,159,.9)'; g.font = '700 80px sans-serif'; g.fillText('？', cx, cy + 28); continue; }
-    const v = P.var[s.id] || '', im = await loadImg('assets/stamp_' + s.icon + '.png'); if (!im) continue;
+    const v = P.var[s.id] || '', im = await loadImg('assets/stamp_c_' + s.icon + '.png'); if (!im) continue;
     g.save(); g.translate(cx, cy); g.rotate(-0.14);
-    g.fillStyle = v === 'night' ? '#2B3A6B' : v === 'gold' ? '#FFF4CC' : v === 'rainbow' ? '#FFFFFF' : s.color + '2E'; g.beginPath(); g.arc(0, 0, R * 0.62, 0, 6.2832); g.fill();
-    const fill = (c, sz) => { if (v === 'gold') { const gr = c.createLinearGradient(0, 0, sz, sz); gr.addColorStop(0, '#9C6B12'); gr.addColorStop(0.4, '#F7D774'); gr.addColorStop(0.6, '#C9971C'); gr.addColorStop(1, '#FFF2B8'); return gr; } if (v === 'rainbow') { const gr = c.createLinearGradient(0, 0, sz, sz); ['#E5484D', '#F2A33A', '#E8D33A', '#3EAE5B', '#2F6DB5', '#8A5BC2'].forEach((col, i) => gr.addColorStop(i / 5, col)); return gr; } if (v === 'night') return '#F2C14E'; return s.color; };
-    g.drawImage(tinted(im, fill, 512), -R, -R, R * 2, R * 2); g.restore();
+    if (v) { g.lineWidth = 12; if (v === 'rainbow') { const gr = g.createLinearGradient(-R, -R, R, R); ['#E5484D', '#F2A33A', '#E8D33A', '#3EAE5B', '#2F6DB5', '#8A5BC2'].forEach((c, k) => gr.addColorStop(k / 5, c)); g.strokeStyle = gr; } else g.strokeStyle = v === 'gold' ? '#E2B54A' : '#2B3A6B'; g.shadowColor = v === 'night' ? 'rgba(80,100,200,.8)' : 'rgba(247,215,116,.9)'; g.shadowBlur = 24; g.beginPath(); g.arc(0, 0, R * 0.93, 0, 6.2832); g.stroke(); g.shadowBlur = 0; }      // v0.7：稀有／夜間只在章外加光圈，章本身保留原色
+    if (v === 'night') g.filter = 'brightness(0.85)'; g.drawImage(im, -R, -R, R * 2, R * 2); g.filter = 'none'; g.restore();
     g.fillStyle = v === 'night' ? '#2B3A6B' : s.color; g.font = '700 30px ' + getComputedStyle(document.body).fontFamily;
     const w = g.measureText(s.title).width + 36; g.beginPath(); g.roundRect ? g.roundRect(cx - w / 2, cy + R * 0.92, w, 46, 23) : g.rect(cx - w / 2, cy + R * 0.92, w, 46); g.fill();
     g.fillStyle = '#fff'; g.fillText(s.title, cx, cy + R * 0.92 + 33);
@@ -562,17 +562,22 @@ const MOODS = [['😊', '好開心'], ['🌊', '看海'], ['🍤', '好好吃'],
 function renderNotes() {
   const L = P.notes || [], last = L[L.length - 1];
   $('notes').innerHTML = '<h2>港口札記<button type="button" id="noteBtn">留一句給下次的我</button></h2>' +
-    (L.length ? L.slice(-3).reverse().map((x) => '<div class="nt"><span>' + x.m + '</span><div>' + (x.t ? '下次還想看：' + x.t.replace(/[<>&]/g, '') : x.ml) + '<small>' + x.d + (x === last ? '・上一次' : '') + '</small></div></div>').join('') : '<p class="note">走完、要離開的時候，可以留一句話。下次打開護照就會看到上次的你。</p>');
+    (L.length ? L.slice(-3).reverse().map((x) => '<div class="nt"><span>' + x.m + '</span><div>' + x.ml + (x.t ? '・下次還想看：' + x.t.replace(/[<>&]/g, '') : '') + '<small>' + x.d + (x === last ? '・最近一筆' : '') + '</small></div></div>').join('') : '<p class="note">走完、要離開的時候，可以留一句話。下次打開護照就會看到上次的你。</p>');
   $('noteBtn').onclick = noteSheet;
 }
 function noteSheet() {
   let pick = 0;
-  $('sheet').innerHTML = '<h3>留給下次的我</h3><p class="again">今天的心情是？</p><div class="moods">' + MOODS.map((m, i) => '<button type="button" data-i="' + i + '" aria-pressed="' + (i === 0) + '"><span>' + m[0] + '</span>' + m[1] + '</button>').join('') + '</div>' +
-    '<input class="nin" id="nin" maxlength="20" placeholder="下次還想看＿＿（可以不寫）"><div class="row2" style="width:100%"><button class="btn light" type="button" id="ovNo">先不要</button><button class="btn" type="button" id="ovOk">留下來</button></div>';
+  $('sheet').innerHTML = '<h3>留給下次的我</h3><p class="again">今天最記得什麼？</p><div class="moods">' + MOODS.map((m, i) => '<button type="button" data-i="' + i + '" aria-pressed="' + (i === 0) + '"><span>' + m[0] + '</span>' + m[1] + '</button>').join('') + '</div>' +
+    '<input class="nin" id="nin" maxlength="20" placeholder="下次還想看＿＿"><p class="again" id="ncnt" style="align-self:flex-end;margin-top:-6px">最多 20 字，可以不寫・0 / 20</p><p class="again" id="nerr" style="color:#C9473A" hidden></p><p class="again">札記保存在這支手機的瀏覽器，換手機就看不到。</p><div class="row2" style="width:100%"><button class="btn light" type="button" id="ovNo">先不要</button><button class="btn" type="button" id="ovOk">留下來</button></div>';
   $('ov').hidden = false;
   $('sheet').querySelectorAll('.moods button').forEach((b) => (b.onclick = () => { pick = +b.dataset.i; $('sheet').querySelectorAll('.moods button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); }));
+  $('nin').oninput = () => { $('ncnt').textContent = '最多 20 字，可以不寫・' + [...$('nin').value].length + ' / 20'; };
   $('ovNo').onclick = () => { $('ov').hidden = true; };
-  $('ovOk').onclick = () => { const d = new Date(); P.notes = (P.notes || []).concat([{ d: d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate(), m: MOODS[pick][0], ml: MOODS[pick][1], t: $('nin').value.trim().slice(0, 20) }]).slice(-10); save(); $('ov').hidden = true; renderNotes(); sfx('pop'); };
+  $('ovOk').onclick = () => {
+    const d = new Date(), old = P.notes || []; P.notes = old.concat([{ d: d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate(), m: MOODS[pick][0], ml: MOODS[pick][1], t: $('nin').value.trim().slice(0, 20) }]).slice(-10);
+    if (!save()) { P.notes = old; $('nerr').hidden = false; $('nerr').textContent = '沒有存成功（這個瀏覽器不能存資料），文字還在，等一下再試試'; return; }      // v0.7：存失敗就留在表單，不假裝存好了
+    $('ov').hidden = true; renderNotes(); sfx('pop');
+  };
 }
 /* ===== 測試工具 ===== */
 function renderTools() {
@@ -598,7 +603,9 @@ function confetti() {
   for (let i = 0; i < 70; i++) { const e = document.createElement('i'); e.style.left = (i % 2 ? 75 + Math.random() * 25 : Math.random() * 25) + '%'; /* 彩紙集中兩側，中間留給明信片和按鈕 */ e.style.background = C[i % C.length]; e.style.setProperty('--dx', (Math.random() * 120 - 60) + 'px'); e.style.setProperty('--r', (Math.random() * 900 - 450) + 'deg'); e.style.animationDuration = (1.8 + Math.random() * 1.6) + 's'; e.style.animationDelay = Math.random() * 0.5 + 's'; box.appendChild(e); }
   document.body.appendChild(box); setTimeout(() => box.remove(), 4200);
 }
+if (n() === 6 && Object.values(P.var).includes('night')) P.secret = P.secret || Date.now();
 syncTitles(); save(); render(); drawSnd();
+if (n() === 6 && !P.rewarded) setTimeout(() => { if ($('ov').hidden) checkDone(); }, 400);      // v0.7：第 6 章蓋完卻沒看到集滿就離開，下次打開補發（ChatGPT C-92 意見）
 $('titleBar').onclick = openTitles;
 $('shareBtn').onclick = sharePassport;
 $('snd').onclick = (e) => { e.stopPropagation(); sndOn = !sndOn; SND_ICON.save(sndOn); bgmSync(); drawSnd(); };
