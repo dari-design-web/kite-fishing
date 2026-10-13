@@ -38,7 +38,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .card{width:100%;max-width:300px;max-height:100%;overflow:auto;background:var(--paper);border:2px solid var(--ink);border-radius:18px;padding:20px 18px;display:flex;flex-direction:column;gap:12px;text-align:center}
 .panel:not([hidden]) .card{animation:cardin .4s cubic-bezier(.2,1.3,.5,1) both}      /* v0.14（C-87）：開始／結算卡片彈出 */
 @keyframes cardin{from{transform:translateY(24px) scale(.94);opacity:0}}
-@media (prefers-reduced-motion:reduce){.panel .card{animation:none}}
+@media (prefers-reduced-motion:reduce){.panel:not([hidden]) .card{animation:none}}      /* C-91：選擇器要跟上面一樣才蓋得過（ChatGPT C-87 複查） */
 .card h1{font-family:var(--display);font-size:34px;line-height:1.1;margin:0;text-wrap:balance}
 .card h2{font-family:var(--display);font-size:24px;line-height:1.2;margin:0}
 .card p{margin:0;color:var(--muted);font-size:14px}
@@ -121,7 +121,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
         <li><b>便當</b><span>一局抓到小卷 3 隻、白帶魚 2 條，就做成便當讓小鳶去旅行</span></li>
       </ul>
       <button class="btn" id="startBtn">開始</button>
-      <p class="note">原型 v0.14：暫用素材、不發點數。進度只存在這支手機的瀏覽器</p>
+      <p class="note">原型 v0.15：暫用素材、不發點數。進度只存在這支手機的瀏覽器</p>
     </div>
   </div>
 
@@ -356,7 +356,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.14',
+  version: '0.15',
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
   bento: { squid: 3, hairtail: 2 },      // 一局抓到幾隻以上，結算時直接得到 1 份便當給小鳶去旅行（工作單 11 v4；每局每種最多 1 份）
   duration: 60,                 // 一局秒數

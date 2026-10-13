@@ -54,7 +54,7 @@ button{font-family:inherit}
 @keyframes stkin{from{transform:scale(.2) rotate(-25deg);opacity:0}}
 /* v0.9（C-87）：配樂鈕、快門閃光、照片洗出來、首頁按鈕依序進場 */
 .snd{position:absolute;left:14px;top:calc(18px + env(safe-area-inset-top,0px));z-index:3;width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,244,226,.92);color:#1F5A5F;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3)}
-.flash{position:fixed;inset:0;background:#fff;z-index:40;pointer-events:none;animation:flash .45s ease-out forwards}
+.flash{position:fixed;inset:0;background:#fff;z-index:40;pointer-events:none;animation:flash .24s ease-out forwards}
 @keyframes flash{from{opacity:.95}to{opacity:0}}
 #preview.on img{animation:develop 1.1s ease-out both}
 @keyframes develop{0%{transform:translateY(30px) rotate(-5deg) scale(.9);filter:brightness(2.2) saturate(0) blur(2px);opacity:0}35%{opacity:1}100%{transform:none;filter:none}}
@@ -364,7 +364,7 @@ const SND_ICON = (() => {
 </script>
 <script>
 /* 小鳶合照館 原型 v0.1（工作單 11 v4 P2）。貼紙、相框、解鎖方式都是建議，等 Dari 確認；正式素材之後開單給 ChatGPT */
-const CFG = { version: '0.9', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
+const CFG = { version: '0.10', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
 const $ = (id) => document.getElementById(id);
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = 'none'), 2400); }
@@ -630,7 +630,7 @@ $('fsClose').onclick = () => { $('frameSheet').hidden = true; };
 $('flipBtn').onclick = () => { if (src !== 'cam') return; facing = facing === 'user' ? 'environment' : 'user'; lensId = null; openCam(); };
 $('snapMain').onclick = () => $('snap').click();      // v0.8：主要拍照＝打開手機自己的相機
 $('clearBtn').onclick = () => { stks.forEach((o) => o.el.remove()); stks = []; sel = null; $('hint').hidden = false; };
-$('shutter').onclick = () => { select(null); sfx('shutter'); const fl = document.createElement('div'); fl.className = 'flash'; document.body.appendChild(fl); setTimeout(() => fl.remove(), 500); capture(); };
+$('shutter').onclick = () => { select(null); sfx('shutter'); if (!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { const fl = document.createElement('div'); fl.className = 'flash'; document.body.appendChild(fl); setTimeout(() => fl.remove(), 300); } /* C-91：減少動態效果時不閃白（ChatGPT C-87 複查） */ capture(); };
 /* v0.9：配樂（合照館曲）與音效，和其他遊戲共用開關 */
 let sndOn = SND_ICON.saved;
 function sfx(k) { if (sndOn) BGM.sfx(k); }

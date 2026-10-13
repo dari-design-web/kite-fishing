@@ -34,8 +34,8 @@ header h1{font-size:20px;margin:0;flex:1}
 .room{position:relative;width:100%;aspect-ratio:1080/1350;overflow:hidden;margin:0 auto;background:#EADFCB url(assets/room_living.jpg) center/100% 100% no-repeat}
 .room.ph{background:var(--ph-bg)}
 /* v0.18（C-87）：換房間淡入、房間裡飄著小光點（臥室是星星），讓畫面不要太死 */
-.room.swap{animation:roomin .45s ease-out both}
-@keyframes roomin{from{filter:brightness(1.35) saturate(.6);transform:scale(1.03)}}
+.room.swap{animation:roomin .3s ease-out both}
+@keyframes roomin{from{opacity:.55}}      /* C-91：換房只做短淡入，不再整房變亮放大（避免和小鳶跳一下疊在一起） */
 .motes{position:absolute;inset:0;pointer-events:none;z-index:1;overflow:hidden}
 .motes i{position:absolute;width:5px;height:5px;border-radius:50%;background:rgba(255,246,214,.85);box-shadow:0 0 6px 2px rgba(255,236,170,.55);animation:mote linear infinite;opacity:0}
 @keyframes mote{0%{transform:translate(0,0);opacity:0}15%{opacity:.9}85%{opacity:.7}100%{transform:translate(var(--dx),-90px);opacity:0}}
@@ -270,7 +270,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.18',
+  version: '0.19',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -440,14 +440,16 @@ function setRoom(id) {
   if (room.dataset.rid && room.dataset.rid !== r.id) { room.classList.remove('swap'); void room.offsetWidth; room.classList.add('swap'); }
   room.dataset.rid = r.id;
   room.style.backgroundImage = 'url(assets/' + r.img + ')';
-  { const M = $('motes'), star = r.id === 'bed', cnt = star ? 6 : 7, area = star ? [60, 84, 13, 26] : [10, 90, 20, 70]; M.className = 'motes' + (star ? ' star' : ''); let h = '';      // 臥室：窗戶裡的星星一閃一閃（窗框位置照 room_bed.jpg）；其他房間：陽光裡的小光點慢慢往上飄
-    for (let i = 0; i < cnt; i++) { const x = area[0] + Math.random() * (area[1] - area[0]), y = area[2] + Math.random() * (area[3] - area[2]); h += '<i style="left:' + x.toFixed(1) + '%;top:' + y.toFixed(1) + '%;--dx:' + Math.round(Math.random() * 40 - 20) + 'px;animation-duration:' + (star ? 1.6 + Math.random() * 2 : 6 + Math.random() * 6).toFixed(1) + 's;animation-delay:-' + (Math.random() * 6).toFixed(1) + 's"></i>'; }
+  if ($('motes').dataset.rid !== r.id) { const M = $('motes'), star = r.id === 'bed'; M.dataset.rid = r.id; M.className = 'motes' + (star ? ' star' : ''); let h = '';      // C-91：同一個房間保留光點，只有換房才重建
+    // 臥室：星星只放在上排兩塊玻璃裡，避開中間窗柱和月亮（位置照 room_bed.jpg 量的，ChatGPT C-87 複查）；其他房間：陽光裡的小光點慢慢往上飄
+    const rects = star ? [[59.5, 69.5, 14.8, 21.5, 3], [73.2, 77.6, 14.8, 21.5, 2], [83, 85, 14.8, 16.5, 1]] : [[10, 90, 20, 70, 7]];
+    for (const [x0, x1, y0, y1, cnt] of rects) for (let i = 0; i < cnt; i++) { const x = x0 + Math.random() * (x1 - x0), y = y0 + Math.random() * (y1 - y0); h += '<i style="left:' + x.toFixed(1) + '%;top:' + y.toFixed(1) + '%;--dx:' + Math.round(Math.random() * 40 - 20) + 'px;animation-duration:' + (star ? 1.6 + Math.random() * 2 : 6 + Math.random() * 6).toFixed(1) + 's;animation-delay:-' + (Math.random() * 6).toFixed(1) + 's"></i>'; }
     M.innerHTML = h; }
   ['wall', 'wallHit', 'miniShelf', 'shelfHit'].forEach((k) => ($(k).style.display = live ? '' : 'none'));
   $('props').innerHTML = '';
   $('phTag').hidden = true;
   $('scenes').innerHTML = ROOMS.map((x) => '<button type="button" data-room="' + x.id + '" aria-pressed="' + (x.id === r.id) + '"><span>' + x.icon + '</span>' + x.name + '</button>').join('');
-  $('scenes').querySelectorAll('button').forEach((b) => (b.onclick = () => { if (b.dataset.room !== S.room) { if (typeof travelBgmOn !== 'undefined' && travelBgmOn) BGM.sfx('swish'); setRoom(b.dataset.room); PET.enter(); if (typeof travelBgmSync === 'function') travelBgmSync(); } }));
+  $('scenes').querySelectorAll('button').forEach((b) => (b.onclick = () => { if (b.dataset.room !== S.room) { if (typeof travelBgmOn !== 'undefined' && travelBgmOn && Date.now() - (window.__swishT || 0) > 400) { window.__swishT = Date.now(); BGM.sfx('swish'); } /* C-91：連點換房不疊音效 */ setRoom(b.dataset.room); PET.enter(); if (typeof travelBgmSync === 'function') travelBgmSync(); } }));
   const acc = $('bird').querySelector('.acc') || $('bird').appendChild(Object.assign(document.createElement('div'), { className: 'acc' }));
   acc.innerHTML = '';      // v0.16：換裝圖已含帽子衣服，程式畫的配件收起來
   fitRoom();

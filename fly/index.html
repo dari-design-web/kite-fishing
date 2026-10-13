@@ -39,7 +39,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .card{width:100%;max-width:300px;max-height:100%;overflow:auto;background:var(--paper);border:2px solid var(--ink);border-radius:18px;padding:20px 18px;display:flex;flex-direction:column;gap:12px;text-align:center}
 .panel:not([hidden]) .card{animation:cardin .4s cubic-bezier(.2,1.3,.5,1) both}      /* v0.27（C-87）：開始／結算卡片彈出 */
 @keyframes cardin{from{transform:translateY(24px) scale(.94);opacity:0}}
-@media (prefers-reduced-motion:reduce){.panel .card{animation:none}}
+@media (prefers-reduced-motion:reduce){.panel:not([hidden]) .card{animation:none}}      /* C-91：選擇器要跟上面一樣才蓋得過（ChatGPT C-87 複查） */
 .card h1{font-family:var(--display);font-size:34px;line-height:1.1;margin:0;text-wrap:balance}
 .card h2{font-family:var(--display);font-size:24px;line-height:1.2;margin:0}
 .card p{margin:0;color:var(--muted);font-size:14px}
@@ -118,7 +118,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 @keyframes stin{from{transform:translateY(14px) scale(.9);opacity:0}}
 .stage.next{border-color:#FFD36B;animation:stin .45s cubic-bezier(.2,1.4,.5,1) both,nextglow 1.8s ease-in-out .6s infinite}
 @keyframes nextglow{50%{box-shadow:0 3px 0 rgba(8,20,32,.45),0 0 0 4px rgba(255,211,107,.55),0 0 18px rgba(255,211,107,.6)}}
-.stage .go{position:absolute;left:-14px;top:-12px;padding:2px 8px;border-radius:999px;background:#C9473A;color:#fff;font-size:11px;font-weight:700;border:2px solid #FFF4E2;animation:gobob 1s ease-in-out infinite}
+.stage .go{position:absolute;left:-14px;top:-12px;padding:2px 8px;border-radius:999px;background:#C9473A;color:#fff;font-size:11px;font-weight:700;border:2px solid #FFF4E2;animation:gobob 1s ease-in-out 2}      /* C-91：跳兩下就停 */
 @keyframes gobob{50%{transform:translateY(-4px) rotate(-4deg)}}
 @media (prefers-reduced-motion:reduce){.stage,.stage.next,.stage .go{animation:none}}
 .stage.locked span{color:#C9D4DC}
@@ -152,7 +152,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
     <canvas class="mapfx" id="mapFx" aria-hidden="true"></canvas>
     <h1 class="maptitle">小鳶飛行冒險</h1>
     <div id="stageButtons"></div>
-    <p class="mapnote">原型 v0.28：暫用圖、不發點數。測試期間四關都開放</p>
+    <p class="mapnote">原型 v0.29：暫用圖、不發點數。測試期間四關都開放</p>
   </div>
 
   <div class="panel" id="startPanel" hidden>
@@ -178,7 +178,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
       </div>
       <button class="btn" id="startBtn">開始</button>
       <button class="btn quiet" id="mapBtn">回關卡地圖</button>
-      <p class="note">原型 v0.28：暫用圖、不發點數</p>
+      <p class="note">原型 v0.29：暫用圖、不發點數</p>
     </div>
   </div>
 
@@ -411,7 +411,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.28',
+  version: '0.29',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -2541,7 +2541,7 @@ function finish() { BGM.stop();
   /* v0.28：星星一顆一顆亮、分數往上跳（星星是這一局拿到的；下面小字是條件） */
   const SP = 'M12 2.5l2.9 6 6.6.8-4.9 4.6 1.3 6.5L12 17.2l-5.9 3.2 1.3-6.5L2.5 9.3l6.6-.8z';
   $('bigStars').innerHTML = ST().stars.map((t) => '<span class="bs"><svg viewBox="0 0 24 24"><path d="' + SP + '"/></svg><small>' + t + '</small></span>').join('');
-  sv.forEach((v, k) => { if (v) setTimeout(() => { if (mode !== 'result') return; $('bigStars').children[k].classList.add('on'); jingle([660 + k * 180, 990 + k * 180], 70); }, 450 + k * 420); });
+  sv.forEach((v, k) => { if (v) setTimeout(() => { if (mode !== 'result') return; $('bigStars').children[k].classList.add('on'); jingle([660 + k * 180, 990 + k * 180], 70); }, 420 + k * 260); });
   const finalSc = scoreFinal(), t0s = performance.now(), el = $('cleanPct'); el.textContent = '0';
   const tickSc = () => { const k = Math.min(1, (performance.now() - t0s) / 900); el.textContent = String(Math.round(finalSc * (1 - Math.pow(1 - k, 3)))); if (k < 1 && mode === 'result') requestAnimationFrame(tickSc); else el.textContent = String(finalSc); };
   requestAnimationFrame(tickSc);

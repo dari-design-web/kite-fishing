@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>港灣蓋章散步原型</title>
 <style>
-/* P3 港灣蓋章散步 原型 v0.5（工作單 18 港灣護照升級提案 v1，D62，C-89）。只做手機版（D55）。
+/* P3 港灣蓋章散步 原型 v0.6（v0.6：先存進度再演出、集滿等最後一章落下、港口札記；工作單 18 港灣護照升級提案 v1，D62，C-89）。只做手機版（D55）。
    v0.5：彩色墨水（每站一色，正式彩色章等 ChatGPT）、章＋稱號、組合稱號、按住蓋章、稀有章（金／彩虹）、夜間章、
    回訪升級（銅→銀→金框）、護照上畫出散步路線、第 7 個祕密章、存成「我的港灣護照」圖片。稱號名稱與機率都是建議，等 Dari */
 :root{--paper:#F4EFE6;--card:#FFFDF8;--ink:#3E2B1D;--muted:#8A7565;--teal:#2F7F86;--teal-d:#1F5A5F;--red:#C9473A;--line:#E2D6C6;--gold:#E8B879;
@@ -56,7 +56,7 @@ header p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
 @keyframes pslam{0%{transform:scale(2.4) rotate(-24deg);opacity:0}55%{transform:scale(.9) rotate(-6deg);opacity:1}100%{transform:scale(1) rotate(-8deg)}}
 @keyframes ink{0%{transform:scale(.8);opacity:.8}100%{transform:scale(1.5);opacity:0}}
 .pcell:not(.done) .q{animation:breathe 2.6s ease-in-out infinite}
-@keyframes breathe{50%{opacity:.45}}
+@keyframes breathe{50%{opacity:.7}}
 /* 彩色章：底色淡圓＋章圖當遮罩填色（正式彩色插畫章等 ChatGPT，G-50） */
 .stampv{display:block;position:relative;width:100%;height:100%;border-radius:50%;transform:rotate(-8deg);background:radial-gradient(circle,color-mix(in srgb,var(--c) 18%,#FFFDF8) 0 58%,transparent 59%)}
 .stampv .inkl{position:absolute;inset:0;background:var(--c);-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat}
@@ -122,6 +122,17 @@ summary{font-weight:700;font-size:14px;cursor:pointer}
 .tlist button[aria-pressed="true"]{border-color:#2B3A40;background:#2B3A40;color:#FFF4E2}
 .tlist button:disabled{opacity:.6;background:var(--paper)}
 .tlist small{margin-left:auto;font-size:11px;color:inherit;opacity:.7;text-align:right}
+.notes{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.notes h2{margin:0;font-size:15px;display:flex;align-items:center;justify-content:space-between}
+.notes h2 button{font:inherit;font-size:13px;font-weight:700;border:0;border-radius:999px;padding:6px 12px;background:var(--teal);color:#fff}
+.notes .nt{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.5}
+.notes .nt span{font-size:22px;line-height:1}
+.notes .nt small{display:block;color:var(--muted);font-size:11.5px}
+.moods{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
+.moods button{font:inherit;font-size:13px;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.moods button span{font-size:24px}
+.moods button[aria-pressed="true"]{border-color:var(--teal);background:#EAF5F4}
+.nin{width:100%;font:inherit;font-size:15px;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px}
 .conf{position:fixed;inset:0;pointer-events:none;z-index:30;overflow:hidden}
 .conf i{position:absolute;top:-20px;width:9px;height:14px;border-radius:2px;animation:fall linear forwards}
 @keyframes fall{to{transform:translate(var(--dx),110vh) rotate(var(--r))}}
@@ -146,6 +157,7 @@ summary{font-weight:700;font-size:14px;cursor:pointer}
     <div id="grid"></div>
   </section>
   <div class="secret" id="secret"></div>
+  <section class="notes" id="notes"></section>
   <div class="reward" id="reward" hidden></div>
   <div class="row2">
     <button class="btn" type="button" id="shareBtn">存成護照圖片</button>
@@ -353,7 +365,7 @@ const SND_ICON = (() => {
 /* BGM-END */
 </script>
 <script>
-const CFG = { version: '0.5', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 6 };      // 機率與夜間時間是建議，等 Dari
+const CFG = { version: '0.6', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 6 };      // 機率與夜間時間是建議，等 Dari
 const FRAMES = [[31.2037, 34.1481], [68.7037, 34.1481], [31.2037, 56.2222], [68.7037, 56.1852], [31.1574, 78.2593], [68.7037, 78.2963]], FRAME_R = 12.45;      // G-49 護照頁圓框中心（%）與半徑（佔寬度 %）
 /* 6 個蓋章點（實際位置待 Dari 現勘）。color：每站主色（工作單 18）；title：蓋到就拿到的稱號（建議）；riddle：還沒去時的提示 */
 const SPOTS = [
@@ -375,7 +387,7 @@ const SECRET = { title: '傳說中的小鳶知己', color: '#C9473A', hint: '有
 const VAR_NAME = { gold: '金色稀有', rainbow: '彩虹稀有', night: '夜間版' };
 const $ = (id) => document.getElementById(id);
 const today = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
-function blank() { return { v: 2, spots: {}, complete: false, rewarded: false, var: {}, days: {}, order: [], titles: [], cur: '', secret: 0 }; }
+function blank() { return { v: 2, spots: {}, complete: false, rewarded: false, var: {}, days: {}, order: [], titles: [], cur: '', secret: 0, notes: [] }; }
 function load() {
   let q = null; try { q = JSON.parse(localStorage.getItem(CFG.key) || 'null'); } catch (e) {}
   if (!q || !q.spots) return blank();
@@ -442,7 +454,7 @@ function render() {
   $('secret').innerHTML = P.secret ? '<span class="sv">' + secretV() + '</span><p><b>祕密章：' + SECRET.title + '</b><br>你找到藏起來的第 7 個章了！</p>' : '<span class="lock">？</span><p><b>第 7 個祕密章</b><br>' + SECRET.hint + '</p>';
   const r = $('reward'); r.hidden = !P.complete;
   r.innerHTML = '<img src="assets/pc_passport.jpg" alt="" style="width:96px;height:60px;object-fit:cover;border-radius:4px;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.2)"><p><b>集滿獎勵已收下</b><br>護照紀念明信片在小屋收藏冊（港灣護照），小鳶的雨傘在背包。</p>';
-  renderTitleBar(); renderTools();
+  renderTitleBar(); renderTools(); renderNotes();
 }
 function hintSheet(s) {
   $('sheet').innerHTML = '<span class="q" style="font-size:48px;color:' + s.color + '">？</span><h3>第 ' + s.id + ' 站的提示</h3><div class="say"><img src="../travel/assets/kite_home.png" alt=""><p>' + s.riddle + '～<br>找到那裡的 QR，掃一下就能蓋章！</p></div><p class="again">蓋到可以拿到稱號：' + s.title + '</p><button class="btn" type="button" id="ovOk">好，去找找看</button>';
@@ -460,15 +472,14 @@ function scan(id) {
   const first = !P.spots[s.id], d = today(), days = P.days[s.id] || [], newDay = !first && !days.includes(d);
   if (!first && !newDay) { showStory(s, false, []); return; }
   const v = rollVar(); forceVar = '';
-  pressSheet(s, first ? v : (v && v !== 'night' ? v : P.var[s.id] || v), () => {
-    if (first) { P.spots[s.id] = Date.now(); P.order.push(s.id); justId = s.id; }
-    P.days[s.id] = days.concat([d]);
-    const nv = first ? v : (v === 'rainbow' || (v === 'gold' && P.var[s.id] !== 'rainbow') ? v : P.var[s.id] || v);      // 重蓋時保留比較稀有的那款
-    if (nv) P.var[s.id] = nv; else delete P.var[s.id];
-    if (n() === 6 && Object.values(P.var).includes('night')) P.secret = P.secret || Date.now();
-    const fresh = syncTitles(); save();
-    showStory(s, true, fresh, first ? '' : '同一站不同天再蓋，章升級到 Lv' + lvOf(s.id) + '！', P.var[s.id]);
-  });
+  /* v0.6：掃到就先存進度，蓋章動畫中途離開也不會掉章（ChatGPT G-50 意見） */
+  if (first) { P.spots[s.id] = Date.now(); P.order.push(s.id); justId = s.id; }
+  P.days[s.id] = days.concat([d]);
+  const nv = first ? v : (v === 'rainbow' || (v === 'gold' && P.var[s.id] !== 'rainbow') ? v : P.var[s.id] || v);      // 重蓋時保留比較稀有的那款
+  if (nv) P.var[s.id] = nv; else delete P.var[s.id];
+  if (n() === 6 && Object.values(P.var).includes('night')) P.secret = P.secret || Date.now();
+  const fresh = syncTitles(); save();
+  pressSheet(s, nv || v, () => showStory(s, true, fresh, first ? '' : '同一站不同天再蓋，章升級到 Lv' + lvOf(s.id) + '！', P.var[s.id]));
 }
 function pressSheet(s, v, done) {
   $('sheet').innerHTML = '<h3>' + s.hint + '</h3><button class="press" type="button" id="press" style="--c:' + s.color + '" aria-label="按住印章蓋下去">' +
@@ -502,8 +513,9 @@ function showStory(s, fresh, newTitles, extra, v) {
     '<p class="again">' + (n() < 6 ? '還差 ' + (6 - n()) + ' 個章' : '6 個都蓋好了！') + '</p><button class="btn" type="button" id="ovOk">看護照</button>';
   $('ov').hidden = false;
   if (newTitles.length) setTimeout(() => sfx('pop'), 300);
-  $('ovOk').onclick = () => { $('ov').hidden = true; render(); checkDone(); };
+  $('ovOk').onclick = () => { $('ov').hidden = true; const landing = justId && !REDUCE; render(); setTimeout(() => { if ($('ov').hidden) checkDone(); }, landing ? 700 : 0); };      // v0.6：最後一個章先落到護照上，再跳集滿（ChatGPT C-87 複查）
 }
+const REDUCE = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 function checkDone() {
   if (n() < 6 || P.rewarded) return;
   P.complete = true; P.rewarded = true; save(); confetti(); sfx('chime');
@@ -545,6 +557,23 @@ async function sharePassport() {
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = '我的港灣護照.png'; document.body.appendChild(a); a.click(); a.remove();
   }, 'image/png');
 }
+/* ===== v0.6 留給下次的我（ChatGPT G-50 創意 B）：選一個心情、寫一句下次還想看什麼；只存在這支手機，不用寫也能集滿 ===== */
+const MOODS = [['😊', '好開心'], ['🌊', '看海'], ['🍤', '好好吃'], ['🐋', '鯨鯊'], ['☔', '下雨天'], ['😴', '走累了']];
+function renderNotes() {
+  const L = P.notes || [], last = L[L.length - 1];
+  $('notes').innerHTML = '<h2>港口札記<button type="button" id="noteBtn">留一句給下次的我</button></h2>' +
+    (L.length ? L.slice(-3).reverse().map((x) => '<div class="nt"><span>' + x.m + '</span><div>' + (x.t ? '下次還想看：' + x.t.replace(/[<>&]/g, '') : x.ml) + '<small>' + x.d + (x === last ? '・上一次' : '') + '</small></div></div>').join('') : '<p class="note">走完、要離開的時候，可以留一句話。下次打開護照就會看到上次的你。</p>');
+  $('noteBtn').onclick = noteSheet;
+}
+function noteSheet() {
+  let pick = 0;
+  $('sheet').innerHTML = '<h3>留給下次的我</h3><p class="again">今天的心情是？</p><div class="moods">' + MOODS.map((m, i) => '<button type="button" data-i="' + i + '" aria-pressed="' + (i === 0) + '"><span>' + m[0] + '</span>' + m[1] + '</button>').join('') + '</div>' +
+    '<input class="nin" id="nin" maxlength="20" placeholder="下次還想看＿＿（可以不寫）"><div class="row2" style="width:100%"><button class="btn light" type="button" id="ovNo">先不要</button><button class="btn" type="button" id="ovOk">留下來</button></div>';
+  $('ov').hidden = false;
+  $('sheet').querySelectorAll('.moods button').forEach((b) => (b.onclick = () => { pick = +b.dataset.i; $('sheet').querySelectorAll('.moods button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); }));
+  $('ovNo').onclick = () => { $('ov').hidden = true; };
+  $('ovOk').onclick = () => { const d = new Date(); P.notes = (P.notes || []).concat([{ d: d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate(), m: MOODS[pick][0], ml: MOODS[pick][1], t: $('nin').value.trim().slice(0, 20) }]).slice(-10); save(); $('ov').hidden = true; renderNotes(); sfx('pop'); };
+}
 /* ===== 測試工具 ===== */
 function renderTools() {
   $('tools').innerHTML = SPOTS.map((s) => '<button type="button" data-s="' + s.id + '">掃第 ' + s.id + ' 點</button>').join('') +
@@ -566,7 +595,7 @@ function drawSnd() { const b = $('snd'); b.innerHTML = SND_ICON[sndOn ? 'on' : '
 function sfx(k) { if (sndOn) BGM.sfx(k); }
 function confetti() {
   const box = document.createElement('div'), C = SPOTS.map((s) => s.color).concat(['#F4D35E', '#E8B879']); box.className = 'conf';
-  for (let i = 0; i < 70; i++) { const e = document.createElement('i'); e.style.left = Math.random() * 100 + '%'; e.style.background = C[i % C.length]; e.style.setProperty('--dx', (Math.random() * 120 - 60) + 'px'); e.style.setProperty('--r', (Math.random() * 900 - 450) + 'deg'); e.style.animationDuration = (1.8 + Math.random() * 1.6) + 's'; e.style.animationDelay = Math.random() * 0.5 + 's'; box.appendChild(e); }
+  for (let i = 0; i < 70; i++) { const e = document.createElement('i'); e.style.left = (i % 2 ? 75 + Math.random() * 25 : Math.random() * 25) + '%'; /* 彩紙集中兩側，中間留給明信片和按鈕 */ e.style.background = C[i % C.length]; e.style.setProperty('--dx', (Math.random() * 120 - 60) + 'px'); e.style.setProperty('--r', (Math.random() * 900 - 450) + 'deg'); e.style.animationDuration = (1.8 + Math.random() * 1.6) + 's'; e.style.animationDelay = Math.random() * 0.5 + 's'; box.appendChild(e); }
   document.body.appendChild(box); setTimeout(() => box.remove(), 4200);
 }
 syncTitles(); save(); render(); drawSnd();
