@@ -1,5 +1,7 @@
-/* BGM-START｜配樂 v2（C-82，Dari 10/13 01:03／01:06）
-   每個場景一首不同的曲子：捕魚三場、飛行地圖與四關、去旅行五個房間。
+/* BGM-START｜配樂 v3（C-87，Dari 10/13 09:39：主動加強畫面、配樂、動畫）
+   每個場景一首不同的曲子：捕魚三場、飛行地圖與四關、去旅行五個房間、蓋章散步、合照館。
+   v3：加空間殘響（比較不像電子琴）、每首多一段 B 段（A→B 輪流，不會一直重複同 8 小節）、
+       強弱拍力度、海浪／雨聲／蟲鳴環境音，以及共用音效 BGM.sfx（蓋章、叮咚、快門、啵）。
    有音樂檔就播檔案：assets/bgm/<場景>.mp3（例如 assets/bgm/fly_2.mp3）；沒有檔案就用程式即時合成。
    這份是原始檔（shared/bgm.js），各頁面內嵌的是同一份內容。 */
 const BGM = (() => {
@@ -8,26 +10,29 @@ const BGM = (() => {
   const SC = { major: [0, 2, 4, 5, 7, 9, 11], minor: [0, 2, 3, 5, 7, 8, 10], dorian: [0, 2, 3, 5, 7, 9, 10], penta: [0, 2, 4, 7, 9], mixo: [0, 2, 4, 5, 7, 9, 10] };
   /* key：主音（MIDI）；prog：每小節和弦的級數（0＝I）；meter：一小節幾個八分音符；lead／bass／arp／pad：樂器；drum：每小節的鼓點（x＝打）；g：音量校正（離線量過，讓每首差不多大聲） */
   const TR = {
-    fish_noon:     { key: 60, scale: 'major', bpm: 108, prog: [0, 4, 5, 3, 0, 4, 3, 4], lead: 'pluck', bass: 'oompah', bw: 'triangle', drum: { k: 'x...x...', s: '....x...', h: '.x.x.x.x' }, dens: 0.75, seed: 11, g: 1.21 },
-    fish_dusk:     { key: 65, scale: 'major', bpm: 86, prog: [0, 3, 5, 4, 0, 3, 4, 0], lead: 'flute', bass: 'long', bw: 'sine', pad: 1, drum: { h: '..x...x.' }, dens: 0.55, seed: 23, g: 1.3 },
-    fish_night:    { key: 62, scale: 'dorian', bpm: 72, prog: [0, 0, 3, 3, 0, 0, 6, 4], lead: 'bell', bass: 'long', bw: 'sine', pad: 1, arp: 8, dens: 0.42, seed: 37, g: 1.35 },
+    fish_noon:     { key: 60, scale: 'major', bpm: 108, prog: [0, 4, 5, 3, 0, 4, 3, 4], lead: 'pluck', bass: 'oompah', bw: 'triangle', drum: { k: 'x...x...', s: '....x...', h: '.x.x.x.x' }, amb: 'sea', dens: 0.75, seed: 11, g: 1.21 },
+    fish_dusk:     { key: 65, scale: 'major', bpm: 86, prog: [0, 3, 5, 4, 0, 3, 4, 0], lead: 'flute', bass: 'long', bw: 'sine', pad: 1, drum: { h: '..x...x.' }, amb: 'sea', dens: 0.55, seed: 23, g: 1.3 },
+    fish_night:    { key: 62, scale: 'dorian', bpm: 72, prog: [0, 0, 3, 3, 0, 0, 6, 4], lead: 'bell', bass: 'long', bw: 'sine', pad: 1, arp: 8, amb: 'night', dens: 0.42, seed: 37, g: 1.35 },
     fly_map:       { key: 55, scale: 'major', bpm: 112, prog: [0, 3, 4, 0, 5, 3, 4, 4], lead: 'chip', bass: 'root', bw: 'triangle', drum: { k: 'x...x...', s: '..x...xx' }, dens: 0.8, seed: 41, g: 1.28 },
     fly_1:         { key: 60, scale: 'major', bpm: 136, prog: [0, 5, 3, 4, 0, 5, 3, 4], lead: 'chip', bass: 'oct', bw: 'triangle', arp: 16, drum: { k: 'x..x..x.', s: '....x...', h: 'xxxxxxxx' }, dens: 0.85, seed: 53, g: 0.98 },
-    fly_2:         { key: 62, scale: 'major', mscale: 'penta', bpm: 120, prog: [0, 0, 3, 4, 0, 0, 4, 0], lead: 'pluck', bass: 'oompah', bw: 'triangle', drum: { k: 'x...x...', w: 'x.x.xx.x' }, dens: 0.8, seed: 67, g: 1.11 },
-    fly_3:         { key: 65, scale: 'major', bpm: 124, swing: 0.18, prog: [0, 3, 0, 4, 0, 3, 4, 0], lead: 'reed', bass: 'walk', bw: 'triangle', drum: { k: 'x...x...', s: '..x...x.', h: '.x.x.x.x' }, dens: 0.8, seed: 79, g: 1.24 },
+    fly_2:         { key: 62, scale: 'major', mscale: 'penta', bpm: 120, prog: [0, 0, 3, 4, 0, 0, 4, 0], lead: 'pluck', bass: 'oompah', bw: 'triangle', drum: { k: 'x...x...', w: 'x.x.xx.x' }, amb: 'rain', dens: 0.8, seed: 67, g: 1.11 },
+    fly_3:         { key: 65, scale: 'major', bpm: 124, swing: 0.18, prog: [0, 3, 0, 4, 0, 3, 4, 0], lead: 'reed', bass: 'walk', bw: 'triangle', drum: { k: 'x...x...', s: '..x...x.', h: '.x.x.x.x' }, amb: 'sea', dens: 0.8, seed: 79, g: 1.24 },
     fly_4:         { key: 64, scale: 'minor', bpm: 144, prog: [0, 5, 2, 6, 0, 5, 6, 4], lead: 'chip', bass: 'root', bw: 'sawtooth', drum: { k: 'x.x.x.x.', s: '....x..x', h: 'xxxxxxxx' }, dens: 0.85, seed: 97, g: 0.89 },
     travel_living: { key: 60, scale: 'major', bpm: 84, prog: [0, 3, 4, 0, 5, 3, 4, 0], lead: 'pluck', bass: 'long', bw: 'sine', pad: 1, dens: 0.6, seed: 101, g: 1.6 },
     travel_bed:    { key: 65, scale: 'major', bpm: 66, meter: 6, prog: [0, 3, 0, 4, 0, 3, 4, 0], lead: 'bell', bass: 'long', bw: 'sine', pad: 1, dens: 0.5, seed: 113, g: 1.35 },
     travel_kitchen:{ key: 67, scale: 'major', bpm: 108, swing: 0.12, prog: [0, 4, 0, 4, 3, 0, 4, 0], lead: 'pluck', bass: 'oompah', bw: 'triangle', drum: { k: 'x...x...', w: '..x...x.' }, dens: 0.7, seed: 127, g: 1.17 },
     travel_garden: { key: 62, scale: 'major', bpm: 96, prog: [0, 3, 0, 4, 5, 3, 4, 0], lead: 'flute', bass: 'long', bw: 'sine', arp: 8, birds: 1, drum: { h: '..x...x.' }, dens: 0.6, seed: 139, g: 1.28 },
-    travel_school: { key: 64, scale: 'major', bpm: 116, prog: [0, 3, 4, 0, 0, 3, 4, 0], lead: 'bell', bass: 'root', bw: 'triangle', drum: { k: 'x...x...', c: '..x...x.' }, dens: 0.75, seed: 151, g: 0.91 }
+    travel_school: { key: 64, scale: 'major', bpm: 116, prog: [0, 3, 4, 0, 0, 3, 4, 0], lead: 'bell', bass: 'root', bw: 'triangle', drum: { k: 'x...x...', c: '..x...x.' }, dens: 0.75, seed: 151, g: 0.91 },
+    stamp_walk:    { key: 62, scale: 'major', bpm: 100, prog: [0, 4, 3, 0, 5, 3, 4, 0], lead: 'flute', bass: 'walk', bw: 'triangle', drum: { k: 'x...x...', h: '..x...x.' }, birds: 1, amb: 'sea', dens: 0.65, seed: 163, g: 1.2 },
+    photo_room:    { key: 67, scale: 'major', bpm: 92, prog: [0, 5, 3, 4, 0, 5, 3, 4], lead: 'pluck', bass: 'long', bw: 'sine', pad: 1, arp: 8, drum: { c: '....x...' }, dens: 0.7, seed: 179, g: 1.5 }
   };
   const FILE = {};      // 場景 → false（確定沒有音樂檔）
-  let ac = null, out = null, timer = null, cur = null, step = 0, next = 0, audio = null, song = null, noise = null;
+  let ac = null, out = null, bus = null, timer = null, cur = null, step = 0, next = 0, audio = null, song = null, noise = null, amb = [];
   const hz = (m) => 440 * Math.pow(2, (m - 69) / 12);
   function rng(s) { return () => { s = (s * 1103515245 + 12345) % 2147483648; return s / 2147483648; }; }
   /* ====== 作曲：同一個種子每次寫出一樣的曲子。前四小節是 A 句，後四小節重複 A 句、最後一小節回到主音 ====== */
-  function compose(T) {
+  function compose(T0, part) {
+    const T = part ? Object.assign({}, T0, { seed: T0.seed + 1000, prog: T0.progB || [3, 0, 4, 5, 3, 0, 4, 0].slice(0, T0.prog.length) }) : T0;      // v3：B 段換和弦進行與旋律
     const r = rng(T.seed), sc = SC[T.scale], ms = SC[T.mscale || T.scale], bpb = T.meter || 8, bars = T.prog.length;
     const deg = (d, base) => base + sc[((d % 7) + 7) % 7] + 12 * Math.floor(d / 7);
     const pool = []; for (let o = -1; o < 3; o++) for (const s of ms) { const m = T.key + s + 12 * o; if (m >= T.key - 3 && m <= T.key + 17) pool.push(m); }
@@ -83,11 +88,13 @@ const BGM = (() => {
     else { f.type = 'bandpass'; f.frequency.value = 1300; env(g, t, 0.002, 0.25, 0.09); env(g, t + 0.012, 0.002, 0.2, 0.1); }      // c：拍手
     s.connect(f); f.connect(g); g.connect(dest); s.start(t); s.stop(t + 0.2);
   }
+  function cricket(c, dest, t) { for (let i = 0; i < 4; i++) { const u = t + i * 0.07; osc(c, 'sine', 4400, u, 0.045, dest, 0.018, 0.004); } }
   function chirp(c, dest, t) { for (let i = 0; i < 3; i++) { const o = c.createOscillator(), g = c.createGain(), u = t + i * 0.11; o.type = 'sine'; o.frequency.setValueAtTime(2600, u); o.frequency.exponentialRampToValueAtTime(3800, u + 0.06); env(g, u, 0.005, 0.05, 0.08); o.connect(g); g.connect(dest); o.start(u); o.stop(u + 0.1); } }
   /* 排一個八分音符格（即時播放和離線量音量共用） */
   function schedule(c, dest, T, S, i, t, e) {
     const b = Math.floor(i / S.bpb) % S.bars, s = i % S.bpb, k = i % S.len, beat = S.bpb === 6 ? 3 : 2;
-    const m = S.flat[k]; if (m) voice(c, dest, T.lead, m, t, S.dur[k] * e * 0.95, 0.16 * T.g);
+    const acc = s % (S.bpb === 6 ? 3 : 4) === 0 ? 1.08 : 0.8 + ((k * 7919) % 13) / 13 * 0.16;      // v3：強拍重、弱拍輕一點，比較像人在彈
+    const m = S.flat[k]; if (m) voice(c, dest, T.lead, m, t, S.dur[k] * e * 0.95, 0.16 * T.g * acc);
     const root = S.roots[b];
     if (T.bass === 'long' && s === 0) osc(c, T.bw, hz(root), t, S.bpb * e * 0.95, dest, 0.15 * T.g, 0.04);
     if (T.bass === 'root' && s % beat === 0) osc(c, T.bw, hz(root), t, e * beat * 0.8, dest, 0.13 * T.g, 0.006);
@@ -98,20 +105,41 @@ const BGM = (() => {
     if (T.arp) { const tri = S.triads[b], n = T.arp === 16 ? 2 : 1; for (let j = 0; j < n; j++) osc(c, 'triangle', hz(tri[(s * n + j) % 3] + 12), t + j * e / n, e / n * 0.9, dest, 0.05 * T.g, 0.004); }
     if (T.drum) for (const key in T.drum) { const p = T.drum[key]; if (p[s % p.length] === 'x') hit(c, dest, key, t); }
     if (T.birds && k === 0) chirp(c, dest, t + e * 3);
+    if (T.amb === 'night' && s === 0 && b % 2 === 0) cricket(c, dest, t + e);
   }
   const SONG = {};
-  function song_(name) { return SONG[name] || (SONG[name] = compose(TR[name])); }
+  function song_(name, part) { const key = name + (part ? '_B' : ''); return SONG[key] || (SONG[key] = compose(TR[name], part)); }
   function tick() {
-    const T = TR[cur]; if (!T || !ac) return; const S = song_(cur), e = 60 / T.bpm / 2;
-    while (next < ac.currentTime + 0.2) { const sw = step % 2 ? (T.swing || 0) * e : 0; schedule(ac, out, T, S, step, next + sw, e); next += e; step++; }
+    const T = TR[cur]; if (!T || !ac) return; const A = song_(cur, 0), e = 60 / T.bpm / 2;
+    while (next < ac.currentTime + 0.2) { const S = Math.floor(step / A.len) % 2 ? song_(cur, 1) : A, sw = step % 2 ? (T.swing || 0) * e : 0; schedule(ac, out, T, S, step, next + sw, e); next += e; step++; }
+  }
+  /* v3：空間殘響（程式產生的房間回音，不用外部檔案） */
+  function impulse(c, sec, decay) { const n = Math.floor(c.sampleRate * sec), b = c.createBuffer(2, n, c.sampleRate); for (let ch = 0; ch < 2; ch++) { const x = b.getChannelData(ch); for (let i = 0; i < n; i++) x[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, decay); } return b; }
+  /* v3：環境音（海浪＝低頻雜訊慢慢起伏；雨＝高一點的沙沙聲；夜＝海浪＋蟲鳴） */
+  function ambience(kind) {
+    if (!kind || !ac) return;
+    const nb = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate), x = nb.getChannelData(0); let lp = 0;
+    for (let i = 0; i < x.length; i++) { const w = Math.random() * 2 - 1; lp = kind === 'rain' ? w : lp * 0.97 + w * 0.03; x[i] = kind === 'rain' ? w : lp * 6; }
+    const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); src.buffer = nb; src.loop = true;
+    f.type = kind === 'rain' ? 'bandpass' : 'lowpass'; f.frequency.value = kind === 'rain' ? 2600 : 700; f.Q.value = kind === 'rain' ? 0.4 : 0.7;
+    g.gain.value = kind === 'rain' ? 0.035 : 0.05;
+    src.connect(f); f.connect(g); g.connect(bus); src.start();
+    const nodes = [src];
+    if (kind !== 'rain') { const l = ac.createOscillator(), lg = ac.createGain(); l.frequency.value = 0.11; lg.gain.value = 0.04; l.connect(lg); lg.connect(g.gain); l.start(); nodes.push(l); }
+    amb = nodes;
   }
   function ensure() {
     try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); } catch (x) { return false; }
     if (ac.state === 'suspended') ac.resume();
-    if (!out) { const comp = ac.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 4; comp.attack.value = 0.005; comp.release.value = 0.2; out = ac.createGain(); out.gain.value = 1.1; out.connect(comp); comp.connect(ac.destination); }
+    if (!out) {
+      const comp = ac.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 4; comp.attack.value = 0.005; comp.release.value = 0.2; comp.connect(ac.destination);
+      out = ac.createGain(); out.gain.value = 1.05; out.connect(comp);
+      try { const rv = ac.createConvolver(), wet = ac.createGain(), hc = ac.createBiquadFilter(); rv.buffer = impulse(ac, 2.2, 3); hc.type = 'lowpass'; hc.frequency.value = 4500; wet.gain.value = 0.3; out.connect(rv); rv.connect(hc); hc.connect(wet); wet.connect(comp); } catch (x) {}
+      bus = ac.createGain(); bus.gain.value = 1; bus.connect(comp);      // 環境音與音效不進殘響
+    }
     return true;
   }
-  function synth(name) { if (!TR[name] || !ensure()) return; step = 0; next = ac.currentTime + 0.08; timer = setInterval(tick, 30); tick(); }
+  function synth(name) { if (!TR[name] || !ensure()) return; step = 0; next = ac.currentTime + 0.08; timer = setInterval(tick, 30); tick(); ambience(TR[name].amb); }
   function play(name) {
     name = ALIAS[name] || name;
     ensure();      // 一定要在點擊當下建立／喚醒，手機才會出聲
@@ -126,7 +154,16 @@ const BGM = (() => {
     }
     synth(name);
   }
-  function stop() { if (timer) clearInterval(timer); timer = null; if (audio) { audio.pause(); audio = null; } cur = null; }
+  function stop() { if (timer) clearInterval(timer); timer = null; if (audio) { audio.pause(); audio = null; } amb.forEach((n) => { try { n.stop(); } catch (x) {} }); amb = []; cur = null; }
+  /* v3：共用音效。stamp＝蓋章「咚」加紙聲；chime＝集滿叮咚；shutter＝快門；pop＝放貼紙；swish＝換房間 */
+  function sfx(kind) {
+    if (!ensure()) return; const c = ac, t = c.currentTime + 0.01, d = bus;
+    if (kind === 'stamp') { hit(c, d, 'k', t); const nb = noise = noise || noiseBuf(c), s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(); s.buffer = nb; f.type = 'bandpass'; f.frequency.value = 900; env(g, t + 0.01, 0.003, 0.35, 0.12); s.connect(f); f.connect(g); g.connect(d); s.start(t); s.stop(t + 0.2); return; }
+    if (kind === 'chime') { [72, 76, 79, 84, 88].forEach((m, i) => voice(c, out, 'bell', m, t + i * 0.11, 0.6, 0.22)); return; }
+    if (kind === 'shutter') { hit(c, d, 'h', t); hit(c, d, 's', t + 0.05); return; }
+    if (kind === 'pop') { const o = c.createOscillator(), g = c.createGain(); o.frequency.setValueAtTime(520, t); o.frequency.exponentialRampToValueAtTime(1300, t + 0.08); env(g, t, 0.003, 0.18, 0.12); o.connect(g); g.connect(d); o.start(t); o.stop(t + 0.15); return; }
+    if (kind === 'swish') { const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(); s.buffer = noise = noise || noiseBuf(c); s.loop = true; f.type = 'bandpass'; f.Q.value = 1.2; f.frequency.setValueAtTime(500, t); f.frequency.exponentialRampToValueAtTime(3000, t + 0.25); env(g, t, 0.06, 0.12, 0.3); s.connect(f); f.connect(g); g.connect(d); s.start(t); s.stop(t + 0.35); }
+  }
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { if (ac && ac.state === 'running') ac.suspend(); if (audio) audio.pause(); }
     else { if (ac && timer) ac.resume(); if (audio) audio.play().catch(() => {}); }
@@ -138,7 +175,7 @@ const BGM = (() => {
     for (let i = 0, t = 0.05; t < sec; i++, t += e) schedule(c, g, T, S, i, t + (i % 2 ? (T.swing || 0) * e : 0), e);
     return c.startRendering().then((b) => { const x = b.getChannelData(0); let s = 0; for (let i = 0; i < x.length; i++) s += x[i] * x[i]; return Math.sqrt(s / x.length); });
   }
-  return { play, stop, measure, tracks: Object.keys(TR), TR, get on() { return !!(timer || audio); }, get cur() { return cur; } };
+  return { play, stop, sfx, measure, tracks: Object.keys(TR), TR, get on() { return !!(timer || audio); }, get cur() { return cur; } };
 })();
 /* 音樂與暫停圖示（C-81）：開＝音符、關＝音符加圓圈斜線；暫停＝紅色正方形，暫停中＝綠色播放箭頭 */
 const SND_ICON = (() => {
