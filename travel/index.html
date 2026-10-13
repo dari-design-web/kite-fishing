@@ -300,7 +300,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.23',
+  version: '0.24',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -768,6 +768,9 @@ function cardHTML(l, i, opts) {
   const c = l.cards[i], lim = opts && opts.lim;
   return '<div class="pc' + (opts && opts.anim ? ' slideup' : '') + '" id="pc"><div class="in"><div class="front">' + sceneHTML(l, i, opts && opts.friend, lim) + '</div><div class="backside"><div class="stampbox"></div><div style="padding-right:56px">' + (lim ? lim.note : c[1]) + '</div><div class="to">' + l.name + '　小鳶寄</div></div></div></div>';
 }
+/* v0.24（C-126）：信的最後提到現場的港口朋友（讀首頁／港口朋友頁存的 kiteFriends1，只讀不改） */
+const PAL_WORDS = { 1: ['探頭小鳶', '還在牆後面偷看港口，說等你回來一起數船'], 2: ['打盹小鳶', '又睡著了，夢話是你的名字'], 3: ['剛到港口的小鳶', '說牠背包裡也有一張要寄給你'], 4: ['鯨鯊', '游過來問你什麼時候再去'], 5: ['海龜', '說港口的垃圾變少了，謝謝你'], 6: ['小卷', '晚上發光的時候想起你'] };
+function palLine() { let fr = {}; try { fr = JSON.parse(localStorage.getItem('kiteFriends1') || '{}') || {}; } catch (e) {} const ids = Object.keys(fr).filter((k) => PAL_WORDS[k]); if (!ids.length) return Math.random() < 0.5 ? '聽說東三東四館內住了好多大大的港口朋友，下次一起去找牠們！' : ''; const w = PAL_WORDS[ids[Math.floor(Math.random() * ids.length)]]; return '回家路上經過東三東四，' + w[0] + w[1] + '！'; }
 function openLetter() {
   if (S.state !== 'back' || !S.trip) return;
   const tr = S.trip, l = LOCS.find((x) => x.id === tr.dest);
@@ -775,7 +778,7 @@ function openLetter() {
   L.innerHTML = '<button class="skip" id="skipL">略過 ››</button><div class="env" id="envL"><img class="closed" src="assets/letter_env.png" alt=""><img class="opened" src="assets/letter_open.png" alt=""><img class="seal" src="assets/letter_seal.png" alt=""></div><p class="tapme" id="tapme">點一下打開信封</p>';
   document.body.appendChild(L);
   const queue = tr.got.map((i) => ({ i })).concat(tr.limited ? [{ lim: LIMITED.find((x) => x.id === tr.limited) }] : []);
-  const extras = []; if (tr.stamps) extras.push('重複的明信片換成 ' + tr.stamps + ' 枚小鳶郵票'); if (tr.souvenir) extras.push('還帶回了紀念品：' + l.souvenir); if (tr.friend) extras.push('在' + l.name + '遇到了 ' + tr.friend + '！');
+  const extras = []; if (tr.stamps) extras.push('重複的明信片換成 ' + tr.stamps + ' 枚小鳶郵票'); if (tr.souvenir) extras.push('還帶回了紀念品：' + l.souvenir); if (tr.friend) extras.push('在' + l.name + '遇到了 ' + tr.friend + '！'); const pl = palLine(); if (pl) extras.push(pl);
   const finish = () => { const news = commitTrip(); L.remove(); if (S.titles && Object.keys(S.titles).length) {} go('home'); toast(news.length ? '收進收藏冊了！' : '小鳶回來了'); };
   $('skipL').onclick = finish;
   let step = 0;
