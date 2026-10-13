@@ -5,31 +5,52 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>小鳶來港測試首頁</title>
 <style>
-/* v18（Dari 00:31）：只做手機版。電腦打開也是一欄手機寬；大圖、字少，點圖就開 */
-:root{--bg:#1D2F36;--paper:#F4EFE6;--card:#FFFDF8;--ink:#2B2620;--muted:#857563;--teal:#2F7F86;--buoy:#E2702A;--line:#E4D8C6;--warn:#B4541B;
+/* v33（C-95，D64）：首頁改版。入口不用畫面截圖，改成一枚一枚的遊戲按鈕（目前是暫用拼圖，ChatGPT G-51 按鈕圖來了換上）。只做手機版（D55） */
+:root{--bg:#1D2F36;--paper:#F6F0E5;--card:#FFFDF8;--ink:#2B2620;--muted:#857563;--teal:#2F7F86;--buoy:#E2702A;--line:#E4D8C6;--warn:#B4541B;
   --f:'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--f)}
-.phone{max-width:430px;min-height:100vh;min-height:100dvh;margin:0 auto;background:var(--paper);padding:calc(18px + env(safe-area-inset-top,0px)) 14px calc(28px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+.phone{max-width:430px;min-height:100vh;min-height:100dvh;margin:0 auto;background:var(--paper);display:flex;flex-direction:column;overflow:hidden}
 a{color:inherit}
-.top{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;padding:0 2px}
-.top h1{margin:0;font-size:26px;line-height:1.2;letter-spacing:.02em}
-.top p{margin:2px 0 0;font-size:12px;color:var(--muted)}
-.top img{width:58px;height:58px;object-fit:contain;flex:none}
-.card{position:relative;display:block;border-radius:20px;overflow:hidden;background:#000;text-decoration:none;color:#fff;box-shadow:0 6px 18px rgba(43,38,32,.18)}
-.card .img{display:block;width:100%;aspect-ratio:4/3;background:#2B3A40 center/cover no-repeat}
-.card .cap{position:absolute;left:0;right:0;bottom:0;padding:44px 14px 12px;background:linear-gradient(transparent,rgba(10,16,20,.78) 55%);display:flex;align-items:flex-end;gap:10px}
-.card .cap .txt{flex:1;min-width:0;display:block}
-.card .h{display:block;font-size:22px;line-height:1.25;text-shadow:0 1px 3px rgba(0,0,0,.4)}
-.card .sub{display:block;font-size:13px;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.card .ver{position:absolute;top:10px;right:10px;font-size:11px;font-weight:700;background:rgba(255,253,248,.92);color:var(--teal);border-radius:999px;padding:1px 9px}
-.card .play{flex:none;background:var(--buoy);color:#fff;font-weight:700;font-size:15px;border-radius:999px;padding:9px 16px}
-.card:active{transform:scale(.99)}
-.prog{margin:-6px 4px 0;font-size:12px;color:var(--muted)}
-.prog b{color:var(--ink)}
-.soon{display:flex;align-items:center;gap:10px;border:1.5px dashed var(--line);border-radius:16px;padding:12px 14px;font-size:14px;color:var(--muted)}
-.soon b{color:var(--ink)}
+/* 頂部：天空到海的港口橫幅 */
+.hero{position:relative;padding:calc(20px + env(safe-area-inset-top,0px)) 18px 46px;background:linear-gradient(180deg,#BFE6F2 0%,#E7F5F4 46%,#8CCFD6 47%,#4FA9B8 100%);overflow:hidden}
+.hero::after{content:'';position:absolute;left:-5%;right:-5%;bottom:-1px;height:34px;background:var(--paper);border-radius:50% 50% 0 0/100% 100% 0 0}
+.hero .sun{position:absolute;right:26px;top:calc(18px + env(safe-area-inset-top,0px));width:46px;height:46px;border-radius:50%;background:radial-gradient(circle,#FFF4C2,#FFD36B 60%,rgba(255,211,107,0) 72%)}
+.hero .cloud{position:absolute;height:16px;border-radius:999px;background:#fff;opacity:.85;animation:cloud 26s linear infinite}
+.hero .cloud::before{content:'';position:absolute;left:22%;top:-9px;width:46%;height:20px;border-radius:999px;background:#fff}
+.hero .c1{width:70px;top:30%;left:-80px}.hero .c2{width:52px;top:16%;left:-60px;animation-duration:34s;animation-delay:-14s}
+@keyframes cloud{to{transform:translateX(520px)}}
+.hero .kite{position:absolute;right:10px;bottom:24px;width:118px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.18));animation:bob 3.2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-7px) rotate(-3deg)}}
+.hero h1{position:relative;margin:0;font-size:34px;line-height:1.15;letter-spacing:.08em;color:#14414A;text-shadow:0 2px 0 #fff}
+.hero p{position:relative;margin:4px 0 0;font-size:15px;font-weight:700;color:#1F5A5F}
+.hero .chip{position:relative;display:inline-block;margin-top:10px;font-size:11.5px;font-weight:700;background:rgba(255,253,248,.85);color:#1F5A5F;border-radius:999px;padding:2px 10px}
+.wrap{padding:6px 14px calc(26px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+.sec{margin:4px 2px -4px;font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.08em}
+/* 遊戲按鈕 */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 12px}
+.gb{display:flex;flex-direction:column;gap:6px;text-decoration:none;color:var(--ink);-webkit-tap-highlight-color:transparent}
+.gb .tile{position:relative;display:block;aspect-ratio:1;border-radius:26%;background:linear-gradient(160deg,var(--c1),var(--c2));box-shadow:0 7px 0 var(--c3),0 12px 18px rgba(43,38,32,.18),inset 0 3px 0 rgba(255,255,255,.45);overflow:hidden;transition:transform .12s,box-shadow .12s}
+.gb .tile::before{content:'';position:absolute;inset:7% 7% auto;height:32%;border-radius:999px;background:linear-gradient(rgba(255,255,255,.38),rgba(255,255,255,0))}
+.gb .tile img{position:absolute;object-fit:contain;filter:drop-shadow(0 4px 4px rgba(0,0,0,.18))}
+.gb .tile .main{left:12%;top:12%;width:76%;height:76%;animation:bob 3.4s ease-in-out infinite}
+.gb:nth-child(2n) .tile .main{animation-delay:-1.2s}
+.gb .tile .acc{width:34%;height:34%;right:6%;bottom:6%}
+.gb .tile.art img.main{left:0;top:0;width:100%;height:100%;animation:none;filter:none}      /* G-51 正式按鈕圖：整張填滿 */
+.gb .tile .ver{position:absolute;left:8%;top:7%;z-index:2;font-size:10.5px;font-weight:700;background:rgba(255,253,248,.9);color:var(--c3);border-radius:999px;padding:0 7px}
+.gb:active .tile{transform:translateY(5px);box-shadow:0 2px 0 var(--c3),0 4px 8px rgba(43,38,32,.18),inset 0 3px 0 rgba(255,255,255,.45)}
+.gb b{font-size:17px;line-height:1.25;padding:0 2px}
+.gb .sub{font-size:12px;line-height:1.4;color:var(--muted);padding:0 2px;margin-top:-4px}
+.gb .pg{font-size:11.5px;line-height:1.35;color:var(--teal);font-weight:700;padding:0 2px;min-height:16px}
+.gb .pg b{font-size:inherit;color:var(--ink)}
+.gb.wide{grid-column:span 2;flex-direction:row;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:10px 12px}
+.gb.wide .tile{width:84px;flex:none;border-radius:24px;box-shadow:0 5px 0 var(--c3),inset 0 3px 0 rgba(255,255,255,.45)}
+.gb.wide .tile .ver{display:none}
+.gb.wide .txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.gb.wide .sub{margin-top:0}
+.gb.wide .go{margin-left:auto;flex:none;background:var(--c3);color:#fff;font-weight:700;font-size:13px;border-radius:999px;padding:6px 12px}
+@media (prefers-reduced-motion:reduce){.hero .cloud,.hero .kite,.gb .tile .main{animation:none}}
 details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px}
 details summary{font-weight:700;font-size:14px;cursor:pointer;list-style:none;display:flex;justify-content:space-between}
 details summary::after{content:'＋';color:var(--muted)}
@@ -49,44 +70,41 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
 </head>
 <body>
 <main class="phone">
-  <header class="top">
-    <div><h1>小鳶來港</h1><p>測試首頁 v32・點圖片就能玩・素材都是暫用</p></div>
-    <img src="../travel/assets/kite_wave.png" alt="">
+  <header class="hero">
+    <span class="sun"></span><span class="cloud c1"></span><span class="cloud c2"></span>
+    <h1>小鳶來港</h1>
+    <p>今天想和小鳶玩什麼？</p>
+    <span class="chip">測試首頁 v33・素材都是暫用</span>
+    <img class="kite" src="../travel/assets/kite_wave.png" alt="">
   </header>
-
-  <a class="card" data-href="">
-    <span class="img" style="background-image:url(thumbs/fish.jpg)"></span><span class="ver">捕魚 v0.16</span>
-    <span class="cap"><span class="txt"><b class="h">小鳶捕魚</b><span class="sub">點魚讓小鳶俯衝，抓到的做成便當</span></span><span class="play">玩</span></span>
-  </a>
-  <p class="prog" id="pFish">讀取中</p>
-
-  <a class="card" data-href="fly/">
-    <span class="img" style="background-image:url(thumbs/fly.jpg)"></span><span class="ver">飛行 v0.29</span>
-    <span class="cap"><span class="txt"><b class="h">小鳶飛行冒險</b><span class="sub">拖著小鳶清垃圾、救朋友</span></span><span class="play">玩</span></span>
-  </a>
-  <p class="prog" id="pFly">讀取中</p>
-
-  <a class="card" data-href="travel/">
-    <span class="img" style="background-image:url(thumbs/travel.jpg)"></span><span class="ver">旅行 v0.19</span>
-    <span class="cap"><span class="txt"><b class="h">小鳶去旅行</b><span class="sub">五個房間、帶便當出門、寄明信片回來</span></span><span class="play">開</span></span>
-  </a>
-  <p class="prog" id="pTravel">讀取中</p>
-
-  <a class="card" data-href="photo/">
-    <span class="img" style="background-image:url(thumbs/photo.jpg);background-position:center 40%"></span><span class="ver">合照 v0.10</span>
-    <span class="cap"><span class="txt"><b class="h">小鳶合照館</b><span class="sub">用手機相機拍，再放小鳶和相框</span></span><span class="play">拍</span></span>
-  </a>
-
-  <a class="card" data-href="ui/">
-    <span class="img" style="background-image:url(thumbs/ui.jpg);background-position:center 20%"></span><span class="ver">介面 v0.6</span>
-    <span class="cap"><span class="txt"><b class="h">官方 LINE 會員畫面</b><span class="sub">入會、消費領點、服務台核銷</span></span><span class="play">看</span></span>
-  </a>
-
-  <a class="card" data-href="stamp/">
-    <span class="img" style="background-image:url(thumbs/stamp.jpg)"></span><span class="ver">蓋章 v0.7</span>
-    <span class="cap"><span class="txt"><b class="h">港灣蓋章散步</b><span class="sub">現場掃 QR 蓋章，集滿拿雨傘</span></span><span class="play">蓋</span></span>
-  </a>
-
+  <div class="wrap">
+  <p class="sec">遊戲</p>
+  <div class="grid">
+    <a class="gb" data-href="" data-btn="fish" style="--c1:#7FD3E8;--c2:#2E8FB3;--c3:#1D6A88">
+      <span class="tile"><span class="ver">v0.16</span><img class="main" src="../assets/kite_dive_v2.png" alt=""><img class="acc" src="../assets/fish_mid_v2.png" alt=""></span>
+      <b>小鳶捕魚</b><span class="sub">點魚讓小鳶俯衝</span><span class="pg" id="pFish">讀取中</span>
+    </a>
+    <a class="gb" data-href="fly/" data-btn="fly" style="--c1:#FFD9A0;--c2:#F08A5D;--c3:#B9573A">
+      <span class="tile"><span class="ver">v0.29</span><img class="main" src="../photo/assets/stk_kite_fly.png" alt=""></span>
+      <b>飛行冒險</b><span class="sub">清垃圾、救朋友</span><span class="pg" id="pFly">讀取中</span>
+    </a>
+    <a class="gb" data-href="travel/" data-btn="travel" style="--c1:#F6D9B0;--c2:#C98B57;--c3:#8C5A33">
+      <span class="tile"><span class="ver">v0.19</span><img class="main" src="../travel/assets/kite_pack.png" alt=""></span>
+      <b>小鳶去旅行</b><span class="sub">帶便當出門、寄明信片</span><span class="pg" id="pTravel">讀取中</span>
+    </a>
+    <a class="gb" data-href="photo/" data-btn="photo" style="--c1:#FFC9C2;--c2:#EE7D7A;--c3:#B34F55">
+      <span class="tile"><span class="ver">v0.10</span><img class="main" src="../photo/assets/stk_kite_peace.png" alt=""></span>
+      <b>小鳶合照館</b><span class="sub">拍照放小鳶和相框</span><span class="pg">打開手機相機就能拍</span>
+    </a>
+    <a class="gb" data-href="stamp/" data-btn="stamp" style="--c1:#FFE6A3;--c2:#E3A33A;--c3:#A86B12">
+      <span class="tile"><span class="ver">v0.7</span><img class="main" src="../stamp/assets/stamp_c_kite.png" alt=""></span>
+      <b>港灣蓋章散步</b><span class="sub">現場掃 QR 收彩色章</span><span class="pg" id="pStamp">讀取中</span>
+    </a>
+    <a class="gb" data-href="ui/" data-btn="member" style="--c1:#B9EBC9;--c2:#3FB66B;--c3:#23824A">
+      <span class="tile"><span class="ver">v0.6</span><img class="main" src="../travel/assets/kite_hello.png" alt=""></span>
+      <b>會員畫面</b><span class="sub">入會、領點、核銷</span><span class="pg">官方 LINE 原型</span>
+    </a>
+  </div>
   <details>
     <summary>測試選項</summary>
     <div class="flags">
@@ -114,6 +132,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
   </details>
 
   <footer>整理日期 2026-10-13・不發點數・進度只存在這支手機</footer>
+  </div>
 </main>
 
 <script>
@@ -122,13 +141,15 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
   var onSite = location.hostname === 'dari-design-web.github.io' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
   // 在線上網站時用相對路徑（同一個網站，紀錄互通）；在其他地方打開時連到線上網址
   var base = onSite ? '../' : ONLINE;
+  /* G-51 正式按鈕圖：放在 hub/btn/btn_<名>.png，有圖就整張換上，沒有就留暫用拼圖 */
+  document.querySelectorAll('[data-btn]').forEach(function (a) { var im = new Image(), k = a.getAttribute('data-btn'); im.onload = function () { var t = a.querySelector('.tile'), v = t.querySelector('.ver'); t.classList.add('art'); t.innerHTML = ''; if (v) t.appendChild(v); im.className = 'main'; im.alt = ''; t.appendChild(im); }; im.src = 'btn/btn_' + k + '.png'; });
   document.querySelectorAll('[data-href]').forEach(function (a) { a.href = base + a.getAttribute('data-href'); if (!onSite) a.target = '_blank'; if (!onSite) a.rel = 'noopener'; });
 
   function read(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
   function set(id, html) { var el = document.getElementById(id); if (el) el.innerHTML = html; }
   if (!onSite) {
     document.getElementById('originNote').hidden = false;
-    ['pFish', 'pFly', 'pTravel'].forEach(function (id) { set(id, '從線上網址打開才看得到這支手機的進度'); });
+    ['pFish', 'pFly', 'pTravel', 'pStamp'].forEach(function (id) { set(id, '從線上網址打開才看得到這支手機的進度'); });
     document.querySelectorAll('.tools button').forEach(function (b) { b.disabled = true; });
     return;
   }
@@ -145,6 +166,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
       var st = t.state === 'away' ? '旅行中' : t.state === 'back' ? '回來了，有信' : '在家';
       set('pTravel', '明信片 <b>' + cards + ' / 24</b>・便當 <b>' + nb + '</b> 份・小鳶' + st);
     } else set('pTravel', '還沒打開過');
+    var sp = read('kiteStamp1'), ns = sp && sp.spots ? Object.keys(sp.spots).length : 0;
+    set('pStamp', ns ? '章 <b>' + ns + ' / 6</b>' + (sp.cur ? '・' + sp.cur : '') : '還沒蓋過');
   }
   render();
   document.querySelectorAll('.tools button').forEach(function (btn) {
