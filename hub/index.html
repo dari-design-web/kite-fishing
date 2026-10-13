@@ -114,6 +114,8 @@ a{color:inherit}
 .bag .tags{display:flex;flex-wrap:wrap;gap:6px}
 .bag .tag{font-size:12.5px;font-weight:700;border-radius:999px;padding:3px 10px;background:#FFF1D6;color:#8A5A12}
 .bag .tag.no{background:#F1E8DA;color:#B9A88F}
+.bag .nw{position:absolute;left:3px;top:3px;z-index:1;font-style:normal;font-size:10.5px;font-weight:700;line-height:1;color:#fff;background:#E2702A;border-radius:6px;padding:3px 4px;box-shadow:0 1px 0 rgba(0,0,0,.15)}
+.bag .li .nw,.bag .tag .nw{position:static;display:inline-block;margin-left:5px;vertical-align:1px}
 .bag .empty{font-size:12.5px;color:var(--muted);margin:0}
 .bag .bottom{margin-top:14px;font-size:11.5px;color:var(--muted);text-align:center}
 /* v51（C-115）：每天第一次打開的小卡 */
@@ -163,7 +165,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
     <button class="bagBtn" type="button" id="bagBtn" aria-label="打開小鳶背包"><span class="ic">🎒</span>背包</button><span class="sun"></span><span class="cloud c1"></span><span class="cloud c2"></span>
     <h1>小鳶來港</h1>
     <p>今天想和小鳶玩什麼？</p>
-    <span class="chip">測試首頁 v57・素材都是暫用</span>
+    <span class="chip">測試首頁 v58・素材都是暫用</span>
     <div class="say" id="say" hidden></div>
     <img class="kite" src="../travel/assets/kite_wave.png" alt="">
   </header>
@@ -223,7 +225,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
       <button type="button" data-keys="kiteFriends1">清除港口朋友</button>
       <button type="button" data-keys="kiteHubIntro1">重看小鳶自我介紹</button>
       <button type="button" data-keys="kiteDaily1">清除每日小卡</button>
-      <button type="button" data-keys="kiteFishingDex2,kiteFishingProg1,kiteFlyProgress1,kiteTravel1,kiteStamp1,kiteHubIntro1,kiteBag1,kiteFriends1,kiteDaily1">全部清除</button>
+      <button type="button" data-keys="kiteFishingDex2,kiteFishingProg1,kiteFlyProgress1,kiteTravel1,kiteStamp1,kiteHubIntro1,kiteBag1,kiteBag2,kiteFriends1,kiteDaily1">全部清除</button>
     </div>
   </details>
 
@@ -277,6 +279,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
     if (!t) return ['我們有魚了！幫我準備便當，我想出門旅行～', 'travel/', '去小屋', 'travel'];
     if (!fly) return ['港口好多垃圾……要不要跟我一起飛去清乾淨？', 'fly/', '一起飛', 'fly'];
     if (t.state === 'away') return [hi + '我出門旅行中，回來會寄明信片給你～先去抓點魚吧！', '', '去抓魚', 'fish'];
+    var fr = read('kiteFriends1') || {}, nf = Object.keys(fr).length;      // v58（C-125）：在現場遇過港口朋友，就提醒還有幾位沒見到
+    if (nf > 0 && nf < 6) return ['館內還有 ' + (6 - nf) + ' 位大大的港口朋友，掃牠們旁邊的 QR 打招呼！', 'meet/', '看朋友', ''];
     if (ns < 6) return ['港口還有 ' + (6 - ns) + ' 個章等你來蓋，找找現場的立牌！', 'stamp/', '看護照', 'stamp'];
     return [hi + '你已經是港灣探險家了！今天想玩什麼？', '', '', ''];
   }
@@ -326,21 +330,24 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
   }
   function bagDot() { var d = bagData(), last = null; try { last = localStorage.getItem('kiteBag1'); } catch (e) {} var btn = document.getElementById('bagBtn'), dot = btn.querySelector('.dot'); var on = last === null ? d.total > 0 : d.total > +last; if (on && !dot) { dot = document.createElement('span'); dot.className = 'dot'; btn.appendChild(dot); } if (!on && dot) dot.remove(); }
   function openBag() {
-    var d = bagData(), it = function (src, ok, cap, badge) { return '<div><div class="it' + (ok ? '' : ' no') + '"><img src="' + src + '" alt="">' + (badge ? '<em>' + badge + '</em>' : '') + '</div><div class="cap">' + (ok ? cap : '？？？') + '</div></div>'; };
+    /* v58（C-125）：上次打開背包之後新拿到的東西標「新」（記在 kiteBag2；第一次打開不標） */
+    var seenRaw = null; try { seenRaw = localStorage.getItem('kiteBag2'); } catch (e) {}
+    var seen = seenRaw ? JSON.parse(seenRaw) : null, keys = {}, nw = function (k, ok) { if (!ok) return ''; keys[k] = 1; return seen && !seen[k] ? '<i class="nw">新</i>' : ''; };
+    var d = bagData(), it = function (src, ok, cap, badge, k) { return '<div><div class="it' + (ok ? '' : ' no') + '">' + nw(k, ok) + '<img src="' + src + '" alt="">' + (badge ? '<em>' + badge + '</em>' : '') + '</div><div class="cap">' + (ok ? cap : '？？？') + '</div></div>'; };
     var h = '<div class="sheet" role="dialog" aria-label="小鳶背包"><div class="top"><img src="../travel/assets/kite_pack.png" alt=""><div class="line">' + bagLine(d) + '</div><button class="x" type="button" aria-label="關閉">✕</button></div>';
-    h += '<h3>港灣章<small>' + d.nSpot + ' / 7</small></h3><div class="row">' + d.spots.map(function (x) { return it('../stamp/assets/stamp_c_' + x[0][1] + '.png', x[1], x[0][2]); }).join('') + '</div>';
+    h += '<h3>港灣章<small>' + d.nSpot + ' / 7</small></h3><div class="row">' + d.spots.map(function (x) { return it('../stamp/assets/stamp_c_' + x[0][1] + '.png', x[1], x[0][2], '', 'spot' + x[0][0]); }).join('') + '</div>';
     h += '<h3>港口小卡<small>' + (d.daily.days || 0) + ' 張</small></h3><div class="tags"><span class="tag' + (d.daily.days ? '' : ' no') + '">來看小鳶 ' + (d.daily.days || 0) + ' 天</span><span class="tag' + (d.daily.streak > 1 ? '' : ' no') + '">連續 ' + (d.daily.streak || 0) + ' 天</span></div>';
-    h += '<h3>港口朋友<small>' + d.nPal + ' / 6</small></h3><div class="row">' + d.pals.map(function (x) { return it(x[0][2], x[1], x[0][1]); }).join('') + '</div>' + (d.nPal < 6 ? '<p class="empty">在館內找大大的充氣朋友，掃旁邊的 QR 就能見面（測試：首頁「測試選項」）</p>' : '');
-    h += '<h3>漁獲圖鑑<small>' + d.nFish + ' / 6</small></h3><div class="row">' + d.fish.map(function (x) { return it('../assets/' + x[0][2] + '_v2.png', x[1], x[0][1]); }).join('') + '</div>';
-    h += '<h3>明信片<small>' + d.nCard + ' / 24</small></h3><div class="list">' + d.locs.map(function (x) { return '<div class="li"><b>' + x[0][1] + '</b><span class="bar"><i style="width:' + Math.round(x[1] / 3 * 100) + '%"></i></span><span>' + x[1] + ' / 3</span></div>'; }).join('') + '</div>';
+    h += '<h3>港口朋友<small>' + d.nPal + ' / 6</small></h3><div class="row">' + d.pals.map(function (x) { return it(x[0][2], x[1], x[0][1], '', 'pal' + x[0][0]); }).join('') + '</div>' + (d.nPal < 6 ? '<p class="empty">在館內找大大的充氣朋友，掃旁邊的 QR 就能見面（測試：首頁「測試選項」）</p>' : '');
+    h += '<h3>漁獲圖鑑<small>' + d.nFish + ' / 6</small></h3><div class="row">' + d.fish.map(function (x) { return it('../assets/' + x[0][2] + '_v2.png', x[1], x[0][1], '', 'fish' + x[0][0]); }).join('') + '</div>';
+    h += '<h3>明信片<small>' + d.nCard + ' / 24</small></h3><div class="list">' + d.locs.map(function (x) { return '<div class="li"><b>' + x[0][1] + nw('card' + x[0][0] + x[1], x[1] > 0) + '</b><span class="bar"><i style="width:' + Math.round(x[1] / 3 * 100) + '%"></i></span><span>' + x[1] + ' / 3</span></div>'; }).join('') + '</div>';
     h += '<h3>便當<small>共 ' + d.nBento + ' 份</small></h3><div class="tags">' + d.bento.map(function (x) { return '<span class="tag' + (x[1] ? '' : ' no') + '">' + x[0][1] + '便當 × ' + x[1] + '</span>'; }).join('') + '</div>';
-    h += '<h3>飛行星星<small>' + d.nStar + ' / 12</small></h3><div class="list">' + d.stages.map(function (x, i) { return '<div class="li"><b>第 ' + (i + 1) + ' 關・' + x[0] + '</b><span class="stars">' + x[1].map(function (y) { return y ? '★' : '<s>★</s>'; }).join('') + '</span></div>'; }).join('') + '</div>';
-    h += '<h3>稱號<small>' + d.nTitle + ' 個</small></h3><div class="tags">' + d.titles.map(function (x) { return '<span class="tag' + (x[1] ? '' : ' no') + '">' + x[0] + '</span>'; }).join('') + '</div>';
+    h += '<h3>飛行星星<small>' + d.nStar + ' / 12</small></h3><div class="list">' + d.stages.map(function (x, i) { return '<div class="li"><b>第 ' + (i + 1) + ' 關・' + x[0] + nw('star' + i + '_' + x[1].filter(Boolean).length, x[1].some(Boolean)) + '</b><span class="stars">' + x[1].map(function (y) { return y ? '★' : '<s>★</s>'; }).join('') + '</span></div>'; }).join('') + '</div>';
+    h += '<h3>稱號<small>' + d.nTitle + ' 個</small></h3><div class="tags">' + d.titles.map(function (x) { return '<span class="tag' + (x[1] ? '' : ' no') + '">' + x[0] + nw('title' + x[0], x[1]) + '</span>'; }).join('') + '</div>';
     h += '<p class="bottom">背包只看得到這支手機裡的紀錄・圖都是暫用</p></div>';
     var ov = document.createElement('div'); ov.className = 'bag'; ov.innerHTML = h; document.body.appendChild(ov);
     var close = function () { ov.remove(); };
     ov.querySelector('.x').onclick = close; ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
-    try { localStorage.setItem('kiteBag1', String(d.total)); } catch (e) {}
+    try { localStorage.setItem('kiteBag1', String(d.total)); localStorage.setItem('kiteBag2', JSON.stringify(keys)); } catch (e) {}
     bagDot();
   }
   window.__bag = { data: bagData, open: openBag };
