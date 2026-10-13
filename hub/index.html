@@ -57,7 +57,7 @@ a{color:inherit}
 .gb.wide .sub{margin-top:0}
 .gb.wide .go{margin-left:auto;flex:none;background:var(--c3);color:#fff;font-weight:700;font-size:13px;border-radius:999px;padding:6px 12px}
 /* v39（C-101，D64，ChatGPT C99 首頁瀏覽意見）：版本小字移到名稱旁，不再壓在插畫上；按鈕大小跟著螢幕高度走，短手機也能一眼看到六個入口 */
-.grid{--rowtxt:70px;--chrome:236px}
+.grid{--rowtxt:70px;--chrome:290px}
 .gb .tile{width:min(100%,max(108px,calc((100vh - var(--chrome)) / 3 - var(--rowtxt))));width:min(100%,max(108px,calc((100dvh - var(--chrome)) / 3 - var(--rowtxt))))}
 .gb .tile .ver{display:none}
 .gb b .vt{font-style:normal;font-size:11px;font-weight:700;color:var(--muted);margin-left:4px;letter-spacing:0;vertical-align:1px}
@@ -69,6 +69,23 @@ a{color:inherit}
   .grid{gap:10px 12px;--rowtxt:44px;--chrome:210px}
   .gb{gap:4px}.gb b{font-size:15.5px}.gb .sub{display:none}
 }
+/* v48（C-112，D69 工作單 21 ①②）：小鳶開口說話——第一次打開的自我介紹，之後每次依進度說一句「下一步」 */
+.say{position:relative;margin:10px 0 0;max-width:62%;background:#fff;border-radius:16px;padding:8px 12px;font-size:13.5px;line-height:1.45;font-weight:700;color:#2B4A50;box-shadow:0 3px 10px rgba(20,65,74,.15);animation:sayIn .35s ease-out both}
+.say::after{content:'';position:absolute;right:-8px;bottom:12px;border:8px solid transparent;border-left-color:#fff;border-right:0}
+.say a{color:#E2702A;text-decoration:none;white-space:nowrap}
+@keyframes sayIn{from{opacity:0;transform:translateY(6px)}}
+.gb.hint .tile{animation:hintP 1.2s ease-in-out infinite}
+@keyframes hintP{50%{transform:scale(1.05)}}
+.intro{position:fixed;inset:0;z-index:50;background:rgba(20,40,46,.55);display:flex;align-items:flex-end;justify-content:center;padding:16px 16px calc(24px + env(safe-area-inset-bottom,0px))}
+.intro .box{width:100%;max-width:400px;background:#FFFDF8;border-radius:22px;padding:18px 16px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;animation:sayIn .35s ease-out both}
+.intro img{width:110px;margin-top:-70px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.2))}
+.intro p{margin:0;font-size:16px;line-height:1.6;font-weight:700;color:#2B2620;min-height:52px}
+.intro .dots{display:flex;gap:6px}.intro .dots i{width:7px;height:7px;border-radius:50%;background:#E4D8C6}.intro .dots i.on{background:#E2702A}
+.intro .row{display:flex;gap:8px;width:100%}.intro button{flex:1;font:inherit;font-weight:700;font-size:15px;border:0;border-radius:14px;padding:12px}
+.intro .go{background:#E2702A;color:#fff}.intro .skip{background:#F1E8DA;color:#6D5A48}
+.hero.talk>p{display:none}
+@media (max-height:760px){.hero.talk p,.hero.talk .chip{display:none}.say{margin-top:6px;font-size:12.5px;padding:6px 10px;max-width:66%}}
+@media (prefers-reduced-motion:reduce){.say,.intro .box,.gb.hint .tile{animation:none}}
 @media (prefers-reduced-motion:reduce){.hero .cloud,.hero .kite,.gb .tile .main{animation:none}}
 details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px}
 details summary{font-weight:700;font-size:14px;cursor:pointer;list-style:none;display:flex;justify-content:space-between}
@@ -104,7 +121,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
     <span class="sun"></span><span class="cloud c1"></span><span class="cloud c2"></span>
     <h1>小鳶來港</h1>
     <p>今天想和小鳶玩什麼？</p>
-    <span class="chip">測試首頁 v47・素材都是暫用</span>
+    <span class="chip">測試首頁 v48・素材都是暫用</span>
+    <div class="say" id="say" hidden></div>
     <img class="kite" src="../travel/assets/kite_wave.png" alt="">
   </header>
   <div class="wrap">
@@ -157,7 +175,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
       <button type="button" data-keys="kiteFlyProgress1">清除飛行</button>
       <button type="button" data-keys="kiteTravel1">清除旅行</button>
       <button type="button" data-keys="kiteStamp1">清除蓋章</button>
-      <button type="button" data-keys="kiteFishingDex2,kiteFishingProg1,kiteFlyProgress1,kiteTravel1,kiteStamp1">全部清除</button>
+      <button type="button" data-keys="kiteHubIntro1">重看小鳶自我介紹</button>
+      <button type="button" data-keys="kiteFishingDex2,kiteFishingProg1,kiteFlyProgress1,kiteTravel1,kiteStamp1,kiteHubIntro1">全部清除</button>
     </div>
   </details>
 
@@ -201,13 +220,49 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
     set('pStamp', ns ? '章 <b>' + ns + ' / 6</b>' + (sp.cur ? '・' + sp.cur : '') : '還沒蓋過');
   }
   render();
+  /* v48（C-112）：小鳶說「下一步」。依進度挑一句最該做的事，點連結直接去；新手第一次打開先自我介紹，帶去玩捕魚 */
+  function nextStep() {
+    var prog = read('kiteFishingProg1') || {}, fished = Object.keys(prog.played || {}).length;
+    var t = read('kiteTravel1'), fly = read('kiteFlyProgress1'), sp = read('kiteStamp1'), ns = sp && sp.spots ? Object.keys(sp.spots).length : 0;
+    var h = new Date().getHours(), hi = h < 11 ? '早安！' : h < 17 ? '午安！' : '晚上好！';
+    if (t && t.v === 1 && t.state === 'back') return ['我旅行回來了，有一封信要給你！', 'travel/', '去看信', 'travel'];
+    if (!fished) return [hi + '陪我去港邊抓魚好不好？抓到魚可以做便當喔！', '', '去抓魚', 'fish'];
+    if (!t) return ['我們有魚了！幫我準備便當，我想出門旅行～', 'travel/', '去小屋', 'travel'];
+    if (!fly) return ['港口好多垃圾……要不要跟我一起飛去清乾淨？', 'fly/', '一起飛', 'fly'];
+    if (t.state === 'away') return [hi + '我出門旅行中，回來會寄明信片給你～先去抓點魚吧！', '', '去抓魚', 'fish'];
+    if (ns < 6) return ['港口還有 ' + (6 - ns) + ' 個章等你來蓋，找找現場的立牌！', 'stamp/', '看護照', 'stamp'];
+    return [hi + '你已經是港灣探險家了！今天想玩什麼？', '', '', ''];
+  }
+  function showSay() {
+    var n = nextStep(), el = document.getElementById('say'); if (!el) return;
+    el.innerHTML = n[0] + (n[2] ? ' <a href="' + base + n[1] + '">' + n[2] + ' ›</a>' : '');
+    el.hidden = false; el.parentNode.classList.add('talk');
+    document.querySelectorAll('.gb').forEach(function (a) { a.classList.toggle('hint', !!n[3] && a.getAttribute('data-btn') === n[3]); });
+  }
+  showSay();
+  var seen = null; try { seen = localStorage.getItem('kiteHubIntro1'); } catch (e) {}
+  if (!seen && onSite !== undefined) {
+    var lines = ['你好！我是小鳶，一隻從天空飛來基隆港的黑鳶。', '在這裡，我們可以一起抓魚、飛行冒險、出門旅行，還能在港口蓋章、拍照。', '你玩得越多，我就越開心，還會寄明信片給你喔！'];
+    var k = 0, ov = document.createElement('div'); ov.className = 'intro';
+    ov.innerHTML = '<div class="box"><img src="../travel/assets/kite_hello.png" alt=""><p id="introP"></p><span class="dots">' + lines.map(function () { return '<i></i>'; }).join('') + '</span><div class="row"><button class="skip" type="button" id="introSkip">等一下再說</button><button class="go" type="button" id="introGo">下一句</button></div></div>';
+    document.body.appendChild(ov);
+    var done = function () { try { localStorage.setItem('kiteHubIntro1', '1'); } catch (e) {} ov.remove(); showSay(); };
+    var step = function () {
+      document.getElementById('introP').textContent = lines[k];
+      ov.querySelectorAll('.dots i').forEach(function (d, i) { d.classList.toggle('on', i === k); });
+      document.getElementById('introGo').textContent = k < lines.length - 1 ? '下一句' : '好！陪小鳶去抓魚';
+    };
+    step();
+    document.getElementById('introGo').onclick = function () { if (k < lines.length - 1) { k++; step(); return; } done(); location.href = base; };
+    document.getElementById('introSkip').onclick = done;
+  }
   document.querySelectorAll('.tools button').forEach(function (btn) {
     var label = btn.textContent, timer;
     btn.addEventListener('click', function () {
       if (!btn.classList.contains('arm')) { btn.classList.add('arm'); btn.textContent = '確定清除？再按一次'; clearTimeout(timer); timer = setTimeout(function () { btn.classList.remove('arm'); btn.textContent = label; }, 4000); return; }
       clearTimeout(timer);
       btn.getAttribute('data-keys').split(',').forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
-      btn.classList.remove('arm'); btn.textContent = '已清除'; render();
+      btn.classList.remove('arm'); btn.textContent = '已清除'; render(); showSay();
       setTimeout(function () { btn.textContent = label; }, 1800);
     });
   });
