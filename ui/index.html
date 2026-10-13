@@ -73,8 +73,16 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
 .scr p.lead{color:var(--ink);font-size:15px}
 .art{width:120px;height:120px;align-self:center;flex:none}
 .spacer{flex:1}
-.btn{display:block;width:100%;border:2px solid var(--ink);border-radius:14px;background:var(--gold);color:var(--ink);padding:11px 14px;font-weight:700;font-size:16px;box-shadow:0 3px 0 var(--ink);transition:transform .06s,box-shadow .06s}
-.btn:active{transform:translateY(3px);box-shadow:0 0 0 var(--ink)}
+.btn{display:block;width:100%;border:2px solid var(--ink);border-radius:14px;background:var(--gold);color:var(--ink);padding:11px 14px;font-weight:700;font-size:16px;box-shadow:0 3px 0 var(--ink);transition:transform .16s cubic-bezier(.3,1.6,.5,1),box-shadow .16s}
+.btn:active{transform:translateY(3px) scale(.985);box-shadow:0 0 0 var(--ink);transition-duration:.05s}      /* v0.7（C-102，C-88⑤）：按下短促壓下、放開小回彈 */
+.btn:disabled,.btn[disabled]{transform:none}
+/* v0.7：換頁用同方向的短淡入（往下一頁從右邊、回上一頁從左邊），不延後任何結果 */
+.screen.pg-in>:not(.bar){animation:pgIn .2s ease-out both}
+.screen.pg-in.back>:not(.bar){animation-name:pgBack}
+@keyframes pgIn{from{opacity:0;transform:translateX(14px)}}
+@keyframes pgBack{from{opacity:0;transform:translateX(-14px)}}
+.toast:not([hidden]){animation:toastIn .18s ease-out}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,-8px)}}
 .btn:disabled{opacity:.45;box-shadow:none;cursor:not-allowed}
 .btn.line{background:var(--line);color:#fff}
 .btn.plain{background:var(--paper)}
@@ -153,7 +161,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
   .notes{order:2} .pages{order:3}
   .top h1{font-size:22px}
 }
-@media (prefers-reduced-motion:reduce){.chest.shut,.gain{animation:none}.btn{transition:none}}
+@media (prefers-reduced-motion:reduce){.chest.shut,.gain,.screen.pg-in>*,.toast:not([hidden]){animation:none}.btn{transition:none}}
 /* v0.5（Dari 00:31）：只做手機版。電腦打開也是一欄手機寬；說明和頁面清單收起來，要看再點 */
 body{background:#1D2F36}
 .app{max-width:430px;padding:calc(12px + env(safe-area-inset-top,0px)) 10px calc(20px + env(safe-area-inset-bottom,0px));gap:10px;background:var(--bg);min-height:100vh;min-height:100dvh}
@@ -178,7 +186,7 @@ body:not(.showNotes) .notes,body:not(.showPages) .pages{display:none}
 <div class="app">
   <header class="top">
     <div>
-      <h1>小鳶來港會員畫面 v0.6</h1>
+      <h1>小鳶來港會員畫面 v0.7</h1>
       <p>三條路徑都能點著走。畫面裡的店家、金額、贈品與點數都是示範值，素材為暫用。</p>
     </div>
     <div class="tabs" role="tablist" aria-label="路徑" id="tabs"></div>
@@ -485,7 +493,11 @@ function show(id, jump) {
   if (!SC[id]) return;
   if (jump) S = SC[id].pre();
   if (id === 'b6' && jump) S.chest = false;
-  cur = id; render();
+  const prev = cur; cur = id; render();
+  if (prev !== id) {      /* v0.7：換頁短淡入，方向看是不是往後的頁 */
+    const order = Object.keys(SC), el = $('#screen');
+    el.classList.remove('pg-in', 'back'); void el.offsetWidth; el.classList.add('pg-in'); if (order.indexOf(id) < order.indexOf(prev)) el.classList.add('back');
+  }
   try { history.replaceState(null, '', '#' + id); } catch (e) {}
 }
 function render() {
