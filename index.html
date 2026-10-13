@@ -23,6 +23,10 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .hud{position:absolute;z-index:6;left:0;right:0;top:0;display:flex;align-items:center;gap:10px;padding:10px 12px;pointer-events:none}
 .kg{background:var(--paper);border:2px solid var(--ink);border-radius:999px;padding:2px 12px;font-family:var(--display);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .kg.pop{animation:pop .25s ease-out}
+/* v0.16（C-94）：連抓徽章，數字更新就好，不每條都撒滿字 */
+.combo{position:absolute;left:50%;top:calc(100% + 4px);transform:translateX(-50%);background:#BFF0D0;color:#10293D;border:2px solid #10293D;border-radius:999px;padding:0 9px;font-weight:700;font-size:13px;white-space:nowrap;pointer-events:none}
+.combo[hidden]{display:none}
+.combo.bump{animation:pop .25s ease-out}
 @keyframes pop{50%{transform:scale(1.15)}}
 .time{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .time span{font-size:12px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
@@ -98,7 +102,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
   <canvas id="world" aria-label="小鳶捕魚遊戲畫面"></canvas>
 
   <div class="hud" id="hud" hidden>
-    <div class="kg" id="kg">0 分</div>
+    <div style="position:relative;flex:none"><div class="kg" id="kg">0 分</div><span class="combo" id="combo" hidden></span></div>
     <div class="time"><span id="timeText">剩 60 秒</span><div class="bar"><i id="timeBar"></i></div></div>
     <button class="icon" id="soundBtn" aria-label="音效開關">音</button>
     <button class="icon" id="pauseBtn" aria-label="暫停">停</button>
@@ -121,7 +125,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
         <li><b>便當</b><span>一局抓到小卷 3 隻、白帶魚 2 條，就做成便當讓小鳶去旅行</span></li>
       </ul>
       <button class="btn" id="startBtn">開始</button>
-      <p class="note">原型 v0.15：暫用素材、不發點數。進度只存在這支手機的瀏覽器</p>
+      <p class="note">原型 v0.16：暫用素材、不發點數。進度只存在這支手機的瀏覽器</p>
     </div>
   </div>
 
@@ -356,7 +360,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.15',
+  version: '0.16',
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
   bento: { squid: 3, hairtail: 2 },      // 一局抓到幾隻以上，結算時直接得到 1 份便當給小鳶去旅行（工作單 11 v4；每局每種最多 1 份）
   duration: 60,                 // 一局秒數
@@ -462,7 +466,7 @@ function reset() {
   t = 0; spawnAcc = 0; kg = 0; things = []; floats = []; rings = []; parts = []; shark = null; firstCatchDone = false; rareIdx = 0; flash = 0; sparkAcc = 0;
   kite = { x: 80, y: CONFIG.skyY, face: 1, state: 'glide', tx: 0, ty: 0, wait: 0, carry: null, stunNext: false };
   prevKiteY = kite.y;
-  stats = { taps: 0, dives: 0, hits: 0, misses: 0, blocked: 0, skyTaps: 0, trash: 0, sharkTaps: 0, counts: {}, kgInEvent: 0, combo: 0, bestCombo: 0, comboBonus: 0, newDex: [] };
+  stats = { taps: 0, dives: 0, hits: 0, misses: 0, blocked: 0, skyTaps: 0, trash: 0, sharkTaps: 0, counts: {}, kgInEvent: 0, combo: 0, bestCombo: 0, comboBonus: 0, newDex: [] }; comboBadge();
   for (const k of SPECIES) stats.counts[k] = 0;
   $('kg').textContent = '0 分'; $('kg').classList.remove('x2');
   for (const k in answers) delete answers[k];
@@ -492,7 +496,8 @@ function spawn(p0, forced) {
 }
 
 /* ====== 特效粒子 ====== */
-function say(text, x, y, color, slow) { floats.push({ text, x: Math.max(48, Math.min(W - 48, x)), y, life: 1, color: color || '#fff', rate: slow ? 0.5 : 0.9, rise: slow ? 12 : 26 }); }   // slow：停留久一點（約 2 秒）
+function comboBadge() { const c = $('combo'); if (!c) return; if (stats.combo >= 2) { c.hidden = false; c.textContent = '連抓 ×' + stats.combo; c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); } else c.hidden = true; }
+function say(text, x, y, color, slow) { floats.push({ age: 0, text, x: Math.max(48, Math.min(W - 48, x)), y, life: 1, color: color || '#fff', rate: slow ? 0.5 : 0.9, rise: slow ? 12 : 26 }); }   // slow：停留久一點（約 2 秒）
 function part(kind, x, y, o) { parts.push(Object.assign({ kind, x, y, vx: 0, vy: 0, life: 1, fade: 1.6, size: 3, rot: rand(0, 6.28) }, o)); }
 function splash(x) { const s = CONFIG.surfaceY; rings.push({ x, y: s, life: 1, flat: true }); for (let i = 0; i < 7; i++) part('drop', x + rand(-8, 8), s, { vx: rand(-70, 70), vy: rand(-170, -70), g: 520, fade: 1.8, size: rand(1.5, 2.8) }); }
 function bubbles(x, y, n) { for (let i = 0; i < n; i++) part('bubble', x + rand(-10, 10), y + rand(-6, 6), { vy: rand(-46, -22), fade: rand(0.9, 1.4), size: rand(1.5, 3.2) }); }
@@ -506,7 +511,7 @@ function resolveDive() {
   for (const o of things) { const d = Math.hypot(o.x - tx, o.y - ty); if (d < o.r + CONFIG.kite.hitPad && d < bd) { best = o; bd = d; } }
   rings.push({ x: tx, y: ty, life: 1 });
   if (best && best.type === 'trash') {
-    things.splice(things.indexOf(best), 1); stats.trash++; stats.combo = 0; kite.stunNext = true; kite.carry = 'trash';
+    things.splice(things.indexOf(best), 1); stats.trash++; stats.combo = 0; comboBadge(); kite.stunNext = true; kite.carry = 'trash';
     say('抓到垃圾，暈一下', tx, ty - 18, '#FFD0C4'); beep(140, 0.25, 'square', 0.05, -60);
   } else if (best) {
     things.splice(things.indexOf(best), 1);
@@ -515,16 +520,17 @@ function resolveDive() {
     stats.combo++; stats.bestCombo = Math.max(stats.bestCombo, stats.combo);
     if (!dex[best.type]) { dex[best.type] = true; stats.newDex.push(best.type); try { localStorage.setItem('kiteFishingDex2', JSON.stringify(dex)); } catch (e) {} }
     say(def.name + ' +' + PTS(gain) + (mult > 1 ? ' ×' + mult : ''), tx, ty - 18, mult > 1 || def.rare ? '#FFE08A' : '#fff');
-    if (stats.combo >= CONFIG.combo.from) { kg += CONFIG.combo.bonus; stats.comboBonus += CONFIG.combo.bonus; say('連抓 ' + stats.combo + '！+' + PTS(CONFIG.combo.bonus), tx, ty - 40, '#BFF0D0'); }
+    if (stats.combo >= CONFIG.combo.from) { kg += CONFIG.combo.bonus; stats.comboBonus += CONFIG.combo.bonus; if (stats.combo === CONFIG.combo.from || stats.combo % 5 === 0) say('連抓 ' + stats.combo + '！', tx, ty - 48, '#BFF0D0'); stars(tx, ty, 5, 50, '#9FF0C8'); }      /* C-94：連抓只在第 3、5、10…條跳字，其他用徽章；薄荷綠小水花（ChatGPT C-88 建議） */
     bubbles(tx, ty, 5);
     if (best.type === 'squid') ink(tx, ty);
     if (inEvent || def.rare) stars(tx, ty, def.rare ? 14 : 7, def.rare ? 110 : 70);
     if (def.rare) { flash = Math.max(flash, 0.45); jingle([523, 659, 784, 1047], 80); }
     const el = $('kg'); el.textContent = PTS(kg) + ' 分'; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+    comboBadge();
     beep(Math.min(1320, 560 + def.kg * 90 + Math.min(stats.combo, 8) * 45), 0.16, 'triangle', 0.08, 220);
   } else if (shark && Math.abs(tx - shark.x) < 80 && Math.abs(ty - shark.y) < 30) {
     stats.sharkTaps++; say('鯨鯊是朋友', tx, ty - 34, '#FFE08A'); hearts(tx, ty - 10); beep(520, 0.2, 'sine', 0.05, 80);
-  } else { stats.misses++; stats.combo = 0; say('沒抓到', tx, ty - 18, '#CFE6F2'); beep(220, 0.1, 'sine', 0.04, -40); }
+  } else { stats.misses++; stats.combo = 0; comboBadge(); say('沒抓到', tx, ty - 18, '#CFE6F2'); beep(220, 0.1, 'sine', 0.04, -40); }
   kite.state = 'rise';
 }
 
@@ -556,7 +562,7 @@ function update(dt) {
     for (const o of things) if (o.type === CONFIG.rare.type) part('star', o.x - Math.sign(o.vx) * rand(10, 40), o.y + rand(-10, 10), { fade: 2, size: rand(2.5, 4.5) });
     if (Math.random() < 0.25 && things.length) { const o = things[Math.floor(Math.random() * things.length)]; if (o.type !== 'trash') part('bubble', o.x, o.y - o.r * 0.5, { vy: rand(-30, -18), fade: 0.8, size: rand(1.2, 2.2) }); }
   }
-  for (const f of floats) { f.y -= f.rise * dt; f.life -= dt * f.rate; } floats = floats.filter((f) => f.life > 0);
+  for (const f of floats) { f.y -= f.rise * dt; f.life -= dt * f.rate; f.age += dt; } floats = floats.filter((f) => f.life > 0);
   for (const r of rings) r.life -= dt * 2.2; rings = rings.filter((r) => r.life > 0);
   for (const q of parts) { q.x += q.vx * dt; q.y += q.vy * dt; if (q.g) q.vy += q.g * dt; if (q.kind === 'ink') q.size += 16 * dt; if (q.kind === 'bubble' && q.y < CONFIG.surfaceY + 4) q.life = 0; q.life -= dt * q.fade; }
   parts = parts.filter((q) => q.life > 0);
@@ -858,7 +864,7 @@ function draw() {
   drawParts(true);
   if (flash > 0) { ctx.fillStyle = 'rgba(255,248,220,' + flash * (calm ? Math.min(0.2, CONFIG.flash) : CONFIG.flash) + ')'; ctx.fillRect(0, 0, W, H); }
   ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.font = "700 16px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif";
-  for (const f of floats) { ctx.globalAlpha = Math.min(1, f.life * 1.6); ctx.lineWidth = 4; ctx.strokeStyle = '#10293D'; ctx.strokeText(f.text, f.x, f.y); ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y); }
+  for (const f of floats) { const k = calm ? 1 : 1 + Math.max(0, 0.15 - f.age) / 0.15 * 0.45; ctx.save(); ctx.translate(f.x, f.y); ctx.scale(k, k); ctx.globalAlpha = Math.min(1, f.life * 1.6); ctx.lineWidth = 4; ctx.strokeStyle = '#10293D'; ctx.strokeText(f.text, 0, 0); ctx.fillStyle = f.color; ctx.fillText(f.text, 0, 0); ctx.restore(); }      // C-94：字跳出來時先放大一點再縮回
   ctx.globalAlpha = 1;
 }
 
