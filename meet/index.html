@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>港口朋友</title>
 <style>
-/* v0.1（C-114，工作單 21 ④）：現場充氣角色彩蛋。每隻充氣角色旁的 QR（正式版可換感應章）打開 ?f=1～6，遇到那隻朋友：專屬動畫＋三句話，收進小鳶背包。只做手機版（D55）；圖都是暫用，角色不定稿 */
+/* v0.2（C-119）：換上 ChatGPT G-56 去背角色（和 G-55 充氣角色同一套造型，webp，載不到改用 png）；探頭小鳶的爪子搭在程式畫的牆上。
+   v0.1（C-114，工作單 21 ④）：現場充氣角色彩蛋。每隻充氣角色旁的 QR（正式版可換感應章）打開 ?f=1～6，遇到那隻朋友：專屬動畫＋三句話，收進小鳶背包。只做手機版（D55）；圖都是暫用，角色不定稿 */
 :root{--paper:#F6F0E5;--ink:#2B2620;--muted:#857563;--teal:#2F7F86;--buoy:#E2702A;--f:'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -26,9 +27,9 @@ header .t{flex:1;text-align:right;font-size:12px;font-weight:700;color:#1F5A5F}
 .who img{display:block;width:100%;height:auto;filter:drop-shadow(0 10px 10px rgba(0,0,0,.2))}
 .who .fx{position:absolute;inset:0;pointer-events:none}
 /* 每隻朋友的登場與待機動作 */
-.a-peek .who{width:70%;overflow:hidden;padding:0 6%;margin-left:-6%;margin-right:-6%;box-sizing:content-box}.a-peek .wall{position:absolute;left:0;right:0;bottom:0;height:34%;border-radius:18px 18px 6px 6px;background:linear-gradient(#F6E7C9,#E8CFA0);box-shadow:inset 0 -6px 0 #CFAF78;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;letter-spacing:.12em;color:#8C5A33}
+.a-peek .who{width:74%;margin-bottom:46px}.a-peek .who img{position:relative;z-index:2}.a-peek .wall{position:absolute;z-index:1;left:-8%;right:-8%;bottom:-40px;height:34%;border-radius:18px 18px 6px 6px;background:linear-gradient(#F6E7C9,#E8CFA0);box-shadow:inset 0 -6px 0 #CFAF78;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;letter-spacing:.12em;color:#8C5A33}
 .a-peek .who img{animation:peekIn 1s cubic-bezier(.3,1.4,.5,1) .3s both,peekIdle 3s ease-in-out 1.4s infinite}
-@keyframes peekIn{from{transform:translateY(60%)}}
+@keyframes peekIn{from{transform:translateY(22%);opacity:0}}
 @keyframes peekIdle{50%{transform:translateY(-6px) rotate(-3deg)}}
 .a-nap .who img{animation:popIn .7s ease-out .3s both,breathe 2.8s ease-in-out 1s infinite;transform-origin:50% 90%}
 .a-nap .fx i{position:absolute;right:16%;top:12%;font-style:normal;font-weight:900;color:#2F7F86;opacity:0;animation:zzz 3s ease-in-out infinite}
@@ -86,7 +87,7 @@ header .t{flex:1;text-align:right;font-size:12px;font-weight:700;color:#1F5A5F}
 </head>
 <body>
 <main class="phone" id="app">
-  <header><a href="../hub/">‹ 首頁</a><span class="t">港口朋友・原型 v0.1・圖都是暫用</span></header>
+  <header><a href="../hub/">‹ 首頁</a><span class="t">港口朋友・原型 v0.2・角色暫用</span></header>
   <div class="stage" id="stage"></div>
   <section class="panel" id="panel"></section>
 </main>
@@ -94,17 +95,17 @@ header .t{flex:1;text-align:right;font-size:12px;font-weight:700;color:#1F5A5F}
 (function () {
   /* 六位朋友（工作單 20 v2，Dari 10/13 21:38 D70；角色不定稿，台詞是建議）。現場正式版：每隻充氣角色旁一個 QR，網址帶 ?f=編號 */
   var FRIENDS = [
-    { id: 1, name: '小鳶', tag: '探頭小鳶', anim: 'peek', img: '../travel/assets/kite_hello.png', wall: 'KEELUNG 基隆',
+    { id: 1, name: '小鳶', tag: '探頭小鳶', anim: 'peek', img: 'assets/pal_f1.webp', wall: 'KEELUNG 基隆',
       lines: ['嘿！你發現我了！', '我常常躲在牆後面偷看港口，大船一來就探頭。', '要不要跟我一起拍照？站到牆前面就跟我一樣高喔！'] },
-    { id: 2, name: '小鳶', tag: '打盹小鳶', anim: 'nap', img: '../travel/assets/kite_nap.png',
+    { id: 2, name: '小鳶', tag: '打盹小鳶', anim: 'nap', img: 'assets/pal_f2.webp',
       lines: ['呼……呼……', '啊！被你吵醒了，嘿嘿，我剛剛夢到好多魚。', '你也走累了吧？在這裡坐一下，休息一下下。'] },
-    { id: 3, name: '小鳶', tag: '剛到港口的小鳶', anim: 'arrive', img: '../travel/assets/kite_pack.png',
+    { id: 3, name: '小鳶', tag: '剛到港口的小鳶', anim: 'arrive', img: 'assets/pal_f3.webp',
       lines: ['我到啦！這裡就是基隆港！', '我揹著背包、帶著明信片，從好遠的地方飛來。', '在手機裡帶便當給我，我就會再出門旅行，寄明信片給你喔！'] },
-    { id: 4, name: '鯨鯊', tag: '小鳶的好朋友', anim: 'swim', img: '../assets/whaleshark.png',
+    { id: 4, name: '鯨鯊', tag: '小鳶的好朋友', anim: 'swim', img: 'assets/pal_f4.webp',
       lines: ['你好～我是鯨鯊，小鳶的好朋友。', '我身體很大，可是很溫柔，只吃小小的浮游生物。', '小鳶抓魚的時候，我都在旁邊幫他加油！'] },
-    { id: 5, name: '海龜', tag: '被小鳶救過的海龜', anim: 'wave', img: '../photo/assets/stk_turtle.png',
+    { id: 5, name: '海龜', tag: '被小鳶救過的海龜', anim: 'wave', img: 'assets/pal_f5.webp',
       lines: ['謝謝你來看我！', '上次我被塑膠袋纏住，是小鳶飛下來救了我。', '你也幫幫我們：垃圾不要丟進海裡，好嗎？'] },
-    { id: 6, name: '小卷', tag: '會發光的小卷', anim: 'glow', img: '../assets/fish_squid_v2.png',
+    { id: 6, name: '小卷', tag: '會發光的小卷', anim: 'glow', img: 'assets/pal_f6.webp',
       lines: ['咻咻～我是小卷，基隆夜裡最亮的小傢伙！', '漁船的燈一亮，我們就一群一群游過來。', '晚上再來看我，我會發光跳舞給你看！'] }
   ];
   var KEY = 'kiteFriends1';
@@ -114,7 +115,7 @@ header .t{flex:1;text-align:right;font-size:12px;font-weight:700;color:#1F5A5F}
   var app = document.getElementById('app'), stage = document.getElementById('stage'), panel = document.getElementById('panel');
   var h = new Date().getHours(); if (h >= 18 || h < 6) app.classList.add('night');
   function slots(met, now) {
-    return '<div class="row">' + FRIENDS.map(function (x) { var ok = !!met[x.id]; return '<div><div class="slot' + (ok ? '' : ' no') + (x.id === now ? ' now' : '') + '"><img src="' + x.img + '" alt=""></div><div class="cap">' + (ok ? x.tag : '？？？') + '</div></div>'; }).join('') + '</div>';
+    return '<div class="row">' + FRIENDS.map(function (x) { var ok = !!met[x.id]; return '<div><div class="slot' + (ok ? '' : ' no') + (x.id === now ? ' now' : '') + '"><img src="' + x.img + '" onerror="this.onerror=null;this.src=this.src.replace(\'.webp\',\'.png\')" alt=""></div><div class="cap">' + (ok ? x.tag : '？？？') + '</div></div>'; }).join('') + '</div>';
   }
   if (!F) {
     /* 沒帶編號：測試用的六位朋友選單（正式版現場掃 QR 直接進到那一位） */
@@ -123,7 +124,7 @@ header .t{flex:1;text-align:right;font-size:12px;font-weight:700;color:#1F5A5F}
     stage.style.alignItems = 'flex-start';
     panel.innerHTML = '';
     var pk = document.createElement('div'); pk.className = 'pick';
-    pk.innerHTML = FRIENDS.map(function (x) { return '<a href="?f=' + x.id + '"><img src="' + x.img + '" alt="">' + 'F' + x.id + ' ' + x.tag + (met0[x.id] ? ' ✓' : '') + '</a>'; }).join('');
+    pk.innerHTML = FRIENDS.map(function (x) { return '<a href="?f=' + x.id + '"><img src="' + x.img + '" onerror="this.onerror=null;this.src=this.src.replace(\'.webp\',\'.png\')" alt="">' + 'F' + x.id + ' ' + x.tag + (met0[x.id] ? ' ✓' : '') + '</a>'; }).join('');
     panel.appendChild(pk);
     panel.insertAdjacentHTML('beforeend', '<p class="note">正式版：每隻充氣角色旁放一個 QR（或感應章），網址帶 ?f=1～6。位置與數量等 Dari 決定。</p>');
     return;
@@ -131,7 +132,7 @@ header .t{flex:1;text-align:right;font-size:12px;font-weight:700;color:#1F5A5F}
   var met = read(), first = !met[F.id];
   app.classList.add('a-' + F.anim);
   stage.innerHTML = '<div class="hello">遇到' + F.name + '了！<small>' + F.tag + (first ? '' : '・又見面了') + '</small></div>' +
-    '<div class="who" id="who"><img src="' + F.img + '" alt="' + F.tag + '">' + (F.wall ? '<span class="wall">' + F.wall + '</span>' : '') +
+    '<div class="who" id="who"><img src="' + F.img + '" onerror="this.onerror=null;this.src=this.src.replace(\'.webp\',\'.png\')" alt="' + F.tag + '">' + (F.wall ? '<span class="wall">' + F.wall + '</span>' : '') +
     '<span class="fx">' + (F.anim === 'nap' ? '<i>z</i><i>z</i><i>Z</i>' : F.anim === 'swim' ? '<b></b><b></b><b></b>' : '') + '</span></div>';
   var lines = first ? F.lines : [F.lines[0].replace('你發現我了', '你又來了'), F.lines[2]];
   if (F.id === 6 && !app.classList.contains('night')) lines = lines.concat(['（偷偷說：晚上 6 點以後再來，我會變亮喔）']);
