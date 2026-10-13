@@ -422,7 +422,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.32',
+  version: '0.33',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -1064,7 +1064,7 @@ function drawTaotieOld(f) {
 function addVent(fromLeft, o) {
   const first = !stats.toldVent; stats.toldVent = true;
   vents.push({ fromLeft, y: Math.max(170, Math.min(520, kite.y - 60)), w: R(150, 200), t: 0, warn: o ? o.warn : CONFIG.vent.warn * LV().warn / 1.15, on: o ? o.on : CONFIG.vent.on, beat: !!(o && o.beat) });
-  if (first) say('攤位要噴熱氣了！離開紅區', W / 2, Math.max(150, kite.y - 110), '#FFD0C4');
+  if (first) { say('攤位要噴熱氣了！離開紅區', W / 2, Math.max(150, kite.y - 110), '#FFD0C4', true); slowmo = Math.max(slowmo, 1.2); }      // v0.33（C-123）：第一次遇到紅區放慢 1.2 秒，字放大
   beep(330, 0.12, 'triangle', 0.04, 120);
 }
 function addSmoke(fromLeft) {
@@ -1412,7 +1412,7 @@ function drawPier() {
 /* 出港漁船：先在那一條航道出現紅區與「船」字，再從一側開過去（打不掉，只能閃） */
 let boats = [];
 function addBoat(fromLeft) {
-  if (!stats.toldBoat) { stats.toldBoat = true; say('漁船要出港了！離開紅區', W / 2, Math.max(150, kite.y - 110), '#FFD0C4'); }
+  if (!stats.toldBoat) { stats.toldBoat = true; say('漁船要出港了！快離開紅色航道', W / 2, Math.max(150, kite.y - 110), '#FFD0C4', true); slowmo = Math.max(slowmo, 1.2); }
   boats.push({ fromLeft, y: Math.max(170, Math.min(540, kite.y - (E2() ? 120 : 50))), t: 0, warn: CONFIG.boat.warn * LV().warn / 1.15, x: fromLeft ? -80 : W + 80 }); beep(240, 0.3, 'square', 0.04, -20);
 }
 function updateBoats(dt) {
@@ -1544,7 +1544,7 @@ const ESC = { hp: 5, y: 528, speed: 80, cd: 0.9, warnT: 1.3, stunHit: 6, stunTim
 let escort = null;
 function escortHurt(by, n) {
   const E = escort; if (!E || won || cine > 0 || E.cd > 0 || ult || E.hp <= 0) return;
-  n = n || 1; E.hp = Math.max(0, E.hp - n); E.cd = ESC.cd; E.hitT = 0.4; stats.boatHits = (stats.boatHits || 0) + n; shake = Math.max(shake, 0.25);
+  n = n || 1; E.hp = Math.max(0, E.hp - n); if (E.hp > 0 && E.hp <= 2 && !E.lowTold) { E.lowTold = true; say('小船快撐不住了！幫它擋住怪獸！', W / 2, E.y - 120, '#FFD0C4', true); } E.cd = ESC.cd; E.hitT = 0.4; stats.boatHits = (stats.boatHits || 0) + n; shake = Math.max(shake, 0.25);
   say('小船被' + by + '撞到了！', E.x, E.y - 64, '#FFD0C4'); beep(140, 0.3, 'square', 0.05, -60); for (let i = 0; i < 6; i++) part('drop', E.x + rand(-20, 20), E.y, { vx: rand(-80, 80), vy: rand(-90, 20), size: rand(2, 3.5), color: '#C9A27E' });
   if (E.hp <= 0) { stats.boatSunk = true; say('小船沉了…', E.x, E.y - 90, '#FFD0C4', true); kite.hearts = 0; drawHearts(); endTimer = 1.2; }
 }
@@ -1552,6 +1552,7 @@ function updateEscort(dt) {
   if (!PM()) return;
   if (!escort) escort = { x: W / 2, y: ESC.y, hp: E2() ? 7 : ESC.hp, max: E2() ? 7 : ESC.hp, cd: 0, hitT: 0 };
   const E = escort; if (E.cd > 0) E.cd -= dt; if (E.hitT > 0) E.hitT -= dt;
+  if (!E.told && t > 1.5) { E.told = true; say('保護海瀨工的小船！', W / 2, E.y - 110, '#FFE08A', true); say('畫紅圈的怪獸會撞船，先打掉它', W / 2, E.y - 84, '#fff'); }      // v0.33（C-123）：開場提醒要保護小船
   let tx = W / 2 + Math.sin(t * 0.33) * 70;
   const block = [];      // 前方擋路的東西：纜繩（打不掉）、魔王的鋼索（只有缺口能過）
   for (const f of foes) if (f.type === 'log' && f.y < E.y && f.y > E.y - 230) block.push([f.x - f.w / 2 - 36, f.x + f.w / 2 + 36]);
@@ -1571,8 +1572,9 @@ function drawEscort() {
   if (!calm) for (let i = 0; i < 2; i++) part('bubble', E.x + rand(-18, 18), E.y + 46, { vy: rand(20, 50), size: rand(1.5, 3), fade: 1.8 });
   if (img.p_escort) ctx.drawImage(img.p_escort, -36, -48, 72, 96); else { rrect(-20, -40, 40, 80, 14, '#C99A6A', PAL.line, 2); drawPierFriend('otter', 0.8); }
   ctx.restore();
-  const w = 64, x0 = E.x - w / 2, y0 = E.y - 60;      // 船的體力
-  rrect(x0 - 3, y0 - 3, w + 6, 12, 5, 'rgba(16,41,61,.7)'); for (let i = 0; i < (escort.max || ESC.hp); i++) rrect(x0 + i * (w / (escort.max || ESC.hp)) + 1, y0, w / (escort.max || ESC.hp) - 2, 6, 2, i < E.hp ? '#7FD3A0' : 'rgba(255,255,255,.2)');
+  const w = 88, x0 = E.x - w / 2, y0 = E.y - 64, low = E.hp <= 2 && Math.floor(clock * 4) % 2;      // 船的體力（v0.33 加大、標「小船」、剩 2 格以下閃紅）
+  ctx.font = "700 11px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif"; ctx.textAlign = 'center'; ctx.fillStyle = low ? '#FFD0C4' : '#fff'; ctx.fillText('小船', E.x, y0 - 6);
+  rrect(x0 - 3, y0 - 3, w + 6, 15, 6, low ? 'rgba(201,58,40,.85)' : 'rgba(16,41,61,.7)'); for (let i = 0; i < (E.max || ESC.hp); i++) rrect(x0 + i * (w / (E.max || ESC.hp)) + 1, y0, w / (E.max || ESC.hp) - 2, 9, 3, i < E.hp ? (E.hp <= 2 ? '#FFB36B' : '#7FD3A0') : 'rgba(255,255,255,.2)');
 }
 /* 阿根納巨獸的三招 */
 function updateAgenor(f, dt) {
