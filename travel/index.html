@@ -298,7 +298,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.21',
+  version: '0.22',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -346,7 +346,7 @@ const LOOK = {   // [A, B, C]：[檔名, 札記]
   zhengbin: [['pc_zhengbin_a_v2.jpg', '我戴上畫家帽，把彩色屋畫下來。水裡那一排也想畫，可是它一直晃。'], ['pc_zhengbin_b_v2.jpg'], ['pc_zhengbin_c_v2.jpg', '我抱著一顆橘色浮球比了一下。嗯……還是我比較圓。']],
   heping:   [['pc_heping_a_v2.jpg', '戴著探險帽、拿著小地圖，一層一層數海浪磨出來的石頭。'], ['pc_heping_b_v2.jpg', '戴好泳鏡、套上泳圈，準備好了！……結果還是只敢把腳伸進去。'], ['pc_heping_c_v2.jpg', '海邊長了好多石頭香菇。我也戴一頂蘑菇帽站在旁邊，假裝是其中一朵。']],
   badouzi:  [['pc_badouzi_a_v2.jpg', '戴上小站帽，乖乖站在黃線後面等車。月台旁邊就是海，等車的時候可以看浪。'], ['pc_badouzi_b_v2.jpg'], ['pc_badouzi_c_v2.jpg', '鐵軌一直延伸到很遠。我坐在旁邊的步道上，畫了一張小地圖。']],
-  shenao:   [['pc_shenao_a_v2.jpg', '坐進紅色的螃蟹車，我從車裡揮揮翅膀，它好像也在笑。'], ['pc_shenao_b_v3.jpg', '一塊一塊方方的石頭，像海邊排好的豆腐。我站在乾乾的那一塊，離浪花遠一點。'], ['pc_shenao_c_v2.jpg', '拿起望遠鏡看岬角上的石頭。它換了新的樣子，大家都在猜像什麼。']],
+  shenao:   [['pc_shenao_a_v3.jpg', '坐進紅色的螃蟹車，我從車裡揮揮翅膀，它好像也在笑。'], ['pc_shenao_b_v3.jpg', '一塊一塊方方的石頭，像海邊排好的豆腐。我站在乾乾的那一塊，離浪花遠一點。'], ['pc_shenao_c_v2.jpg', '拿起望遠鏡看岬角上的石頭。它換了新的樣子，大家都在猜像什麼。']],
   chaojing: [['pc_chaojing_a_v2.jpg', '退潮了，我蹲在石頭邊慢慢看，石頭縫裡藏著好多小秘密。'], ['pc_chaojing_b_v3.jpg', '小水窪裡有一位很害羞的朋友。我趴在旁邊不出聲，我們互看了好久。'], ['pc_chaojing_c_v2.jpg', '戴著草帽坐在草地上，風好大，羽毛都翹起來了，可是好舒服。']],
   jiufen:   [['pc_jiufen_a_v2.jpg', '房子一層一層疊在山上。我一階一階往上走，燈籠亮起來的時候好溫暖。'], ['pc_jiufen_b_v2.jpg'], ['pc_jiufen_c_v2.jpg', '走到一半坐下來休息，背包放旁邊，回頭就看到海。']]
 };
