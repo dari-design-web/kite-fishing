@@ -371,7 +371,9 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.17',
+  version: '0.18',
+  // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
+  assist: { on: /[?&]assist=1/.test(location.search), radius: 36 },
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
   bento: { squid: 3, hairtail: 2 },      // 一局抓到幾隻以上，結算時直接得到 1 份便當給小鳶去旅行（工作單 11 v4；每局每種最多 1 份）
   duration: 60,                 // 一局秒數
@@ -586,6 +588,7 @@ function update(dt) {
     if (kite.x > W - 44) kite.face = -1; if (kite.x < 44) kite.face = 1;
     kite.y = CONFIG.skyY + Math.sin(clock * 2.2) * 5;
   } else if (kite.state === 'dive') {
+    if (kite.lock) { if (things.includes(kite.lock)) { kite.tx = kite.lock.x; kite.ty = Math.min(H - 30, kite.lock.y); } else kite.lock = null; }      // 瞄準小幫手：追著鎖定的魚
     const dx = kite.tx - kite.x, dy = kite.ty - kite.y, d = Math.hypot(dx, dy), step = K.diveSpeed * dt;
     if (d <= step) { kite.x = kite.tx; kite.y = kite.ty; resolveDive(); } else { kite.x += dx / d * step; kite.y += dy / d * step; }
   } else if (kite.state === 'rise') {
@@ -914,7 +917,7 @@ function rankOf(v) { let name = CONFIG.ranks[0][1]; for (const r of CONFIG.ranks
 function record() {
   const acc = stats.dives ? Math.round(stats.hits / stats.dives * 100) : 0;
   return { game: '小鳶捕魚原型', version: CONFIG.version, session: SES().name, time: new Date().toISOString(), totalKg: +kg.toFixed(1), rank: rankOf(kg), dex: SPECIES.filter((k) => dex[k]).length, kgInEvent: +stats.kgInEvent.toFixed(1), comboBonus: +stats.comboBonus.toFixed(1), bestCombo: stats.bestCombo, counts: stats.counts,
-    taps: stats.taps, dives: stats.dives, hits: stats.hits, misses: stats.misses, hitRate: acc, bento: stats.bento || [], tapsDuringCooldown: stats.blocked, tapsOnSky: stats.skyTaps, trash: stats.trash, tapsOnWhaleShark: stats.sharkTaps,
+    taps: stats.taps, dives: stats.dives, hits: stats.hits, misses: stats.misses, hitRate: acc, assist: CONFIG.assist.on, bento: stats.bento || [], tapsDuringCooldown: stats.blocked, tapsOnSky: stats.skyTaps, trash: stats.trash, tapsOnWhaleShark: stats.sharkTaps,
     answers, assets: Object.keys(img), screen: innerWidth + 'x' + innerHeight, ua: navigator.userAgent };
 }
 function finish() { BGM.stop();
@@ -954,7 +957,8 @@ cv.addEventListener('pointerdown', (e) => {
   stats.taps++;
   if (y < CONFIG.surfaceY + 12) { stats.skyTaps++; say('點水面下的魚', x, CONFIG.surfaceY + 30, '#fff'); return; }
   if (kite.state !== 'glide' || kite.wait > 0) { stats.blocked++; return; }
-  stats.dives++; kite.tx = x; kite.ty = Math.min(H - 30, y); kite.state = 'dive'; beep(700, 0.18, 'sawtooth', 0.03, -420);
+  stats.dives++; kite.tx = x; kite.ty = Math.min(H - 30, y); kite.state = 'dive'; kite.lock = null;
+  if (CONFIG.assist.on) { let bd = CONFIG.assist.radius; for (const o of things) { if (!CONFIG.fish[o.type]) continue; const d = Math.hypot(o.x - x, o.y - y); if (d < bd) { bd = d; kite.lock = o; } } } beep(700, 0.18, 'sawtooth', 0.03, -420);
 });
 $('startBtn').onclick = start; $('againBtn').onclick = start; $('menuBtn').onclick = () => { renderStart(); show('startPanel'); }; $('restartBtn').onclick = start; $('resumeBtn').onclick = resume; $('pauseBtn').onclick = () => (mode === 'pause' ? resume() : pause());
 $('soundBtn').onclick = toggleSound;
