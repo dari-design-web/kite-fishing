@@ -104,6 +104,8 @@ button{font-family:inherit}
 .prow{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 14px 10px}
 .pnote{font-size:12px;opacity:.7;text-align:center;padding:0 14px calc(14px + env(safe-area-inset-bottom,0px))}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+/* C-124：短螢幕按鈕至少約 36～40 點高，手指好按 */
+#demoBtn{min-height:40px}
 </style>
 </head>
 <body>
@@ -375,7 +377,7 @@ const SND_ICON = (() => {
 </script>
 <script>
 /* 小鳶合照館 原型 v0.1（工作單 11 v4 P2）。貼紙、相框、解鎖方式都是建議，等 Dari 確認；正式素材之後開單給 ChatGPT */
-const CFG = { version: '0.11', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
+const CFG = { version: '0.12', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
 const $ = (id) => document.getElementById(id);
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = 'none'), 2400); }

@@ -83,11 +83,13 @@ header .t{flex:1;text-align:right;font-size:12px;font-weight:700;color:#1F5A5F}
 .pick img{width:72%;aspect-ratio:1;object-fit:contain}
 @media (max-height:700px){.hello{font-size:22px}.who{margin-bottom:10px}.bubble{font-size:15.5px;min-height:56px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+/* C-124：短螢幕按鈕至少約 36～40 點高，手指好按 */
+header a{padding:7px 12px}
 </style>
 </head>
 <body>
 <main class="phone" id="app">
-  <header><a href="../hub/">‹ 首頁</a><span class="t">港口朋友・原型 v0.2・角色暫用</span></header>
+  <header><a href="../hub/">‹ 首頁</a><span class="t">港口朋友・原型 v0.3・角色暫用</span></header>
   <div class="stage" id="stage"></div>
   <section class="panel" id="panel"></section>
 </main>

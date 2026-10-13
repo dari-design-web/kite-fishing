@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<style>html{color-scheme:light}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>html{color-scheme:light}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}/* C-124：短螢幕按鈕至少約 36～40 點高，手指好按 */
+.btn.text{min-height:40px}#reset{min-height:36px;padding:8px 12px}
+</style>
 <title>小鳶來港介面原型</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@700&display=swap">
 <style>
@@ -197,7 +199,7 @@ body:not(.showNotes) .notes,body:not(.showPages) .pages{display:none}
 <div class="app">
   <header class="top">
     <div>
-      <h1>小鳶來港會員畫面 v0.8</h1>
+      <h1>小鳶來港會員畫面 v0.9</h1>
       <p>三條路徑都能點著走。畫面裡的店家、金額、贈品與點數都是示範值，素材為暫用。</p>
     </div>
     <div class="tabs" role="tablist" aria-label="路徑" id="tabs"></div>
