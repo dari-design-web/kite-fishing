@@ -422,7 +422,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.31',
+  version: '0.32',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -492,6 +492,9 @@ const STAGES = [
       boss: { name: '不沉煤艦・建基巨岩怪', short: '巨岩怪', r: 58 }, fire: { name: '煤灰彈', hp: 1, r: 8, speed: [0, 0], score: 0 } } }
 ];
 const ST = () => STAGES[stageNo - 1];
+/* v0.32（C-122，工作單 23 v4）：輕鬆難度調整版，網址加 ?easy2=1 且選「輕鬆」才生效（預設不改，等 Dari 決定）：鐵罐（各關同類）速度 ×0.8、出港漁船紅區生在小鳶上方 120 點（原本 50）、第 3 關小船體力 5 → 7、魔王血量 ×0.8 */
+const EASY2 = /[?&]easy2=1/.test(location.search), E2 = () => EASY2 && level === 'easy';
+if (EASY2) CONFIG.levels.easy.bossHp = 0.8;
 const SPD = () => LVF('speed') * (ST().speed || 1), BHP = () => LVF('bossHp') * (ST().bossHp || 1), BTIME = () => (PHASED() ? CONFIG.bossFx.time : CONFIG.boss.leaveAfter) * LVF('bossTime') * (ST().bossHp || 1);      // 速度、大垃圾團血量與停留時間 = 難度倍率 × 關卡倍率
 const ASSET_FILES = { trash: 'trash.png', fish_small: 'fish_small.png', fish_squid: 'fish_squid.png', whaleshark: 'whaleshark.png', shark_top: 'whaleshark_top.png', night_bag: 'night_bag.png', night_temple: 'night_temple.png', jiao_flat: 'jiao_flat.png', jiao_convex: 'jiao_convex.png', lantern: 'lantern.png',
   kite_a: 'kite_top_a.png', kite_b: 'kite_top_b.png', feather: 'feather.png', turtle: 'turtle_top.png',
@@ -622,7 +625,7 @@ function reset() {
 function drawHearts() { $('hearts').textContent = '♥'.repeat(Math.max(0, kite.hearts)) + '♡'.repeat(Math.max(0, LV().hearts - kite.hearts)); }
 
 function mk(type, x, y, o) {
-  const d = T[type], f = Object.assign({ type, x, y, x0: x, vx: 0, vy: R(d.speed[0], d.speed[1]) * SPD(), hp: d.hp, r: d.r, ph: R(0, 6.28), give: '', rot: R(-0.5, 0.5), age: 0, zapAcc: R(0, 1) }, o);
+  const d = T[type], f = Object.assign({ type, x, y, x0: x, vx: 0, vy: R(d.speed[0], d.speed[1]) * SPD() * (type === 'can' && E2() ? 0.8 : 1), hp: d.hp, r: d.r, ph: R(0, 6.28), give: '', rot: R(-0.5, 0.5), age: 0, zapAcc: R(0, 1) }, o);
   foes.push(f); if (!f.noCount) stats.spawned++; if (d.rescue) { stats.trapped++; stats.trappedBy[d.rescue]++; } return f;      // noCount：只是要閃的障礙，不算在乾淨度裡
 }
 function spawn(e) {
@@ -1410,7 +1413,7 @@ function drawPier() {
 let boats = [];
 function addBoat(fromLeft) {
   if (!stats.toldBoat) { stats.toldBoat = true; say('漁船要出港了！離開紅區', W / 2, Math.max(150, kite.y - 110), '#FFD0C4'); }
-  boats.push({ fromLeft, y: Math.max(170, Math.min(540, kite.y - 50)), t: 0, warn: CONFIG.boat.warn * LV().warn / 1.15, x: fromLeft ? -80 : W + 80 }); beep(240, 0.3, 'square', 0.04, -20);
+  boats.push({ fromLeft, y: Math.max(170, Math.min(540, kite.y - (E2() ? 120 : 50))), t: 0, warn: CONFIG.boat.warn * LV().warn / 1.15, x: fromLeft ? -80 : W + 80 }); beep(240, 0.3, 'square', 0.04, -20);
 }
 function updateBoats(dt) {
   const B = CONFIG.boat, K = CONFIG.kite;
@@ -1547,7 +1550,7 @@ function escortHurt(by, n) {
 }
 function updateEscort(dt) {
   if (!PM()) return;
-  if (!escort) escort = { x: W / 2, y: ESC.y, hp: ESC.hp, cd: 0, hitT: 0 };
+  if (!escort) escort = { x: W / 2, y: ESC.y, hp: E2() ? 7 : ESC.hp, max: E2() ? 7 : ESC.hp, cd: 0, hitT: 0 };
   const E = escort; if (E.cd > 0) E.cd -= dt; if (E.hitT > 0) E.hitT -= dt;
   let tx = W / 2 + Math.sin(t * 0.33) * 70;
   const block = [];      // 前方擋路的東西：纜繩（打不掉）、魔王的鋼索（只有缺口能過）
@@ -1569,7 +1572,7 @@ function drawEscort() {
   if (img.p_escort) ctx.drawImage(img.p_escort, -36, -48, 72, 96); else { rrect(-20, -40, 40, 80, 14, '#C99A6A', PAL.line, 2); drawPierFriend('otter', 0.8); }
   ctx.restore();
   const w = 64, x0 = E.x - w / 2, y0 = E.y - 60;      // 船的體力
-  rrect(x0 - 3, y0 - 3, w + 6, 12, 5, 'rgba(16,41,61,.7)'); for (let i = 0; i < ESC.hp; i++) rrect(x0 + i * (w / ESC.hp) + 1, y0, w / ESC.hp - 2, 6, 2, i < E.hp ? '#7FD3A0' : 'rgba(255,255,255,.2)');
+  rrect(x0 - 3, y0 - 3, w + 6, 12, 5, 'rgba(16,41,61,.7)'); for (let i = 0; i < (escort.max || ESC.hp); i++) rrect(x0 + i * (w / (escort.max || ESC.hp)) + 1, y0, w / (escort.max || ESC.hp) - 2, 6, 2, i < E.hp ? '#7FD3A0' : 'rgba(255,255,255,.2)');
 }
 /* 阿根納巨獸的三招 */
 function updateAgenor(f, dt) {
@@ -2584,7 +2587,7 @@ $('copyBtn').onclick = () => {
   const fallback = () => { log.value = text; log.hidden = false; log.focus(); log.select(); $('copyBtn').textContent = '請長按上方文字複製'; };
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
 };
-window.__flyGame = { CONFIG, state: () => ({ mode, t, control, level, kite, gauge, foes: foes.map((f) => ({ type: f.type, x: f.x, y: f.y, r: f.r, hp: f.hp, vx: f.vx, w: f.w || 0, cross: !!f.cross, tired: !!f.tired, aimed: !!f.aimed })), warns: warns.map((w) => ({ y: w.y, t: w.t })), slam: boss && boss.slam ? { s: boss.slam, x: boss.slamX } : null, picks: picks.map((p) => ({ kind: p.kind, x: p.x, y: p.y })), pals: pals.length, stats, boss: !!boss, ult: ult ? ult.t : -1 }), fillGauge: () => { gauge = CONFIG.ult.need; }, record, skipTo: (sec) => { t = sec; while (si < script.length && script[si].t < sec) si++; }, hurtOff: () => { kite.safe = 1e9; }, setStage: (n) => { stageNo = n; }, progress: () => progress, stage: () => stageNo, test: { pick: (kind, x, y) => { addPick(kind, x, y); }, buff: () => { kite.power = 3; kite.powerT = CONFIG.feather.powerTime * 0.7; kite.galeT = CONFIG.feather.galeTime * 0.5; kite.shield = true; }, spawn: (type, x, y) => { const f = mk(type, x, y); f.vy = CONFIG.scroll; return true; }, hearts: (n) => { kite.hearts = n; kite.safe = 0; drawHearts(); }, warn: (sec) => { warns.push({ y: kite.y, fromLeft: true, n: 3, t: sec }); }, friends: () => friends.map((c) => ({ kind: c.kind, x: Math.round(c.x), y: Math.round(c.y) })), won: () => won, logs: () => foes.filter((f) => f.type === 'log').map((f) => ({ x: Math.round(f.x), y: Math.round(f.y), w: Math.round(f.w) })) }, bossAtk: (a) => { if (boss) { boss.atk = a; boss.atkT = 0; boss.vol = 0; boss.rocks = []; boss.cables = []; boss.wave = 0; boss.stars = []; boss.beams = []; boss.lanes = []; boss.starAcc = 0; if (a === 'ram') { boss.ramX = kite.x; boss.ramT = 0; boss.ramS = 'warn'; } } }, pierFriend: (id) => { pierGift(id, kite.x, kite.y); }, jiao: (r) => { jiaoForce = r; }, vents: () => vents.length, friend: (id, x, y) => { const f = mk('tangle', x, y); f.friend = id; f.vy = 30; }, floats: () => floats.map((f) => f.text), banner: () => $('banner').textContent, clouds: () => clouds.length, ring: () => kite.ringT, testWin: (sq, tu) => { stats.rescuedBy.squid = sq; stats.rescuedBy.turtle = tu; stats.rescued = sq + tu; stats.trapped = Math.max(stats.trapped, sq + tu); if (boss) { if (boss.phased) { for (const k in boss.pools) boss.pools[k] = 0; foes = foes.filter((o) => o.type !== 'minib'); boss.hidden = false; boss.phase = 3; cine = 0; } boss.hp = 0; } }, bossPhase: (n) => { const f = boss; if (!f || !f.phased) return; cine = 0; if (RM()) { if (n >= 2) { f.pools.armL = f.pools.armR = 0; f.phase = 2; } if (n >= 3) { f.pools.head = 0; f.phase = 3; } } else { if (n >= 2) { f.pools.shell = 0; f.layers = 0; f.phase = 2; } if (n >= 3) { f.pools.core = 0; splitBlob(f); cine = 0; } } syncHp(f); }, bossInfo: () => (boss ? { phase: boss.phase, hp: boss.hp, pools: boss.pools, hidden: !!boss.hidden, dying: boss.dying, cine } : null), setControl: (c) => { control = c; } };
+window.__flyGame = { CONFIG, hz: () => ({ vents: vents.map((v) => ({ y: v.y, w: v.w, fromLeft: v.fromLeft, t: v.t, warn: v.warn, on: v.on })), boats: boats.map((b) => ({ x: b.x, y: b.y, t: b.t, warn: b.warn })) }), state: () => ({ mode, t, control, level, kite, gauge, foes: foes.map((f) => ({ type: f.type, x: f.x, y: f.y, r: f.r, hp: f.hp, vx: f.vx, w: f.w || 0, cross: !!f.cross, tired: !!f.tired, aimed: !!f.aimed })), warns: warns.map((w) => ({ y: w.y, t: w.t })), slam: boss && boss.slam ? { s: boss.slam, x: boss.slamX } : null, picks: picks.map((p) => ({ kind: p.kind, x: p.x, y: p.y })), pals: pals.length, stats, boss: !!boss, ult: ult ? ult.t : -1 }), fillGauge: () => { gauge = CONFIG.ult.need; }, record, skipTo: (sec) => { t = sec; while (si < script.length && script[si].t < sec) si++; }, hurtOff: () => { kite.safe = 1e9; }, setStage: (n) => { stageNo = n; }, progress: () => progress, stage: () => stageNo, test: { pick: (kind, x, y) => { addPick(kind, x, y); }, buff: () => { kite.power = 3; kite.powerT = CONFIG.feather.powerTime * 0.7; kite.galeT = CONFIG.feather.galeTime * 0.5; kite.shield = true; }, spawn: (type, x, y) => { const f = mk(type, x, y); f.vy = CONFIG.scroll; return true; }, hearts: (n) => { kite.hearts = n; kite.safe = 0; drawHearts(); }, warn: (sec) => { warns.push({ y: kite.y, fromLeft: true, n: 3, t: sec }); }, friends: () => friends.map((c) => ({ kind: c.kind, x: Math.round(c.x), y: Math.round(c.y) })), won: () => won, logs: () => foes.filter((f) => f.type === 'log').map((f) => ({ x: Math.round(f.x), y: Math.round(f.y), w: Math.round(f.w) })) }, bossAtk: (a) => { if (boss) { boss.atk = a; boss.atkT = 0; boss.vol = 0; boss.rocks = []; boss.cables = []; boss.wave = 0; boss.stars = []; boss.beams = []; boss.lanes = []; boss.starAcc = 0; if (a === 'ram') { boss.ramX = kite.x; boss.ramT = 0; boss.ramS = 'warn'; } } }, pierFriend: (id) => { pierGift(id, kite.x, kite.y); }, jiao: (r) => { jiaoForce = r; }, vents: () => vents.length, friend: (id, x, y) => { const f = mk('tangle', x, y); f.friend = id; f.vy = 30; }, floats: () => floats.map((f) => f.text), banner: () => $('banner').textContent, clouds: () => clouds.length, ring: () => kite.ringT, testWin: (sq, tu) => { stats.rescuedBy.squid = sq; stats.rescuedBy.turtle = tu; stats.rescued = sq + tu; stats.trapped = Math.max(stats.trapped, sq + tu); if (boss) { if (boss.phased) { for (const k in boss.pools) boss.pools[k] = 0; foes = foes.filter((o) => o.type !== 'minib'); boss.hidden = false; boss.phase = 3; cine = 0; } boss.hp = 0; } }, bossPhase: (n) => { const f = boss; if (!f || !f.phased) return; cine = 0; if (RM()) { if (n >= 2) { f.pools.armL = f.pools.armR = 0; f.phase = 2; } if (n >= 3) { f.pools.head = 0; f.phase = 3; } } else { if (n >= 2) { f.pools.shell = 0; f.layers = 0; f.phase = 2; } if (n >= 3) { f.pools.core = 0; splitBlob(f); cine = 0; } } syncHp(f); }, bossInfo: () => (boss ? { phase: boss.phase, hp: boss.hp, pools: boss.pools, hidden: !!boss.hidden, dying: boss.dying, cine } : null), setControl: (c) => { control = c; } };
 /* C-81／C-82（Dari 10/13 01:03）：音樂開關、暫停鈕改圖示；選單畫面也有音樂，每個場景不同曲子 */
 const MENU_TRACK = () => 'fly_map', PLAY_TRACK = () => 'fly_' + stageNo;
 function drawSnd() { const h = SND_ICON[soundOn ? 'on' : 'off']; for (const b of [$('soundBtn'), $('menuSnd')]) { if (!b) continue; b.innerHTML = h; b.setAttribute('aria-pressed', String(!soundOn)); b.setAttribute('aria-label', soundOn ? '音樂開著，點一下關掉' : '音樂關著，點一下打開'); } }
