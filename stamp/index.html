@@ -180,6 +180,9 @@ summary{font-weight:700;font-size:14px;cursor:pointer}
 .conf i{position:absolute;top:-20px;width:9px;height:14px;border-radius:2px;animation:fall linear forwards}
 @keyframes fall{to{transform:translate(var(--dx),110vh) rotate(var(--r))}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* v0.18（C-127）：護照下面多一條「館內的港口朋友」，連到港口朋友頁 */
+.palLink{display:flex;align-items:center;gap:10px;margin:10px 0 0;padding:10px 12px;min-height:48px;border-radius:16px;background:#FFF6E0;border:2px dashed #E3A33A;color:#5B3F25;text-decoration:none;font-weight:700;font-size:14px}
+.palLink img{width:40px;height:40px;object-fit:contain;flex:none}.palLink span{flex:1}.palLink b{color:#E2702A}
 /* C-124：短螢幕按鈕至少約 36～40 點高 */
 #noteBtn{min-height:38px}
 </style>
@@ -213,6 +216,7 @@ summary{font-weight:700;font-size:14px;cursor:pointer}
     <div id="grid"></div>
   </section>
   <button class="thBtn" type="button" id="thBtn">🎭 我的港灣小劇場</button>
+  <a class="palLink" id="palLink" href="../meet/"></a>
   <details class="drawer" id="drawer"><summary>祕密章・港口札記・集滿獎勵</summary>
   <div class="secret" id="secret"></div>
   <section class="notes" id="notes"></section>
@@ -424,7 +428,7 @@ const SND_ICON = (() => {
 /* BGM-END */
 </script>
 <script>
-const CFG = { version: '0.17', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
+const CFG = { version: '0.18', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
 const FRAMES = [[53.3333, 40.4444], [25.0463, 46.1481], [18.9352, 75.4815], [44.4907, 86.7407], [75.9722, 77.4815], [80.5093, 56.037]], FRAME_R = 10.37;      // v0.8：G-50 港區小地圖六圈中心（%）；章容器 224px＝寬 20.74%（ChatGPT 地圖位置 JSON）
 const ROUTE = [[1, 2, [[[462.8, 559.4], [449.0, 561.0], [429.0, 568.0], [410.0, 578.0], [378.3, 588.2]]]], [2, 3, [[[330.7, 717.1], [339.0, 730.0], [337.8, 734.0]], [[294.0, 784.0], [285.0, 790.0], [301.0, 820.0], [313.0, 859.0], [313.0, 902.0], [299.0, 934.0], [287.3, 944.5]]]], [3, 4, [[[290.9, 1089.4], [315.0, 1109.0], [339.0, 1130.0], [360.0, 1145.0], [372.6, 1147.7]]]], [4, 5, [[[590.5, 1181.6], [615.0, 1184.0], [638.0, 1178.0], [662.0, 1171.0], [688.0, 1157.0], [709.0, 1138.0], [736.5, 1115.3]]]], [5, 6, [[[750.1, 963.3], [721.0, 929.0], [730.0, 903.0], [740.0, 879.0], [752.0, 857.0], [786.2, 827.8]]]], [6, 1, [[[797.0, 674.6], [784.0, 660.0], [760.0, 636.0], [742.0, 613.0], [718.0, 591.0], [700.0, 579.0], [686.0, 575.3]]]]];      // 每段 [起站, 終站, 可見路段（原圖像素）]；稱號帶的斷口不補線
 /* 6 個蓋章點（實際位置待 Dari 現勘）。color：每站主色（工作單 18）；title：蓋到就拿到的稱號（建議）；riddle：還沒去時的提示 */
@@ -548,6 +552,7 @@ function render() {
   const nx = nextSpot();
   $('progTxt').innerHTML = n() === 6 ? '<b>6 站都蓋好了！</b>同一站不同天再來蓋，章會升級成銀框、金框。' : '<b>' + n() + ' / 6 站</b>・下一站可以去：' + nx.riddle + '（找現場的 QR 立牌，不用照順序）';
   if (nx) { const c = $('grid').querySelector('.pcell[data-id="' + nx.id + '"]'); if (c) c.classList.add('next'); }
+  { let fr = {}; try { fr = JSON.parse(localStorage.getItem('kiteFriends1') || '{}') || {}; } catch (e) {} const nf = Object.keys(fr).length, pl = $('palLink'); if (pl) pl.innerHTML = '<img src="../meet/assets/pal_f4.webp" alt=""><span>館內的港口朋友 <b>' + nf + ' / 6</b><br><small style="font-weight:400">' + (nf >= 6 ? '六位都見過了！' : '找大大的充氣朋友，掃旁邊的 QR 打招呼') + '</small></span>›'; }
   $('secret').innerHTML = P.secret ? '<span class="sv">' + secretV() + '</span><p><b>祕密章：' + SECRET.title + '</b><br>你找到藏起來的第 7 個章了！</p>' : '<span class="lock">？</span><p><b>第 7 個祕密章</b><br>' + SECRET.hint + '<br>' + ['<span>六個章 ' + Math.min(n(), 6) + ' / 6' + (n() >= 6 ? ' ✓' : '') + '</span>'].concat(SECRET_NEED.map((q) => { const g = Math.min(q.get(), q.need); return '<span>' + q.name + ' ' + g + ' / ' + q.need + (g >= q.need ? ' ✓' : '') + '</span>'; })).join('<br>') + '</p>';
   const r = $('reward'); r.hidden = !P.complete;
   r.innerHTML = '<img src="assets/pc_passport.jpg" alt="" style="width:96px;height:60px;object-fit:cover;border-radius:4px;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.2)"><p><b>集滿獎勵已收下</b><br>護照紀念明信片在小屋收藏冊（港灣護照），小鳶的雨傘在背包。</p>';
