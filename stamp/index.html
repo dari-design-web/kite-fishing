@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>港灣蓋章散步原型</title>
 <style>
-/* P3 港灣蓋章散步 原型 v0.15（v0.15：港口聲音尋寶（C-108）——蓋完章可停下來聽 5 秒、選聽到的聲音，小鳶回一句；v0.14：感應印章照 ChatGPT 現場體驗意見——「把章放這裡」、「章收好啦！」、沒讀到請抬起再放、建議大人扶手機小孩蓋；v0.13：感應印章測試模式（C-106，D65⑨），三指模擬實體感應章；v0.12：Dari 10/13 16:58 決定——夜間章 18:00–22:00、祕密章改成六章蓋滿＋三款遊戲玩到一定程度（抽屜裡看得到進度）；v0.10：照 ChatGPT 實測意見 v3 修兩句舊文案；v0.9：照 ChatGPT 實測意見——主進度只看 6 站、建議下一站、亮線加白邊、直接看結果會記住、地圖以外收進抽屜、親子觀察接力；G-50 正式夜間章；v0.8：G-50 港區小地圖當護照內頁、章照地圖圓圈對位、走過的路段沿小路亮起來；v0.7：G-50 正式彩色章、存檔失敗提示、中途離開補發集滿、壓印說明改成章已收好；v0.6：先存進度再演出、集滿等最後一章落下、港口札記；工作單 18 港灣護照升級提案 v1，D62，C-89）。只做手機版（D55）。
+/* P3 港灣蓋章散步 原型 v0.16（v0.16：港灣小劇場（C-107）——蓋到的章變成場景道具、可選主角、自動寫「今天的旅程」；v0.15：港口聲音尋寶（C-108）——蓋完章可停下來聽 5 秒、選聽到的聲音，小鳶回一句；v0.14：感應印章照 ChatGPT 現場體驗意見——「把章放這裡」、「章收好啦！」、沒讀到請抬起再放、建議大人扶手機小孩蓋；v0.13：感應印章測試模式（C-106，D65⑨），三指模擬實體感應章；v0.12：Dari 10/13 16:58 決定——夜間章 18:00–22:00、祕密章改成六章蓋滿＋三款遊戲玩到一定程度（抽屜裡看得到進度）；v0.10：照 ChatGPT 實測意見 v3 修兩句舊文案；v0.9：照 ChatGPT 實測意見——主進度只看 6 站、建議下一站、亮線加白邊、直接看結果會記住、地圖以外收進抽屜、親子觀察接力；G-50 正式夜間章；v0.8：G-50 港區小地圖當護照內頁、章照地圖圓圈對位、走過的路段沿小路亮起來；v0.7：G-50 正式彩色章、存檔失敗提示、中途離開補發集滿、壓印說明改成章已收好；v0.6：先存進度再演出、集滿等最後一章落下、港口札記；工作單 18 港灣護照升級提案 v1，D62，C-89）。只做手機版（D55）。
    v0.5：彩色墨水（每站一色，正式彩色章等 ChatGPT）、章＋稱號、組合稱號、按住蓋章、稀有章（金／彩虹）、夜間章、
    回訪升級（銅→銀→金框）、護照上畫出散步路線、第 7 個祕密章、存成「我的港灣護照」圖片。稱號名稱與機率都是建議，等 Dari */
 :root{--paper:#F4EFE6;--card:#FFFDF8;--ink:#3E2B1D;--muted:#8A7565;--teal:#2F7F86;--teal-d:#1F5A5F;--red:#C9473A;--line:#E2D6C6;--gold:#E8B879;
@@ -69,6 +69,19 @@ header p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
 .obs .row{display:flex;gap:8px}.obs button{font:inherit;font-size:14px;font-weight:700;border-radius:999px;padding:6px 14px;border:0}
 .obs .yes{background:#E8862F;color:#fff}.obs .no{background:transparent;color:var(--muted);text-decoration:underline;font-weight:400}
 .obs.done p{color:#2F7F86;font-weight:700}
+/* v0.16（C-107，D66①）：港灣小劇場 */
+.thBtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;font:inherit;font-weight:700;font-size:15px;border:2px solid #E8B879;background:#FFF7E0;color:#7A4A12;border-radius:14px;padding:10px}
+.th{position:relative;width:100%;aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:linear-gradient(180deg,#BFE6F2 0%,#E9F6F4 48%,#7FC6D1 49%,#3F9EAE 100%);box-shadow:inset 0 0 0 2px rgba(0,0,0,.05)}
+.th::after{content:'';position:absolute;left:0;right:0;bottom:0;height:26%;background:linear-gradient(180deg,#E9D2A8,#D9B880);border-top:3px solid #C49A5E}
+.th .sun{position:absolute;right:9%;top:8%;width:13%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#FFF4C2,#FFD36B 62%,rgba(255,211,107,0) 72%)}
+.th .obj{position:absolute;width:22%;z-index:2;filter:drop-shadow(0 3px 3px rgba(0,0,0,.18));animation:thIn .5s cubic-bezier(.3,1.5,.5,1) both}
+.th .obj.lead{width:34%;z-index:3}
+.th .kite{position:absolute;width:24%;left:38%;bottom:8%;z-index:4;animation:thBob 2.6s ease-in-out infinite}
+.th .empty{position:absolute;width:15%;aspect-ratio:1;border-radius:50%;border:2px dashed rgba(255,255,255,.75);z-index:1}
+@keyframes thIn{from{transform:scale(.3);opacity:0}}@keyframes thBob{50%{transform:translateY(-6%)}}
+.thLead{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}.thLead button{font:inherit;font-size:13px;border:1.5px solid #E8B879;background:#fff;border-radius:999px;padding:4px 10px}
+.thLead button.on{background:#E8862F;color:#fff;border-color:#E8862F}
+@media (prefers-reduced-motion:reduce){.th .obj,.th .kite{animation:none}}
 /* v0.15（C-108，D66①）：港口聲音尋寶 */
 .hear{width:100%;background:#EAF5F6;border:1.5px dashed #7BB8BF;border-radius:14px;padding:10px 12px;text-align:left}
 .hear b{font-size:14px}.hear p{margin:4px 0 8px;font-size:14.5px;line-height:1.5}
@@ -197,6 +210,7 @@ summary{font-weight:700;font-size:14px;cursor:pointer}
     <svg class="route" id="route" viewBox="0 0 1080 1350" preserveAspectRatio="none" aria-hidden="true"></svg>
     <div id="grid"></div>
   </section>
+  <button class="thBtn" type="button" id="thBtn">🎭 我的港灣小劇場</button>
   <details class="drawer" id="drawer"><summary>祕密章・港口札記・集滿獎勵</summary>
   <div class="secret" id="secret"></div>
   <section class="notes" id="notes"></section>
@@ -408,7 +422,7 @@ const SND_ICON = (() => {
 /* BGM-END */
 </script>
 <script>
-const CFG = { version: '0.15', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
+const CFG = { version: '0.16', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
 const FRAMES = [[53.3333, 40.4444], [25.0463, 46.1481], [18.9352, 75.4815], [44.4907, 86.7407], [75.9722, 77.4815], [80.5093, 56.037]], FRAME_R = 10.37;      // v0.8：G-50 港區小地圖六圈中心（%）；章容器 224px＝寬 20.74%（ChatGPT 地圖位置 JSON）
 const ROUTE = [[1, 2, [[[462.8, 559.4], [449.0, 561.0], [429.0, 568.0], [410.0, 578.0], [378.3, 588.2]]]], [2, 3, [[[330.7, 717.1], [339.0, 730.0], [337.8, 734.0]], [[294.0, 784.0], [285.0, 790.0], [301.0, 820.0], [313.0, 859.0], [313.0, 902.0], [299.0, 934.0], [287.3, 944.5]]]], [3, 4, [[[290.9, 1089.4], [315.0, 1109.0], [339.0, 1130.0], [360.0, 1145.0], [372.6, 1147.7]]]], [4, 5, [[[590.5, 1181.6], [615.0, 1184.0], [638.0, 1178.0], [662.0, 1171.0], [688.0, 1157.0], [709.0, 1138.0], [736.5, 1115.3]]]], [5, 6, [[[750.1, 963.3], [721.0, 929.0], [730.0, 903.0], [740.0, 879.0], [752.0, 857.0], [786.2, 827.8]]]], [6, 1, [[[797.0, 674.6], [784.0, 660.0], [760.0, 636.0], [742.0, 613.0], [718.0, 591.0], [700.0, 579.0], [686.0, 575.3]]]]];      // 每段 [起站, 終站, 可見路段（原圖像素）]；稱號帶的斷口不補線
 /* 6 個蓋章點（實際位置待 Dari 現勘）。color：每站主色（工作單 18）；title：蓋到就拿到的稱號（建議）；riddle：還沒去時的提示 */
@@ -428,6 +442,25 @@ const COMBOS = [
   { ids: [1, 2, 3, 4, 5, 6], title: '東三東四港灣探險家', hint: '6 個章全部蓋滿' }
 ];
 /* v0.9：親子觀察接力（ChatGPT G-50 創意 A 簡單版）：每站一句、可略過、不評分不拍照，不影響收章 */
+/* v0.16（C-107，D66①，ChatGPT 創意 C）：港灣小劇場。蓋到的章變成場景裡的道具，選一個章當主角，留下「今天的旅程」小故事。
+   現在先用彩色章當道具（暫用）；正式的場景道具圖之後再請 ChatGPT 畫 */
+const TH_POS = { 1: [4, 52], 2: [60, 20], 3: [70, 52], 4: [6, 18], 5: [32, 18], 6: [76, 70] };      // 每站道具在場景裡的位置（左%、上%）
+const TH_LINE = { 1: '我在入口跟大家揮手說你好', 2: '我數著港口的大郵輪', 3: '鯨鯊朋友游過來跟我打招呼', 4: '我們分著吃香香的港邊點心', 5: '下雨了，我們躲在椅子上聽雨', 6: '最後坐上小車，說好下次再來' };
+function openTheater() {
+  const have = SPOTS.filter((x) => P.spots[x.id]);
+  if (!P.lead || !P.spots[P.lead]) P.lead = have.length ? have[have.length - 1].id : 0;
+  const draw = () => {
+    const lead = P.lead;
+    const objs = SPOTS.map((x) => { const [l, t] = TH_POS[x.id]; if (!P.spots[x.id]) return '<span class="empty" style="left:' + (l + 3) + '%;top:' + (t + 6) + '%"></span>'; const big = x.id === lead; return '<img class="obj' + (big ? ' lead' : '') + '" style="left:' + (big ? 33 : l) + '%;top:' + (big ? 6 : t) + '%" src="assets/stamp_c_' + x.icon + (P.var[x.id] === 'night' ? '_night' : '') + '.png" alt="">'; }).join('');
+    const story = have.length ? '今天的旅程：' + have.map((x) => TH_LINE[x.id]).join('，') + '。' + (lead ? '今天的主角是「' + SPOTS.find((x) => x.id === lead).name + '」！' : '') : '還沒有蓋到章，場景空空的。去找現場的章，小劇場就會熱鬧起來！';
+    $('sheet').innerHTML = '<h3>🎭 我的港灣小劇場</h3><div class="th"><span class="sun"></span>' + objs + '<img class="kite" src="../travel/assets/kite_wave.png" alt=""></div>' +
+      (have.length > 1 ? '<p class="again" style="margin:0">選一個章當今天的主角：</p><div class="thLead">' + have.map((x) => '<button type="button" data-id="' + x.id + '" class="' + (x.id === lead ? 'on' : '') + '">' + x.name + '</button>').join('') + '</div>' : '') +
+      '<div class="say"><p style="text-align:left">' + story + '</p></div><p class="again">蓋 ' + have.length + ' / 6 個章；每多蓋一個，場景就多一樣東西。</p><button class="btn" type="button" id="ovOk">回護照</button>';
+    $('sheet').querySelectorAll('.thLead button').forEach((b) => (b.onclick = () => { P.lead = +b.dataset.id; save(); sfx('pop'); draw(); }));
+    $('ovOk').onclick = () => { $('ov').hidden = true; };
+  };
+  draw(); $('ov').hidden = false;
+}
 /* v0.15（C-108，D66①，ChatGPT 創意 D）：港口聲音尋寶。停下來聽五秒，選最像的聲音；不開麥克風、不錄音、沒有正確答案 */
 const HEAR = [['wave', '🌊 海浪', '嘩啦嘩啦，海浪在跟我們打招呼！'], ['ship', '🚢 船的聲音', '嗚——是大船要出發了嗎？我也想一起去！'], ['rain', '🌧 雨聲', '滴滴答答，我們在屋簷下聽雨，好舒服～'], ['bird', '🐦 鳥叫', '那是我的朋友在唱歌吧？啾啾！'], ['talk', '🗣 大家聊天', '好多人在笑，港口今天好熱鬧！'], ['other', '✨ 別的聲音', '哇，你聽到我沒聽過的聲音！下次教我好不好？']];
 const OBS = { 1: '找一樣黃色的東西，指給對方看～', 2: '你看到的大船有什麼顏色？', 3: '看章上的鯨鯊，找找白色小點～', 4: '小鳶今天在吃什麼呀？', 5: '找到小鳶頭上的三個 Z 了嗎？', 6: '我們一起揮手，說下次見～' };
@@ -716,7 +749,8 @@ $('snd').onclick = (e) => { e.stopPropagation(); sndOn = !sndOn; SND_ICON.save(s
 document.addEventListener('pointerdown', () => { if (sndOn && !BGM.on) bgmSync(); }, { passive: true });      // 手機要先點一下才能出聲
 const m = /[?&](?:spot|s)=(\d)/.exec(location.search);
 if (m) { scan(+m[1]); history.replaceState(null, '', location.pathname); }
-window.__stamp = { P: () => P, scan, force: (v) => { forceVar = v; }, share: sharePassport };
+$('thBtn').onclick = openTheater;
+window.__stamp = { theater: openTheater, P: () => P, scan, force: (v) => { forceVar = v; }, share: sharePassport };
 </script>
 </body>
 </html>
