@@ -84,8 +84,40 @@ a{color:inherit}
 .intro .row{display:flex;gap:8px;width:100%}.intro button{flex:1;font:inherit;font-weight:700;font-size:15px;border:0;border-radius:14px;padding:12px}
 .intro .go{background:#E2702A;color:#fff}.intro .skip{background:#F1E8DA;color:#6D5A48}
 .hero.talk>p{display:none}
+/* v49（C-113，工作單 21 ③）：小鳶背包——五款遊戲收集到的東西放在同一個地方看 */
+.bagBtn{position:absolute;z-index:3;right:14px;top:calc(14px + env(safe-area-inset-top,0px));display:flex;align-items:center;gap:4px;border:0;border-radius:999px;background:rgba(255,253,248,.92);box-shadow:0 3px 0 #C9B89E,0 6px 12px rgba(0,0,0,.12);padding:5px 12px 5px 8px;font:inherit;font-size:13px;font-weight:700;color:#5B3F25;-webkit-tap-highlight-color:transparent}
+.bagBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #C9B89E}
+.bagBtn .ic{font-size:18px;line-height:1}
+.bagBtn .dot{position:absolute;right:2px;top:0;width:10px;height:10px;border-radius:50%;background:#E2702A;box-shadow:0 0 0 2px #fff}
+.hero .sun{right:122px}
+.bag{position:fixed;inset:0;z-index:60;background:rgba(20,40,46,.55);display:flex;align-items:flex-end;justify-content:center}
+.bag .sheet{width:100%;max-width:430px;max-height:88dvh;overflow:auto;background:#FFFDF8;border-radius:22px 22px 0 0;padding:14px 14px calc(18px + env(safe-area-inset-bottom,0px));animation:bagUp .28s ease-out}
+@keyframes bagUp{from{transform:translateY(40px);opacity:0}}
+.bag .top{display:flex;align-items:center;gap:10px}
+.bag .top img{width:64px;flex:none}
+.bag .top .line{flex:1;background:#F1E8DA;border-radius:14px;padding:8px 11px;font-size:13.5px;font-weight:700;line-height:1.45;color:#4A3828}
+.bag .x{flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#F1E8DA;font-size:18px;color:#6D5A48}
+.bag h3{margin:14px 2px 6px;font-size:14px;display:flex;justify-content:space-between;align-items:baseline;color:#2B2620}
+.bag h3 small{font-size:12px;color:var(--muted);font-weight:700}
+.bag .row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.bag .it{position:relative;aspect-ratio:1;border-radius:12px;background:#F6F0E5;display:flex;align-items:center;justify-content:center}
+.bag .it img{width:84%;height:84%;object-fit:contain}
+.bag .it.no img{filter:grayscale(1) brightness(1.25);opacity:.35}
+.bag .it.no::after{content:'?';position:absolute;font-size:15px;font-weight:700;color:#B9A88F}
+.bag .it em{position:absolute;right:3px;bottom:1px;font-style:normal;font-size:11px;font-weight:700;color:#5B3F25}
+.bag .cap{font-size:11px;text-align:center;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bag .list{display:flex;flex-direction:column;gap:5px}
+.bag .li{display:flex;align-items:center;gap:8px;font-size:13px;background:#F6F0E5;border-radius:10px;padding:6px 10px}
+.bag .li b{flex:1}
+.bag .bar{flex:none;width:72px;height:7px;border-radius:999px;background:#E4D8C6;overflow:hidden}.bag .bar i{display:block;height:100%;background:#2F7F86;border-radius:999px}
+.bag .stars{letter-spacing:1px;color:#E3A33A;font-size:14px}.bag .stars s{color:#D9CCB8;text-decoration:none}
+.bag .tags{display:flex;flex-wrap:wrap;gap:6px}
+.bag .tag{font-size:12.5px;font-weight:700;border-radius:999px;padding:3px 10px;background:#FFF1D6;color:#8A5A12}
+.bag .tag.no{background:#F1E8DA;color:#B9A88F}
+.bag .empty{font-size:12.5px;color:var(--muted);margin:0}
+.bag .bottom{margin-top:14px;font-size:11.5px;color:var(--muted);text-align:center}
 @media (max-height:760px){.hero.talk p,.hero.talk .chip{display:none}.say{margin-top:6px;font-size:12.5px;padding:6px 10px;max-width:66%}}
-@media (prefers-reduced-motion:reduce){.say,.intro .box,.gb.hint .tile{animation:none}}
+@media (prefers-reduced-motion:reduce){.bag .sheet,.say,.intro .box,.gb.hint .tile{animation:none}}
 @media (prefers-reduced-motion:reduce){.hero .cloud,.hero .kite,.gb .tile .main{animation:none}}
 details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px}
 details summary{font-weight:700;font-size:14px;cursor:pointer;list-style:none;display:flex;justify-content:space-between}
@@ -118,10 +150,10 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
 <!-- LOADER-END -->
 <main class="phone">
   <header class="hero">
-    <span class="sun"></span><span class="cloud c1"></span><span class="cloud c2"></span>
+    <button class="bagBtn" type="button" id="bagBtn" aria-label="打開小鳶背包"><span class="ic">🎒</span>背包</button><span class="sun"></span><span class="cloud c1"></span><span class="cloud c2"></span>
     <h1>小鳶來港</h1>
     <p>今天想和小鳶玩什麼？</p>
-    <span class="chip">測試首頁 v48・素材都是暫用</span>
+    <span class="chip">測試首頁 v49・素材都是暫用</span>
     <div class="say" id="say" hidden></div>
     <img class="kite" src="../travel/assets/kite_wave.png" alt="">
   </header>
@@ -176,7 +208,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
       <button type="button" data-keys="kiteTravel1">清除旅行</button>
       <button type="button" data-keys="kiteStamp1">清除蓋章</button>
       <button type="button" data-keys="kiteHubIntro1">重看小鳶自我介紹</button>
-      <button type="button" data-keys="kiteFishingDex2,kiteFishingProg1,kiteFlyProgress1,kiteTravel1,kiteStamp1,kiteHubIntro1">全部清除</button>
+      <button type="button" data-keys="kiteFishingDex2,kiteFishingProg1,kiteFlyProgress1,kiteTravel1,kiteStamp1,kiteHubIntro1,kiteBag1">全部清除</button>
     </div>
   </details>
 
@@ -240,6 +272,61 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
     document.querySelectorAll('.gb').forEach(function (a) { a.classList.toggle('hint', !!n[3] && a.getAttribute('data-btn') === n[3]); });
   }
   showSay();
+
+  /* v49（C-113，工作單 21 ③）：小鳶背包。只讀各遊戲存在這支手機的紀錄，不改任何遊戲的資料；有新東西時背包按鈕亮小點 */
+  var FISH = [['saba', '鯖魚', 'fish_small'], ['squid', '小卷', 'fish_squid'], ['grunt', '黃雞魚', 'fish_mid'], ['hairtail', '白帶魚', 'fish_hairtail'], ['bream', '赤鯮', 'fish_big'], ['amber', '紅魽', 'fish_amber']];
+  var BENTO = [['far', '遠行'], ['squid', '小卷'], ['hair', '白帶魚'], ['special', '港邊特製']];
+  var SPOT = [[1, 'kite', '港口新朋友'], [2, 'ship', '數船小達人'], [3, 'shark', '鯨鯊的好朋友'], [4, 'bowl', '港邊小吃家'], [5, 'chair', '躲雨小專家'], [6, 'car', '下次見大使']];
+  var COMBO = [[[1, 3], '海洋小夥伴'], [[2, 6], '港口交通通'], [[4, 5], '吃飽睡飽隊'], [[1, 2, 3, 4, 5, 6], '東三東四港灣探險家']];
+  var LOC = [['home', '東三東四'], ['miaokou', '基隆廟口'], ['zhengbin', '正濱漁港'], ['heping', '和平島'], ['badouzi', '八斗子'], ['shenao', '深澳'], ['chaojing', '潮境公園'], ['jiufen', '九份']];
+  var STAGE = ['叁肆行', '基隆廟口夜市', '正濱漁港', '深澳鐵道自行車'];
+  function bagData() {
+    var dex = read('kiteFishingDex2') || {}, t = read('kiteTravel1') || {}, fly = read('kiteFlyProgress1') || {}, sp = read('kiteStamp1') || {};
+    var spots = sp.spots || {}, cards = t.cards || {}, b = t.bento || {}, stars = fly.stars || {};
+    var d = { fish: FISH.map(function (f) { return [f, !!dex[f[0]]]; }), bento: BENTO.map(function (x) { return [x, b[x[0]] || 0]; }),
+      spots: SPOT.map(function (x) { return [x, !!spots[x[0]]]; }), secret: !!sp.secret,
+      locs: LOC.map(function (l) { var n = 0; for (var i = 0; i < 3; i++) if (cards[l[0] + '-' + i]) n++; return [l, n]; }),
+      stages: STAGE.map(function (nm, i) { var s = stars[i + 1] || stars[String(i + 1)] || []; return [nm, [0, 1, 2].map(function (j) { return !!s[j]; })]; }) };
+    d.titles = [];
+    SPOT.forEach(function (x) { d.titles.push([x[2], !!spots[x[0]]]); });
+    COMBO.forEach(function (c) { var ok = c[0].every(function (i) { return spots[i]; }); d.titles.push([ok ? c[1] : '？？？', ok]); });
+    d.titles.push([d.secret ? '傳說中的小鳶知己' : '？？？', d.secret]);
+    LOC.forEach(function (l) { var n = 0; for (var i = 0; i < 3; i++) if (cards[l[0] + '-' + i]) n++; if (n === 3) d.titles.push([l[1] + '常客', true]); });
+    var cnt = function (a) { return a.filter(function (x) { return x[1]; }).length; };
+    d.nFish = cnt(d.fish); d.nSpot = cnt(d.spots) + (d.secret ? 1 : 0); d.nCard = d.locs.reduce(function (s, x) { return s + x[1]; }, 0);
+    d.nStar = d.stages.reduce(function (s, x) { return s + x[1].filter(Boolean).length; }, 0); d.nBento = d.bento.reduce(function (s, x) { return s + x[1]; }, 0);
+    d.nTitle = cnt(d.titles); d.total = d.nFish + d.nSpot + d.nCard + d.nStar + d.nTitle;
+    return d;
+  }
+  function bagLine(d) {
+    if (!d.total) return '背包還空空的～我們一起去收集東西吧！';
+    var a = [];
+    if (d.nCard) a.push('明信片 ' + d.nCard + ' 張');
+    if (d.nSpot) a.push('章 ' + d.nSpot + ' 個');
+    if (d.nFish) a.push('魚 ' + d.nFish + ' 種');
+    if (d.nStar) a.push('星星 ' + d.nStar + ' 顆');
+    return '哇，我們已經收集了' + a.join('、') + '！' + (d.nFish < 6 ? '港邊還有沒見過的魚喔。' : d.nSpot < 6 ? '港口還有章在等你。' : d.nCard < 24 ? '我還想去更多地方旅行～' : '你真的是我最好的朋友！');
+  }
+  function bagDot() { var d = bagData(), last = null; try { last = localStorage.getItem('kiteBag1'); } catch (e) {} var btn = document.getElementById('bagBtn'), dot = btn.querySelector('.dot'); var on = last === null ? d.total > 0 : d.total > +last; if (on && !dot) { dot = document.createElement('span'); dot.className = 'dot'; btn.appendChild(dot); } if (!on && dot) dot.remove(); }
+  function openBag() {
+    var d = bagData(), it = function (src, ok, cap, badge) { return '<div><div class="it' + (ok ? '' : ' no') + '"><img src="' + src + '" alt="">' + (badge ? '<em>' + badge + '</em>' : '') + '</div><div class="cap">' + (ok ? cap : '？？？') + '</div></div>'; };
+    var h = '<div class="sheet" role="dialog" aria-label="小鳶背包"><div class="top"><img src="../travel/assets/kite_pack.png" alt=""><div class="line">' + bagLine(d) + '</div><button class="x" type="button" aria-label="關閉">✕</button></div>';
+    h += '<h3>港灣章<small>' + d.nSpot + ' / 7</small></h3><div class="row">' + d.spots.map(function (x) { return it('../stamp/assets/stamp_c_' + x[0][1] + '.png', x[1], x[0][2]); }).join('') + '</div>';
+    h += '<h3>漁獲圖鑑<small>' + d.nFish + ' / 6</small></h3><div class="row">' + d.fish.map(function (x) { return it('../assets/' + x[0][2] + '_v2.png', x[1], x[0][1]); }).join('') + '</div>';
+    h += '<h3>明信片<small>' + d.nCard + ' / 24</small></h3><div class="list">' + d.locs.map(function (x) { return '<div class="li"><b>' + x[0][1] + '</b><span class="bar"><i style="width:' + Math.round(x[1] / 3 * 100) + '%"></i></span><span>' + x[1] + ' / 3</span></div>'; }).join('') + '</div>';
+    h += '<h3>便當<small>共 ' + d.nBento + ' 份</small></h3><div class="tags">' + d.bento.map(function (x) { return '<span class="tag' + (x[1] ? '' : ' no') + '">' + x[0][1] + '便當 × ' + x[1] + '</span>'; }).join('') + '</div>';
+    h += '<h3>飛行星星<small>' + d.nStar + ' / 12</small></h3><div class="list">' + d.stages.map(function (x, i) { return '<div class="li"><b>第 ' + (i + 1) + ' 關・' + x[0] + '</b><span class="stars">' + x[1].map(function (y) { return y ? '★' : '<s>★</s>'; }).join('') + '</span></div>'; }).join('') + '</div>';
+    h += '<h3>稱號<small>' + d.nTitle + ' 個</small></h3><div class="tags">' + d.titles.map(function (x) { return '<span class="tag' + (x[1] ? '' : ' no') + '">' + x[0] + '</span>'; }).join('') + '</div>';
+    h += '<p class="bottom">背包只看得到這支手機裡的紀錄・圖都是暫用</p></div>';
+    var ov = document.createElement('div'); ov.className = 'bag'; ov.innerHTML = h; document.body.appendChild(ov);
+    var close = function () { ov.remove(); };
+    ov.querySelector('.x').onclick = close; ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    try { localStorage.setItem('kiteBag1', String(d.total)); } catch (e) {}
+    bagDot();
+  }
+  window.__bag = { data: bagData, open: openBag };
+  document.getElementById('bagBtn').onclick = openBag;
+  bagDot();
   var seen = null; try { seen = localStorage.getItem('kiteHubIntro1'); } catch (e) {}
   if (!seen && onSite !== undefined) {
     var lines = ['你好！我是小鳶，一隻從天空飛來基隆港的黑鳶。', '在這裡，我們可以一起抓魚、飛行冒險、出門旅行，還能在港口蓋章、拍照。', '你玩得越多，我就越開心，還會寄明信片給你喔！'];
@@ -262,7 +349,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
       if (!btn.classList.contains('arm')) { btn.classList.add('arm'); btn.textContent = '確定清除？再按一次'; clearTimeout(timer); timer = setTimeout(function () { btn.classList.remove('arm'); btn.textContent = label; }, 4000); return; }
       clearTimeout(timer);
       btn.getAttribute('data-keys').split(',').forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
-      btn.classList.remove('arm'); btn.textContent = '已清除'; render(); showSay();
+      btn.classList.remove('arm'); btn.textContent = '已清除'; render(); showSay(); bagDot();
       setTimeout(function () { btn.textContent = label; }, 1800);
     });
   });
