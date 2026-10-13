@@ -1,0 +1,1 @@
+小鳶來港配樂：Claude 作曲（暫用）。部分樂器音色 FluidR3_GM（gleitz/midi-js-soundfonts），Creative Commons Attribution 3.0。
