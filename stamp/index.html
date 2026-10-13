@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>港灣蓋章散步原型</title>
 <style>
-/* P3 港灣蓋章散步 原型 v0.14（v0.14：感應印章照 ChatGPT 現場體驗意見——「把章放這裡」、「章收好啦！」、沒讀到請抬起再放、建議大人扶手機小孩蓋；v0.13：感應印章測試模式（C-106，D65⑨），三指模擬實體感應章；v0.12：Dari 10/13 16:58 決定——夜間章 18:00–22:00、祕密章改成六章蓋滿＋三款遊戲玩到一定程度（抽屜裡看得到進度）；v0.10：照 ChatGPT 實測意見 v3 修兩句舊文案；v0.9：照 ChatGPT 實測意見——主進度只看 6 站、建議下一站、亮線加白邊、直接看結果會記住、地圖以外收進抽屜、親子觀察接力；G-50 正式夜間章；v0.8：G-50 港區小地圖當護照內頁、章照地圖圓圈對位、走過的路段沿小路亮起來；v0.7：G-50 正式彩色章、存檔失敗提示、中途離開補發集滿、壓印說明改成章已收好；v0.6：先存進度再演出、集滿等最後一章落下、港口札記；工作單 18 港灣護照升級提案 v1，D62，C-89）。只做手機版（D55）。
+/* P3 港灣蓋章散步 原型 v0.15（v0.15：港口聲音尋寶（C-108）——蓋完章可停下來聽 5 秒、選聽到的聲音，小鳶回一句；v0.14：感應印章照 ChatGPT 現場體驗意見——「把章放這裡」、「章收好啦！」、沒讀到請抬起再放、建議大人扶手機小孩蓋；v0.13：感應印章測試模式（C-106，D65⑨），三指模擬實體感應章；v0.12：Dari 10/13 16:58 決定——夜間章 18:00–22:00、祕密章改成六章蓋滿＋三款遊戲玩到一定程度（抽屜裡看得到進度）；v0.10：照 ChatGPT 實測意見 v3 修兩句舊文案；v0.9：照 ChatGPT 實測意見——主進度只看 6 站、建議下一站、亮線加白邊、直接看結果會記住、地圖以外收進抽屜、親子觀察接力；G-50 正式夜間章；v0.8：G-50 港區小地圖當護照內頁、章照地圖圓圈對位、走過的路段沿小路亮起來；v0.7：G-50 正式彩色章、存檔失敗提示、中途離開補發集滿、壓印說明改成章已收好；v0.6：先存進度再演出、集滿等最後一章落下、港口札記；工作單 18 港灣護照升級提案 v1，D62，C-89）。只做手機版（D55）。
    v0.5：彩色墨水（每站一色，正式彩色章等 ChatGPT）、章＋稱號、組合稱號、按住蓋章、稀有章（金／彩虹）、夜間章、
    回訪升級（銅→銀→金框）、護照上畫出散步路線、第 7 個祕密章、存成「我的港灣護照」圖片。稱號名稱與機率都是建議，等 Dari */
 :root{--paper:#F4EFE6;--card:#FFFDF8;--ink:#3E2B1D;--muted:#8A7565;--teal:#2F7F86;--teal-d:#1F5A5F;--red:#C9473A;--line:#E2D6C6;--gold:#E8B879;
@@ -69,6 +69,16 @@ header p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
 .obs .row{display:flex;gap:8px}.obs button{font:inherit;font-size:14px;font-weight:700;border-radius:999px;padding:6px 14px;border:0}
 .obs .yes{background:#E8862F;color:#fff}.obs .no{background:transparent;color:var(--muted);text-decoration:underline;font-weight:400}
 .obs.done p{color:#2F7F86;font-weight:700}
+/* v0.15（C-108，D66①）：港口聲音尋寶 */
+.hear{width:100%;background:#EAF5F6;border:1.5px dashed #7BB8BF;border-radius:14px;padding:10px 12px;text-align:left}
+.hear b{font-size:14px}.hear p{margin:4px 0 8px;font-size:14.5px;line-height:1.5}
+.hear .go{font:inherit;font-size:14px;font-weight:700;border:0;border-radius:999px;padding:6px 14px;background:#2F7F86;color:#fff}
+.hear .ring{display:flex;align-items:center;gap:10px;font-weight:700;color:#2F7F86}
+.hear .ring i{width:34px;height:34px;border-radius:50%;border:3px solid #7BB8BF;display:flex;align-items:center;justify-content:center;font-style:normal;animation:hearP 1s ease-in-out infinite}
+@keyframes hearP{50%{transform:scale(1.15);border-color:#2F7F86}}
+.hear .opts{display:grid;grid-template-columns:1fr 1fr;gap:6px}.hear .opts button{font:inherit;font-size:14px;border:1.5px solid #7BB8BF;background:#fff;border-radius:12px;padding:7px 6px}
+.hear .opts button.on{background:#2F7F86;color:#fff;border-color:#2F7F86}
+@media (prefers-reduced-motion:reduce){.hear .ring i{animation:none}}
 @keyframes breathe{50%{opacity:.7}}
 /* v0.7：G-50 正式彩色插畫章（暫用）原色顯示；稀有／夜間的效果放在章外面的光圈，不改圖的顏色（ChatGPT C-92 意見） */
 .stampv{display:block;position:relative;width:100%;height:100%;border-radius:50%;transform:rotate(-4deg)}
@@ -398,7 +408,7 @@ const SND_ICON = (() => {
 /* BGM-END */
 </script>
 <script>
-const CFG = { version: '0.14', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
+const CFG = { version: '0.15', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
 const FRAMES = [[53.3333, 40.4444], [25.0463, 46.1481], [18.9352, 75.4815], [44.4907, 86.7407], [75.9722, 77.4815], [80.5093, 56.037]], FRAME_R = 10.37;      // v0.8：G-50 港區小地圖六圈中心（%）；章容器 224px＝寬 20.74%（ChatGPT 地圖位置 JSON）
 const ROUTE = [[1, 2, [[[462.8, 559.4], [449.0, 561.0], [429.0, 568.0], [410.0, 578.0], [378.3, 588.2]]]], [2, 3, [[[330.7, 717.1], [339.0, 730.0], [337.8, 734.0]], [[294.0, 784.0], [285.0, 790.0], [301.0, 820.0], [313.0, 859.0], [313.0, 902.0], [299.0, 934.0], [287.3, 944.5]]]], [3, 4, [[[290.9, 1089.4], [315.0, 1109.0], [339.0, 1130.0], [360.0, 1145.0], [372.6, 1147.7]]]], [4, 5, [[[590.5, 1181.6], [615.0, 1184.0], [638.0, 1178.0], [662.0, 1171.0], [688.0, 1157.0], [709.0, 1138.0], [736.5, 1115.3]]]], [5, 6, [[[750.1, 963.3], [721.0, 929.0], [730.0, 903.0], [740.0, 879.0], [752.0, 857.0], [786.2, 827.8]]]], [6, 1, [[[797.0, 674.6], [784.0, 660.0], [760.0, 636.0], [742.0, 613.0], [718.0, 591.0], [700.0, 579.0], [686.0, 575.3]]]]];      // 每段 [起站, 終站, 可見路段（原圖像素）]；稱號帶的斷口不補線
 /* 6 個蓋章點（實際位置待 Dari 現勘）。color：每站主色（工作單 18）；title：蓋到就拿到的稱號（建議）；riddle：還沒去時的提示 */
@@ -418,6 +428,8 @@ const COMBOS = [
   { ids: [1, 2, 3, 4, 5, 6], title: '東三東四港灣探險家', hint: '6 個章全部蓋滿' }
 ];
 /* v0.9：親子觀察接力（ChatGPT G-50 創意 A 簡單版）：每站一句、可略過、不評分不拍照，不影響收章 */
+/* v0.15（C-108，D66①，ChatGPT 創意 D）：港口聲音尋寶。停下來聽五秒，選最像的聲音；不開麥克風、不錄音、沒有正確答案 */
+const HEAR = [['wave', '🌊 海浪', '嘩啦嘩啦，海浪在跟我們打招呼！'], ['ship', '🚢 船的聲音', '嗚——是大船要出發了嗎？我也想一起去！'], ['rain', '🌧 雨聲', '滴滴答答，我們在屋簷下聽雨，好舒服～'], ['bird', '🐦 鳥叫', '那是我的朋友在唱歌吧？啾啾！'], ['talk', '🗣 大家聊天', '好多人在笑，港口今天好熱鬧！'], ['other', '✨ 別的聲音', '哇，你聽到我沒聽過的聲音！下次教我好不好？']];
 const OBS = { 1: '找一樣黃色的東西，指給對方看～', 2: '你看到的大船有什麼顏色？', 3: '看章上的鯨鯊，找找白色小點～', 4: '小鳶今天在吃什麼呀？', 5: '找到小鳶頭上的三個 Z 了嗎？', 6: '我們一起揮手，說下次見～' };
 const SECRET = { title: '傳說中的小鳶知己', color: '#C9473A', hint: '六個章蓋滿，再把三款小遊戲都玩到一定程度，藏起來的第 7 個章就會出現' };
 /* v0.12：祕密章條件（Dari 10/13 16:58：遊戲都玩到一定程度＋六章蓋滿）。「一定程度」的門檻是建議：捕魚三個場次都玩過、飛行過兩關、去旅行收到三張明信片 */
@@ -564,10 +576,19 @@ function showStory(s, fresh, newTitles, extra, v) {
     '<div class="say"><img src="../travel/assets/' + (fresh ? 'kite_happy' : 'kite_home') + '.png" alt=""><p>' + s.lines.join('<br>') + '</p></div>' +
     (s.rec ? '<div class="rec">' + s.rec + '</div>' : '') +
     (fresh && OBS[s.id] ? '<div class="obs' + ((P.found || {})[s.id] ? ' done' : '') + '" id="obs"><b>👀 一起找找看（大人小孩輪流）</b><p>' + ((P.found || {})[s.id] ? '一起找到了！' : OBS[s.id]) + '</p>' + ((P.found || {})[s.id] ? '' : '<div class="row"><button class="yes" type="button" id="obsYes">找到了！</button><button class="no" type="button" id="obsNo">略過</button></div>') + '</div>' : '') +
+    (fresh ? '<div class="hear" id="hear"><b>👂 港口聲音尋寶（可略過）</b><p>停下腳步，閉上眼睛聽 5 秒，你聽到什麼？</p><button class="go" type="button" id="hearGo">開始聽</button></div>' : '') +
     '<p class="again">' + (n() < 6 ? '還差 ' + (6 - n()) + ' 個章' : '6 個都蓋好了！') + '</p><button class="btn" type="button" id="ovOk">看護照</button>';
   $('ov').hidden = false;
   if (newTitles.length) setTimeout(() => sfx('pop'), 300);
   if ($('obsYes')) { $('obsYes').onclick = () => { P.found = P.found || {}; P.found[s.id] = Date.now(); save(); const o = $('obs'); o.classList.add('done'); o.querySelector('p').textContent = '一起找到了！可以在港口札記寫下今天的發現～'; o.querySelector('.row').remove(); sfx('chime'); }; $('obsNo').onclick = () => $('obs').remove(); }
+  if ($('hearGo')) $('hearGo').onclick = () => {
+    const h = $('hear'); let k = 5; BGM.stop();
+    h.innerHTML = '<b>👂 安靜聽……</b><div class="ring"><i id="hearN">5</i><span>小鳶也在聽</span></div>';
+    const tk = setInterval(() => { k--; const e = $('hearN'); if (!e) { clearInterval(tk); if (sndOn) BGM.play('stamp_walk'); return; } e.textContent = k; if (k > 0) return; clearInterval(tk); if (sndOn) BGM.play('stamp_walk');
+      h.innerHTML = '<b>👂 你聽到什麼？可以選好幾個</b><div class="opts">' + HEAR.map((x) => '<button type="button" data-k="' + x[0] + '">' + x[1] + '</button>').join('') + '</div><p id="hearSay" style="margin-top:8px"></p>';
+      h.querySelectorAll('.opts button').forEach((b) => (b.onclick = () => { b.classList.toggle('on'); const x = HEAR.find((y) => y[0] === b.dataset.k); P.heard = P.heard || {}; const L = new Set(P.heard[s.id] || []); if (b.classList.contains('on')) L.add(x[0]); else L.delete(x[0]); P.heard[s.id] = [...L]; save(); if (b.classList.contains('on')) { $('hearSay').textContent = '小鳶：「' + x[2] + '」'; sfx('pop'); } }));
+    }, 1000);
+  };
   $('ovOk').onclick = () => { $('ov').hidden = true; const landing = justId && !REDUCE; render(); setTimeout(() => { if ($('ov').hidden) checkDone(); }, landing ? 700 : 0); };      // v0.6：最後一個章先落到護照上，再跳集滿（ChatGPT C-87 複查）
 }
 const REDUCE = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
