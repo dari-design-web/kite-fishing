@@ -120,9 +120,26 @@ h3{font-size:15px;margin:14px 16px 6px}
 .gobar{position:sticky;bottom:calc(-16px - env(safe-area-inset-bottom,0px));padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(rgba(244,239,230,0),var(--paper) 30%);margin-top:6px}
 .dest{margin:10px 16px;padding:10px 12px;border-radius:12px;background:#FFF8D9;font-size:13px;line-height:1.55}
 /* 出門 */
-.depart{position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(244,239,230,.97);display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:20}
-.depart .bird2{width:170px;height:170px;background:url(assets/kite_pack.png) center/contain no-repeat;animation:fly 2s ease-in forwards}
-@keyframes fly{0%{transform:translate(0,0) scale(1)}40%{transform:translate(0,-10px) scale(1.05)}100%{transform:translate(260px,-260px) scale(.4);opacity:0}}
+.depart{position:fixed;inset:0;max-width:430px;margin:0 auto;background:linear-gradient(180deg,#BFE6F2 0,#E7F5F4 58%,#8CCFD6 59%,#4FA9B8 100%);display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:30;overflow:hidden;animation:dfade .25s ease-out both}
+.depart.out{animation:dout .25s ease-in forwards}
+@keyframes dfade{from{opacity:0}}
+@keyframes dout{to{opacity:0}}
+/* v0.20（C-97，C-88 ③）：出門＝先回頭揮手，再背包飛走、留下一串小虛線；回家＝從遠方飛回來落地、拿著信 */
+.depart .cl{position:absolute;height:16px;border-radius:999px;background:#fff;opacity:.9;animation:dcl 3s linear infinite}
+.depart .cl::before{content:'';position:absolute;left:22%;top:-9px;width:46%;height:20px;border-radius:999px;background:#fff}
+@keyframes dcl{from{transform:translateX(120px)}to{transform:translateX(-180px)}}
+.depart .bird2{width:170px;height:170px;background:url(assets/kite_wave.png) center/contain no-repeat;animation:wavehi .5s ease-in-out 2}
+.depart .bird2.go{background-image:url(assets/kite_pack.png);animation:fly 1.3s ease-in forwards}
+.depart .bird2.come{background-image:url(assets/kite_back.png);animation:land 1.4s cubic-bezier(.25,.8,.35,1) both}
+.depart .trail{position:absolute;left:50%;top:50%;width:300px;height:300px;margin:-150px 0 0 -10px;pointer-events:none;opacity:0}
+.depart .trail path{fill:none;stroke:#fff;stroke-width:4;stroke-linecap:round;stroke-dasharray:2 12}
+.depart .bird2.go ~ .trail{animation:trail 1.3s ease-out .15s forwards}
+.depart p{position:relative;z-index:1}
+@keyframes wavehi{50%{transform:rotate(-6deg) translateY(-4px)}}
+@keyframes fly{0%{transform:translate(0,0) scale(1)}25%{transform:translate(-10px,6px) scale(1.04)}100%{transform:translate(260px,-300px) scale(.35);opacity:0}}
+@keyframes land{0%{transform:translate(240px,-320px) scale(.35);opacity:0}20%{opacity:1}80%{transform:translate(0,6px) scale(1.04)}100%{transform:none}}
+@keyframes trail{0%{opacity:0}30%{opacity:.9}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.depart,.depart .bird2,.depart .cl,.depart .trail{animation:none!important}}
 /* 拆信 */
 .letter{position:fixed;inset:0;max-width:430px;margin:0 auto;background:#2B3A40;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
 .letter .skip{position:absolute;right:14px;top:14px;border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:6px 12px;font-family:inherit}
@@ -270,7 +287,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.19',
+  version: '0.20',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -479,6 +496,7 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitRoom);
 $('roomview').addEventListener('scroll', () => { const v = $('roomview'); $('hintL').classList.toggle('off', v.scrollLeft < 6); $('hintR').classList.toggle('off', v.scrollLeft > v.scrollWidth - v.clientWidth - 6); }, { passive: true });
 function renderHome() {
   tick();
+  if (S.state === 'back' && S.trip && S.arrivedFor !== S.trip.end && !document.querySelector('.depart')) { S.arrivedFor = S.trip.end; save(); arriveAnim(); }      // v0.20：每趟旅行回來只播一次
   $('ver').textContent = 'v' + CFG.version + (CFG.fast ? '・快速' : '') + (CFG.look ? '' : '・舊圖');
   const st = S.state, b = $('bird'), note = $('note'), env = $('envIcon'), main = $('mainBtn');
   note.hidden = true; env.hidden = true; b.style.display = 'block'; b.className = 'bird'; $('quickBack').hidden = st !== 'away';
@@ -695,9 +713,22 @@ function depart() {
   S.trip = Object.assign(r, { bento: k, items: pk.items.slice(), start: Date.now(), end: Date.now() + CFG.bentos[k].hours * HOUR, walk: k === 'walk', say: sayOne('away') });
   S.state = 'away'; pk = { bento: '', items: [], pick: '' }; save(); departAnim();
 }
-function departAnim() {
-  const d = document.createElement('div'); d.className = 'depart'; d.innerHTML = '<div class="bird2"></div><p style="font-size:17px;font-weight:700;margin-top:20px">小鳶出門囉！</p><p class="muted">點一下跳過</p>';
-  document.body.appendChild(d); const done = () => { d.remove(); go('home'); }; d.onclick = done; setTimeout(() => { if (d.isConnected) done(); }, 2200);
+function departAnim() {      // v0.20：回頭揮手 0.5 秒 → 背包飛走 1.3 秒（留下小虛線）→ 淡出；點一下跳過
+  const d = document.createElement('div'); d.className = 'depart';
+  d.innerHTML = '<span class="cl" style="width:80px;top:18%;left:60%"></span><span class="cl" style="width:56px;top:30%;left:20%;animation-duration:4s"></span><div class="bird2" id="dBird"></div><svg class="trail" viewBox="0 0 300 300"><path d="M10 290 Q120 230 150 150 T290 10"/></svg><p style="font-size:18px;font-weight:700;margin-top:20px">小鳶出門囉！</p><p class="muted">點一下跳過</p>';
+  document.body.appendChild(d);
+  if (typeof travelBgmOn !== 'undefined' && travelBgmOn) BGM.sfx('swish');
+  const t1 = setTimeout(() => { const b = document.getElementById('dBird'); if (b) b.classList.add('go'); }, 1000);
+  let ended = false; const done = () => { if (ended) return; ended = true; clearTimeout(t1); d.classList.add('out'); setTimeout(() => { d.remove(); go('home'); }, 240); };
+  d.onclick = done; setTimeout(done, 2500);
+}
+function arriveAnim(then) {      // v0.20：回來＝從遠方飛回、落地拿著信
+  const d = document.createElement('div'); d.className = 'depart';
+  d.innerHTML = '<span class="cl" style="width:70px;top:20%;left:15%"></span><div class="bird2 come"></div><p style="font-size:18px;font-weight:700;margin-top:20px">小鳶回來了！</p><p class="muted">還帶了一封信・點一下跳過</p>';
+  document.body.appendChild(d);
+  if (typeof travelBgmOn !== 'undefined' && travelBgmOn) BGM.sfx('pop');
+  let ended = false; const done = () => { if (ended) return; ended = true; d.classList.add('out'); setTimeout(() => { d.remove(); if (then) then(); }, 240); };
+  d.onclick = done; setTimeout(done, 2200);
 }
 
 /* 拆信：信封 → 破封 → 正面 → 翻背 → 收進收藏冊。跳過或關掉也照樣入冊 */
