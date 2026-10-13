@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>港灣蓋章散步原型</title>
 <style>
-/* P3 港灣蓋章散步 原型 v0.7（v0.7：G-50 正式彩色章、存檔失敗提示、中途離開補發集滿、壓印說明改成章已收好；v0.6：先存進度再演出、集滿等最後一章落下、港口札記；工作單 18 港灣護照升級提案 v1，D62，C-89）。只做手機版（D55）。
+/* P3 港灣蓋章散步 原型 v0.8（v0.8：G-50 港區小地圖當護照內頁、章照地圖圓圈對位、走過的路段沿小路亮起來；v0.7：G-50 正式彩色章、存檔失敗提示、中途離開補發集滿、壓印說明改成章已收好；v0.6：先存進度再演出、集滿等最後一章落下、港口札記；工作單 18 港灣護照升級提案 v1，D62，C-89）。只做手機版（D55）。
    v0.5：彩色墨水（每站一色，正式彩色章等 ChatGPT）、章＋稱號、組合稱號、按住蓋章、稀有章（金／彩虹）、夜間章、
    回訪升級（銅→銀→金框）、護照上畫出散步路線、第 7 個祕密章、存成「我的港灣護照」圖片。稱號名稱與機率都是建議，等 Dari */
 :root{--paper:#F4EFE6;--card:#FFFDF8;--ink:#3E2B1D;--muted:#8A7565;--teal:#2F7F86;--teal-d:#1F5A5F;--red:#C9473A;--line:#E2D6C6;--gold:#E8B879;
@@ -29,21 +29,22 @@ header p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,#E8A33A,#E0662F,#C9473A,#8A5BC2,#2F6DB5,#1E9E9A);border-radius:999px;transition:width .6s}
 .note{font-size:12px;color:var(--muted);line-height:1.6;margin:0}
 /* 護照頁：G-49 底圖＋圓框對位 */
-.passport{position:relative;width:100%;aspect-ratio:1080/1350;background:url(assets/passport_page.jpg) center/100% 100%;border-radius:14px;box-shadow:0 6px 18px rgba(62,43,29,.15);overflow:hidden}
+.passport{position:relative;width:100%;aspect-ratio:1080/1350;background:#F6F0E5 url(assets/passport_map.jpg) center/100% 100%;border-radius:14px;box-shadow:0 6px 18px rgba(62,43,29,.15);overflow:hidden}
 .passport.full{animation:glow 1.6s ease-in-out 2}
 @keyframes glow{50%{box-shadow:0 0 0 6px rgba(232,184,121,.7),0 6px 18px rgba(62,43,29,.15)}}
 .passport .ttl{position:absolute;left:0;right:0;top:5%;text-align:center}
 .passport .ttl b{display:block;font-size:22px;letter-spacing:.12em;color:#5A3A24}
 .passport .ttl span{font-size:13px;color:#8A7565}
 .passport svg.route{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.route path{fill:none;stroke:#B98A5A;stroke-width:.9;stroke-linecap:round;stroke-dasharray:.1 2.4}
+.route path{fill:none;stroke:#E8862F;stroke-width:9;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2 16;filter:drop-shadow(0 0 4px rgba(255,236,170,.9))}      /* v0.8：走過的路段亮起來（橘色腳印線） */
 .route path.newest{stroke:#C9473A;animation:draw 1.2s ease-out both}
-@keyframes draw{from{stroke-dashoffset:40;opacity:0}to{opacity:1}}
+.passport .ttl{text-shadow:0 1px 0 #fff,0 0 6px #fff}
+@keyframes draw{from{stroke-dashoffset:120;opacity:0}to{opacity:1}}
 .route circle{fill:#B98A5A}
 .pcell{position:absolute;transform:translate(-50%,-50%);border:0;background:none;padding:0;font:inherit;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#A08A72}
 .pcell .q{font-size:30px;font-weight:700;color:#C8B79F;line-height:1}
 .pcell small{font-size:10.5px;line-height:1.35;text-align:center;padding:0 10%;margin-top:3px}
-.pcell .tag{position:absolute;bottom:-9%;max-width:120%;white-space:nowrap;font-size:10.5px;font-weight:700;color:#fff;border-radius:999px;padding:1px 7px;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.pcell .tag{position:absolute;top:103%;max-width:120%;white-space:nowrap;font-size:10.5px;font-weight:700;color:#fff;border-radius:999px;padding:1px 7px;box-shadow:0 1px 3px rgba(0,0,0,.25)}
 .pcell .lv{position:absolute;right:-2%;top:-2%;font-size:10px;font-weight:700;border-radius:999px;padding:1px 5px;color:#5A3A24;background:#E2E2E2;box-shadow:0 1px 2px rgba(0,0,0,.2)}
 .pcell .lv.l3{background:linear-gradient(135deg,#F7E08A,#D9A93A)}
 .pcell .rare{position:absolute;left:-4%;top:-2%;font-size:10px;font-weight:700;border-radius:999px;padding:1px 5px;color:#fff;background:#C9971C}
@@ -153,7 +154,7 @@ summary{font-weight:700;font-size:14px;cursor:pointer}
   </div>
   <section class="passport" id="passport">
     <div class="ttl"><b>港灣探險護照</b><span id="count"></span></div>
-    <svg class="route" id="route" viewBox="0 0 100 125" preserveAspectRatio="none" aria-hidden="true"></svg>
+    <svg class="route" id="route" viewBox="0 0 1080 1350" preserveAspectRatio="none" aria-hidden="true"></svg>
     <div id="grid"></div>
   </section>
   <div class="secret" id="secret"></div>
@@ -365,8 +366,9 @@ const SND_ICON = (() => {
 /* BGM-END */
 </script>
 <script>
-const CFG = { version: '0.7', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 6 };      // 機率與夜間時間是建議，等 Dari
-const FRAMES = [[31.2037, 34.1481], [68.7037, 34.1481], [31.2037, 56.2222], [68.7037, 56.1852], [31.1574, 78.2593], [68.7037, 78.2963]], FRAME_R = 12.45;      // G-49 護照頁圓框中心（%）與半徑（佔寬度 %）
+const CFG = { version: '0.8', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 6 };      // 機率與夜間時間是建議，等 Dari
+const FRAMES = [[53.3333, 40.4444], [25.0463, 46.1481], [18.9352, 75.4815], [44.4907, 86.7407], [75.9722, 77.4815], [80.5093, 56.037]], FRAME_R = 10.37;      // v0.8：G-50 港區小地圖六圈中心（%）；章容器 224px＝寬 20.74%（ChatGPT 地圖位置 JSON）
+const ROUTE = [[1, 2, [[[462.8, 559.4], [449.0, 561.0], [429.0, 568.0], [410.0, 578.0], [378.3, 588.2]]]], [2, 3, [[[330.7, 717.1], [339.0, 730.0], [337.8, 734.0]], [[294.0, 784.0], [285.0, 790.0], [301.0, 820.0], [313.0, 859.0], [313.0, 902.0], [299.0, 934.0], [287.3, 944.5]]]], [3, 4, [[[290.9, 1089.4], [315.0, 1109.0], [339.0, 1130.0], [360.0, 1145.0], [372.6, 1147.7]]]], [4, 5, [[[590.5, 1181.6], [615.0, 1184.0], [638.0, 1178.0], [662.0, 1171.0], [688.0, 1157.0], [709.0, 1138.0], [736.5, 1115.3]]]], [5, 6, [[[750.1, 963.3], [721.0, 929.0], [730.0, 903.0], [740.0, 879.0], [752.0, 857.0], [786.2, 827.8]]]], [6, 1, [[[797.0, 674.6], [784.0, 660.0], [760.0, 636.0], [742.0, 613.0], [718.0, 591.0], [700.0, 579.0], [686.0, 575.3]]]]];      // 每段 [起站, 終站, 可見路段（原圖像素）]；稱號帶的斷口不補線
 /* 6 個蓋章點（實際位置待 Dari 現勘）。color：每站主色（工作單 18）；title：蓋到就拿到的稱號（建議）；riddle：還沒去時的提示 */
 const SPOTS = [
   { id: 1, name: '小鳶', hint: '旅客服務中心入口', riddle: '一進門就會看到我', icon: 'kite', color: '#E39A1F', title: '港口新朋友', lines: ['我第一次飛來這裡的時候，好緊張喔！', '後來發現大家都好親切。', '歡迎你也來玩～'] },
@@ -427,20 +429,19 @@ function openTitles() {
 }
 /* ===== 畫護照 ===== */
 let justId = 0;
-function routeSVG() {
-  const pts = P.order.filter((id) => P.spots[id]).map((id) => { const [x, y] = FRAMES[id - 1]; return [x, y * 1.25]; }), r = FRAME_R * 0.92;
+function routeSVG() {      // v0.8：兩站都蓋過的那一段才亮；最新蓋的那站相連的段落有畫線動畫
   let h = '';
-  for (let i = 1; i < pts.length; i++) {
-    const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], d = Math.hypot(x1 - x0, y1 - y0); if (d < r * 2.2) continue;
-    const ux = (x1 - x0) / d, uy = (y1 - y0) / d, ax = x0 + ux * r, ay = y0 + uy * r, bx = x1 - ux * r, by = y1 - uy * r, mx = (ax + bx) / 2 - uy * 6, my = (ay + by) / 2 + ux * 6;      // 微彎的小路
-    h += '<path class="' + (i === pts.length - 1 && P.order[P.order.length - 1] === justId ? 'newest' : '') + '" d="M' + ax.toFixed(1) + ' ' + ay.toFixed(1) + ' Q' + mx.toFixed(1) + ' ' + my.toFixed(1) + ' ' + bx.toFixed(1) + ' ' + by.toFixed(1) + '"/>';
+  for (const [a, b, runs] of ROUTE) {
+    if (!P.spots[a] || !P.spots[b]) continue;
+    const nw = justId && (a === justId || b === justId) ? 'newest' : '';
+    for (const run of runs) h += '<path class="' + nw + '" d="M' + run.map((p) => p[0] + ' ' + p[1]).join(' L') + '"/>';
   }
   return h;
 }
 function render() {
   $('ver').textContent = 'v' + CFG.version;
   $('grid').innerHTML = SPOTS.map((s, i) => {
-    const done = !!P.spots[s.id], [x, y] = FRAMES[i], d = FRAME_R * 2 * 1.02, v = P.var[s.id] || '', lv = lvOf(s.id);
+    const done = !!P.spots[s.id], [x, y] = FRAMES[i], d = FRAME_R * 2, v = P.var[s.id] || '', lv = lvOf(s.id);
     const cls = 'pcell' + (done ? ' done' : '') + (s.id === justId ? ' new' : '') + (done && lv >= 2 ? ' ring' + lv : '');
     const inner = done ? stampV(s, v) + '<span class="tag" style="background:' + (v === 'night' ? '#2B3A6B' : v ? '#B07D1A' : s.color) + '">' + s.title + '</span>' + (lv >= 2 ? '<span class="lv l' + lv + '">Lv' + lv + '</span>' : '') + (v ? '<span class="rare ' + v + '">' + (v === 'night' ? '夜' : v === 'gold' ? '金' : '虹') + '</span>' : '')
       : '<span class="q">？</span><small>' + s.riddle + '</small>';
@@ -531,13 +532,13 @@ function loadImg(src) { return new Promise((ok) => { const i = new Image(); i.on
 function tinted(img, fill, size) { const c = document.createElement('canvas'); c.width = c.height = size; const g = c.getContext('2d'); g.drawImage(img, 0, 0, size, size); g.globalCompositeOperation = 'source-in'; g.fillStyle = fill(g, size); g.fillRect(0, 0, size, size); return c; }
 async function sharePassport() {
   const W = 1080, H = 1350, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d');
-  const bg = await loadImg('assets/passport_page.jpg'); if (bg) g.drawImage(bg, 0, 0, W, H); else { g.fillStyle = '#F4EFE6'; g.fillRect(0, 0, W, H); }
-  g.fillStyle = '#5A3A24'; g.textAlign = 'center'; g.font = '700 58px ' + getComputedStyle(document.body).fontFamily; g.fillText('港灣探險護照', W / 2, 120);
-  g.font = '700 40px ' + getComputedStyle(document.body).fontFamily; g.fillStyle = '#C9473A'; g.fillText(P.cur ? '稱號：' + P.cur : n() + ' / 6', W / 2, 180);
-  // 路線
-  g.strokeStyle = '#B98A5A'; g.lineWidth = 9; g.lineCap = 'round'; g.setLineDash([1, 26]);
-  const pts = P.order.filter((id) => P.spots[id]).map((id) => [FRAMES[id - 1][0] / 100 * W, FRAMES[id - 1][1] / 100 * H]);
-  if (pts.length > 1) { g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); pts.slice(1).forEach((p) => g.lineTo(p[0], p[1])); g.stroke(); } g.setLineDash([]);
+  const bg = await loadImg('assets/passport_map.jpg'); if (bg) g.drawImage(bg, 0, 0, W, H); else { g.fillStyle = '#F4EFE6'; g.fillRect(0, 0, W, H); }
+  g.fillStyle = '#5A3A24'; g.textAlign = 'center'; g.font = '700 58px ' + getComputedStyle(document.body).fontFamily; g.fillText('港灣探險護照', W / 2, 92);
+  g.font = '700 40px ' + getComputedStyle(document.body).fontFamily; g.fillStyle = '#C9473A'; g.fillText(P.cur ? '稱號：' + P.cur : n() + ' / 6', W / 2, 146);
+  // 路線（v0.8：沿地圖小路，兩站都蓋過的段落亮起來）
+  g.strokeStyle = '#E8862F'; g.lineWidth = 10; g.lineCap = 'round'; g.lineJoin = 'round'; g.setLineDash([2, 18]);
+  for (const [a, b, runs] of ROUTE) { if (!P.spots[a] || !P.spots[b]) continue; for (const run of runs) { g.beginPath(); g.moveTo(run[0][0], run[0][1]); run.slice(1).forEach((p) => g.lineTo(p[0], p[1])); g.stroke(); } }
+  g.setLineDash([]);
   const R = FRAME_R / 100 * W;
   for (const s of SPOTS) {
     const [x, y] = FRAMES[s.id - 1], cx = x / 100 * W, cy = y / 100 * H;
@@ -550,7 +551,7 @@ async function sharePassport() {
     const w = g.measureText(s.title).width + 36; g.beginPath(); g.roundRect ? g.roundRect(cx - w / 2, cy + R * 0.92, w, 46, 23) : g.rect(cx - w / 2, cy + R * 0.92, w, 46); g.fill();
     g.fillStyle = '#fff'; g.fillText(s.title, cx, cy + R * 0.92 + 33);
   }
-  g.fillStyle = '#8A7565'; g.font = '30px ' + getComputedStyle(document.body).fontFamily; const d = new Date(); g.fillText('基隆・東三東四　' + d.getFullYear() + '.' + (d.getMonth() + 1) + '.' + d.getDate() + (P.secret ? '　★ 祕密章' : ''), W / 2, H - 40);
+  g.fillStyle = '#8A7565'; g.font = '30px ' + getComputedStyle(document.body).fontFamily; const d = new Date(); g.fillText('基隆・東三東四　' + d.getFullYear() + '.' + (d.getMonth() + 1) + '.' + d.getDate() + (P.secret ? '　★ 祕密章' : ''), W / 2, 188);
   cv.toBlob(async (blob) => {
     const f = new File([blob], '我的港灣護照.png', { type: 'image/png' });
     if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: '我的港灣護照' }); return; } catch (e) {} }
