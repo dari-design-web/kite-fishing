@@ -203,6 +203,8 @@ h3{font-size:15px;margin:14px 16px 6px}
 .dev button{margin:3px 2px;border:1.5px solid #C9B8A4;background:#fff;border-radius:8px;padding:4px 8px;font-family:inherit;font-size:12px}
 .toast{position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#2B3A40;color:#fff;border-radius:999px;padding:8px 16px;font-size:14px;z-index:50;display:none;white-space:nowrap}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* C-124：短螢幕按鈕至少約 36～40 點高，手指好按 */
+#bgmBtn.gear{min-height:38px;min-width:42px}
 </style>
 </head>
 <body>
@@ -298,7 +300,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.22',
+  version: '0.23',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
