@@ -76,6 +76,7 @@ header .t{flex:1;text-align:right;font-size:12px;font-weight:700;color:#1F5A5F}
 .row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
 .slot{aspect-ratio:1;border-radius:12px;background:#F6F0E5;display:flex;align-items:center;justify-content:center;position:relative}
 .slot img{width:84%;height:84%;object-fit:contain}
+.slot .bf{position:absolute;top:-6px;right:-6px;font-size:14px;line-height:1;filter:drop-shadow(0 1px 0 #fff);animation:bfPop .5s cubic-bezier(.3,1.6,.5,1)}@keyframes bfPop{from{transform:scale(0)}}
 .slot.no img{filter:grayscale(1) brightness(1.3);opacity:.3}
 .slot.now{box-shadow:0 0 0 3px var(--buoy)}
 .slot.no{cursor:pointer}
@@ -95,7 +96,7 @@ header a{padding:7px 12px}
 </head>
 <body>
 <main class="phone" id="app">
-  <header><a href="../hub/">‹ 首頁</a><span class="t">港口朋友・原型 v0.7・角色暫用</span></header>
+  <header><a href="../hub/">‹ 首頁</a><span class="t">港口朋友・原型 v0.8・角色暫用</span></header>
   <div class="stage" id="stage"></div>
   <section class="panel" id="panel"></section>
 </main>
@@ -123,16 +124,18 @@ header a{padding:7px 12px}
   var app = document.getElementById('app'), stage = document.getElementById('stage'), panel = document.getElementById('panel');
   var h = new Date().getHours(); if (h >= 18 || h < 6) app.classList.add('night');
   function slots(met, now) {
-    return '<div class="row">' + FRIENDS.map(function (x) { var ok = !!met[x.id]; return '<div><div data-id="' + x.id + '" class="slot' + (ok ? '' : ' no') + (x.id === now ? ' now' : '') + '"><img src="' + x.img + '" onerror="this.onerror=null;this.src=this.src.replace(\'.webp\',\'.png\')" alt=""></div><div class="cap">' + (ok ? x.tag : '？？？') + '</div></div>'; }).join('') + '</div>';
+    /* v0.8（C-172）：見過 3 次以上的朋友，格子右上角多一顆 💛（好朋友記號；讀 kiteFriendVisits1） */
+    var vv = {}; try { vv = JSON.parse(localStorage.getItem('kiteFriendVisits1') || '{}') || {}; } catch (e) {}
+    return '<div class="row">' + FRIENDS.map(function (x) { var ok = !!met[x.id]; return '<div><div data-id="' + x.id + '" class="slot' + (ok ? '' : ' no') + (x.id === now ? ' now' : '') + '"><img src="' + x.img + '" onerror="this.onerror=null;this.src=this.src.replace(\'.webp\',\'.png\')" alt="">' + (ok && (vv[x.id] || 0) >= 3 ? '<span class="bf" title="好朋友">💛</span>' : '') + '</div><div class="cap">' + (ok ? x.tag : '？？？') + '</div></div>'; }).join('') + '</div>';
   }
   if (!F) {
     /* 沒帶編號：測試用的六位朋友選單（正式版現場掃 QR 直接進到那一位） */
-    var met0 = read(), n0 = Object.keys(met0).length;
+    var met0 = read(), n0 = Object.keys(met0).length; var vis0 = {}; try { vis0 = JSON.parse(localStorage.getItem('kiteFriendVisits1') || '{}') || {}; } catch (e) {}
     stage.innerHTML = '<div class="hello" style="position:relative;top:0;padding-top:24px">港口朋友<small>在館內找到 ' + n0 + ' / 6 位・測試時點一位直接見面</small></div>';
     stage.style.alignItems = 'flex-start';
     panel.innerHTML = '';
     var pk = document.createElement('div'); pk.className = 'pick';
-    pk.innerHTML = FRIENDS.map(function (x) { return '<a href="?f=' + x.id + '"><img src="' + x.img + '" onerror="this.onerror=null;this.src=this.src.replace(\'.webp\',\'.png\')" alt="">' + 'F' + x.id + ' ' + x.tag + (met0[x.id] ? ' ✓' : '') + '</a>'; }).join('');
+    pk.innerHTML = FRIENDS.map(function (x) { return '<a href="?f=' + x.id + '"><img src="' + x.img + '" onerror="this.onerror=null;this.src=this.src.replace(\'.webp\',\'.png\')" alt="">' + 'F' + x.id + ' ' + x.tag + (met0[x.id] ? ' ✓' + ((vis0[x.id] || 0) >= 3 ? ' 💛' : '') : '') + '</a>'; }).join('');
     panel.appendChild(pk);
     panel.insertAdjacentHTML('beforeend', '<p class="note">正式版：每隻充氣角色旁放一個 QR（或感應章），網址帶 ?f=1～6。位置與數量等 Dari 決定。</p>');
     return;
