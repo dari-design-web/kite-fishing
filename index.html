@@ -142,7 +142,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
         <li><b>便當</b><span>一局抓到小卷 3 隻、白帶魚 2 條，就做成便當讓小鳶去旅行</span></li>
       </ul>
       <button class="btn" id="startBtn">開始</button>
-      <p class="note">原型 v0.24：暫用素材、不發點數。進度只存在這支手機的瀏覽器</p>
+      <p class="note">原型 v0.25：暫用素材、不發點數。進度只存在這支手機的瀏覽器</p>
     </div>
   </div>
 
@@ -378,7 +378,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.24',
+  version: '0.25',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -938,6 +938,8 @@ function finish() { BGM.stop();
   const add = (a, b, isNew) => { const l = document.createElement('span'); l.textContent = a; if (isNew) { const n = document.createElement('span'); n.className = 'new'; n.textContent = '新圖鑑'; l.appendChild(n); } const r = document.createElement('span'); r.textContent = b; rows.append(l, r); };
   for (const k of SPECIES) if (stats.counts[k]) add(CONFIG.fish[k].name + '（每條 ' + PTS(CONFIG.fish[k].kg) + ' 分）', stats.counts[k] + (k === 'squid' ? ' 隻' : ' 條'), stats.newDex.includes(k));
   if (!stats.hits) add('這局沒有抓到魚', '0 條');
+  /* v0.25（C-169）：結算多一行「今日幸運魚」——抓到幾條、分數乘幾倍；這局沒抓到就提醒下一局找找看（文字是建議） */
+  { const ln = CONFIG.fish[LUCKY].name, lc = stats.counts[LUCKY] || 0; add('🍀 今日幸運魚・' + ln, lc ? lc + (LUCKY === 'squid' ? ' 隻' : ' 條') + '（分數 ×' + LUCKY_MUL + '）' : '這局沒抓到，下一局找找看！'); }
   const sid = session, old = prog.best[sid], before = CONFIG.sessions.filter(isOpen).length; prog.played[sid] = (prog.played[sid] || 0) + 1; if (old === undefined || kg > old) prog.best[sid] = +kg.toFixed(1); saveProg();
   const un = $('unlockNote'), opened = CONFIG.sessions.filter(isOpen); un.hidden = opened.length <= before; if (!un.hidden) un.textContent = '「' + opened[opened.length - 1].name + '」場開放了！';
   /* v0.20（C-133）：破紀錄有大字慶祝；差一點（差 2 成以內）就提醒「差幾分破紀錄」，再玩一局的按鈕也跟著換字 */
@@ -997,7 +999,7 @@ $('copyBtn').onclick = () => {
   const fallback = () => { log.value = text; log.hidden = false; log.focus(); log.select(); $('copyBtn').textContent = '請長按上方文字複製'; };
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
 };
-window.__kiteGame = { CONFIG, lucky: () => LUCKY, setSession: (s) => { session = s; renderStart(); }, prog: () => prog, state: () => ({ mode, session, t, kg, kite, things: things.map((o) => ({ type: o.type, x: o.x, y: o.y, vx: o.vx, move: o.move })), stats, shark: !!shark, flash }), skip: (s) => { t = s; }, testEnd: (k, h) => { kg = k; if (h) stats.hits = h; finish(); } };      // v0.20：testEnd 只給自動測試用（指定分數直接結算）
+window.__kiteGame = { CONFIG, lucky: () => LUCKY, setSession: (s) => { session = s; renderStart(); }, prog: () => prog, state: () => ({ mode, session, t, kg, kite, things: things.map((o) => ({ type: o.type, x: o.x, y: o.y, vx: o.vx, move: o.move })), stats, shark: !!shark, flash }), skip: (s) => { t = s; }, testEnd: (k, h, lc) => { kg = k; if (h) stats.hits = h; if (lc) stats.counts[LUCKY] = lc; finish(); } };      // v0.20：testEnd 只給自動測試用（指定分數直接結算）
 /* C-81／C-82（Dari 10/13 01:03）：音樂開關、暫停鈕改圖示；選單畫面也有音樂，每個場景不同曲子 */
 const MENU_TRACK = () => 'fish_' + session, PLAY_TRACK = () => 'fish_' + session;
 function drawSnd() { const h = SND_ICON[soundOn ? 'on' : 'off']; for (const b of [$('soundBtn'), $('menuSnd')]) { if (!b) continue; b.innerHTML = h; b.setAttribute('aria-pressed', String(!soundOn)); b.setAttribute('aria-label', soundOn ? '音樂開著，點一下關掉' : '音樂關著，點一下打開'); } }
