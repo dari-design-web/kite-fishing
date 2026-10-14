@@ -106,6 +106,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .map{padding:0;background:#10293D;display:block}
 .map .mapbg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .map .mapfx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.map.dawn .mapbg{filter:sepia(.35) saturate(1.25) brightness(1.05) hue-rotate(-12deg)}      /* v0.39（C-175）：清晨 6～8 點關卡地圖帶一點朝霞的暖色 */
 .map.night .mapbg{filter:brightness(.55) saturate(.9)}      /* v0.36（C-155）：晚上 7 點到早上 6 點，關卡地圖變夜景，燈籠更亮 */
 .maptitle{position:absolute;left:3%;right:3%;top:1.6%;margin:0;padding:8px 12px;border-radius:14px;background:rgba(16,41,61,.82);border:2px solid #E8B879;color:var(--paper);font-family:var(--display);font-size:26px;line-height:1.2;text-align:center}
 .maptitle small{display:block;font-family:inherit;font-size:13px;font-weight:700;color:#FFD58A;margin-top:2px;letter-spacing:.04em}
@@ -171,7 +172,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
     <canvas class="mapfx" id="mapFx" aria-hidden="true"></canvas>
     <h1 class="maptitle" id="mapTitle">小鳶飛行冒險</h1>
     <div id="stageButtons"></div>
-    <p class="mapnote">原型 v0.38：暫用圖、不發點數。測試期間四關都開放</p>
+    <p class="mapnote">原型 v0.39：暫用圖、不發點數。測試期間四關都開放</p>
   </div>
 
   <div class="panel" id="startPanel" hidden>
@@ -2493,7 +2494,8 @@ function renderMap() {
   });
 }
 const NIGHT_MAP = (() => { const h = new Date().getHours(); return h >= 19 || h < 6; })();
-function toMap() { mode = 'map'; $('mapPanel').classList.toggle('night', NIGHT_MAP); renderMap(); show('mapPanel'); startMapFx(); }
+const DAWN_MAP = (() => { const h = new Date().getHours(); return h >= 6 && h < 8; })();
+function toMap() { mode = 'map'; $('mapPanel').classList.toggle('night', NIGHT_MAP); $('mapPanel').classList.toggle('dawn', DAWN_MAP); renderMap(); show('mapPanel'); startMapFx(); }
 /* ====== 關卡地圖的小動態（座標用地圖圖檔 720 × 1280）：東三四外海鯨鯊跳起、廟口燈籠閃動、正濱漁港漁船進港、深澳鐵道自行車載三位吉祥物 ====== */
 const MAPFX = {
   lamps: [[53, 711], [76, 736], [93, 754], [188, 752], [193, 769], [175, 771], [93, 776], [174, 794], [88, 798], [86, 821], [172, 822], [131, 834], [230, 833], [89, 843], [171, 847], [77, 845], [59, 850], [105, 871], [167, 873], [100, 648], [198, 661]],      // 夜市燈籠的位置（從地圖圖檔量的）
@@ -2638,7 +2640,7 @@ function toggleSound() { soundOn = !soundOn; SND_ICON.save(soundOn); drawSnd(); 
   setInterval(() => { m.hidden = mode === 'play' || mode === 'pause'; if (mode !== lastMode) { lastMode = mode; drawPause(); if (soundOn && BGM.on) bgmNow(); } }, 200);
   document.addEventListener('pointerdown', () => { if (soundOn) bgmNow(); }, { passive: true });      // 瀏覽器規定要先點畫面才能出聲
 })();
-loadProgress(); reset(); $('mapPanel').classList.toggle('night', NIGHT_MAP); renderMap(); requestAnimationFrame(frame); startMapFx();
+loadProgress(); reset(); $('mapPanel').classList.toggle('night', NIGHT_MAP); $('mapPanel').classList.toggle('dawn', DAWN_MAP); renderMap(); requestAnimationFrame(frame); startMapFx();
 })();
 </script>
 
