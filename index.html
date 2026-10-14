@@ -87,6 +87,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .dexline .chips span{border:1.5px solid var(--ink);border-radius:999px;padding:0 6px;font-size:11px;background:#fff}
 .dexline .chips span.no{border-style:dashed;color:var(--muted);background:transparent}
 .bentoGot{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;background:#fff7e0;border:2px solid var(--ink);font-size:14px;font-weight:700}.bentoGot img{width:40px;height:40px;object-fit:contain}.bentoGot a{margin-left:auto;color:var(--ink);white-space:nowrap}
+.nightTip{background:#25335F;border-color:#7C8BC4;color:#FFF4E2}
 .bentoGot.near{background:#EAF5FA;border:2px dashed #3F8FB8;font-weight:500;font-size:13px;color:#1D4E66}
 .recNote{margin:0;padding:6px 10px;border-radius:10px;background:#FFE9D6;border:2px dashed #E2702A;font-weight:700;text-align:center;font-size:14px;color:#8A3B12}
 .recNote.win{background:var(--gold);border:2px solid var(--ink);color:inherit;animation:recPop .6s cubic-bezier(.3,1.6,.5,1)}
@@ -141,7 +142,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
         <li><b>便當</b><span>一局抓到小卷 3 隻、白帶魚 2 條，就做成便當讓小鳶去旅行</span></li>
       </ul>
       <button class="btn" id="startBtn">開始</button>
-      <p class="note">原型 v0.22：暫用素材、不發點數。進度只存在這支手機的瀏覽器</p>
+      <p class="note">原型 v0.23：暫用素材、不發點數。進度只存在這支手機的瀏覽器</p>
     </div>
   </div>
 
@@ -377,7 +378,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.22',
+  version: '0.23',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -911,6 +912,7 @@ function renderStart() {
     b.append(s.name, sm); b.onclick = () => { session = s.id; renderStart(); }; box.appendChild(b);
   }
   $('sessionNote').textContent = SES().note;
+  { let nl = $('nightLine'); if (!nl) { nl = document.createElement('p'); nl.id = 'nightLine'; nl.className = 'lucky nightTip'; $('sessionNote').after(nl); } const nt = CONFIG.sessions.find((x) => x.id === 'night'); nl.hidden = !NIGHT_NOW; nl.textContent = nt && isOpen(nt) ? '🌙 現在是晚上，漁船的燈亮了，夜釣場小卷特別多！' : '🌙 現在是晚上～先玩過「午後」「黃昏」，就能開放夜釣場'; }
   { let lk = $('luckyLine'); if (!lk) { lk = document.createElement('p'); lk.id = 'luckyLine'; lk.className = 'lucky'; $('sessionNote').after(lk); } lk.textContent = '🍀 今日幸運魚：' + CONFIG.fish[LUCKY].name + '（抓到分數 ×1.5，明天會換）'; }
   const got = SPECIES.filter((k) => dex[k]), miss = SPECIES.filter((k) => !dex[k]), dl = $('dexLine'); dl.textContent = '';
   const head = document.createElement('div'); head.textContent = '港邊圖鑑 ' + got.length + ' / ' + SPECIES.length + (miss.length ? '　還沒抓過：' + CONFIG.fish[miss[0]].name + '（' + hintOf(miss[0]) + '）' : '　六種都抓到了！'); dl.appendChild(head);
@@ -1008,6 +1010,9 @@ function toggleSound() { soundOn = !soundOn; SND_ICON.save(soundOn); drawSnd(); 
   setInterval(() => { m.hidden = mode === 'play' || mode === 'pause'; if (mode !== lastMode) { lastMode = mode; drawPause(); if (soundOn && BGM.on) bgmNow(); } }, 200);
   document.addEventListener('pointerdown', () => { if (soundOn) bgmNow(); }, { passive: true });      // 瀏覽器規定要先點畫面才能出聲
 })();
+/* v0.23（C-153）：真的晚上（7 點到早上 6 點）打開，而且夜釣場已經開放，就先幫玩家選好夜釣場，開始畫面多一行晚上的提示 */
+const NIGHT_NOW = (() => { const h = new Date().getHours(); return h >= 19 || h < 6; })();
+{ const nt = CONFIG.sessions.find((x) => x.id === 'night'); if (NIGHT_NOW && nt && isOpen(nt)) session = 'night'; }
 reset(); renderStart(); requestAnimationFrame(frame);
 })();
 </script>
