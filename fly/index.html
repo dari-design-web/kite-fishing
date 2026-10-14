@@ -106,6 +106,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .map{padding:0;background:#10293D;display:block}
 .map .mapbg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .map .mapfx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.map.night .mapbg{filter:brightness(.55) saturate(.9)}      /* v0.36（C-155）：晚上 7 點到早上 6 點，關卡地圖變夜景，燈籠更亮 */
 .maptitle{position:absolute;left:3%;right:3%;top:1.6%;margin:0;padding:8px 12px;border-radius:14px;background:rgba(16,41,61,.82);border:2px solid #E8B879;color:var(--paper);font-family:var(--display);font-size:26px;line-height:1.2;text-align:center}
 #stageButtons{position:absolute;inset:0;pointer-events:none}
 .stage{pointer-events:auto;position:absolute;width:39.8%;min-height:9.4%;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:6px 10px;border-radius:12px;border:2px solid #E8B879;background:rgba(16,41,61,.86);color:var(--paper);text-align:left;font-size:12px;line-height:1.35;box-shadow:0 3px 0 rgba(8,20,32,.45)}
@@ -169,7 +170,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
     <canvas class="mapfx" id="mapFx" aria-hidden="true"></canvas>
     <h1 class="maptitle">小鳶飛行冒險</h1>
     <div id="stageButtons"></div>
-    <p class="mapnote">原型 v0.31：暫用圖、不發點數。測試期間四關都開放</p>
+    <p class="mapnote">原型 v0.36：暫用圖、不發點數。測試期間四關都開放</p>
   </div>
 
   <div class="panel" id="startPanel" hidden>
@@ -430,7 +431,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.35',
+  version: '0.36',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -2487,7 +2488,8 @@ function renderMap() {
     box.append(btn);
   });
 }
-function toMap() { mode = 'map'; renderMap(); show('mapPanel'); startMapFx(); }
+const NIGHT_MAP = (() => { const h = new Date().getHours(); return h >= 19 || h < 6; })();
+function toMap() { mode = 'map'; $('mapPanel').classList.toggle('night', NIGHT_MAP); renderMap(); show('mapPanel'); startMapFx(); }
 /* ====== 關卡地圖的小動態（座標用地圖圖檔 720 × 1280）：東三四外海鯨鯊跳起、廟口燈籠閃動、正濱漁港漁船進港、深澳鐵道自行車載三位吉祥物 ====== */
 const MAPFX = {
   lamps: [[53, 711], [76, 736], [93, 754], [188, 752], [193, 769], [175, 771], [93, 776], [174, 794], [88, 798], [86, 821], [172, 822], [131, 834], [230, 833], [89, 843], [171, 847], [77, 845], [59, 850], [105, 871], [167, 873], [100, 648], [198, 661]],      // 夜市燈籠的位置（從地圖圖檔量的）
@@ -2511,7 +2513,7 @@ function mapFrame(now) {
 function mapLamps(mt) {      // 燈籠一盞一盞輪流亮起，偶爾閃一下
   const g = ctx; g.save(); g.globalCompositeOperation = 'lighter';
   MAPFX.lamps.forEach(([x, y], i) => {
-    const wave = Math.max(0, Math.sin(mt * 2.4 - i * 0.55)), flick = Math.sin(mt * 17 + i * 3.1) > 0.93 ? 0.35 : 0, a = calm ? 0.35 : 0.12 + 0.45 * wave + flick, r = 9 + 5 * wave;
+    const nb = NIGHT_MAP ? 1.5 : 1, wave = Math.max(0, Math.sin(mt * 2.4 - i * 0.55)), flick = Math.sin(mt * 17 + i * 3.1) > 0.93 ? 0.35 : 0, a = Math.min(1, (calm ? 0.35 : 0.12 + 0.45 * wave + flick) * (NIGHT_MAP ? 1.6 : 1)), r = (9 + 5 * wave) * nb;
     const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, 'rgba(255,214,130,' + a + ')'); gr.addColorStop(0.45, 'rgba(255,160,70,' + a * 0.55 + ')'); gr.addColorStop(1, 'rgba(255,140,60,0)');
     g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 6.2832); g.fill();
   });
@@ -2630,7 +2632,7 @@ function toggleSound() { soundOn = !soundOn; SND_ICON.save(soundOn); drawSnd(); 
   setInterval(() => { m.hidden = mode === 'play' || mode === 'pause'; if (mode !== lastMode) { lastMode = mode; drawPause(); if (soundOn && BGM.on) bgmNow(); } }, 200);
   document.addEventListener('pointerdown', () => { if (soundOn) bgmNow(); }, { passive: true });      // 瀏覽器規定要先點畫面才能出聲
 })();
-loadProgress(); reset(); renderMap(); requestAnimationFrame(frame); startMapFx();
+loadProgress(); reset(); $('mapPanel').classList.toggle('night', NIGHT_MAP); renderMap(); requestAnimationFrame(frame); startMapFx();
 })();
 </script>
 
