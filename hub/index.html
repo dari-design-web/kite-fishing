@@ -21,6 +21,15 @@ a{color:inherit}
 .hero .cloud::before{content:'';position:absolute;left:22%;top:-9px;width:46%;height:20px;border-radius:999px;background:#fff}
 .hero .c1{width:70px;top:30%;left:-80px}.hero .c2{width:52px;top:16%;left:-60px;animation-duration:34s;animation-delay:-14s}
 @keyframes cloud{to{transform:translateX(520px)}}
+/* v71（C-152）：晚上 7 點到早上 6 點，首頁天空變夜晚：太陽換月亮、雲變淡、海面有燈光倒影、幾顆星星 */
+.hero.night{background:linear-gradient(180deg,#1E2A55 0%,#3B4A7A 46%,#22476A 47%,#163650 100%)}
+.hero.night .sun{background:radial-gradient(circle at 38% 38%,#FFFBE6,#F3E3A6 62%,rgba(243,227,166,0) 72%);box-shadow:0 0 18px rgba(255,240,190,.55)}
+.hero.night .cloud,.hero.night .cloud::before{opacity:.18}
+.hero.night h1{color:#FFF4E2;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+.hero .stars{position:absolute;inset:0 0 50% 0;pointer-events:none;display:none}
+.hero.night .stars{display:block;background-image:radial-gradient(1.6px 1.6px at 12% 22%,#fff,transparent),radial-gradient(1.4px 1.4px at 31% 12%,#fff,transparent),radial-gradient(1.8px 1.8px at 47% 30%,#FFF6D0,transparent),radial-gradient(1.3px 1.3px at 64% 16%,#fff,transparent),radial-gradient(1.5px 1.5px at 22% 40%,#fff,transparent),radial-gradient(1.2px 1.2px at 56% 8%,#fff,transparent);animation:twinkle 3.2s ease-in-out infinite alternate}
+.hero.night::after{content:'';position:absolute;left:0;right:0;bottom:0;height:46%;pointer-events:none;background:repeating-linear-gradient(90deg,rgba(255,214,140,0) 0 22px,rgba(255,214,140,.18) 22px 26px,rgba(255,214,140,0) 26px 70px)}
+@keyframes twinkle{from{opacity:.55}to{opacity:1}}
 .hero .kite{position:absolute;right:10px;bottom:24px;width:118px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.18));animation:bob 3.2s ease-in-out infinite}
 @keyframes bob{50%{transform:translateY(-7px) rotate(-3deg)}}
 .hero h1{position:relative;margin:0;font-size:34px;line-height:1.15;letter-spacing:.08em;color:#14414A;text-shadow:0 2px 0 #fff}
@@ -164,10 +173,10 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
 <!-- LOADER-END -->
 <main class="phone">
   <header class="hero">
-    <button class="bagBtn" type="button" id="bagBtn" aria-label="打開小鳶背包"><span class="ic">🎒</span>背包</button><span class="sun"></span><span class="cloud c1"></span><span class="cloud c2"></span>
+    <button class="bagBtn" type="button" id="bagBtn" aria-label="打開小鳶背包"><span class="ic">🎒</span>背包</button><span class="sun"></span><span class="stars"></span><span class="cloud c1"></span><span class="cloud c2"></span>
     <h1>小鳶來港</h1>
     <p>今天想和小鳶玩什麼？</p>
-    <span class="chip">測試首頁 v70・素材都是暫用</span>
+    <span class="chip">測試首頁 v71・素材都是暫用</span>
     <div class="say" id="say" hidden></div>
     <img class="kite" src="../travel/assets/kite_wave.png" alt="">
   </header>
@@ -218,7 +227,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
 
   <details>
     <summary>10/14 新加的，點了直接試</summary>
-    <p class="notice" style="margin:8px 0 0">今天加的小改進（C-130～C-150），每一項都是建議版，Dari 看了不喜歡可以拿掉。</p>
+    <p class="notice" style="margin:8px 0 0">今天加的小改進（C-130～C-152），每一項都是建議版，Dari 看了不喜歡可以拿掉。</p>
     <div class="flags">
       <a class="flag" data-href="?all=1&amp;lucky=squid">🍀 捕魚今日幸運魚（指定小卷）</a>
       <a class="flag" data-href="?all=1">🎉 捕魚破紀錄提醒（玩兩局）</a>
@@ -233,7 +242,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
       <a class="flag" data-href="meet/?f=4">❓ 港口朋友線索（點問號）</a>
       <a class="flag" data-href="meet/?f=6">🏅 港口朋友收集家證書（要先見過其他五位）</a>
     </div>
-    <p class="notice" style="margin:8px 0 0">首頁上的：今日幸運魚、旅行倒數、下一站謎語、背包裡點港口朋友。</p>
+    <p class="notice" style="margin:8px 0 0">首頁上的：今日幸運魚、旅行倒數、下一站謎語、背包裡點港口朋友、晚上 7 點後的夜空（C-152）。</p>
   </details>
 
   <details>
@@ -321,6 +330,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
     el.hidden = false; el.parentNode.classList.add('talk');
     document.querySelectorAll('.gb').forEach(function (a) { a.classList.toggle('hint', !!n[3] && a.getAttribute('data-btn') === n[3]); });
   }
+  { var hn = new Date().getHours(); var hero = document.querySelector('.hero'); if (hero && (hn >= 19 || hn < 6)) hero.classList.add('night'); }      // v71（C-152）：晚上首頁天空變夜晚
   showSay();
 
   /* v49（C-113，工作單 21 ③）：小鳶背包。只讀各遊戲存在這支手機的紀錄，不改任何遊戲的資料；有新東西時背包按鈕亮小點 */
