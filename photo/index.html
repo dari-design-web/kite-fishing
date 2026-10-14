@@ -388,7 +388,7 @@ const SND_ICON = (() => {
 </script>
 <script>
 /* 小鳶合照館 原型 v0.1（工作單 11 v4 P2）。貼紙、相框、解鎖方式都是建議，等 Dari 確認；正式素材之後開單給 ChatGPT */
-const CFG = { version: '0.18', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
+const CFG = { version: '0.19', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
 const $ = (id) => document.getElementById(id);
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = 'none'), 2400); }
@@ -548,7 +548,8 @@ function show(id) { for (const s of document.querySelectorAll('.screen')) s.clas
 /* ---- 貼紙：放上、拖曳、兩指縮放旋轉、右下角把手縮放旋轉、左上刪除 ---- */
 let stks = [], sel = null, tab = TABS[0];
 function renderTray() {
-  $('tabs').innerHTML = ''; for (const t of TABS) { const b = document.createElement('button'); b.type = 'button'; b.textContent = t; b.setAttribute('aria-pressed', String(t === tab)); b.onclick = () => { tab = t; renderTray(); }; $('tabs').appendChild(b); }
+  $('tabs').innerHTML = ''; for (const t of TABS) { const b = document.createElement('button'); b.type = 'button'; const all = STK.filter((x) => x.tab === t), got = all.filter((x) => !x.ok || x.ok()).length; b.textContent = t + (got < all.length ? ' ' + got + '/' + all.length : '');      /* v0.19（C-176）：還有沒解鎖的貼紙時，分類標籤後面寫「已解鎖／全部」 */
+    b.setAttribute('aria-pressed', String(t === tab)); b.onclick = () => { tab = t; renderTray(); }; $('tabs').appendChild(b); }
   $('items').innerHTML = '';
   for (const d of STK.filter((x) => x.tab === tab)) {
     const ok = !d.ok || d.ok(), b = document.createElement('button'); b.type = 'button'; b.className = 'it' + (ok ? '' : ' lock'); b.title = d.name; b.innerHTML = '<img src="assets/' + d.id + '.png" alt="">';
