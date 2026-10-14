@@ -106,6 +106,9 @@ button{font-family:inherit}
 #preview .imgwrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:calc(14px + env(safe-area-inset-top,0px)) 12px 10px}
 #preview img{max-width:100%;max-height:100%;border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.45)}
 .prow{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 14px 10px}
+.kitesay{display:flex;align-items:center;gap:8px;margin:0 14px;padding:6px 12px 6px 6px;border-radius:16px;background:rgba(255,244,226,.12);color:#FFF4E2;font-size:14px;line-height:1.45}
+.kitesay img{width:46px;height:46px;object-fit:contain;flex:none}
+.kitesay b{color:#FFD58A}
 .pnote{font-size:12px;opacity:.7;text-align:center;padding:0 14px calc(14px + env(safe-area-inset-bottom,0px))}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 /* C-124：短螢幕按鈕至少約 36～40 點高，手指好按 */
@@ -174,6 +177,7 @@ button{font-family:inherit}
 
   <section class="screen" id="preview">
     <div class="imgwrap"><img id="out" alt="合照"></div>
+    <div class="kitesay" id="kiteSay" hidden><img src="assets/stk_kite_peace.png" alt=""><p id="kiteSayT"></p></div>
     <div class="prow">
       <button class="btn" id="saveBtn" type="button">存到手機</button>
       <button class="btn light" id="shareBtn" type="button">分享</button>
@@ -382,7 +386,7 @@ const SND_ICON = (() => {
 </script>
 <script>
 /* 小鳶合照館 原型 v0.1（工作單 11 v4 P2）。貼紙、相框、解鎖方式都是建議，等 Dari 確認；正式素材之後開單給 ChatGPT */
-const CFG = { version: '0.14', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
+const CFG = { version: '0.15', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
 const $ = (id) => document.getElementById(id);
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = 'none'), 2400); }
@@ -596,6 +600,14 @@ function cover(c, im, iw, ih, mirror) {      // 合成時照預覽：完整畫�
   const fill = Math.max(W / iw, H / ih), fit = Math.min(W / iw, H / ih);
   if (VIEW.fit && fit < fill) { draw(fill * 1.08, true); draw(fit * VIEW.z, false); } else draw(fill * VIEW.z, false);
 }
+/* v0.15（C-143）：拍完照小鳶說一句話，並記第幾張合照（只記張數在這支手機 kitePhoto1，不存照片）；句子是建議 */
+function kiteSay() {
+  let st = read('kitePhoto1') || { n: 0 }; st.n = (st.n || 0) + 1; try { localStorage.setItem('kitePhoto1', JSON.stringify(st)); } catch (e) {}
+  const ids = stks.map((o) => o.d.id).join(' '), pals = /pal_f|shark|whale/.test(ids);
+  const L = pals ? ['我的好朋友也一起入鏡了！', '大家擠在一起，好熱鬧喔！'] : stks.length ? ['我站這裡可以嗎？嘿嘿！', '這張我笑得最好看！', '貼紙放得好可愛！'] : ['下次放我進去一起拍嘛～', '風景好漂亮！要不要加個貼紙？'];
+  $('kiteSayT').innerHTML = '<b>第 ' + st.n + ' 張合照！</b>' + L[Math.floor(Math.random() * L.length)];
+  $('kiteSay').hidden = false;
+}
 function capture() {
   const cv = document.createElement('canvas'); cv.width = CFG.W; cv.height = CFG.H; const c = cv.getContext('2d');
   c.fillStyle = '#0E1418'; c.fillRect(0, 0, CFG.W, CFG.H);
@@ -607,7 +619,7 @@ function capture() {
     c.save(); c.translate(o.x * CFG.W, o.y * CFG.H); c.rotate(o.r); c.shadowColor = 'rgba(0,0,0,.3)'; c.shadowBlur = 10; c.shadowOffsetY = 6; c.drawImage(im, -w / 2, -h / 2, w, h); c.restore();
   }
   c.drawImage($('frameCv'), 0, 0);
-  cv.toBlob((blob) => { lastBlob = blob; $('out').src = URL.createObjectURL(blob); show('preview'); }, 'image/jpeg', 0.92);
+  cv.toBlob((blob) => { lastBlob = blob; $('out').src = URL.createObjectURL(blob); kiteSay(); show('preview'); }, 'image/jpeg', 0.92);
 }
 let lastBlob = null;
 function fname() { const d = new Date(); return '小鳶合照_' + d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0') + '_' + String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0') + '.jpg'; }
