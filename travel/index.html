@@ -68,6 +68,10 @@ header h1{font-size:20px;margin:0;flex:1}
 .emote.float{animation:pop .35s ease-out,drift 1.6s ease-in .35s forwards}
 @keyframes drift{to{transform:translate(-50%,-180%);opacity:0}}
 @keyframes bob{50%{transform:translateY(-6px)}}
+.note .trip{display:block;margin-top:6px;font-size:12.5px;color:#6B5434}
+.note .trip i{display:block;position:relative;height:8px;margin:4px 0 2px;border-radius:99px;background:repeating-linear-gradient(90deg,#E5D49B 0 6px,transparent 6px 10px)}
+.note .trip i b{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:#F0A35E}
+.note .trip i em{position:absolute;top:50%;width:24px;height:24px;margin:-14px 0 0 -12px;background:url(assets/kite_pack.png) center/contain no-repeat}
 .note{position:absolute;left:50%;bottom:9%;transform:translateX(-50%) rotate(-3deg);width:56%;padding:10px 12px;background:#FFF8D9;border:1.5px solid #E5D49B;box-shadow:0 3px 8px rgba(0,0,0,.12);font-size:14px;line-height:1.5}
 .envelope{position:absolute;z-index:100;left:69.4%;top:76.8%;width:22.2%;height:16.2%;background:url(assets/letter_seal.png) center/contain no-repeat,url(assets/letter_env.png) center/contain no-repeat;animation:bob 1.6s infinite;cursor:pointer}
 .say{position:absolute;width:62%;text-align:center;pointer-events:none;z-index:130;transform:translate(-50%,-100%);transition:opacity .25s}
@@ -300,7 +304,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.24',
+  version: '0.25',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -435,7 +439,14 @@ function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = '
 function fmtTime(ms) { const d = new Date(ms); return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'); }
 function sayOne(k) { const a = SAYS[k]; return a[Math.floor(Math.random() * a.length)]; }
 
-function tick() { if (S.state === 'away' && S.trip && Date.now() >= S.trip.end) { S.state = 'back'; save(); if ($('home').classList.contains('on')) renderHome(); } }
+/* v0.25（C-135）：小鳶出門時，紙條下面多一條旅途進度（小鳶沿著虛線飛，還有幾分鐘），每秒更新；不透露去哪裡 */
+function tripBar() {
+  const e = $('tripBar'); if (!e || !S.trip || S.state !== 'away') return;
+  const st = S.trip.start || Date.now(), tot = Math.max(1, S.trip.end - st), k = Math.max(0, Math.min(1, (Date.now() - st) / tot)), left = Math.max(0, S.trip.end - Date.now()), min = Math.ceil(left / 60000);
+  const txt = left < 60000 ? '快到家了！' : min < 60 ? '還有 ' + min + ' 分鐘' : '還有 ' + Math.floor(min / 60) + ' 小時' + (min % 60 ? ' ' + (min % 60) + ' 分' : '');
+  e.innerHTML = '旅途中・' + txt + '<i><b style="width:' + (k * 100).toFixed(1) + '%"></b><em style="left:' + (k * 100).toFixed(1) + '%"></em></i>';
+}
+function tick() { tripBar(); if (S.state === 'away' && S.trip && Date.now() >= S.trip.end) { S.state = 'back'; save(); if ($('home').classList.contains('on')) renderHome(); } }
 setInterval(tick, 1000);
 
 /* ====== v0.14 五個室內場景（Dari 00:31）：客廳是現有底圖；臥室、廚房、花園、學校先用程式畫的暫用示意，等 G-47 正式圖（1080×1350）。換房間小鳶會換配件 ====== */
@@ -515,7 +526,7 @@ function renderHome() {
   note.hidden = true; env.hidden = true; b.style.display = 'block'; b.className = 'bird'; $('quickBack').hidden = st !== 'away';
   if (!S.firstDone && st === 'home') { $('chip').textContent = '第一次見面！先帶小鳶在附近走走吧'; b.style.backgroundImage = 'url(assets/kite_wave.png)'; $('say').textContent = '你好！我是小鳶。'; main.textContent = '第一次，先在附近走走吧（3 分鐘）'; main.onclick = startFirst; }
   else if (st === 'home') { $('chip').textContent = '小鳶在家，還沒出發'; b.style.backgroundImage = 'url(assets/kite_home.png)'; $('say').textContent = sayOne('home'); main.textContent = '打包出門'; main.onclick = () => go('pack'); }
-  else if (st === 'away') { b.style.display = 'none'; note.hidden = false; note.textContent = '「' + (S.trip.say || sayOne('away')) + '」　— 小鳶'; $('chip').textContent = '小鳶正在旅行，大約 ' + fmtTime(S.trip.end) + ' 回來；信會等你，不會過期'; $('say').textContent = ''; main.textContent = '大約 ' + fmtTime(S.trip.end) + ' 回來'; main.onclick = () => toast('小鳶還在路上，晚點再來看看'); }
+  else if (st === 'away') { b.style.display = 'none'; note.hidden = false; note.innerHTML = ''; note.appendChild(document.createTextNode('「' + (S.trip.say || sayOne('away')) + '」　— 小鳶')); note.insertAdjacentHTML('beforeend', '<span class="trip" id="tripBar"></span>'); tripBar(); $('chip').textContent = '小鳶正在旅行，大約 ' + fmtTime(S.trip.end) + ' 回來；信會等你，不會過期'; $('say').textContent = ''; main.textContent = '大約 ' + fmtTime(S.trip.end) + ' 回來'; main.onclick = () => toast('小鳶還在路上，晚點再來看看'); }
   else { $('chip').textContent = '小鳶回來了！帶了一封信'; b.style.backgroundImage = 'url(assets/kite_back.png)'; env.hidden = false; $('say').textContent = sayOne('back'); main.textContent = '拆信'; main.onclick = openLetter; env.onclick = openLetter; }
   setRoom(S.room);
   PET.reset($('say').textContent);
