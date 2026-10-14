@@ -86,6 +86,9 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .dexline .chips span{border:1.5px solid var(--ink);border-radius:999px;padding:0 6px;font-size:11px;background:#fff}
 .dexline .chips span.no{border-style:dashed;color:var(--muted);background:transparent}
 .bentoGot{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;background:#fff7e0;border:2px solid var(--ink);font-size:14px;font-weight:700}.bentoGot img{width:40px;height:40px;object-fit:contain}.bentoGot a{margin-left:auto;color:var(--ink);white-space:nowrap}
+.recNote{margin:0;padding:6px 10px;border-radius:10px;background:#FFE9D6;border:2px dashed #E2702A;font-weight:700;text-align:center;font-size:14px;color:#8A3B12}
+.recNote.win{background:var(--gold);border:2px solid var(--ink);color:inherit;animation:recPop .6s cubic-bezier(.3,1.6,.5,1)}
+@keyframes recPop{0%{transform:scale(.6)}100%{transform:scale(1)}}
 .unlock{margin:0;padding:6px 10px;border-radius:10px;background:var(--gold);border:2px solid var(--ink);font-weight:700;text-align:center;font-size:14px}
 .dex button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
 .dex button:disabled{border-style:dashed;opacity:.55;cursor:default}
@@ -154,6 +157,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
       <div class="seal" id="seal" hidden>六種漁獲收藏章</div>
       <div class="total"><span id="totalKg">0</span> <small>分</small></div>
       <div class="rows" id="rows"></div>
+      <p class="recNote" id="recNote" hidden></p>
       <p class="unlock" id="unlockNote" hidden></p>
       <div class="bentoGot" id="bentoGot" hidden></div>
       <div class="dex" id="dex" aria-label="港邊圖鑑冊"></div>
@@ -371,7 +375,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.19',
+  version: '0.20',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -929,6 +933,12 @@ function finish() { BGM.stop();
   if (!stats.hits) add('這局沒有抓到魚', '0 條');
   const sid = session, old = prog.best[sid], before = CONFIG.sessions.filter(isOpen).length; prog.played[sid] = (prog.played[sid] || 0) + 1; if (old === undefined || kg > old) prog.best[sid] = +kg.toFixed(1); saveProg();
   const un = $('unlockNote'), opened = CONFIG.sessions.filter(isOpen); un.hidden = opened.length <= before; if (!un.hidden) un.textContent = '「' + opened[opened.length - 1].name + '」場開放了！';
+  /* v0.20（C-133）：破紀錄有大字慶祝；差一點（差 2 成以內）就提醒「差幾分破紀錄」，再玩一局的按鈕也跟著換字 */
+  { const rn = $('recNote'), ab = $('againBtn'), win = old !== undefined && kg > old, gap = old !== undefined ? old - kg : 0;
+    rn.className = 'recNote' + (win ? ' win' : ''); ab.textContent = '再玩一局';
+    if (win) { rn.hidden = false; rn.textContent = '🎉 新紀錄！比上次多 ' + PTS(kg - old) + ' 分'; }
+    else if (old !== undefined && old > 0 && gap > 0 && gap <= old * 0.2) { rn.hidden = false; rn.textContent = '只差 ' + PTS(gap) + ' 分就破紀錄！'; ab.textContent = '再一局，破紀錄！'; }
+    else rn.hidden = true; }
   add(SES().name + '場最佳', PTS(prog.best[sid]) + ' 分' + (old !== undefined && kg > old ? '　新紀錄' : ''));
   add('鯨鯊加倍時段', PTS(stats.kgInEvent) + ' 分'); add('連抓加成（最多連 ' + stats.bestCombo + '）', '+' + PTS(stats.comboBonus) + ' 分'); add('命中率', acc + '%（' + stats.hits + '/' + stats.dives + '）'); add('抓到垃圾', stats.trash + ' 次');
   // 港邊圖鑑冊：六種漁獲的小卡，抓過的可以點開看小知識；這局新抓到的標成金色
@@ -972,7 +982,7 @@ $('copyBtn').onclick = () => {
   const fallback = () => { log.value = text; log.hidden = false; log.focus(); log.select(); $('copyBtn').textContent = '請長按上方文字複製'; };
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
 };
-window.__kiteGame = { CONFIG, setSession: (s) => { session = s; renderStart(); }, prog: () => prog, state: () => ({ mode, session, t, kg, kite, things: things.map((o) => ({ type: o.type, x: o.x, y: o.y, vx: o.vx, move: o.move })), stats, shark: !!shark, flash }), skip: (s) => { t = s; } };
+window.__kiteGame = { CONFIG, setSession: (s) => { session = s; renderStart(); }, prog: () => prog, state: () => ({ mode, session, t, kg, kite, things: things.map((o) => ({ type: o.type, x: o.x, y: o.y, vx: o.vx, move: o.move })), stats, shark: !!shark, flash }), skip: (s) => { t = s; }, testEnd: (k) => { kg = k; finish(); } };      // v0.20：testEnd 只給自動測試用（指定分數直接結算）
 /* C-81／C-82（Dari 10/13 01:03）：音樂開關、暫停鈕改圖示；選單畫面也有音樂，每個場景不同曲子 */
 const MENU_TRACK = () => 'fish_' + session, PLAY_TRACK = () => 'fish_' + session;
 function drawSnd() { const h = SND_ICON[soundOn ? 'on' : 'off']; for (const b of [$('soundBtn'), $('menuSnd')]) { if (!b) continue; b.innerHTML = h; b.setAttribute('aria-pressed', String(!soundOn)); b.setAttribute('aria-label', soundOn ? '音樂開著，點一下關掉' : '音樂關著，點一下打開'); } }
