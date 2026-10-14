@@ -91,6 +91,10 @@ button{font-family:inherit}
 .shutterrow{display:flex;align-items:center;justify-content:space-between;padding:4px 24px calc(14px + env(safe-area-inset-bottom,0px))}
 .shutter{width:74px;height:74px;border-radius:50%;border:5px solid #FFF4E2;background:#fff;box-shadow:inset 0 0 0 4px var(--night)}
 .shutter:active{transform:scale(.94)}
+.timerBtn{position:absolute;right:8px;bottom:8px;z-index:7;min-height:36px;padding:6px 12px;border-radius:999px;border:2px solid rgba(255,244,226,.9);background:rgba(20,28,32,.6);color:#FFF4E2;font-size:13px;font-weight:700}
+.timerBtn.on{background:#E2702A;border-color:#FFF4E2}
+.cdnum{position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;font-size:120px;font-weight:800;color:#fff;text-shadow:0 4px 18px rgba(0,0,0,.45);pointer-events:none;animation:cdpop .9s ease-out both}
+@keyframes cdpop{0%{transform:scale(1.6);opacity:0}25%{transform:scale(1);opacity:1}100%{transform:scale(.9);opacity:.85}}
 .side{width:64px;height:64px;font-size:11px;color:#FFF4E2;text-align:center;border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
 .side .ic{width:48px;height:48px;border-radius:50%;background:rgba(255,244,226,.16);display:flex;align-items:center;justify-content:center}
 .side .ic svg{width:26px;height:26px}
@@ -153,6 +157,7 @@ button{font-family:inherit}
         <div id="layer"></div>
         <canvas class="frame" id="frameCv" width="1080" height="1440"></canvas>
         <div class="hint" id="hint">點下面的貼紙放上來</div>
+        <button class="timerBtn" id="timerBtn" type="button" aria-pressed="false">⏱ 自拍 關</button>
       </div>
     </div>
     <div class="camtools" id="camtools" hidden><div class="zpills" id="zpills" role="group" aria-label="倍率"></div></div>
@@ -377,7 +382,7 @@ const SND_ICON = (() => {
 </script>
 <script>
 /* 小鳶合照館 原型 v0.1（工作單 11 v4 P2）。貼紙、相框、解鎖方式都是建議，等 Dari 確認；正式素材之後開單給 ChatGPT */
-const CFG = { version: '0.13', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
+const CFG = { version: '0.14', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
 const $ = (id) => document.getElementById(id);
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = 'none'), 2400); }
@@ -644,7 +649,20 @@ $('fsClose').onclick = () => { $('frameSheet').hidden = true; };
 $('flipBtn').onclick = () => { if (src !== 'cam') return; facing = facing === 'user' ? 'environment' : 'user'; lensId = null; openCam(); };
 $('snapMain').onclick = () => $('snap').click();      // v0.8：主要拍照＝打開手機自己的相機
 $('clearBtn').onclick = () => { stks.forEach((o) => o.el.remove()); stks = []; sel = null; $('hint').hidden = false; };
-$('shutter').onclick = () => { select(null); sfx('shutter'); if (!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { const fl = document.createElement('div'); fl.className = 'flash'; document.body.appendChild(fl); setTimeout(() => fl.remove(), 300); } /* C-91：減少動態效果時不閃白（ChatGPT C-87 複查） */ capture(); };
+/* v0.14（C-136）：3 秒自拍——打開後按快門會倒數 3、2、1 再拍，一家人可以把手機放好一起入鏡 */
+let timerOn = false, counting = false;
+$('timerBtn').onclick = () => { timerOn = !timerOn; const b = $('timerBtn'); b.classList.toggle('on', timerOn); b.setAttribute('aria-pressed', String(timerOn)); b.textContent = timerOn ? '⏱ 自拍 3 秒' : '⏱ 自拍 關'; toast(timerOn ? '按快門後會倒數 3 秒再拍' : '自拍倒數關掉了'); };
+function countdown(done) {
+  if (counting) return; counting = true; let n = 3; const st = $('stage');
+  const step = () => {
+    st.querySelectorAll('.cdnum').forEach((e) => e.remove());
+    if (n === 0) { counting = false; done(); return; }
+    const d = document.createElement('div'); d.className = 'cdnum'; d.textContent = n; st.appendChild(d); sfx('pop'); n--; setTimeout(step, 1000);
+  };
+  step();
+}
+$('shutter').onclick = () => { if (counting) return; if (timerOn) { select(null); countdown(shoot); } else shoot(); };
+const shoot = () => { select(null); sfx('shutter'); if (!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { const fl = document.createElement('div'); fl.className = 'flash'; document.body.appendChild(fl); setTimeout(() => fl.remove(), 300); } /* C-91：減少動態效果時不閃白（ChatGPT C-87 複查） */ capture(); };
 /* v0.9：配樂（合照館曲）與音效，和其他遊戲共用開關 */
 let sndOn = SND_ICON.saved;
 function sfx(k) { if (sndOn) BGM.sfx(k); }
