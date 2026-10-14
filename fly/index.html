@@ -125,6 +125,10 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .mapnote{position:absolute;left:3%;bottom:1.2%;width:55%;margin:0;padding:4px 8px;border-radius:8px;background:rgba(16,41,61,.7);color:#DCE6EC;font-size:11px;line-height:1.35}
 #stageTitle{font-size:24px;line-height:1.25}
 .unlock{margin:0;padding:6px 10px;border-radius:10px;background:var(--gold);border:2px solid var(--ink);font-weight:700;text-align:center}
+.pinfo{display:flex;flex-direction:column;gap:4px;margin:0 0 4px;padding:8px 10px;border-radius:12px;background:#FFF6E0;font-size:14px;text-align:left}
+.pinfo div{display:flex;justify-content:space-between;gap:8px}
+.pinfo em{font-style:normal;font-weight:700}
+.pinfo .ok{color:#2E8F5A}.pinfo .no{color:#C0503A}.pinfo .wait{color:#8A7356}
 .tipNote{margin:0;padding:8px 10px;border-radius:10px;background:#EAF5FA;border:2px dashed #3F8FB8;font-size:13.5px;line-height:1.5;text-align:left}
 .tipNote b{color:#1D6A88}
 .pick{display:flex;gap:6px;justify-content:center}
@@ -198,6 +202,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
   <div class="panel" id="pausePanel" hidden>
     <div class="card">
       <h2>暫停中</h2>
+      <div class="pinfo" id="pauseInfo"></div>
       <button class="btn" id="resumeBtn">繼續</button>
       <button class="btn quiet" id="restartBtn">重新開始</button>
     </div>
@@ -425,7 +430,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.34',
+  version: '0.35',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -2439,7 +2444,15 @@ function frame(now) {
 /* ====== 流程與操作 ====== */
 function show(id) { for (const p of ['mapPanel', 'startPanel', 'pausePanel', 'resultPanel']) $(p).hidden = p !== id; }
 function start() { reset(); if (soundOn) BGM.play('fly_' + stageNo); const ub = $('ultBtn'), im = ub.querySelector('img'); if (im) im.src = 'assets/' + (NM() ? 'jiao_pair.png' : RM() ? (img.ult_icon_rail ? 'ult_icon_rail.png' : 'rail_ult.png') : PM() ? (img.fx_keel ? 'ult_icon_pier.png' : 'pier_ult.png') : 'whaleshark_top.png'); if (im && RM() && !img.ult_icon_rail) im.src = crabIconURL(); ub.setAttribute('aria-label', NM() ? '擲筊祈福' : RM() ? '呼叫紅蟹鐵道車' : PM() ? '彩虹鏡海' : '呼叫鯨鯊'); mode = 'play'; show(null); $('hud').hidden = false; $('hint').hidden = false; $('ultBtn').hidden = false; banner('第 ' + stageNo + ' 關　' + ST().name); beep(523, 0.12, 'triangle', 0.06, 260); }
-function pause() { if (mode !== 'play') return; mode = 'pause'; BGM.stop(); kite.drag = false; show('pausePanel'); }
+function pause() { if (mode !== 'play') return; mode = 'pause'; BGM.stop(); kite.drag = false; pauseInfo(); show('pausePanel'); }
+/* v0.35（C-140）：暫停時看得到這一關的三顆星條件，和「照現在這樣過關的話」拿不拿得到；還有體力 */
+function pauseInfo() {
+  const box = $('pauseInfo'); if (!box) return;
+  const w0 = won; won = true; let sv; try { sv = starsOf(); } finally { won = w0; }
+  const rows = ST().stars.map((nm, k) => k === 0 ? ['★ ' + nm, '還在努力', 'wait'] : sv[k] ? ['★ ' + nm, '目前做得到', 'ok'] : /不超過|沒有受傷/.test(nm) ? ['★ ' + nm, '這局拿不到了', 'no'] : ['★ ' + nm, '還沒達到', 'wait']);      // 被打到／小船受傷是扣了就回不來；救朋友、乾淨度是還在進行
+  rows.push(['剩下體力', Math.max(0, kite.hearts) + ' / ' + LV().hearts, kite.hearts <= 1 ? 'no' : 'ok']);
+  box.innerHTML = rows.map((x) => '<div><span>' + x[0] + '</span><em class="' + x[2] + '">' + x[1] + '</em></div>').join('');
+}
 function resume() { if (mode !== 'pause') return; mode = 'play'; if (soundOn) BGM.play('fly_' + stageNo); show(null); }
 /* v0.22（D44）：結果改用「分數」。暫用配分，之後依便當與點數規則再調（D43、D44 參數最後決定） */
 const SCORE = { cleared: 10, rescued: 50, boss: 300, heart: 50 };
