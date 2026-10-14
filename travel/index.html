@@ -68,13 +68,14 @@ header h1{font-size:20px;margin:0;flex:1}
 .emote.float{animation:pop .35s ease-out,drift 1.6s ease-in .35s forwards}
 @keyframes drift{to{transform:translate(-50%,-180%);opacity:0}}
 @keyframes bob{50%{transform:translateY(-6px)}}
+.room.night::after{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(circle at 50% 18%,rgba(255,200,120,.28),rgba(255,200,120,0) 38%),linear-gradient(rgba(16,22,58,.55),rgba(16,22,58,.62))}
 .getfish{display:block;margin-top:6px;padding:10px 12px;border-radius:14px;border:2px dashed #3F8FB8;background:#EAF5FA;color:#1D4E66;text-decoration:none;font-size:14px;line-height:1.5}
 .getfish b{color:#1D6A88}.getfish small{display:block;font-size:12px;color:#4F6F80}
 .note .trip{display:block;margin-top:6px;font-size:12.5px;color:#6B5434}
 .note .trip i{display:block;position:relative;height:8px;margin:4px 0 2px;border-radius:99px;background:repeating-linear-gradient(90deg,#E5D49B 0 6px,transparent 6px 10px)}
 .note .trip i b{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:#F0A35E}
 .note .trip i em{position:absolute;top:50%;width:24px;height:24px;margin:-14px 0 0 -12px;background:url(assets/kite_pack.png) center/contain no-repeat}
-.note{position:absolute;left:50%;bottom:9%;transform:translateX(-50%) rotate(-3deg);width:56%;padding:10px 12px;background:#FFF8D9;border:1.5px solid #E5D49B;box-shadow:0 3px 8px rgba(0,0,0,.12);font-size:14px;line-height:1.5}
+.note{z-index:3;position:absolute;left:50%;bottom:9%;transform:translateX(-50%) rotate(-3deg);width:56%;padding:10px 12px;background:#FFF8D9;border:1.5px solid #E5D49B;box-shadow:0 3px 8px rgba(0,0,0,.12);font-size:14px;line-height:1.5}
 .envelope{position:absolute;z-index:100;left:69.4%;top:76.8%;width:22.2%;height:16.2%;background:url(assets/letter_seal.png) center/contain no-repeat,url(assets/letter_env.png) center/contain no-repeat;animation:bob 1.6s infinite;cursor:pointer}
 .say{position:absolute;width:62%;text-align:center;pointer-events:none;z-index:130;transform:translate(-50%,-100%);transition:opacity .25s}
 .say.off{opacity:0}
@@ -306,7 +307,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.26',
+  version: '0.27',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -527,6 +528,9 @@ function renderHome() {
   const st = S.state, b = $('bird'), note = $('note'), env = $('envIcon'), main = $('mainBtn');
   note.hidden = true; env.hidden = true; b.style.display = 'block'; b.className = 'bird'; $('quickBack').hidden = st !== 'away';
   if (!S.firstDone && st === 'home') { $('chip').textContent = '第一次見面！先帶小鳶在附近走走吧'; b.style.backgroundImage = 'url(assets/kite_wave.png)'; $('say').textContent = '你好！我是小鳶。'; main.textContent = '第一次，先在附近走走吧（3 分鐘）'; main.onclick = startFirst; }
+  /* v0.27（C-150）：晚上 7 點到早上 6 點，小屋變成夜晚（房間暗一點、燈亮起來），小鳶在家時說晚上的話 */
+  const hh = new Date().getHours(), night = hh >= 19 || hh < 6; $('room').classList.toggle('night', night);
+  if (S.firstDone && st === 'home' && night) { $('chip').textContent = '晚上了，小鳶在家'; b.style.backgroundImage = 'url(assets/kite_home.png)'; $('say').textContent = ['天黑了，港口的燈好漂亮～', '晚上的海風涼涼的，我們明天再出門好不好？', '我在數窗外的漁船燈，一、二、三……', '晚上出門也可以喔，我會小心飛！'][Math.floor(Math.random() * 4)]; main.textContent = '打包出門'; main.onclick = () => go('pack'); }
   else if (st === 'home') { $('chip').textContent = '小鳶在家，還沒出發'; b.style.backgroundImage = 'url(assets/kite_home.png)'; $('say').textContent = sayOne('home'); main.textContent = '打包出門'; main.onclick = () => go('pack'); }
   else if (st === 'away') { b.style.display = 'none'; note.hidden = false; note.innerHTML = ''; note.appendChild(document.createTextNode('「' + (S.trip.say || sayOne('away')) + '」　— 小鳶')); note.insertAdjacentHTML('beforeend', '<span class="trip" id="tripBar"></span>'); tripBar(); $('chip').textContent = '小鳶正在旅行，大約 ' + fmtTime(S.trip.end) + ' 回來；信會等你，不會過期'; $('say').textContent = ''; main.textContent = '大約 ' + fmtTime(S.trip.end) + ' 回來'; main.onclick = () => toast('小鳶還在路上，晚點再來看看'); }
   else { $('chip').textContent = '小鳶回來了！帶了一封信'; b.style.backgroundImage = 'url(assets/kite_back.png)'; env.hidden = false; $('say').textContent = sayOne('back'); main.textContent = '拆信'; main.onclick = openLetter; env.onclick = openLetter; }
