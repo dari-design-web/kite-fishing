@@ -17,6 +17,8 @@ header{display:flex;align-items:center;gap:10px}
 header img{width:58px;height:58px;object-fit:contain;flex:none;animation:hover 3.2s ease-in-out infinite}
 header h1{margin:0;font-size:23px;letter-spacing:.04em}
 header p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
+.nightNow{margin:0;padding:8px 12px;border-radius:12px;background:linear-gradient(90deg,#2B3A6B,#3E4F86);color:#FFF4C2;font-size:13.5px;font-weight:700;line-height:1.45;box-shadow:0 0 10px rgba(80,100,200,.35)}
+.nightNow.closed{background:#E9E2D6;color:#6B5847;box-shadow:none}
 @keyframes hover{50%{transform:translateY(-5px) rotate(-3deg)}}
 .snd{margin-left:auto;flex:none;width:42px;height:42px;border-radius:50%;border:0;background:#fff;color:var(--teal-d);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(62,43,29,.18)}
 /* 稱號列 */
@@ -206,6 +208,7 @@ summary{font-weight:700;font-size:14px;cursor:pointer}
     <div><h1>港灣蓋章散步</h1><p>走一圈、蓋彩色章、收集小鳶給你的稱號</p></div>
     <button class="snd" id="snd" type="button"></button>
   </header>
+  <p class="nightNow" id="nightNow" hidden></p>
   <button class="titlebar" id="titleBar" type="button"></button>
   <div>
     <div class="bar"><i id="prog" style="width:0"></i></div>
@@ -429,7 +432,7 @@ const SND_ICON = (() => {
 /* BGM-END */
 </script>
 <script>
-const CFG = { version: '0.18', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
+const CFG = { version: '0.21', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
 const FRAMES = [[53.3333, 40.4444], [25.0463, 46.1481], [18.9352, 75.4815], [44.4907, 86.7407], [75.9722, 77.4815], [80.5093, 56.037]], FRAME_R = 10.37;      // v0.8：G-50 港區小地圖六圈中心（%）；章容器 224px＝寬 20.74%（ChatGPT 地圖位置 JSON）
 const ROUTE = [[1, 2, [[[462.8, 559.4], [449.0, 561.0], [429.0, 568.0], [410.0, 578.0], [378.3, 588.2]]]], [2, 3, [[[330.7, 717.1], [339.0, 730.0], [337.8, 734.0]], [[294.0, 784.0], [285.0, 790.0], [301.0, 820.0], [313.0, 859.0], [313.0, 902.0], [299.0, 934.0], [287.3, 944.5]]]], [3, 4, [[[290.9, 1089.4], [315.0, 1109.0], [339.0, 1130.0], [360.0, 1145.0], [372.6, 1147.7]]]], [4, 5, [[[590.5, 1181.6], [615.0, 1184.0], [638.0, 1178.0], [662.0, 1171.0], [688.0, 1157.0], [709.0, 1138.0], [736.5, 1115.3]]]], [5, 6, [[[750.1, 963.3], [721.0, 929.0], [730.0, 903.0], [740.0, 879.0], [752.0, 857.0], [786.2, 827.8]]]], [6, 1, [[[797.0, 674.6], [784.0, 660.0], [760.0, 636.0], [742.0, 613.0], [718.0, 591.0], [700.0, 579.0], [686.0, 575.3]]]]];      // 每段 [起站, 終站, 可見路段（原圖像素）]；稱號帶的斷口不補線
 /* 6 個蓋章點（實際位置待 Dari 現勘）。color：每站主色（工作單 18）；title：蓋到就拿到的稱號（建議）；riddle：還沒去時的提示 */
@@ -539,6 +542,10 @@ function nextSpot() {      // v0.9：建議下一站＝照地圖散步圈，最�
 }
 function render() {
   $('ver').textContent = 'v' + CFG.version;
+  /* v0.21（C-159）：晚上 6～10 點上方出現「現在蓋的是夜間版章」提示；10 點後到清晨 6 點提醒「今晚打烊了，明天再來」（打烊時間照 Dari 10/13 16:58；文字是建議） */
+  { const h = new Date().getHours(), nn = $('nightNow');
+    if (h >= CFG.nightFrom && h < CFG.nightTo) { nn.textContent = '🌙 現在是夜間時段：晚上 ' + (CFG.nightTo - 12) + ' 點前蓋的章會是限定的「夜間版」，章旁邊有星星喔！'; nn.className = 'nightNow'; nn.hidden = false; }
+    else if (h >= CFG.nightTo || h < 6) { nn.textContent = '🏮 港邊今晚打烊了，明天再來蓋章吧！護照裡的章都還在。'; nn.className = 'nightNow closed'; nn.hidden = false; } }
   $('grid').innerHTML = SPOTS.map((s, i) => {
     const done = !!P.spots[s.id], [x, y] = FRAMES[i], d = FRAME_R * 2, v = P.var[s.id] || '', lv = lvOf(s.id);
     const cls = 'pcell' + (done ? ' done' : '') + (s.id === justId ? ' new' : '') + (done && lv >= 2 ? ' ring' + lv : '');
