@@ -552,7 +552,11 @@ function render() {
   const nx = nextSpot();
   $('progTxt').innerHTML = n() === 6 ? '<b>6 站都蓋好了！</b>同一站不同天再來蓋，章會升級成銀框、金框。' : '<b>' + n() + ' / 6 站</b>・下一站可以去：' + nx.riddle + '（找現場的 QR 立牌，不用照順序）';
   if (nx) { const c = $('grid').querySelector('.pcell[data-id="' + nx.id + '"]'); if (c) c.classList.add('next'); }
-  { let fr = {}; try { fr = JSON.parse(localStorage.getItem('kiteFriends1') || '{}') || {}; } catch (e) {} const nf = Object.keys(fr).length, pl = $('palLink'); if (pl) pl.innerHTML = '<img src="../meet/assets/pal_f4.webp" alt=""><span>館內的港口朋友 <b>' + nf + ' / 6</b><br><small style="font-weight:400">' + (nf >= 6 ? '六位都見過了！' : '找大大的充氣朋友，掃旁邊的 QR 打招呼') + '</small></span>›'; }
+  { let fr = {}; try { fr = JSON.parse(localStorage.getItem('kiteFriends1') || '{}') || {}; } catch (e) {} const nf = Object.keys(fr).length, pl = $('palLink');
+    /* v0.19（C-132）：卡片顯示下一位還沒見過的朋友（灰色剪影）＋一句線索（只講長相個性，和港口朋友頁 v0.4 同一套；文字是建議） */
+    const CLUE = { 1: '喜歡躲在牆後面，只露出頭偷看港口', 2: '走累了就會趴下來睡一覺', 3: '揹著背包、拿著明信片，像剛下船的旅人', 4: '身體很大、身上有白點點，可是很溫柔', 5: '慢慢游、會揮手，以前被塑膠袋纏住過', 6: '小小的、晚上會發光，喜歡漁船的燈' };
+    const nxp = [4, 5, 6, 1, 2, 3].find((i) => !fr[i]);
+    if (pl) pl.innerHTML = '<img src="../meet/assets/pal_f' + (nxp || 4) + '.webp" alt=""' + (nxp ? ' style="filter:grayscale(1) brightness(1.2);opacity:.55"' : '') + '><span>館內的港口朋友 <b>' + nf + ' / 6</b><br><small style="font-weight:400">' + (nf >= 6 ? '六位都見過了！' : '下一位線索：' + CLUE[nxp] + '。找到就掃旁邊的 QR') + '</small></span>›'; }
   $('secret').innerHTML = P.secret ? '<span class="sv">' + secretV() + '</span><p><b>祕密章：' + SECRET.title + '</b><br>你找到藏起來的第 7 個章了！</p>' : '<span class="lock">？</span><p><b>第 7 個祕密章</b><br>' + SECRET.hint + '<br>' + ['<span>六個章 ' + Math.min(n(), 6) + ' / 6' + (n() >= 6 ? ' ✓' : '') + '</span>'].concat(SECRET_NEED.map((q) => { const g = Math.min(q.get(), q.need); return '<span>' + q.name + ' ' + g + ' / ' + q.need + (g >= q.need ? ' ✓' : '') + '</span>'; })).join('<br>') + '</p>';
   const r = $('reward'); r.hidden = !P.complete;
   r.innerHTML = '<img src="assets/pc_passport.jpg" alt="" style="width:96px;height:60px;object-fit:cover;border-radius:4px;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.2)"><p><b>集滿獎勵已收下</b><br>護照紀念明信片在小屋收藏冊（港灣護照），小鳶的雨傘在背包。</p>';
