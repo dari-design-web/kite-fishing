@@ -68,6 +68,8 @@ header h1{font-size:20px;margin:0;flex:1}
 .emote.float{animation:pop .35s ease-out,drift 1.6s ease-in .35s forwards}
 @keyframes drift{to{transform:translate(-50%,-180%);opacity:0}}
 @keyframes bob{50%{transform:translateY(-6px)}}
+.getfish{display:block;margin-top:6px;padding:10px 12px;border-radius:14px;border:2px dashed #3F8FB8;background:#EAF5FA;color:#1D4E66;text-decoration:none;font-size:14px;line-height:1.5}
+.getfish b{color:#1D6A88}.getfish small{display:block;font-size:12px;color:#4F6F80}
 .note .trip{display:block;margin-top:6px;font-size:12.5px;color:#6B5434}
 .note .trip i{display:block;position:relative;height:8px;margin:4px 0 2px;border-radius:99px;background:repeating-linear-gradient(90deg,#E5D49B 0 6px,transparent 6px 10px)}
 .note .trip i b{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:#F0A35E}
@@ -304,7 +306,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.25',
+  version: '0.26',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -703,6 +705,12 @@ function renderPack() {
     btn.innerHTML = bentoIcon(k) + '<span class="tx">' + b.name + '<small>' + b.note + '｜' + (k === 'walk' ? '只到東三東四' : '去' + b.dists.map((d) => DIST_NAME[d]).join('、') + '的地方') + '｜' + (b.hours < 1 ? b.hours * 60 + ' 分鐘' : b.hours + ' 小時') + '</small></span><span class="n">' + (k === 'walk' ? '' : '×' + n) + '</span>';
     btn.onclick = () => { pk.bento = pk.bento === k ? '' : k; if (k === 'walk') pk.items = []; pk.pick = ''; renderPack(); };
     bl.appendChild(btn);
+  }
+  /* v0.26（C-146）：小卷、白帶魚便當都沒有時，直接給一個「去港邊抓魚」的入口（抓到就能做便當） */
+  if (bentoCount('squid') <= 0 && bentoCount('hair') <= 0) {
+    const a = document.createElement('a'); a.className = 'getfish'; a.href = '../';
+    a.innerHTML = '🎣 想做小卷或白帶魚便當？<b>去港邊抓魚 ›</b><small>一局抓到小卷 3 隻或白帶魚 2 隻，就會做好送過來</small>';
+    bl.appendChild(a);
   }
   const il = $('itemList'); il.innerHTML = '';
   for (const k of ['camera', 'telescope', 'umbrella']) {
