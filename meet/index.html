@@ -75,6 +75,9 @@ header .t{flex:1;text-align:right;font-size:12px;font-weight:700;color:#1F5A5F}
 .slot img{width:84%;height:84%;object-fit:contain}
 .slot.no img{filter:grayscale(1) brightness(1.3);opacity:.3}
 .slot.now{box-shadow:0 0 0 3px var(--buoy)}
+.slot.no{cursor:pointer}
+.slot.no::after{content:'？';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#B9A98C}
+.slot.ask{box-shadow:0 0 0 3px #7FB8D8}
 .cap{font-size:10.5px;text-align:center;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .btns{display:flex;gap:8px}.btns .go{flex:1;text-decoration:none;text-align:center}
 .note{font-size:11px;color:var(--muted);text-align:center;margin:0}
@@ -89,7 +92,7 @@ header a{padding:7px 12px}
 </head>
 <body>
 <main class="phone" id="app">
-  <header><a href="../hub/">‹ 首頁</a><span class="t">港口朋友・原型 v0.3・角色暫用</span></header>
+  <header><a href="../hub/">‹ 首頁</a><span class="t">港口朋友・原型 v0.4・角色暫用</span></header>
   <div class="stage" id="stage"></div>
   <section class="panel" id="panel"></section>
 </main>
@@ -98,17 +101,17 @@ header a{padding:7px 12px}
   /* 六位朋友（工作單 20 v2，Dari 10/13 21:38 D70；角色不定稿，台詞是建議）。現場正式版：每隻充氣角色旁一個 QR，網址帶 ?f=編號 */
   var FRIENDS = [
     { id: 1, name: '小鳶', tag: '探頭小鳶', anim: 'peek', img: 'assets/pal_f1.webp', wall: 'KEELUNG 基隆',
-      lines: ['嘿！你發現我了！', '我常常躲在牆後面偷看港口，大船一來就探頭。', '要不要跟我一起拍照？站到牆前面就跟我一樣高喔！'] },
+      clue: '喜歡躲在牆後面，只露出頭偷看港口', lines: ['嘿！你發現我了！', '我常常躲在牆後面偷看港口，大船一來就探頭。', '要不要跟我一起拍照？站到牆前面就跟我一樣高喔！'] },
     { id: 2, name: '小鳶', tag: '打盹小鳶', anim: 'nap', img: 'assets/pal_f2.webp',
-      lines: ['呼……呼……', '啊！被你吵醒了，嘿嘿，我剛剛夢到好多魚。', '你也走累了吧？在這裡坐一下，休息一下下。'] },
+      clue: '走累了就會趴下來睡一覺，旁邊可能飄著 Z', lines: ['呼……呼……', '啊！被你吵醒了，嘿嘿，我剛剛夢到好多魚。', '你也走累了吧？在這裡坐一下，休息一下下。'] },
     { id: 3, name: '小鳶', tag: '剛到港口的小鳶', anim: 'arrive', img: 'assets/pal_f3.webp',
-      lines: ['我到啦！這裡就是基隆港！', '我揹著背包、帶著明信片，從好遠的地方飛來。', '在手機裡帶便當給我，我就會再出門旅行，寄明信片給你喔！'] },
+      clue: '揹著背包、拿著明信片，像剛下船的旅人', lines: ['我到啦！這裡就是基隆港！', '我揹著背包、帶著明信片，從好遠的地方飛來。', '在手機裡帶便當給我，我就會再出門旅行，寄明信片給你喔！'] },
     { id: 4, name: '鯨鯊', tag: '小鳶的好朋友', anim: 'swim', img: 'assets/pal_f4.webp',
-      lines: ['你好～我是鯨鯊，小鳶的好朋友。', '我身體很大，可是很溫柔，只吃小小的浮游生物。', '小鳶抓魚的時候，我都在旁邊幫他加油！'] },
+      clue: '身體很大、身上有白點點，可是很溫柔', lines: ['你好～我是鯨鯊，小鳶的好朋友。', '我身體很大，可是很溫柔，只吃小小的浮游生物。', '小鳶抓魚的時候，我都在旁邊幫他加油！'] },
     { id: 5, name: '海龜', tag: '被小鳶救過的海龜', anim: 'wave', img: 'assets/pal_f5.webp',
-      lines: ['謝謝你來看我！', '上次我被塑膠袋纏住，是小鳶飛下來救了我。', '你也幫幫我們：垃圾不要丟進海裡，好嗎？'] },
+      clue: '慢慢游、會揮手，以前被塑膠袋纏住過', lines: ['謝謝你來看我！', '上次我被塑膠袋纏住，是小鳶飛下來救了我。', '你也幫幫我們：垃圾不要丟進海裡，好嗎？'] },
     { id: 6, name: '小卷', tag: '會發光的小卷', anim: 'glow', img: 'assets/pal_f6.webp',
-      lines: ['咻咻～我是小卷，基隆夜裡最亮的小傢伙！', '漁船的燈一亮，我們就一群一群游過來。', '晚上再來看我，我會發光跳舞給你看！'] }
+      clue: '小小的、晚上會發光，喜歡漁船的燈', lines: ['咻咻～我是小卷，基隆夜裡最亮的小傢伙！', '漁船的燈一亮，我們就一群一群游過來。', '晚上再來看我，我會發光跳舞給你看！'] }
   ];
   var KEY = 'kiteFriends1';
   function read() { try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { return {}; } }
@@ -117,7 +120,7 @@ header a{padding:7px 12px}
   var app = document.getElementById('app'), stage = document.getElementById('stage'), panel = document.getElementById('panel');
   var h = new Date().getHours(); if (h >= 18 || h < 6) app.classList.add('night');
   function slots(met, now) {
-    return '<div class="row">' + FRIENDS.map(function (x) { var ok = !!met[x.id]; return '<div><div class="slot' + (ok ? '' : ' no') + (x.id === now ? ' now' : '') + '"><img src="' + x.img + '" onerror="this.onerror=null;this.src=this.src.replace(\'.webp\',\'.png\')" alt=""></div><div class="cap">' + (ok ? x.tag : '？？？') + '</div></div>'; }).join('') + '</div>';
+    return '<div class="row">' + FRIENDS.map(function (x) { var ok = !!met[x.id]; return '<div><div data-id="' + x.id + '" class="slot' + (ok ? '' : ' no') + (x.id === now ? ' now' : '') + '"><img src="' + x.img + '" onerror="this.onerror=null;this.src=this.src.replace(\'.webp\',\'.png\')" alt=""></div><div class="cap">' + (ok ? x.tag : '？？？') + '</div></div>'; }).join('') + '</div>';
   }
   if (!F) {
     /* 沒帶編號：測試用的六位朋友選單（正式版現場掃 QR 直接進到那一位） */
@@ -156,7 +159,16 @@ header a{padding:7px 12px}
     bb.innerHTML = '<b>小鳶</b>' + (n >= 6 ? '六位港口朋友你都見過了！你是我們大家的好朋友！' : first ? '耶！' + F.tag + '跟你變成朋友了。館內還有 ' + (6 - n) + ' 位朋友等你找喔！' : '再來找我們玩～館內還有 ' + (6 - n) + ' 位朋友沒見過喔！');
     var g = document.getElementById('got'); g.classList.add('on');
     g.innerHTML = '<div class="msg">港口朋友 <em>' + n + ' / 6</em></div>' + slots(met, F.id) +
-      '<div class="btns"><a class="go alt" href="../hub/">回首頁看背包</a><a class="go" href="../stamp/">去蓋章</a></div><p class="note">只存在這支手機・圖都是暫用</p>';
+      '<div class="btns"><a class="go alt" href="../hub/">回首頁看背包</a><a class="go" href="../stamp/">去蓋章</a></div><p class="note">' + (n < 6 ? '點「？」看還沒見過的朋友線索・' : '') + '只存在這支手機・圖都是暫用</p>';
+    /* C-130：點沒見過的格子，小鳶給一句找朋友的線索（只講長相個性，不講位置；位置等 Dari 決定） */
+    g.querySelectorAll('.slot.no').forEach(function (el) {
+      el.onclick = function () {
+        var x = FRIENDS.filter(function (f) { return f.id === +el.getAttribute('data-id'); })[0];
+        g.querySelectorAll('.slot.ask').forEach(function (o) { o.classList.remove('ask'); });
+        el.classList.add('ask'); chime(1);
+        bb.innerHTML = '<b>小鳶</b>線索：有一位朋友' + x.clue + '。在館內找找看！';
+      };
+    });
     chime(first ? 4 : 2);
     var r = document.getElementById('who').getBoundingClientRect(), a = app.getBoundingClientRect();
     for (var i = 0; i < 5; i++) setTimeout(function () { heart(r.left - a.left + r.width * (0.2 + Math.random() * 0.6), r.top - a.top + r.height * 0.3); }, i * 120);
