@@ -109,6 +109,8 @@ button{font-family:inherit}
 .kitesay{display:flex;align-items:center;gap:8px;margin:0 14px;padding:6px 12px 6px 6px;border-radius:16px;background:rgba(255,244,226,.12);color:#FFF4E2;font-size:14px;line-height:1.45}
 .kitesay img{width:46px;height:46px;object-fit:contain;flex:none}
 .kitesay b{color:#FFD58A}
+.kitesay.ms{background:linear-gradient(135deg,#F2C14E,#E8A33A);color:#3E2B1D;box-shadow:0 0 0 2px #FFF4C2;animation:msPop .6s cubic-bezier(.3,1.6,.5,1)}.kitesay.ms b{color:#7A3E0E}
+@keyframes msPop{0%{transform:scale(.8)}100%{transform:none}}
 .pnote{font-size:12px;opacity:.7;text-align:center;padding:0 14px calc(14px + env(safe-area-inset-bottom,0px))}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 /* C-124：短螢幕按鈕至少約 36～40 點高，手指好按 */
@@ -386,7 +388,7 @@ const SND_ICON = (() => {
 </script>
 <script>
 /* 小鳶合照館 原型 v0.1（工作單 11 v4 P2）。貼紙、相框、解鎖方式都是建議，等 Dari 確認；正式素材之後開單給 ChatGPT */
-const CFG = { version: '0.16', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
+const CFG = { version: '0.17', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
 const $ = (id) => document.getElementById(id);
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = 'none'), 2400); }
@@ -607,7 +609,10 @@ function kiteSay() {
   let st = read('kitePhoto1') || { n: 0 }; st.n = (st.n || 0) + 1; try { localStorage.setItem('kitePhoto1', JSON.stringify(st)); } catch (e) {}
   const ids = stks.map((o) => o.d.id).join(' '), pals = /pal_f|shark|whale/.test(ids);
   const L = pals ? ['我的好朋友也一起入鏡了！', '大家擠在一起，好熱鬧喔！'] : stks.length ? ['我站這裡可以嗎？嘿嘿！', '這張我笑得最好看！', '貼紙放得好可愛！'] : ['下次放我進去一起拍嘛～', '風景好漂亮！要不要加個貼紙？'];
-  $('kiteSayT').innerHTML = '<b>第 ' + st.n + ' 張合照！</b>' + L[Math.floor(Math.random() * L.length)];
+  /* v0.17（C-163）：第 5、10、20、30、50 張是里程碑，小鳶說特別的話、對話框變金色（句子是建議） */
+  const MS = { 5: '5 張了！你是合照小達人！', 10: '10 張！小鳶的相簿越來越厚，好開心！', 20: '20 張！你一定是港口最會拍照的人！', 30: '30 張！我們拍了好多回憶喔！', 50: '50 張！謝謝你一直陪小鳶拍照，最喜歡你了！' };
+  $('kiteSayT').innerHTML = '<b>第 ' + st.n + ' 張合照！' + (MS[st.n] ? ' 🏅' : '') + '</b>' + (MS[st.n] || L[Math.floor(Math.random() * L.length)]);
+  $('kiteSay').classList.toggle('ms', !!MS[st.n]);
   $('kiteSay').hidden = false;
 }
 function capture() {
