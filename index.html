@@ -81,6 +81,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .pick button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
 .pick button[aria-pressed="true"] small{color:#DCE6EC}
 .pick button:disabled{opacity:.5}
+.lucky{margin:0;padding:5px 10px;border-radius:999px;background:#FFF1C9;border:1.5px solid #E8C25A;font-size:13px;font-weight:700;color:#7A5410;text-align:center}
 .dexline{font-size:13px;text-align:left;border:1.5px dashed var(--line);border-radius:10px;padding:6px 8px;color:var(--ink)}
 .dexline .chips{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
 .dexline .chips span{border:1.5px solid var(--ink);border-radius:999px;padding:0 6px;font-size:11px;background:#fff}
@@ -139,7 +140,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
         <li><b>便當</b><span>一局抓到小卷 3 隻、白帶魚 2 條，就做成便當讓小鳶去旅行</span></li>
       </ul>
       <button class="btn" id="startBtn">開始</button>
-      <p class="note">原型 v0.17：暫用素材、不發點數。進度只存在這支手機的瀏覽器</p>
+      <p class="note">原型 v0.21：暫用素材、不發點數。進度只存在這支手機的瀏覽器</p>
     </div>
   </div>
 
@@ -375,7 +376,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.20',
+  version: '0.21',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -423,6 +424,8 @@ const $ = (id) => document.getElementById(id);
 const stage = $('stage'), cv = $('world'), ctx = cv.getContext('2d');
 const { W, H } = CONFIG;
 const SPECIES = Object.keys(CONFIG.fish);
+/* v0.21（C-138，工作單 21 ②回訪理由）：每天換一種「今日幸運魚」，抓到分數 ×1.5（大物不算）；倍數是建議。測試可用 ?lucky=魚代號 指定 */
+const LUCKY = (() => { const pool = SPECIES.filter((k) => !CONFIG.fish[k].rare), q = (location.search.match(/[?&]lucky=(\w+)/) || [])[1]; if (q && pool.includes(q)) return q; const d = new Date(), n = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000); return pool[n % pool.length]; })(), LUCKY_MUL = 1.5;
 const PAL = { body: '#A66F45', wing: '#865B3D', cream: '#F5DDB7', gold: '#F4BB42', tip: '#56534D', blush: '#F4AF91', line: '#402B20' };
 const rand = (a, b) => a + Math.random() * (b - a);
 const calm = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -532,11 +535,11 @@ function resolveDive() {
     say('抓到垃圾，暈一下', tx, ty - 18, '#FFD0C4'); beep(140, 0.25, 'square', 0.05, -60);
   } else if (best) {
     things.splice(things.indexOf(best), 1);
-    const def = CONFIG.fish[best.type], inEvent = t >= CONFIG.event.from && t < CONFIG.event.to, mult = inEvent ? CONFIG.event.mult : 1, gain = def.kg * mult;
+    const def = CONFIG.fish[best.type], inEvent = t >= CONFIG.event.from && t < CONFIG.event.to, mult = inEvent ? CONFIG.event.mult : 1, lucky = best.type === LUCKY, gain = def.kg * mult * (lucky ? LUCKY_MUL : 1);
     kg += gain; stats.hits++; stats.counts[best.type]++; if (inEvent) stats.kgInEvent += gain; kite.carry = best.type; firstCatchDone = true;
     stats.combo++; stats.bestCombo = Math.max(stats.bestCombo, stats.combo);
     if (!dex[best.type]) { dex[best.type] = true; stats.newDex.push(best.type); try { localStorage.setItem('kiteFishingDex2', JSON.stringify(dex)); } catch (e) {} }
-    say(def.name + ' +' + PTS(gain) + (mult > 1 ? ' ×' + mult : ''), tx, ty - 18, mult > 1 || def.rare ? '#FFE08A' : '#fff');
+    say((lucky ? '幸運魚！' : '') + def.name + ' +' + PTS(gain) + (mult > 1 ? ' ×' + mult : ''), tx, ty - 18, mult > 1 || def.rare || lucky ? '#FFE08A' : '#fff'); if (lucky) stars(tx, ty, 6, 60, '#FFE08A');
     if (stats.combo >= CONFIG.combo.from) { kg += CONFIG.combo.bonus; stats.comboBonus += CONFIG.combo.bonus; if (stats.combo === CONFIG.combo.from || stats.combo % 5 === 0) say('連抓 ' + stats.combo + '！', tx, ty - 48, '#BFF0D0'); stars(tx, ty, 5, 50, '#9FF0C8'); }      /* C-94：連抓只在第 3、5、10…條跳字，其他用徽章；薄荷綠小水花（ChatGPT C-88 建議） */
     bubbles(tx, ty, 5);
     if (best.type === 'squid') ink(tx, ty);
@@ -907,6 +910,7 @@ function renderStart() {
     b.append(s.name, sm); b.onclick = () => { session = s.id; renderStart(); }; box.appendChild(b);
   }
   $('sessionNote').textContent = SES().note;
+  { let lk = $('luckyLine'); if (!lk) { lk = document.createElement('p'); lk.id = 'luckyLine'; lk.className = 'lucky'; $('sessionNote').after(lk); } lk.textContent = '🍀 今日幸運魚：' + CONFIG.fish[LUCKY].name + '（抓到分數 ×1.5，明天會換）'; }
   const got = SPECIES.filter((k) => dex[k]), miss = SPECIES.filter((k) => !dex[k]), dl = $('dexLine'); dl.textContent = '';
   const head = document.createElement('div'); head.textContent = '港邊圖鑑 ' + got.length + ' / ' + SPECIES.length + (miss.length ? '　還沒抓過：' + CONFIG.fish[miss[0]].name + '（' + hintOf(miss[0]) + '）' : '　六種都抓到了！'); dl.appendChild(head);
   const chips = document.createElement('div'); chips.className = 'chips';
@@ -982,7 +986,7 @@ $('copyBtn').onclick = () => {
   const fallback = () => { log.value = text; log.hidden = false; log.focus(); log.select(); $('copyBtn').textContent = '請長按上方文字複製'; };
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
 };
-window.__kiteGame = { CONFIG, setSession: (s) => { session = s; renderStart(); }, prog: () => prog, state: () => ({ mode, session, t, kg, kite, things: things.map((o) => ({ type: o.type, x: o.x, y: o.y, vx: o.vx, move: o.move })), stats, shark: !!shark, flash }), skip: (s) => { t = s; }, testEnd: (k) => { kg = k; finish(); } };      // v0.20：testEnd 只給自動測試用（指定分數直接結算）
+window.__kiteGame = { CONFIG, lucky: () => LUCKY, setSession: (s) => { session = s; renderStart(); }, prog: () => prog, state: () => ({ mode, session, t, kg, kite, things: things.map((o) => ({ type: o.type, x: o.x, y: o.y, vx: o.vx, move: o.move })), stats, shark: !!shark, flash }), skip: (s) => { t = s; }, testEnd: (k) => { kg = k; finish(); } };      // v0.20：testEnd 只給自動測試用（指定分數直接結算）
 /* C-81／C-82（Dari 10/13 01:03）：音樂開關、暫停鈕改圖示；選單畫面也有音樂，每個場景不同曲子 */
 const MENU_TRACK = () => 'fish_' + session, PLAY_TRACK = () => 'fish_' + session;
 function drawSnd() { const h = SND_ICON[soundOn ? 'on' : 'off']; for (const b of [$('soundBtn'), $('menuSnd')]) { if (!b) continue; b.innerHTML = h; b.setAttribute('aria-pressed', String(!soundOn)); b.setAttribute('aria-label', soundOn ? '音樂開著，點一下關掉' : '音樂關著，點一下打開'); } }
