@@ -17,6 +17,8 @@ header{display:flex;align-items:center;gap:10px}
 header img{width:58px;height:58px;object-fit:contain;flex:none;animation:hover 3.2s ease-in-out infinite}
 header h1{margin:0;font-size:23px;letter-spacing:.04em}
 header p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
+#prog.almost{animation:progPulse 1.4s ease-in-out infinite}
+@keyframes progPulse{50%{filter:brightness(1.25)}}
 .nightNow{margin:0;padding:8px 12px;border-radius:12px;background:linear-gradient(90deg,#2B3A6B,#3E4F86);color:#FFF4C2;font-size:13.5px;font-weight:700;line-height:1.45;box-shadow:0 0 10px rgba(80,100,200,.35)}
 .nightNow.closed{background:#E9E2D6;color:#6B5847;box-shadow:none}
 @keyframes hover{50%{transform:translateY(-5px) rotate(-3deg)}}
@@ -432,7 +434,7 @@ const SND_ICON = (() => {
 /* BGM-END */
 </script>
 <script>
-const CFG = { version: '0.21', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
+const CFG = { version: '0.22', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
 const FRAMES = [[53.3333, 40.4444], [25.0463, 46.1481], [18.9352, 75.4815], [44.4907, 86.7407], [75.9722, 77.4815], [80.5093, 56.037]], FRAME_R = 10.37;      // v0.8：G-50 港區小地圖六圈中心（%）；章容器 224px＝寬 20.74%（ChatGPT 地圖位置 JSON）
 const ROUTE = [[1, 2, [[[462.8, 559.4], [449.0, 561.0], [429.0, 568.0], [410.0, 578.0], [378.3, 588.2]]]], [2, 3, [[[330.7, 717.1], [339.0, 730.0], [337.8, 734.0]], [[294.0, 784.0], [285.0, 790.0], [301.0, 820.0], [313.0, 859.0], [313.0, 902.0], [299.0, 934.0], [287.3, 944.5]]]], [3, 4, [[[290.9, 1089.4], [315.0, 1109.0], [339.0, 1130.0], [360.0, 1145.0], [372.6, 1147.7]]]], [4, 5, [[[590.5, 1181.6], [615.0, 1184.0], [638.0, 1178.0], [662.0, 1171.0], [688.0, 1157.0], [709.0, 1138.0], [736.5, 1115.3]]]], [5, 6, [[[750.1, 963.3], [721.0, 929.0], [730.0, 903.0], [740.0, 879.0], [752.0, 857.0], [786.2, 827.8]]]], [6, 1, [[[797.0, 674.6], [784.0, 660.0], [760.0, 636.0], [742.0, 613.0], [718.0, 591.0], [700.0, 579.0], [686.0, 575.3]]]]];      // 每段 [起站, 終站, 可見路段（原圖像素）]；稱號帶的斷口不補線
 /* 6 個蓋章點（實際位置待 Dari 現勘）。color：每站主色（工作單 18）；title：蓋到就拿到的稱號（建議）；riddle：還沒去時的提示 */
@@ -557,8 +559,10 @@ function render() {
   $('route').innerHTML = routeSVG();
   justId = 0; $('passport').classList.toggle('full', n() === 6 && !!P.complete);
   $('count').textContent = n() + ' / 6'; $('prog').style.width = (n() / 6 * 100) + '%';
+  /* v0.22（C-167）：走到一半（3 站）和只差一站（5 站）時，進度文字加一句打氣（只差一站時進度條會一閃一閃）（文字是建議） */
+  $('prog').classList.toggle('almost', n() === 5);
   const nx = nextSpot();
-  $('progTxt').innerHTML = n() === 6 ? '<b>6 站都蓋好了！</b>同一站不同天再來蓋，章會升級成銀框、金框。' : '<b>' + n() + ' / 6 站</b>・下一站可以去：' + nx.riddle + '（找現場的 QR 立牌，不用照順序）';
+  $('progTxt').innerHTML = n() === 6 ? '<b>6 站都蓋好了！</b>同一站不同天再來蓋，章會升級成銀框、金框。' : '<b>' + n() + ' / 6 站</b>' + ({ 3: ' 🎉 走一半了！', 5: ' 🔥 只差最後一站！' }[n()] || '') + '・下一站可以去：' + nx.riddle + '（找現場的 QR 立牌，不用照順序）';
   if (nx) { const c = $('grid').querySelector('.pcell[data-id="' + nx.id + '"]'); if (c) c.classList.add('next'); }
   { let fr = {}; try { fr = JSON.parse(localStorage.getItem('kiteFriends1') || '{}') || {}; } catch (e) {} const nf = Object.keys(fr).length, pl = $('palLink');
     /* v0.19（C-132）：卡片顯示下一位還沒見過的朋友（灰色剪影）＋一句線索（只講長相個性，和港口朋友頁 v0.4 同一套；文字是建議） */
