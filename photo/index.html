@@ -388,7 +388,7 @@ const SND_ICON = (() => {
 </script>
 <script>
 /* 小鳶合照館 原型 v0.1（工作單 11 v4 P2）。貼紙、相框、解鎖方式都是建議，等 Dari 確認；正式素材之後開單給 ChatGPT */
-const CFG = { version: '0.17', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
+const CFG = { version: '0.18', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
 const $ = (id) => document.getElementById(id);
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = 'none'), 2400); }
@@ -434,7 +434,9 @@ let seasonI = (() => { const h = new Date().getHours(); return h < 9 ? 0 : h < 1
 const FRAMES = ['碼頭', '港灣四時', '本週主題', '鯨鯊泡泡', '夜市燈籠', '正濱彩色屋', '深澳鐵道', '潮境海洋'];
 /* v0.16（C-158）：晚上 7 點到早上 6 點打開，預設相框先換成「夜市燈籠」，第一次進拍照畫面跳一句提示；可以照常按「換相框」換掉（建議） */
 const NIGHT_NOW = (() => { const h = new Date().getHours(); return h >= 19 || h < 6; })();
-let frameI = NIGHT_NOW ? 4 : 0, nightTold = false;
+/* v0.18（C-173）：早上 6 點到 9 點打開，預設相框換成「港灣四時・清晨」，第一次進拍照畫面跳一句提示（建議） */
+const MORNING_NOW = (() => { const h = new Date().getHours(); return h >= 6 && h < 9; })();
+let frameI = NIGHT_NOW ? 4 : MORNING_NOW ? 1 : 0, nightTold = false;
 function roundRect(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
 function today() { const d = new Date(); return d.getFullYear() + '.' + (d.getMonth() + 1) + '.' + d.getDate(); }
 const G46 = { frame_shark: 1, frame_night: 1, frame_color: 1, frame_rail: 1, frame_tide: 1 };      // G-46 五款全部到齊（10/13，暫用）
@@ -541,7 +543,7 @@ function useImage(url) { stopCam(); const b = $('bgimg'); b.src = url; b.hidden 
  VIEW.z = 1; $('camtools').hidden = true; $('albThumb').style.backgroundImage = 'url(' + url + ')'; applyView(); show('shoot'); }
 /* v0.3：舞台寬高一起按 3:4 放進可用空間，預覽和 1080×1440 匯出比例一致（ChatGPT 複查第 4 點） */
 function fitStage() { const w = document.querySelector('.stagewrap'), st = $('stage'); if (!w) return; st.style.width = st.style.height = '0px'; const W = w.clientWidth - 16, H = w.clientHeight; if (!H) return; const sw = Math.min(W, H * 3 / 4); st.style.width = sw + 'px'; st.style.height = (sw * 4 / 3) + 'px'; }      // v0.6：先把舞台縮成 0 再量可用空間，避免矮螢幕舞台蓋到上方按鈕
-function show(id) { for (const s of document.querySelectorAll('.screen')) s.classList.toggle('on', s.id === id); if (id === 'shoot') { if (NIGHT_NOW && !nightTold && frameI === 4) { nightTold = true; setTimeout(() => toast('晚上了，換上夜市燈籠相框 🏮'), 400); } fitStage(); requestAnimationFrame(() => { fitStage(); stks.forEach(place); }); redrawFrame(); renderTray(); stks.forEach(place); } }
+function show(id) { for (const s of document.querySelectorAll('.screen')) s.classList.toggle('on', s.id === id); if (id === 'shoot') { if (NIGHT_NOW && !nightTold && frameI === 4) { nightTold = true; setTimeout(() => toast('晚上了，換上夜市燈籠相框 🏮'), 400); } else if (MORNING_NOW && !nightTold && frameI === 1) { nightTold = true; setTimeout(() => toast('早安！換上清晨的港灣相框 🌅'), 400); } fitStage(); requestAnimationFrame(() => { fitStage(); stks.forEach(place); }); redrawFrame(); renderTray(); stks.forEach(place); } }
 
 /* ---- 貼紙：放上、拖曳、兩指縮放旋轉、右下角把手縮放旋轉、左上刪除 ---- */
 let stks = [], sel = null, tab = TABS[0];
