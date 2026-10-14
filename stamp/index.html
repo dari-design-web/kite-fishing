@@ -181,6 +181,7 @@ summary{font-weight:700;font-size:14px;cursor:pointer}
 @keyframes fall{to{transform:translate(var(--dx),110vh) rotate(var(--r))}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 /* v0.18（C-127）：護照下面多一條「館內的港口朋友」，連到港口朋友頁 */
+.nextTip{margin:2px 0 0;padding:8px 12px;border-radius:12px;background:#EAF5FA;border:2px dashed #3F8FB8;font-size:14px;color:#1D4E66;text-align:center}.nextTip b{color:#1D6A88}
 .palLink{display:flex;align-items:center;gap:10px;margin:10px 0 0;padding:10px 12px;min-height:48px;border-radius:16px;background:#FFF6E0;border:2px dashed #E3A33A;color:#5B3F25;text-decoration:none;font-weight:700;font-size:14px}
 .palLink img{width:40px;height:40px;object-fit:contain;flex:none}.palLink span{flex:1}.palLink b{color:#E2702A}
 /* C-124：短螢幕按鈕至少約 36～40 點高 */
@@ -621,7 +622,7 @@ function showStory(s, fresh, newTitles, extra, v) {
     (s.rec ? '<div class="rec">' + s.rec + '</div>' : '') +
     (fresh && OBS[s.id] ? '<div class="obs' + ((P.found || {})[s.id] ? ' done' : '') + '" id="obs"><b>👀 一起找找看（大人小孩輪流）</b><p>' + ((P.found || {})[s.id] ? '一起找到了！' : OBS[s.id]) + '</p>' + ((P.found || {})[s.id] ? '' : '<div class="row"><button class="yes" type="button" id="obsYes">找到了！</button><button class="no" type="button" id="obsNo">略過</button></div>') + '</div>' : '') +
     (fresh ? '<div class="hear" id="hear"><b>👂 港口聲音尋寶（可略過）</b><p>停下腳步，閉上眼睛聽 5 秒，你聽到什麼？</p><button class="go" type="button" id="hearGo">開始聽</button></div>' : '') +
-    '<p class="again">' + (n() < 6 ? '還差 ' + (6 - n()) + ' 個章' : '6 個都蓋好了！') + '</p><button class="btn" type="button" id="ovOk">看護照</button>';
+    '<p class="again">' + (n() < 6 ? '還差 ' + (6 - n()) + ' 個章' : '6 個都蓋好了！') + '</p>' + (fresh && nextSpot() ? '<div class="nextTip">🧭 下一站猜猜看：<b>' + nextSpot().riddle + '</b></div>' : '') + '<button class="btn" type="button" id="ovOk">看護照</button>';      // v0.20（C-141）：蓋完章馬上給下一站的謎語，不用回護照找
   $('ov').hidden = false;
   if (newTitles.length) setTimeout(() => sfx('pop'), 300);
   if ($('obsYes')) { $('obsYes').onclick = () => { P.found = P.found || {}; P.found[s.id] = Date.now(); save(); const o = $('obs'); o.classList.add('done'); o.querySelector('p').textContent = '一起找到了！可以在港口札記寫下今天的發現～'; o.querySelector('.row').remove(); sfx('chime'); }; $('obsNo').onclick = () => $('obs').remove(); }
