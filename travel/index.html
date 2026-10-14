@@ -308,7 +308,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.28',
+  version: '0.29',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -532,6 +532,8 @@ function renderHome() {
   /* v0.27（C-150）：晚上 7 點到早上 6 點，小屋變成夜晚（房間暗一點、燈亮起來），小鳶在家時說晚上的話 */
   const hh = new Date().getHours(), night = hh >= 19 || hh < 6; $('room').classList.toggle('night', night);
   if (S.firstDone && st === 'home' && night) { $('chip').textContent = '晚上了，小鳶在家'; b.style.backgroundImage = 'url(assets/kite_home.png)'; $('say').textContent = ['天黑了，港口的燈好漂亮～', '晚上的海風涼涼的，我們明天再出門好不好？', '我在數窗外的漁船燈，一、二、三……', '晚上出門也可以喔，我會小心飛！'][Math.floor(Math.random() * 4)]; main.textContent = '打包出門'; main.onclick = () => go('pack'); }
+  /* v0.29（C-170）：早上 6 點到 9 點小鳶在家，說早晨的話（台詞是建議） */
+  else if (S.firstDone && st === 'home' && hh >= 6 && hh < 9) { $('chip').textContent = '早安！小鳶剛起床'; b.style.backgroundImage = 'url(assets/kite_home.png)'; $('say').textContent = ['早安～我剛起床，羽毛還翹翹的！', '早上的港口好安靜，漁船都出海了嗎？', '早餐吃飽飽，今天要去哪裡玩呢？'][Math.floor(Math.random() * 3)]; main.textContent = '打包出門'; main.onclick = () => go('pack'); }
   else if (st === 'home') { $('chip').textContent = '小鳶在家，還沒出發'; b.style.backgroundImage = 'url(assets/kite_home.png)'; $('say').textContent = sayOne('home'); main.textContent = '打包出門'; main.onclick = () => go('pack'); }
   else if (st === 'away') { b.style.display = 'none'; note.hidden = false; note.innerHTML = ''; note.appendChild(document.createTextNode('「' + (S.trip.say || sayOne('away')) + '」　— 小鳶')); note.insertAdjacentHTML('beforeend', '<span class="trip" id="tripBar"></span>'); tripBar(); $('chip').textContent = '小鳶正在旅行，大約 ' + fmtTime(S.trip.end) + ' 回來；信會等你，不會過期'; $('say').textContent = ''; main.textContent = '大約 ' + fmtTime(S.trip.end) + ' 回來'; main.onclick = () => toast('小鳶還在路上，晚點再來看看'); }
   else { $('chip').textContent = '小鳶回來了！帶了一封信'; b.style.backgroundImage = 'url(assets/kite_back.png)'; env.hidden = false; $('say').textContent = sayOne('back'); main.textContent = '拆信'; main.onclick = openLetter; env.onclick = openLetter; }
