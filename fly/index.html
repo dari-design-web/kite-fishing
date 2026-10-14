@@ -108,6 +108,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .map .mapfx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .map.night .mapbg{filter:brightness(.55) saturate(.9)}      /* v0.36（C-155）：晚上 7 點到早上 6 點，關卡地圖變夜景，燈籠更亮 */
 .maptitle{position:absolute;left:3%;right:3%;top:1.6%;margin:0;padding:8px 12px;border-radius:14px;background:rgba(16,41,61,.82);border:2px solid #E8B879;color:var(--paper);font-family:var(--display);font-size:26px;line-height:1.2;text-align:center}
+.maptitle small{display:block;font-family:inherit;font-size:13px;font-weight:700;color:#FFD58A;margin-top:2px;letter-spacing:.04em}
 #stageButtons{position:absolute;inset:0;pointer-events:none}
 .stage{pointer-events:auto;position:absolute;width:39.8%;min-height:9.4%;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:6px 10px;border-radius:12px;border:2px solid #E8B879;background:rgba(16,41,61,.86);color:var(--paper);text-align:left;font-size:12px;line-height:1.35;box-shadow:0 3px 0 rgba(8,20,32,.45)}
 .stage b{font-family:var(--display);font-size:14px;font-weight:700}
@@ -168,9 +169,9 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
   <div class="panel map" id="mapPanel">
     <img class="mapbg" id="mapImg" src="assets/stage_map.jpg" alt="">
     <canvas class="mapfx" id="mapFx" aria-hidden="true"></canvas>
-    <h1 class="maptitle">小鳶飛行冒險</h1>
+    <h1 class="maptitle" id="mapTitle">小鳶飛行冒險</h1>
     <div id="stageButtons"></div>
-    <p class="mapnote">原型 v0.37：暫用圖、不發點數。測試期間四關都開放</p>
+    <p class="mapnote">原型 v0.38：暫用圖、不發點數。測試期間四關都開放</p>
   </div>
 
   <div class="panel" id="startPanel" hidden>
@@ -2473,6 +2474,9 @@ function saveProgress() { try { localStorage.setItem(PKEY, JSON.stringify(progre
 function starsOf() { const pct = cleanPct(); return ST().theme === 'pier' ? [won, won && pct >= ST().starClean, won && !(stats.boatHits > 0)] : ST().starClean ? [won, won && pct >= ST().starClean, won && stats.hits <= 1] : ST().theme === 'market' ? [won, won && pct >= 80, won && stats.hits <= 1] : [won, won && stats.trapped > 0 && stats.rescued >= stats.trapped, won && stats.hits <= 1]; }
 function renderMap() {
   const box = $('stageButtons'); box.textContent = '';
+  /* v0.38（C-166）：地圖標題下面寫「星星 N / 全部」；某一關三顆星都拿到，那一關的星星後面加 👑（建議） */
+  { const playable = STAGES.filter((s) => !s.locked), got = playable.reduce((n, s) => n + (progress.stars[s.id] || []).filter(Boolean).length, 0);
+    $('mapTitle').innerHTML = '小鳶飛行冒險<small>★ 星星 ' + got + ' / ' + playable.length * 3 + (got === playable.length * 3 ? '　全部拿到了！' : '') + '</small>'; }
   const rects = [[620, 1610], [620, 1180], [620, 620], [620, 280]];
   const opened = STAGES.filter((s) => !s.locked && s.id <= progress.unlocked), nextId = ((opened.find((s) => !(progress.stars[s.id] || [])[0]) || opened.find((s) => !(progress.stars[s.id] || []).every(Boolean)) || {}).id);      // 建議下一關：還沒過的第一關；都過了就挑還沒三星的      // ChatGPT 地圖 v3 建議的按鈕位置（1080 × 1920 的座標）
   STAGES.forEach((s, i) => {
@@ -2481,7 +2485,7 @@ function renderMap() {
     const open = !s.locked && s.id <= progress.unlocked, st = progress.stars[s.id] || [], best = progress.best[s.id];
     const title = document.createElement('b'); title.textContent = '第 ' + s.id + ' 關　' + s.name;
     const line = document.createElement('span');
-    line.textContent = s.locked ? s.time + '　製作中' : !open ? s.time + '　過了第 ' + (s.id - 1) + ' 關就開放' : s.time + '　' + [0, 1, 2].map((k) => (st[k] ? '★' : '☆')).join('') + (best ? '　最佳 ' + (best.score !== undefined ? best.score + ' 分' : best.pct + '%') : '');
+    line.textContent = s.locked ? s.time + '　製作中' : !open ? s.time + '　過了第 ' + (s.id - 1) + ' 關就開放' : s.time + '　' + [0, 1, 2].map((k) => (st[k] ? '★' : '☆')).join('') + (st.length === 3 && st.every(Boolean) ? ' 👑' : '') + (best ? '　最佳 ' + (best.score !== undefined ? best.score + ' 分' : best.pct + '%') : '');
     btn.append(title, line); btn.disabled = !open; if (!open) btn.classList.add('locked');
     if (open && s.id === nextId) { btn.classList.add('next'); const go = document.createElement('i'); go.className = 'go'; go.textContent = progress.stars[s.id] && progress.stars[s.id][0] ? '再挑戰' : '出發'; btn.append(go); }
     btn.onclick = () => { stageNo = s.id; $('stageTitle').textContent = '第 ' + s.id + ' 關　' + s.name; $('stageIntro').textContent = s.time + '。' + s.intro; const nm = s.theme === 'market'; $('howDodge').textContent = nm ? '攤位照節拍噴熱氣：兩邊的燈先閃一次給你看，燈亮的那一邊就要噴。上方菜單照順序淨化，三道都完成回禮加倍。雨棚打不掉，油煙會擋住視線' : '漂流木打不掉；看到紅色區域就整隻離開'; $('howBarrelK').textContent = nm ? '爆米香' : '油桶'; $('howBarrel').textContent = nm ? '打爆會「碰！」一聲炸開，炸掉旁邊的妖怪，自己別靠太近' : '打爆會炸掉旁邊的垃圾，自己別靠太近'; $('howFriendT').textContent = nm ? '打破包住牠們的塑膠袋。黑輪補體力、石花凍送護盾、小卷米粉派小卷幫忙、大腸圈繞著你轉' : '清掉纏住牠們的垃圾。小卷會來幫忙，海龜送你護盾'; $('howUltK').textContent = nm ? '擲筊' : '鯨鯊'; $('howUlt').textContent = nm ? '右下角集滿後按一下，擲筊祈福，全畫面淨化；擲出的結果再送回禮' : '右下角集滿後按一下，全畫面大掃除'; if (s.how) { $('howDodge').textContent = s.how.dodge; $('howBarrelK').textContent = s.how.barrelK; $('howBarrel').textContent = s.how.barrel; $('howFriendT').textContent = s.how.friend; $('howUltK').textContent = s.how.ultK; $('howUlt').textContent = s.how.ult; } reset(); mode = 'start'; show('startPanel'); };
