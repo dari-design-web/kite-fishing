@@ -95,7 +95,7 @@ header a{padding:7px 12px}
 </head>
 <body>
 <main class="phone" id="app">
-  <header><a href="../hub/">‹ 首頁</a><span class="t">港口朋友・原型 v0.6・角色暫用</span></header>
+  <header><a href="../hub/">‹ 首頁</a><span class="t">港口朋友・原型 v0.7・角色暫用</span></header>
   <div class="stage" id="stage"></div>
   <section class="panel" id="panel"></section>
 </main>
@@ -138,12 +138,17 @@ header a{padding:7px 12px}
     return;
   }
   var met = read(), first = !met[F.id];
+  /* v0.7（C-165）：記這支手機跟每位朋友見過幾次（kiteFriendVisits1，只記次數）；又見面時標「第 N 次見面」，第 3、10 次多一句特別的話（文字是建議） */
+  var VK = 'kiteFriendVisits1', vis = {}; try { vis = JSON.parse(localStorage.getItem(VK) || '{}') || {}; } catch (e) {}
+  vis[F.id] = (vis[F.id] || 0) + 1; try { localStorage.setItem(VK, JSON.stringify(vis)); } catch (e) {}
+  var nv = vis[F.id];
   app.classList.add('a-' + F.anim);
-  stage.innerHTML = '<div class="hello">遇到' + F.name + '了！<small>' + F.tag + (first ? '' : '・又見面了') + '</small></div>' +
+  stage.innerHTML = '<div class="hello">遇到' + F.name + '了！<small>' + F.tag + (first ? '' : '・第 ' + Math.max(2, nv) + ' 次見面') + '</small></div>' +
     '<div class="who" id="who"><img src="' + F.img + '" onerror="this.onerror=null;this.src=this.src.replace(\'.webp\',\'.png\')" alt="' + F.tag + '">' + (F.wall ? '<span class="wall">' + F.wall + '</span>' : '') +
     '<span class="fx">' + (F.anim === 'nap' ? '<i>z</i><i>z</i><i>Z</i>' : F.anim === 'swim' ? '<b></b><b></b><b></b>' : '') + '</span></div>';
   var lines = first ? F.lines : [F.lines[0].replace('你發現我了', '你又來了'), F.lines[2]];
   if (F.id === 6 && !app.classList.contains('night')) lines = lines.concat(['（偷偷說：晚上 6 點以後再來，我會變亮喔）']);
+  if (!first && nv === 3) lines = lines.concat(['💛 我們已經見了 3 次面，是好朋友了！']); else if (!first && nv === 10) lines = lines.concat(['💛 第 10 次見面！你是我在港口最好的朋友！']);
   /* v0.6（C-160）：晚上 6 點到清晨 6 點來，每位朋友最後多說一句晚上的話（文字是建議） */
   var NIGHT_BYE = { 1: '天黑了，港口的燈都亮起來了，好漂亮！看完記得早點回家喔。', 2: '晚上了……我要繼續睡囉。你也早點睡，晚安～', 3: '晚上的基隆港好美！我今晚就寫明信片給你，晚安！', 4: '晚上我會潛到深一點的地方睡覺，明天再來找我玩～', 5: '晚安！我要慢慢游回家了，路上看到垃圾記得撿起來喔。', 6: '你看你看！我在發光！夜裡的漁港是我最喜歡的時候！' };
   if (app.classList.contains('night') && NIGHT_BYE[F.id]) lines = lines.concat(['🌙 ' + NIGHT_BYE[F.id]]);
