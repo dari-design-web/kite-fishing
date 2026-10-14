@@ -183,6 +183,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 .loc{margin:0 16px 14px;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:10px}
 .loc h4{margin:0 0 8px;font-size:15px;display:flex;justify-content:space-between;align-items:center}
 .loc h4 small{font-weight:400;color:var(--muted);font-size:12px}
+.loc.full{border-color:#E0B54A;background:linear-gradient(180deg,#FFF6DC,var(--card) 60%)}.loc.full h4 small{color:#9A6A12;font-weight:700}      /* v0.28（C-164）：一個地點 3 張都拿到＝集滿，框變金色 */
 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .cardth{aspect-ratio:8/5;border-radius:6px;overflow:hidden;border:2px solid #E9DFCF;background:#EFE7DA;position:relative;padding:0;font-family:inherit}
 .cardth .lock{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;font-size:10px;color:var(--muted);padding:3px;line-height:1.3}
@@ -307,7 +308,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.27',
+  version: '0.28',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -818,15 +819,16 @@ function openLetter() {
 /* 收藏冊：常設 24 張、每週限定、港灣護照、合照（本機） */
 let tab = 'main';
 function renderAlbum() {
-  $('albumCount').textContent = ownedCount() + ' / 24';
+  /* v0.28（C-164）：收藏冊上方多寫集滿了幾個地點（建議） */
+  { const full = LOCS.filter((l) => l.cards.every((c, i) => S.cards[cardId(l, i)])).length; $('albumCount').textContent = ownedCount() + ' / 24' + (full ? '・集滿 ' + full + ' 個地點' : ''); }
   const tabs = [['main', '常設'], ['lim', '本週限定'], ['pass', '港灣護照'], ['photo', '合照（本機）']];
   $('tabs').innerHTML = tabs.map((t) => '<button data-t="' + t[0] + '" aria-pressed="' + (tab === t[0]) + '">' + t[1] + '</button>').join('');
   $('tabs').querySelectorAll('button').forEach((b) => (b.onclick = () => { tab = b.dataset.t; renderAlbum(); }));
   const body = $('albumBody'); body.innerHTML = '';
   if (tab === 'main') for (const l of LOCS) {
     const open = locOpen(l), n = l.cards.filter((c, i) => S.cards[cardId(l, i)]).length;
-    const d = document.createElement('div'); d.className = 'loc';
-    d.innerHTML = '<h4>' + l.name + ' <small>' + n + ' / 3' + (open ? '' : '｜' + openHow(l)) + (l.id === weekLoc().id ? '｜★本週' : '') + '</small></h4><div class="cards"></div>';
+    const d = document.createElement('div'); d.className = 'loc' + (n === 3 ? ' full' : '');
+    d.innerHTML = '<h4>' + l.name + ' <small>' + (n === 3 ? '✨ 3 / 3 集滿了！' : n + ' / 3') + (open ? '' : '｜' + openHow(l)) + (l.id === weekLoc().id ? '｜★本週' : '') + '</small></h4><div class="cards"></div>';
     const cs = d.querySelector('.cards');
     l.cards.forEach((c, i) => {
       const id = cardId(l, i), own = S.cards[id], b = document.createElement('button'); b.className = 'cardth'; b.type = 'button';
