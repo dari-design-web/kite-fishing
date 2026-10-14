@@ -95,7 +95,7 @@ header a{padding:7px 12px}
 </head>
 <body>
 <main class="phone" id="app">
-  <header><a href="../hub/">‹ 首頁</a><span class="t">港口朋友・原型 v0.5・角色暫用</span></header>
+  <header><a href="../hub/">‹ 首頁</a><span class="t">港口朋友・原型 v0.6・角色暫用</span></header>
   <div class="stage" id="stage"></div>
   <section class="panel" id="panel"></section>
 </main>
@@ -144,6 +144,9 @@ header a{padding:7px 12px}
     '<span class="fx">' + (F.anim === 'nap' ? '<i>z</i><i>z</i><i>Z</i>' : F.anim === 'swim' ? '<b></b><b></b><b></b>' : '') + '</span></div>';
   var lines = first ? F.lines : [F.lines[0].replace('你發現我了', '你又來了'), F.lines[2]];
   if (F.id === 6 && !app.classList.contains('night')) lines = lines.concat(['（偷偷說：晚上 6 點以後再來，我會變亮喔）']);
+  /* v0.6（C-160）：晚上 6 點到清晨 6 點來，每位朋友最後多說一句晚上的話（文字是建議） */
+  var NIGHT_BYE = { 1: '天黑了，港口的燈都亮起來了，好漂亮！看完記得早點回家喔。', 2: '晚上了……我要繼續睡囉。你也早點睡，晚安～', 3: '晚上的基隆港好美！我今晚就寫明信片給你，晚安！', 4: '晚上我會潛到深一點的地方睡覺，明天再來找我玩～', 5: '晚安！我要慢慢游回家了，路上看到垃圾記得撿起來喔。', 6: '你看你看！我在發光！夜裡的漁港是我最喜歡的時候！' };
+  if (app.classList.contains('night') && NIGHT_BYE[F.id]) lines = lines.concat(['🌙 ' + NIGHT_BYE[F.id]]);
   var k = 0;
   panel.innerHTML = '<div class="bubble" id="bb"></div><span class="dots" id="dots">' + lines.map(function () { return '<i></i>'; }).join('') + '</span><button class="go" type="button" id="next"></button>' +
     '<div class="got" id="got"></div>';
