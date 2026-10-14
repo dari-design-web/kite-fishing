@@ -70,6 +70,9 @@ header .t{flex:1;text-align:right;font-size:12px;font-weight:700;color:#1F5A5F}
 .got.on{display:flex}
 .got .msg{font-size:15px;font-weight:700;text-align:center}
 .got .msg em{font-style:normal;color:var(--buoy)}
+.cert{position:relative;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,#FFF3C4,#FFE08A);border:3px double #C9962B;text-align:center;color:#5B3F25;animation:certIn .7s cubic-bezier(.3,1.5,.5,1)}
+.cert b{display:block;font-size:20px;letter-spacing:2px}.cert small{display:block;font-size:12px;margin-top:2px;color:#8A6A2E}
+@keyframes certIn{0%{transform:scale(.6) rotate(-4deg);opacity:0}100%{transform:none;opacity:1}}
 .row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
 .slot{aspect-ratio:1;border-radius:12px;background:#F6F0E5;display:flex;align-items:center;justify-content:center;position:relative}
 .slot img{width:84%;height:84%;object-fit:contain}
@@ -92,7 +95,7 @@ header a{padding:7px 12px}
 </head>
 <body>
 <main class="phone" id="app">
-  <header><a href="../hub/">‹ 首頁</a><span class="t">港口朋友・原型 v0.4・角色暫用</span></header>
+  <header><a href="../hub/">‹ 首頁</a><span class="t">港口朋友・原型 v0.5・角色暫用</span></header>
   <div class="stage" id="stage"></div>
   <section class="panel" id="panel"></section>
 </main>
@@ -158,7 +161,10 @@ header a{padding:7px 12px}
     nx.style.display = 'none'; document.getElementById('dots').style.display = 'none';
     bb.innerHTML = '<b>小鳶</b>' + (n >= 6 ? '六位港口朋友你都見過了！你是我們大家的好朋友！' : first ? '耶！' + F.tag + '跟你變成朋友了。館內還有 ' + (6 - n) + ' 位朋友等你找喔！' : '再來找我們玩～館內還有 ' + (6 - n) + ' 位朋友沒見過喔！');
     var g = document.getElementById('got'); g.classList.add('on');
-    g.innerHTML = '<div class="msg">港口朋友 <em>' + n + ' / 6</em></div>' + slots(met, F.id) +
+    /* v0.5（C-144）：六位都見過，出現一張金色「港口朋友收集家」證書（日期＝第六位見面那天；可以截圖留念） */
+    var last = Math.max.apply(null, Object.keys(met).map(function (k) { return +met[k] || 0; })), ld = new Date(last || Date.now());
+    var cert = n >= 6 ? '<div class="cert">🏅<b>港口朋友收集家</b><small>六位港口朋友都見過了・' + ld.getFullYear() + ' 年 ' + (ld.getMonth() + 1) + ' 月 ' + ld.getDate() + ' 日・東三東四</small></div>' : '';
+    g.innerHTML = cert + '<div class="msg">港口朋友 <em>' + n + ' / 6</em></div>' + slots(met, F.id) +
       '<div class="btns"><a class="go alt" href="../hub/">回首頁看背包</a><a class="go" href="../stamp/">去蓋章</a></div><p class="note">' + (n < 6 ? '點「？」看還沒見過的朋友線索・' : '') + '只存在這支手機・圖都是暫用</p>';
     /* C-130：點沒見過的格子，小鳶給一句找朋友的線索（只講長相個性，不講位置；位置等 Dari 決定） */
     g.querySelectorAll('.slot.no').forEach(function (el) {
