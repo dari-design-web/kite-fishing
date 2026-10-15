@@ -18,6 +18,11 @@
 .count{font-weight:800;color:var(--orange)}
 .choose a{margin:0 0 12px}
 .res{border:2px solid var(--teal)}.res.bad{border-color:var(--red)}
+.res .pz{display:flex;gap:12px;align-items:center;margin-bottom:8px}.res .pz img{width:84px;height:84px;border-radius:12px;object-fit:contain;background:#F4EEE2;border:1px solid var(--line);flex:none}
+.res .pz h2{margin:0;font-size:20px}.res .who{font-size:16px;font-weight:800;margin:2px 0}
+.rcIn{display:flex;gap:8px;margin-top:10px}.rcIn input{flex:1;min-width:0;font-size:22px;font-weight:800;letter-spacing:4px;text-transform:uppercase;text-align:center;border:2px solid var(--line);border-radius:12px;padding:8px}
+.ok{border:2px solid #2E9E5B;text-align:center;background:#F1FBF4}.ok .big{font-size:44px;line-height:1}.ok h2{margin:6px 0 2px;font-size:22px}.ok img{width:96px;height:96px;border-radius:14px;object-fit:contain;background:#fff;border:1px solid var(--line);margin:8px auto 0;display:block}
+.wl li{cursor:pointer}
 .shortCode{margin:10px auto 2px;display:inline-block;padding:6px 14px;border-radius:12px;background:#FFF1CC;color:#7A5A00;font-size:14px}.shortCode b{font-size:24px;letter-spacing:4px;color:var(--ink);font-variant-numeric:tabular-nums;margin-left:6px}
 </style>
 </head>
@@ -102,10 +107,14 @@
   function deskHome() {
     stopAll(); var se = sess(); if (!se || !se.desk) return deskLogin(); $('title').textContent = '服務台・' + se.who;
     app.innerHTML = '<div class="card"><h2>掃客人的兌換 QR</h2><p class="muted" style="margin:0 0 8px">掃碼只查詢，尚未發放。請核對贈品、數量及狀態；交付後按「確認已交付」。</p><div class="scanBox" id="scan"></div><p class="muted" id="smsg" style="margin:8px 0 0"></p>' +
-      '<details style="margin-top:8px"><summary class="muted">手動輸入代碼</summary><textarea id="manual" rows="3" style="width:100%;margin-top:6px;border:1px solid var(--line);border-radius:12px;padding:8px"></textarea><button class="btn alt full" id="chk">查詢</button></details></div>' +
-      '<div id="res"></div>' + bfCard() + '<div class="card"><h2>今天發出的</h2><ul class="list" id="today"></ul></div><div class="card"><h2>贈品庫存</h2><ul class="list" id="stock"></ul></div><button class="btn alt full" id="out">登出</button>';
+      '<label class="muted" for="rc" style="display:block;margin-top:10px">QR 掃不到？請客人唸兌換單上的 6 碼兌換碼</label><div class="rcIn"><input id="rc" maxlength="7" autocomplete="off" autocapitalize="characters" placeholder="例：AB3K7Q"><button class="btn warn" id="rcGo">查詢</button></div>' +
+      '<details style="margin-top:8px"><summary class="muted">貼上完整代碼（客人按「複製代碼」傳來的）</summary><textarea id="manual" rows="3" style="width:100%;margin-top:6px;border:1px solid var(--line);border-radius:12px;padding:8px"></textarea><button class="btn alt full" id="chk">查詢</button></details></div>' +
+      '<div id="res"></div><div class="card"><h2>待領取 <span class="muted" id="wn" style="font-size:14px;font-weight:400"></span></h2><ul class="list wl" id="wait"></ul><p class="note">只列得出這台看得到的兌換單（原型資料存在各自手機，D72）；接雲端後就是全館。</p></div>' + bfCard() + '<div class="card"><h2>今天發出的</h2><ul class="list" id="today"></ul></div><div class="card"><h2>贈品庫存</h2><ul class="list" id="stock"></ul></div><button class="btn alt full" id="out">登出</button>';
     scanner = new KiteScan.Scanner($('scan'), function (code) { check(code); }, function (m) { $('smsg').textContent = m; }); scanner.start();
-    $('chk').onclick = function () { check($('manual').value); };
+    $('chk').onclick = function () { var v = $('manual').value.trim(); if (/^[A-Za-z0-9]{6}$/.test(v)) byShort(v); else check(v); };
+    $('rcGo').onclick = function () { byShort($('rc').value); };
+    $('rc').onkeydown = function (e) { if (e.key === 'Enter') byShort($('rc').value); };
+    $('rc').oninput = function () { var v = this.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); if (v !== this.value) this.value = v; };
     $('out').onclick = function () { setSess(null); deskLogin(); };
     renderDesk(); bindBf();
   }
@@ -128,17 +137,35 @@
     listBf();
   }
   function listBf() { var d = K.dayKey(), L = K.list('kiteBackfill1').filter(function (x) { return K.dayKey(x.t) === d; }); $('bfList').innerHTML = L.slice(0, 10).map(function (x) { return '<li><span class="grow"><b>' + (x.type === 'recover' ? '交易恢復' : '一般補登') + '・' + x.pts + ' 點</b><span class="muted">' + t2(x.t) + '・' + x.id + '・' + esc(x.by || '') + '</span></span><span class="pill' + (x.status === 'done' ? '' : ' r') + '">' + (x.status === 'done' ? '已入帳' : '待人工核對') + '</span></li>'; }).join(''); }
+  /* D84：用 6 碼兌換碼查。查到就走同一個核對畫面；查不到說清楚原因 */
+  function byShort(v) {
+    v = String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); var box = $('res');
+    if (v.length !== 6) return toast('兌換碼是 6 碼英文和數字');
+    var h = K.findRedeem(v), msg = '';
+    if (!h) msg = '這台查不到兌換碼 ' + v + '。原型的兌換單存在客人自己的手機（D72），請改掃客人手機上的 QR。';
+    else if (h.r.status === 'cancel') msg = '兌換碼 ' + v + ' 已被客人取消，點數已退回，不能發放';
+    else if (h.r.status === 'expired') msg = '兌換碼 ' + v + ' 已逾期自動取消，點數已退回，不能發放';
+    else if (!h.r.code) msg = '兌換碼 ' + v + ' 是匯入的資料，缺少驗證碼，請改掃客人手機上的 QR';
+    if (msg) { box.innerHTML = '<div class="card res bad"><h2>⚠️ 不能發放</h2><p style="margin:0">' + esc(msg) + '</p><button class="btn alt full" id="again" style="margin-top:10px">繼續</button></div>'; $('again').onclick = function () { box.innerHTML = ''; }; box.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    $('rc').value = ''; check(h.r.code);
+  }
   function check(code) {
     var r = K.deskCheck(code), box = $('res');
     if (!r.ok) { box.innerHTML = '<div class="card res bad"><h2>⚠️ 不能發放</h2><p style="margin:0">' + esc(r.msg) + '</p><button class="btn alt full" id="again" style="margin-top:10px">繼續掃</button></div>'; }
-    else box.innerHTML = '<div class="card res"><h2>🎁 ' + esc(r.prize.name) + '</h2><p style="margin:0">兌換碼 <b>' + r.rcode + '</b>・會員 ' + esc(r.member) + '・已扣 ' + r.pts + ' 點</p><p class="muted" style="margin:4px 0 10px">客人產生時間 ' + t2(r.t) + (r.late ? ' <span class="pill o">超過 ' + K.cfg().redeemExpireMin + ' 分鐘，請確認是本人</span>' : '') + '・實物現存 ' + r.stock + '（其中已保留 ' + r.reserved + '）' + '</p>' +
-      '<div class="row"><button class="btn alt" id="again">取消</button><button class="btn warn" id="give"' + (r.stock <= 0 ? ' disabled' : '') + '>確認已交付</button></div></div>';
+    else { var nm = K.memberName(r.member); box.innerHTML = '<div class="card res"><div class="pz"><img src="' + K.prizeImg(r.prize.id) + '" alt=""><div><div class="muted">請交付這個贈品 1 份</div><h2>🎁 ' + esc(r.prize.name) + '</h2></div></div><p class="who">' + (nm ? esc(nm) + ' <span class="muted" style="font-weight:400">' + esc(r.member) + '</span>' : '會員 ' + esc(r.member)) + '</p><p style="margin:0">兌換碼 <b style="letter-spacing:2px">' + r.rcode + '</b>・已扣 ' + r.pts + ' 點</p><p class="muted" style="margin:4px 0 10px">客人產生時間 ' + t2(r.t) + (r.late ? ' <span class="pill o">超過 ' + K.cfg().redeemExpireMin + ' 分鐘，請確認是本人</span>' : '') + '・實物現存 ' + r.stock + '（其中已保留 ' + r.reserved + '）' + '</p>' +
+      '<div class="row"><button class="btn alt" id="again">取消</button><button class="btn warn" id="give"' + (r.stock <= 0 ? ' disabled' : '') + '>確認已交付</button></div></div>'; }
     box.scrollIntoView({ behavior: 'smooth', block: 'start' });
     $('again').onclick = function () { box.innerHTML = ''; if (scanner) scanner.reset(); };
-    if ($('give')) $('give').onclick = function () { var g = K.deskGive(code, sess().who); if (g.ok) { toast('已發放：' + g.prize.name); box.innerHTML = ''; if (scanner) scanner.reset(); renderDesk(); } else toast(g.msg); };
+    if ($('give')) $('give').onclick = function () { var g = K.deskGive(code, sess().who); if (!g.ok) return toast(g.msg);
+      box.innerHTML = '<div class="card ok" id="okCard"><div class="big">✅</div><h2>已交付</h2><img src="' + K.prizeImg(g.prize.id) + '" alt=""><p style="margin:8px 0 2px;font-size:18px;font-weight:800">' + esc(g.prize.name) + '</p><p class="muted" style="margin:0">兌換碼 ' + g.rcode + '・' + t2(Date.now()) + '・經手 ' + esc(sess().who) + '<br>這個贈品還可換 ' + K.stockLeft(g.prize.id) + ' 個</p><button class="btn warn full" id="next" style="margin-top:12px">下一位</button></div>';
+      box.scrollIntoView({ behavior: 'smooth', block: 'start' }); renderDesk();
+      $('next').onclick = function () { box.innerHTML = ''; if (scanner) scanner.reset(); window.scrollTo({ top: 0, behavior: 'smooth' }); }; };
   }
   function renderDesk() {
     var today = K.dayKey(), log = K.deskLog().filter(function (x) { return K.dayKey(x.t) === today; });
+    var W = K.pendingRedeems(), hd = K.cfg().redeemHoldDays; $('wn').textContent = W.length ? W.length + ' 張・由舊到新' : '';
+    $('wait').innerHTML = W.slice(0, 15).map(function (x, i) { var nm = x.m.name || '', dl = hd ? x.r.t + hd * 86400000 : 0, soon = dl && dl - Date.now() < 3 * 86400000; return '<li data-w="' + x.r.id + '"><img src="' + K.prizeImg(x.r.prize) + '" alt="" style="width:40px;height:40px;border-radius:8px;object-fit:contain;background:#F4EEE2"><span class="grow"><b>' + esc(x.r.name) + '</b><span class="muted">' + x.r.id + '・' + (nm ? esc(nm) : esc(x.m.id)) + '・' + t2(x.r.t) + '</span></span>' + (soon ? '<span class="pill r">' + (dl <= Date.now() ? '已過期限' : '快到期') + '</span>' : '<span class="pill o">待領</span>') + '</li>'; }).join('') || '<li class="muted">目前沒有待領取的兌換單</li>';
+    $('wait').querySelectorAll('[data-w]').forEach(function (li) { li.onclick = function () { byShort(li.dataset.w); }; });
     $('today').innerHTML = log.slice(0, 20).map(function (x) { return '<li><span class="grow"><b>' + esc(x.prizeName) + '</b><span class="muted">' + t2(x.t) + '・' + x.rcode + '・' + esc(x.staff) + '</span></span></li>'; }).join('') || '<li class="muted">今天還沒有</li>';
     $('stock').innerHTML = K.cfg().prizes.map(function (p) { var l = K.stockLeft(p.id); return '<li><span class="grow"><b>' + esc(p.name) + '</b><span class="muted">' + p.points + ' 點</span></span><span class="muted" style="margin-right:6px">現存 ' + K.onHand(p.id) + '・保留 ' + K.reservedCount(p.id) + '</span><span class="pill' + (l <= 5 ? ' r' : '') + '">可換 ' + l + '</span></li>'; }).join('');
   }
