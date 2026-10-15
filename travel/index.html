@@ -313,14 +313,15 @@ const CFG = {
   version: '0.31',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
-  firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
+  firstMin: 3, walkMin: 30, farEvery: 0,      // D80：遠行便當改用點數換，不再每 3 趟送 1 份（0＝關閉）
+  autoOpenTrips: 10, stampsToPick: 5,
   bentos: {
     walk:    { name: '不帶便當・在家附近散步', note: '隨時可以，不算旅行次數', dists: ['home'], hours: 0.5 },
     rice:    { name: '港邊飯糰', note: '每天一份，免費', dists: ['near', 'mid'], hours: 2 },
-    far:     { name: '遠行便當', note: '每完成 3 趟旅行，小鳶自己存下 1 份', dists: ['near', 'mid', 'far'], hours: 5 },
-    squid:   { name: '小卷便當', note: '捕魚一局抓到小卷 3 隻以上得 1 份', dists: ['near', 'mid', 'far'], hours: 3 },
-    hair:    { name: '白帶魚便當', note: '捕魚一局抓到白帶魚 2 隻以上得 1 份；一定帶紀念品', dists: ['near', 'mid', 'far'], hours: 5, souvenir: true },
-    special: { name: '港邊特製便當', note: '消費集點換（點數待定）；可以去九份；一定帶紀念品', dists: ['near', 'mid', 'far', 'farthest'], hours: 8, souvenir: true }
+    far:     { name: '遠行便當', note: '港口換禮 10 點', dists: ['near', 'mid', 'far'], hours: 5 },
+    squid:   { name: '小卷便當', note: '港口換禮 15 點', dists: ['near', 'mid', 'far'], hours: 3 },
+    hair:    { name: '白帶魚便當', note: '港口換禮 20 點；一定帶紀念品', dists: ['near', 'mid', 'far'], hours: 5, souvenir: true },
+    special: { name: '港邊特製便當', note: '港口換禮 25 點；可以去九份；一定帶紀念品', dists: ['near', 'mid', 'far', 'farthest'], hours: 8, souvenir: true }
   },
   items: {
     camera:    { name: '相機', note: '多帶一張明信片回來', how: '飛行冒險過任一關' },
@@ -679,7 +680,7 @@ const PET = (() => {
 })();
 function showTrips() {      // 旅行紀錄：郵票、遠行便當、稱號一眼看完
   const t = Object.values(calcTitles());
-  const m = $('modal'); m.innerHTML = '<div class="sheet2"><h3 style="margin:0 0 10px">旅行紀錄</h3><p>旅行 <b>' + S.trips + '</b> 次・郵票 <b>' + S.stamps + '</b> 枚（滿 ' + CFG.stampsToPick + ' 枚可以指定地點）</p><p>遠行便當：再旅行 <b>' + (CFG.farEvery - S.farAcc) + '</b> 趟，小鳶會自己存下 1 份</p><p>便當：遠行 ' + (S.bento.far || 0) + '、小卷 ' + (S.bento.squid || 0) + '、白帶魚 ' + (S.bento.hair || 0) + '、特製 ' + (S.bento.special || 0) + '；今天的飯糰' + (riceLeft() ? '還在' : '已經用了') + '</p><p>稱號：' + (t.length ? t.join('、') : '還沒有') + '</p><button class="btn" id="tClose" style="margin-top:12px">好</button></div>';
+  const m = $('modal'); m.innerHTML = '<div class="sheet2"><h3 style="margin:0 0 10px">旅行紀錄</h3><p>旅行 <b>' + S.trips + '</b> 次・郵票 <b>' + S.stamps + '</b> 枚（滿 ' + CFG.stampsToPick + ' 枚可以指定地點）</p>' + (CFG.farEvery ? '<p>遠行便當：再旅行 <b>' + (CFG.farEvery - S.farAcc) + '</b> 趟，小鳶會自己存下 1 份</p>' : '<p>便當到官方 LINE「港口換禮」用點數換。</p>') + '<p>便當：遠行 ' + (S.bento.far || 0) + '、小卷 ' + (S.bento.squid || 0) + '、白帶魚 ' + (S.bento.hair || 0) + '、特製 ' + (S.bento.special || 0) + '；今天的飯糰' + (riceLeft() ? '還在' : '已經用了') + '</p><p>稱號：' + (t.length ? t.join('、') : '還沒有') + '</p><button class="btn" id="tClose" style="margin-top:12px">好</button></div>';
   m.classList.add('on'); $('tClose').onclick = () => m.classList.remove('on');
 }
 function openDev() {      // 測試面板改成從右上「測試」打開（原型階段一直可以用）
@@ -719,9 +720,9 @@ function renderPack() {
     bl.appendChild(btn);
   }
   /* v0.26（C-146）：小卷、白帶魚便當都沒有時，直接給一個「去港邊抓魚」的入口（抓到就能做便當） */
-  if (bentoCount('squid') <= 0 && bentoCount('hair') <= 0) {
-    const a = document.createElement('a'); a.className = 'getfish'; a.href = '../';
-    a.innerHTML = '🎣 想做小卷或白帶魚便當？<b>去港邊抓魚 ›</b><small>一局抓到小卷 3 隻或白帶魚 2 隻，就會做好送過來</small>';
+  if (bentoCount('far') + bentoCount('squid') + bentoCount('hair') + bentoCount('special') <= 0) {      // D80：便當到官方 LINE 港口換禮用點數換
+    const a = document.createElement('a'); a.className = 'getfish'; a.href = '../line/index.html?p=shop&tab=bento';
+    a.innerHTML = '🍱 想帶小鳶去更遠的地方？<b>到港口換禮換便當 ›</b><small>遠行 10 點・小卷 15 點・白帶魚 20 點・港邊特製 25 點</small>';
     bl.appendChild(a);
   }
   const il = $('itemList'); il.innerHTML = '';
@@ -783,7 +784,7 @@ function commitTrip() {
   S.stamps += tr.stamps || 0;
   if (tr.limited) S.limited[tr.limited] = now;
   if (tr.souvenir) S.souvenirs[tr.souvenir] = now;
-  if (!tr.walk) { S.trips++; if (!tr.first) { S.farAcc++; if (S.farAcc >= CFG.farEvery) { S.farAcc = 0; S.bento.far++; tr.gotFar = true; } } }      // 第一次也算一次旅行；散步不算
+  if (!tr.walk) { S.trips++; if (!tr.first && CFG.farEvery) { S.farAcc++; if (S.farAcc >= CFG.farEvery) { S.farAcc = 0; S.bento.far++; tr.gotFar = true; } } }      // 第一次也算一次旅行；散步不算
   S.titles = calcTitles(); S.trip = null; S.state = 'home'; save(); return news;
 }
 function calcTitles() {
