@@ -153,7 +153,14 @@ body{background:#8CABD9;display:flex;flex-direction:column;height:100vh;height:1
     var rs = K.member().redeems;
     $('sbody').innerHTML = '<div class="card"><ul class="list">' + (rs.map(function (r, i) { return '<li><span class="grow"><b>' + esc(r.name) + '</b><span class="muted">' + t2(r.t) + '・' + r.id + '・' + r.pts + ' 點</span></span>' + (r.status === 'done' ? '<span class="pill g">已領取</span>' : r.status === 'cancel' || r.status === 'expired' ? '<span class="pill r">' + (r.status === 'expired' ? '已逾期（已退點）' : '已取消') + '</span>' : '<button class="btn warn" data-i="' + i + '">出示 QR</button>') + '</li>'; }).join('') || '<li class="muted">還沒有兌換</li>') + '</ul></div><p class="note">原型：服務台在別支手機發放時，這裡要等接上雲端才會自動變「已領取」。</p>';
     $('sbody').querySelectorAll('[data-i]').forEach(function (b) { b.onclick = function () { showTicket(rs[+b.dataset.i]); }; });
+    Array.prototype.slice.call($('sbody').querySelectorAll('.list > li')).forEach(function (li, i) { if (rs[i]) li.insertAdjacentHTML('afterend', steps(rs[i])); });
   };
+  /* C-192：兌換單進度（扣點保留 → 待領取 → 已領取；取消／逾期 → 本機測試已退點） */
+  function steps(r) {
+    var hd = K.cfg().redeemHoldDays, dl = hd ? (function (d) { return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); })(new Date(r.t + hd * 86400000)) : '';
+    var S = r.status === 'done' ? [['已扣點保留', 1], ['待領取', 1], ['已領取', 1]] : r.status === 'wait' ? [['已扣點保留', 1], ['待領取' + (dl ? '（' + dl + ' 前）' : ''), 2], ['已領取', 0]] : [['已扣點保留', 1], [r.status === 'expired' ? '逾期未領' : '已取消', 1], ['本機測試已退回 ' + r.pts + ' 點', 1]];
+    return '<li class="stepRow" style="display:flex;gap:4px;padding:2px 0 10px;border-top:0">' + S.map(function (s) { var c = s[1] === 1 ? 'var(--teal)' : s[1] === 2 ? '#E8833A' : 'var(--line)'; return '<span style="flex:1;font-size:11px;text-align:center;border-top:4px solid ' + c + ';padding-top:3px;color:' + (s[1] ? 'inherit' : 'var(--muted)') + '">' + esc(s[0]) + '</span>'; }).join('') + '</li>';
+  }
   R.events = function () {
     var D = '日一二三四五六', ev = K.cfg().events.filter(function (e) { return e.on; }), today = new Date().getDay();
     var NS = K.notices(); $('sbody').innerHTML = ev.map(function (e) { var on = e.days.indexOf(today) >= 0; return '<div class="card ev"><b>' + esc(e.title) + '</b>' + (on ? ' <span class="pill o">今天有</span>' : '') + '<p class="muted" style="margin:4px 0 0">' + esc(K.GAMES[e.game] ? K.GAMES[e.game].name : e.game) + '・分數 ×' + e.mult + '・星期' + e.days.map(function (d) { return D[d]; }).join('、') + '・' + e.from + '～' + e.to + '</p></div>'; }).join('') || '<div class="card muted">目前沒有活動</div>'; $('sbody').insertAdjacentHTML('afterbegin', NS.map(function (n) { return '<div class="card" style="border-left:4px solid var(--teal)">' + (n.pin ? '📌 ' : '') + '<b>' + esc(n.title) + '</b><p style="margin:4px 0 0">' + esc(n.body) + '</p></div>'; }).join(''));

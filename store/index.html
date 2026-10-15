@@ -102,12 +102,31 @@
     stopAll(); var se = sess(); if (!se || !se.desk) return deskLogin(); $('title').textContent = '服務台・' + se.who;
     app.innerHTML = '<div class="card"><h2>掃客人的兌換 QR</h2><p class="muted" style="margin:0 0 8px">掃碼只查詢，尚未發放。請核對贈品、數量及狀態；交付後按「確認已交付」。</p><div class="scanBox" id="scan"></div><p class="muted" id="smsg" style="margin:8px 0 0"></p>' +
       '<details style="margin-top:8px"><summary class="muted">手動輸入代碼</summary><textarea id="manual" rows="3" style="width:100%;margin-top:6px;border:1px solid var(--line);border-radius:12px;padding:8px"></textarea><button class="btn alt full" id="chk">查詢</button></details></div>' +
-      '<div id="res"></div><div class="card"><h2>今天發出的</h2><ul class="list" id="today"></ul></div><div class="card"><h2>贈品庫存</h2><ul class="list" id="stock"></ul></div><button class="btn alt full" id="out">登出</button>';
+      '<div id="res"></div>' + bfCard() + '<div class="card"><h2>今天發出的</h2><ul class="list" id="today"></ul></div><div class="card"><h2>贈品庫存</h2><ul class="list" id="stock"></ul></div><button class="btn alt full" id="out">登出</button>';
     scanner = new KiteScan.Scanner($('scan'), function (code) { check(code); }, function (m) { $('smsg').textContent = m; }); scanner.start();
     $('chk').onclick = function () { check($('manual').value); };
     $('out').onclick = function () { setSess(null); deskLogin(); };
-    renderDesk();
+    renderDesk(); bindBf();
   }
+  /* C-192：服務台手機頁的「補登」入口（D54：兩種都只限當天；經手人自動帶登入名字） */
+  function bfCard() {
+    return '<div class="card"><details id="bfBox"><summary><b>🧾 補登／交易恢復</b> <span class="muted">客人說沒集到點</span></summary>' +
+      '<p class="muted" style="margin:8px 0">僅受理消費當天的交易恢復與一般補登。請核對消費日期及憑證。</p>' +
+      '<label class="f">店家給的交易／QR 編號（有就先查）<input id="bfNo" autocomplete="off"></label><button class="btn alt full" id="bfLk">查詢原交易</button><div id="bfOut" class="muted" style="margin:6px 0"></div>' +
+      '<label class="f">店家<select id="bfSt">' + K.cfg().stores.map(function (s) { return '<option value="' + s.id + '">' + esc(s.name) + '</option>'; }).join('') + '</select></label>' +
+      '<label class="f">合格金額（沒有原交易時）<input id="bfAmt" type="number" inputmode="numeric" min="1"></label><label class="f">收據／發票號碼<input id="bfRc" autocomplete="off"></label>' +
+      '<label class="f">會員編號（客人「我的點數」上方）<input id="bfMem" autocomplete="off"></label><label class="f">理由<input id="bfWhy" placeholder="例：客人手機沒電"></label>' +
+      '<button class="btn warn full" id="bfGo">送出補登</button><p class="note">有原交易編號 → 恢復原交易（不改金額）；沒有 → 憑收據一般補登。會員不在這支手機時只建案「待人工核對」，不會入帳。</p><ul class="list" id="bfList"></ul></details></div>';
+  }
+  function bindBf() {
+    var no = function () { return $('bfNo').value.trim().toUpperCase(); };
+    $('bfLk').onclick = function () { var x = K.lookupTx(no()); $('bfOut').innerHTML = !x ? '查無此交易，可改用收據一般補登。' : esc(x.store) + '・' + x.amount + ' 元・' + x.pts + ' 點・' + t2(x.t) + '・<b>' + x.status + '</b>' + (x.today ? '' : '・<b style="color:var(--red)">非當天，不能恢復</b>'); };
+    $('bfGo').onclick = function () { var who = (sess() || {}).who || '服務台', o = no() ? { type: 'recover', nonce: no() } : { type: 'manual', store: $('bfSt').value, date: K.dayKey(), amount: $('bfAmt').value, receipt: $('bfRc').value.trim() };
+      o.member = $('bfMem').value.trim(); o.by = who; o.reason = $('bfWhy').value.trim(); if (!o.member) return toast('請填會員編號');
+      var r = K.backfill(o); if (!r.ok) return toast(r.msg); toast(r.case.status === 'done' ? '已入帳 ' + r.case.pts + ' 點' : '案件 ' + r.case.id + ' 已儲存，尚未入帳（待人工核對）'); ['bfNo', 'bfAmt', 'bfRc', 'bfWhy'].forEach(function (k) { $(k).value = ''; }); $('bfOut').textContent = ''; listBf(); };
+    listBf();
+  }
+  function listBf() { var d = K.dayKey(), L = K.list('kiteBackfill1').filter(function (x) { return K.dayKey(x.t) === d; }); $('bfList').innerHTML = L.slice(0, 10).map(function (x) { return '<li><span class="grow"><b>' + (x.type === 'recover' ? '交易恢復' : '一般補登') + '・' + x.pts + ' 點</b><span class="muted">' + t2(x.t) + '・' + x.id + '・' + esc(x.by || '') + '</span></span><span class="pill' + (x.status === 'done' ? '' : ' r') + '">' + (x.status === 'done' ? '已入帳' : '待人工核對') + '</span></li>'; }).join(''); }
   function check(code) {
     var r = K.deskCheck(code), box = $('res');
     if (!r.ok) { box.innerHTML = '<div class="card res bad"><h2>⚠️ 不能發放</h2><p style="margin:0">' + esc(r.msg) + '</p><button class="btn alt full" id="again" style="margin-top:10px">繼續掃</button></div>'; }
