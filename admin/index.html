@@ -75,7 +75,7 @@ svg text{font-family:inherit}
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function dt(t) { if (!t) return ''; var d = new Date(t); return d.getFullYear() + '/' + pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
   function dd(t) { var d = new Date(t); return pad(d.getMonth() + 1) + '/' + pad(d.getDate()); }
-  function mins(s) { s = s || 0; return s >= 3600 ? (s / 3600).toFixed(1) + ' 小時' : Math.round(s / 60) + ' 分'; }
+  function mins(s) { s = s || 0; return s >= 3600 ? (s / 3600).toFixed(1) + ' 小時' : Math.round(s / 60) + ' 分鐘'; }
   function num(n) { return (n || 0).toLocaleString(); }
   function GN(g) { return K.GAMES[g] ? K.GAMES[g].name : g; }
   function LN(g, l) { return (K.GAMES[g] && K.GAMES[g].levels[l]) || l; }

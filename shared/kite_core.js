@@ -29,7 +29,7 @@
       { id: 'P01', name: '小鳶貼紙一張', points: 5, stock: 200, on: true, desc: '小鳶揮手款防水貼紙，可以貼在水壺或手機殼。' },
       { id: 'P02', name: '鯨鯊鑰匙圈', points: 30, stock: 50, on: true, desc: '港口的鯨鯊朋友，壓克力雙面印刷。' },
       { id: 'P03', name: '小鳶帆布袋', points: 80, stock: 20, on: true, desc: '厚帆布托特包，A4 放得下，逛港口剛好。' },
-      { id: 'P04', name: '港邊特製便當兌換券', points: 15, stock: 100, on: true, desc: '到館內合作餐飲出示兌換券，換一份港邊便當。' }
+      { id: 'P04', name: '合作餐飲兌換券', points: 15, stock: 100, on: true, desc: '到館內合作餐飲出示兌換券，換一份港邊餐點（和小鳶去旅行的「港邊特製便當」不同）。' }
     ],
     stores: [
       { id: 'S01', name: '東三東四 一樓咖啡', pin: '1111', key: 's01-demo-key', on: true },
@@ -253,6 +253,8 @@
     if (hmac(c.redeemKey, p.slice(0, 7).join('|')) !== p[7]) return { ok: false, msg: 'QR 驗證失敗（可能被改過）' };
     var pr = prizeById(p[3]); if (!pr) return { ok: false, msg: '找不到這個贈品' };
     var log = rd(K_DESK) || []; var got = log.filter(function (r) { return r.rcode === p[6]; })[0]; if (got) return { ok: false, msg: '此單已於 ' + new Date(got.t).toLocaleString('zh-TW', { hour12: false }) + ' 完成領取，請勿再次發放' };
+    var lm = rd(K_MEM), lr = lm && lm.id === p[2] && (lm.redeems || []).filter(function (x) { return x.id === p[6]; })[0];      // D82：同一台裝置能看到客人那邊時，已取消／逾期的單不能再發
+    if (lr && (lr.status === 'cancel' || lr.status === 'expired')) return { ok: false, msg: '這張兌換單已' + (lr.status === 'cancel' ? '被客人取消' : '逾期自動取消') + '，點數已退回，不能發放' };
     var t = parseInt(p[5], 36), late = Date.now() - t > c.redeemExpireMin * 60000;
     return { ok: true, member: p[2], prize: pr, pts: +p[4], rcode: p[6], t: t, late: late, stock: onHand(pr.id), reserved: reservedCount(pr.id) };
   }
