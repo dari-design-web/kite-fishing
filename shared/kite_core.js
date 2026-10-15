@@ -16,9 +16,11 @@
     spendPerPoint: 100,           // 消費多少元換 1 點
     minSpend: 1,                  // 最低消費金額才給點
     maxStorePointsPerDay: 100,    // 每人每天最多從消費拿幾點（防誤刷）
-    qrExpireMin: 10,              // 集點 QR 幾分鐘內有效
+    qrExpireMin: 3,               // 集點 QR 產生後幾分鐘內要按「領取」（工作單 01 v5、D54：3 分鐘；逾時由店員對同一筆交易重新出碼）
+    reissueMax: 3,                // 同一筆交易最多重新出碼幾次
     redeemExpireMin: 30,          // 兌換 QR 幾分鐘內有效
-    pointsExpireDays: 365,        // 點數有效天數（0＝不過期）
+    pointsExpireDays: 365,        // 點數有效天數（expireMode=days 時用；0＝不過期）
+    pointsExpireMonths: 12,       // 點數有效月數（expireMode=months 時用；工作單 01 v5：取得後 12 個月、先到期先扣）
     events: [                     // 每日活動：某遊戲在某時段分數加倍
       { id: 'ev1', game: 'fish', title: '週末捕魚加倍', days: [0, 6], from: '00:00', to: '23:59', mult: 2, on: true },
       { id: 'ev2', game: 'fly', title: '傍晚飛行加倍', days: [0, 1, 2, 3, 4, 5, 6], from: '16:00', to: '19:00', mult: 1.5, on: true }
@@ -39,8 +41,8 @@
     notice: '原型測試中：點數只存在這支手機，不是正式點數。',
     admin: { user: 'dari', pass: '1677' },  // 原型：寫在網頁裡不安全，正式版要放到雲端驗證
     /* v2（工作單 24，D73）後台新增的規則 */
-    expireMode: 'days',           // days＝取得後幾天到期；year＝每年底歸零；never＝不過期
-    redeemHoldDays: 7,            // 兌換單幾天沒領自動取消、退點
+    expireMode: 'months',         // months＝取得後幾個月（預設，照工作單 01 v5）；days＝取得後幾天；year＝每年底歸零；never＝不過期
+    redeemHoldDays: 14,           // 兌換單幾天沒領自動取消、退點並釋回保留庫存（工作單 01 v5：14 天；U-36 待 Dari）
     redeemPerDay: 3,              // 每人每天最多兌換幾次
     games: {                      // 遊戲開關與防作弊
       fish: { on: true, maint: false, maxScore: 20000 },
@@ -127,12 +129,21 @@
     var log = rd(K_STORE) || []; log.unshift({ t: Date.now(), store: storeId, amount: amount, pts: pts, nonce: nonce, code: code, synced: false }); wr(K_STORE, log.slice(0, 1000));
     return { code: code, pts: pts, nonce: nonce };
   }
+  function reissueEarn(nonce) {      // 同一筆交易重新出碼：金額不變、交易不變，舊 QR 在這台作廢（工作單 01 v5 第二節 B）
+    var log = rd(K_STORE) || [], x = log.filter(function (r) { return r.nonce === nonce || r.tx === nonce; })[0]; if (!x) return { ok: false, msg: '找不到這筆交易' };
+    var c = cfg(); x.reissue = (x.reissue || 0) + 1; if (x.reissue > c.reissueMax) return { ok: false, msg: '同一筆交易最多重新出碼 ' + c.reissueMax + ' 次，請到服務台處理' };
+    var s = storeById(x.store), ts = Date.now().toString(36), n2 = rid(8), body = ['KITE1', 'E', x.store, x.amount, x.pts, ts, n2].join('|'), code = body + '|' + hmac(s.key, body);
+    x.voided = (x.voided || []).concat([x.nonce]); x.tx = x.tx || x.nonce; x.nonce = n2; x.code = code; x.t2 = Date.now(); wr(K_STORE, log); return { ok: true, code: code, pts: x.pts, nonce: n2, left: c.reissueMax - x.reissue };
+  }
+  function voidEarn(nonce) { var log = rd(K_STORE) || [], x = log.filter(function (r) { return r.nonce === nonce; })[0]; if (!x) return false; x.void = true; wr(K_STORE, log); audit('店家作廢集點 QR ' + nonce); return true; }
   function parse(code) { var p = String(code || '').trim().split('|'); return p[0] === 'KITE1' ? p : null; }
+  function peekEarn(code) { var p = parse(code); if (!p || p[1] !== 'E' || p.length !== 8) return null; var s = storeById(p[2]); return s ? { store: s.name, amount: +p[3], pts: +p[4], t: parseInt(p[5], 36) } : null; }
   function claimEarn(code) {
     var p = parse(code); if (!p || p[1] !== 'E' || p.length !== 8) return { ok: false, msg: '這不是小鳶來港的集點 QR' };
     var c = cfg(), s = storeById(p[2]); if (!s || s.on === false) return { ok: false, msg: '找不到這個店家' };
     if (hmac(s.key, p.slice(0, 7).join('|')) !== p[7]) return { ok: false, msg: 'QR 驗證失敗（可能被改過）' };
     var t = parseInt(p[5], 36); if (Date.now() - t > c.qrExpireMin * 60000) return { ok: false, msg: '這張 QR 已經超過 ' + c.qrExpireMin + ' 分鐘，請店家重新產生' };
+    var sl = rd(K_STORE) || []; if (sl.some(function (r) { return (r.voided || []).indexOf(p[6]) >= 0; })) return { ok: false, msg: 'QR 已更新，請掃店家新的 QR' }; if (sl.some(function (r) { return r.nonce === p[6] && r.void; })) return { ok: false, msg: '這張 QR 已被店家作廢' };
     var m = member(); if (m.status === 'frozen') return { ok: false, msg: '這個會員帳號暫停使用，請洽服務台' }; if (m.nonces.indexOf(p[6]) >= 0) return { ok: false, msg: '這張 QR 已經集過點了' };
     var pts = +p[4], room = c.maxStorePointsPerDay - storePointsToday(m), give = Math.max(0, Math.min(pts, room));
     m.nonces.push(p[6]); m.nonces = m.nonces.slice(-500);
@@ -167,7 +178,9 @@
      格式：KITE1|R|會員|贈品|點數|時間|兌換碼|簽章 */
   function prizeById(id) { return cfg().prizes.filter(function (p) { return p.id === id; })[0]; }
   function issuedCount(pid) { var n = 0; (rd(K_DESK) || []).forEach(function (r) { if (r.prize === pid) n++; }); return n; }
-  function stockLeft(pid) { var p = prizeById(pid); return p ? Math.max(0, p.stock - issuedCount(pid)) : 0; }
+  function reservedCount(pid) { var n = 0, issued = {}; (rd(K_DESK) || []).forEach(function (r) { issued[r.rcode] = 1; }); allMembers().forEach(function (m) { (m.redeems || []).forEach(function (r) { if (r.prize === pid && r.status === 'wait' && !issued[r.id]) n++; }); }); return n; }
+  function onHand(pid) { var p = prizeById(pid); return p ? Math.max(0, p.stock - issuedCount(pid)) : 0; }      // 實物現存＝總數－已交付
+  function stockLeft(pid) { return Math.max(0, onHand(pid) - reservedCount(pid)); }      // 可兌換＝實物現存－已保留（工作單 01 v5：建單時扣點並保留庫存）
   function makeRedeem(pid) {
     var p = prizeById(pid), m = member(); if (!p || p.on === false) return { ok: false, msg: '這個贈品目前不能換' };
     if (stockLeft(pid) <= 0) return { ok: false, msg: '這個贈品換完了' };
@@ -192,10 +205,10 @@
     var pr = prizeById(p[3]); if (!pr) return { ok: false, msg: '找不到這個贈品' };
     var log = rd(K_DESK) || []; if (log.some(function (r) { return r.rcode === p[6]; })) return { ok: false, msg: '這張兌換單已經領過了' };
     var t = parseInt(p[5], 36), late = Date.now() - t > c.redeemExpireMin * 60000;
-    return { ok: true, member: p[2], prize: pr, pts: +p[4], rcode: p[6], t: t, late: late, stock: stockLeft(pr.id) };
+    return { ok: true, member: p[2], prize: pr, pts: +p[4], rcode: p[6], t: t, late: late, stock: onHand(pr.id), reserved: reservedCount(pr.id) };
   }
   function deskGive(code, staff) {
-    var r = deskCheck(code); if (!r.ok) return r; if (r.stock <= 0) return { ok: false, msg: '庫存沒了' };
+    var r = deskCheck(code); if (!r.ok) return r; if (onHand(r.prize.id) <= 0) return { ok: false, msg: '實物沒有了，請管理員處理' };
     var log = rd(K_DESK) || []; log.unshift({ t: Date.now(), rcode: r.rcode, member: r.member, prize: r.prize.id, prizeName: r.prize.name, pts: r.pts, staff: staff || '' }); wr(K_DESK, log);
     var m = rd(K_MEM); if (m && m.id === r.member) { m.redeems.forEach(function (x) { if (x.id === r.rcode) x.status = 'done'; }); wr(K_MEM, m); }      // 同一支手機測試時直接更新客人那邊
     return { ok: true, prize: r.prize, rcode: r.rcode };
@@ -213,13 +226,16 @@
     var lim = Date.now() + (days || 0) * 86400000, gains = [], spent = 0;
     (m.ledger || []).slice().reverse().forEach(function (e) { if (e.pts > 0 && e.type !== 'refund') gains.push({ t: e.t, left: e.pts }); else if (e.pts < 0) spent += -e.pts; else if (e.type === 'refund') spent -= e.pts; });
     gains.forEach(function (g) { var u = Math.min(g.left, Math.max(0, spent)); g.left -= u; spent -= u; });
-    var due = 0; gains.forEach(function (g) { var end = c.expireMode === 'year' ? new Date(new Date(g.t).getFullYear(), 11, 31, 23, 59, 59).getTime() : g.t + (c.pointsExpireDays || 365) * 86400000; if (c.pointsExpireDays === 0 && c.expireMode === 'days') return; if (end <= lim) due += g.left; });
+    var due = 0; gains.forEach(function (g) { var end = c.expireMode === 'year' ? new Date(new Date(g.t).getFullYear(), 11, 31, 23, 59, 59).getTime() : c.expireMode === 'months' ? (function (d) { d.setMonth(d.getMonth() + (c.pointsExpireMonths || 12)); return d.getTime(); })(new Date(g.t)) : g.t + (c.pointsExpireDays || 365) * 86400000; if (c.pointsExpireDays === 0 && c.expireMode === 'days') return; if (end <= lim) due += g.left; });
     return { due: due };
   }
 
   /* ====== 統計（後台）：這支手機的客人＋匯入的其他手機資料 ====== */
   function allMembers() { var a = (rd(K_IMP) || []).slice(), m = rd(K_MEM); if (m && !a.some(function (x) { return x.id === m.id; })) a.unshift(m); return a; }
-  function importMembers(list) { var a = rd(K_IMP) || []; list.forEach(function (m) { a = a.filter(function (x) { return x.id !== m.id; }); a.push(m); }); wr(K_IMP, a); audit('匯入 ' + list.length + ' 位客人的資料'); }
+  function importPreview(list) { var a = allMembers(), r = { add: 0, same: 0, conflict: 0, items: [] }; list.forEach(function (m) { var o = a.filter(function (x) { return x.id === m.id; })[0], st = !o ? 'add' : JSON.stringify(o.ledger) === JSON.stringify(m.ledger) ? 'same' : 'conflict'; r[st]++; r.items.push({ id: m.id, st: st }); }); return r; }
+  function importMembers(list) { var a = rd(K_IMP) || []; list.forEach(function (m) { a = a.filter(function (x) { return x.id !== m.id; }); a.push(m); }); wr(K_IMP, a); var d = dataset(); d.imports.push({ t: Date.now(), n: list.length }); wr('kiteDataset1', d); audit('匯入 ' + list.length + ' 位客人的資料'); }
+  function dataset() { var d = rd('kiteDataset1'); if (!d) { d = { id: 'DS' + rid(6), created: Date.now(), imports: [] }; wr('kiteDataset1', d); } return d; }
+  function wipeTest() { var keys = [K_MEM, K_STORE, K_DESK, K_IMP]; keys.forEach(function (k) { localStorage.removeItem(k); }); var d = { id: 'DS' + rid(6), created: Date.now(), imports: [] }; wr('kiteDataset1', d); audit('清除測試資料，新資料集 ' + d.id); return d; }
   function exportMe() { return JSON.stringify(member()); }
 
   G.KiteCore = {
@@ -228,6 +244,6 @@
     pointsForSpend: pointsForSpend, makeEarnCode: makeEarnCode, claimEarn: claimEarn, storeLog: function () { return rd(K_STORE) || []; }, storeById: storeById,
     eventMult: eventMult, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore,
     prizeById: prizeById, stockLeft: stockLeft, makeRedeem: makeRedeem, cancelRedeem: cancelRedeem, deskCheck: deskCheck, deskGive: deskGive, deskLog: function () { return rd(K_DESK) || []; },
-    allMembers: allMembers, importMembers: importMembers, exportMe: exportMe, expiring: expiring, housekeep: housekeep, storeMult: storeMult, notices: function () { var d = dayKey(); return (cfg().notices || []).filter(function (n) { return n.on && (!n.from || d >= n.from) && (!n.to || d <= n.to); }); }
+    allMembers: allMembers, importMembers: importMembers, importPreview: importPreview, dataset: dataset, wipeTest: wipeTest, reissueEarn: reissueEarn, voidEarn: voidEarn, peekEarn: peekEarn, onHand: onHand, reservedCount: reservedCount, exportMe: exportMe, expiring: expiring, housekeep: housekeep, storeMult: storeMult, notices: function () { var d = dayKey(); return (cfg().notices || []).filter(function (n) { return n.on && (!n.from || d >= n.from) && (!n.to || d <= n.to); }); }
   };
 })(window);
