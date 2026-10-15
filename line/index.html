@@ -74,9 +74,12 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
 .digits .gap{width:8px}
 /* ====== 小鳶樂園（遊戲大廳） ====== */
 .lobby{position:relative;min-height:100%;background:radial-gradient(circle at 15% 40%,rgba(255,255,255,.06) 0 2px,transparent 3px) 0 0/38px 38px,linear-gradient(#1C5470,#123447 70%,#0E2A3A);color:#fff;overflow:hidden}
-.lb-hero{position:relative;height:250px;overflow:hidden}
-.lb-hero .sky{position:absolute;inset:0;background:url(../assets/bg_v2.jpg) center 27%/cover}
-.lb-hero .shade{position:absolute;inset:0;background:linear-gradient(rgba(22,63,87,.05),rgba(22,63,87,.15) 55%,#1C5470)}
+.lb-hero{position:relative;height:270px;overflow:hidden}
+.lb-hero .sky{position:absolute;inset:-6px;background:url(assets/lobby_hero_g57.jpg) center 40%/cover;animation:pan 18s ease-in-out infinite alternate}
+@keyframes pan{from{transform:scale(1.04) translateX(-6px)}to{transform:scale(1.1) translateX(6px)}}
+.lb-hero .spark{position:absolute;width:6px;height:6px;border-radius:50%;background:#FFF6C8;box-shadow:0 0 8px 3px rgba(255,236,160,.8);animation:tw 2.4s ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:0;transform:scale(.4)}50%{opacity:1;transform:scale(1)}}
+.lb-hero .shade{position:absolute;inset:0;background:linear-gradient(rgba(22,63,87,0) 45%,rgba(28,84,112,.75) 80%,#1C5470)}
 .lb-hero .cloud{position:absolute;width:120px;height:36px;background:#fff;border-radius:40px;opacity:.75;filter:blur(1px);animation:drift 26s linear infinite}
 .lb-hero .cloud:before,.lb-hero .cloud:after{content:"";position:absolute;background:#fff;border-radius:50%}
 .lb-hero .cloud:before{width:50px;height:50px;left:18px;top:-22px}.lb-hero .cloud:after{width:38px;height:38px;left:58px;top:-14px}
@@ -114,9 +117,11 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
 .booth.feat .tx{flex:1;min-width:0}
 .booth.off{opacity:.6}
 .lb-foot{padding:18px 12px calc(28px + env(safe-area-inset-bottom,0px));color:var(--ink)}
-@media (prefers-reduced-motion:reduce){.lb-hero .cloud,.lb-hero .kite,.lb-hero .wave,.booth .ic,.lb-ev:after{animation:none}}
+.lb-hero .sky{will-change:transform}
+@media (prefers-reduced-motion:reduce){.lb-hero .sky,.lb-hero .spark,.lb-hero .cloud,.lb-hero .kite,.lb-hero .wave,.booth .ic,.lb-ev:after{animation:none}}
 /* ====== 港口換禮 ====== */
-.shopHead{background:linear-gradient(135deg,#E2702A,#F2A33A);color:#fff;border-radius:20px;padding:14px 16px;margin:0 0 12px;display:flex;align-items:center;gap:10px;position:relative;overflow:hidden}
+.shopBan{margin:-14px -14px 0;aspect-ratio:3/1;background:url(assets/shop_header_g57.jpg) center/cover}
+.shopHead{background:linear-gradient(135deg,#E2702A,#F2A33A);color:#fff;border-radius:20px;padding:14px 16px;margin:-26px 4px 12px;box-shadow:0 6px 14px rgba(0,0,0,.15);display:flex;align-items:center;gap:10px;position:relative;overflow:hidden}
 .shopHead .n{flex:1}.shopHead small{opacity:.9;font-size:12px}.shopHead .big{font-size:34px;line-height:1.1}
 .shopHead button{border:0;background:rgba(255,255,255,.22);color:#fff;font-weight:800;border-radius:999px;padding:6px 12px}
 .shopHead .warn{display:block;margin-top:4px;font-size:12px;font-weight:700;background:rgba(0,0,0,.18);border-radius:8px;padding:2px 8px}
@@ -244,7 +249,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
     var fg = GL.filter(function (g) { return g.id === feat; })[0];
     $('sbody').innerHTML = '<div class="lobby">' +
       '<div class="lb-hero"><div class="sky"></div><div class="shade"></div><div class="cloud" style="top:30px;animation-delay:-4s"></div><div class="cloud" style="top:74px;animation-delay:-15s;transform:scale(.7)"></div>' +
-      '<img class="kite" src="../photo/assets/stk_kite_fly.png" alt="">' +
+      '<span class="spark" style="left:22%;top:118px"></span><span class="spark" style="left:47%;top:132px;animation-delay:.8s"></span><span class="spark" style="left:68%;top:124px;animation-delay:1.5s"></span>' +
       '<svg class="wave" viewBox="0 0 800 46" preserveAspectRatio="none"><path d="M0 22 Q50 6 100 22 T200 22 T300 22 T400 22 T500 22 T600 22 T700 22 T800 22 V46 H0Z" fill="#1C5470" opacity=".55"/><path d="M0 30 Q50 16 100 30 T200 30 T300 30 T400 30 T500 30 T600 30 T700 30 T800 30 V46 H0Z" fill="#1C5470"/></svg>' +
       '<div class="lb-title"><small>KITE PARK・GAME LOBBY</small><b>小鳶樂園</b></div></div>' +
       '<div class="lb-player"><img src="' + KITE + '" alt=""><div class="s"><b>' + esc(K.displayName(m)) + '</b><span>今天還能算分 ' + left + ' 次・每 ' + c.scorePerPoint.toLocaleString() + ' 分換 1 點</span></div><div class="bank">分數存摺<b>' + bank.toLocaleString() + '</b></div></div>' +
@@ -324,7 +329,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
   R.shop = function () {
     var m = K.member(), ps = K.cfg().prizes.filter(function (p) { return p.on !== false; });
     var list = ps.filter(function (p) { var l = K.stockLeft(p.id); return shopF === 'all' || (shopF === 'can' && m.points >= p.points && l > 0) || (shopF === 'few' && l > 0 && l <= 10); });
-    $('sbody').innerHTML = '<div class="shopHead"><div class="n"><small>我的點數</small><div class="big">' + m.points + ' <span style="font-size:15px">點</span></div>' + dueText(m) + '</div><button id="toPts">點數明細 ›</button></div>' +
+    $('sbody').innerHTML = '<div class="shopBan" role="img" aria-label="港口換禮"></div><div class="shopHead"><div class="n"><small>我的點數</small><div class="big">' + m.points + ' <span style="font-size:15px">點</span></div>' + dueText(m) + '</div><button id="toPts">點數明細 ›</button></div>' +
       '<div class="tabs">' + [['all', '全部'], ['can', '我換得到'], ['few', '快換完了']].map(function (t) { return '<button class="pill' + (shopF === t[0] ? ' o' : '') + '" data-f="' + t[0] + '" style="border:0;padding:6px 14px;font-size:13px">' + t[1] + '</button>'; }).join('') + '</div>' +
       (list.length ? '<div class="goods">' + list.map(function (p) { var l = K.stockLeft(p.id), can = m.points >= p.points && l > 0; return '<button class="good' + (can ? '' : ' no') + '" data-item="' + p.id + '"><span class="im"><img src="' + K.prizeImg(p.id) + '" alt="" loading="lazy">' + (l <= 0 ? '<span class="so">已換完</span>' : l <= 10 ? '<span class="hot">剩 ' + l + '</span>' : '') + '</span><span class="tx"><b>' + esc(p.name) + '</b><span class="pp"><span class="p">' + p.points + ' 點</span><span class="l">' + (l > 0 ? (can ? '可兌換' : '還差 ' + (p.points - m.points) + ' 點') : '補貨中') + '</span></span></span></button>'; }).join('') + '</div>' : '<div class="card muted">這個分類目前沒有贈品</div>') +
       '<p class="note">兌換後到服務台出示兌換 QR 領取' + (K.cfg().redeemHoldDays ? '，' + K.cfg().redeemHoldDays + ' 天內沒領會自動取消並退點' : '') + '。</p>';
