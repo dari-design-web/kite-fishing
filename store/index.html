@@ -71,7 +71,7 @@
     $('out').onclick = function () { setSess(null); storeLogin(); };
     renderRecent(s);
   }
-  function showAmt() { var a = +amount || 0, p = K.pointsForSpend(a); $('amt').innerHTML = '<small>NT$</small>' + a.toLocaleString(); $('gets').textContent = a ? '客人可得 ' + p + ' 點' + (p === 0 ? '（未滿 ' + K.cfg().spendPerPoint + ' 元）' : '') : ''; $('mk').disabled = !a || !p; }
+  function showAmt() { var a = +amount || 0, p = K.pointsForSpend(a); $('amt').innerHTML = '<small>NT$</small>' + a.toLocaleString(); $('gets').textContent = a ? '預計可得 ' + p + ' 點' + (p === 0 ? '（未滿 ' + K.cfg().minSpend + ' 元不集點）' : '') : ''; $('mk').disabled = !a || !p; }
   function renderRecent(s) {
     var log = K.storeLog().filter(function (x) { return x.store === s.id; }), today = K.dayKey();
     var tl = log.filter(function (x) { return K.dayKey(x.t) === today; }), sum = tl.reduce(function (a, x) { return a + x.amount; }, 0), pts = tl.reduce(function (a, x) { return a + x.pts; }, 0);
@@ -80,13 +80,13 @@
   }
   function storeQR(s, a, r) {
     stopAll(); var c = K.cfg(), end = Date.now() + c.qrExpireMin * 60000;
-    app.innerHTML = '<div class="card qrCard"><div class="muted">' + esc(s.name) + '</div><div class="big">NT$ ' + a.toLocaleString() + '</div><div style="font-weight:800;color:var(--teal)">客人可得 ' + r.pts + ' 點</div>' +
+    app.innerHTML = '<div class="card qrCard"><div class="muted">' + esc(s.name) + '</div><div class="big">NT$ ' + a.toLocaleString() + '</div><div style="font-weight:800;color:var(--teal)">QR 已產生，尚未入帳。預計可得 ' + r.pts + ' 點</div><div class="muted">實際點數依入帳結果</div>' +
       '<div class="qrBox" id="qr" style="margin:12px 0"></div><div>請客人用「小鳶來港」官方 LINE 的 <b>📷 掃描集點</b> 掃這個 QR</div><div class="muted" style="margin-top:6px">有效時間還剩 <span class="count" id="cd"></span>・只能用一次</div></div>' +
       '<div class="row"><button class="btn alt" id="cp">複製代碼</button><button class="btn" id="nx">下一位</button></div><div class="row" style="margin-top:8px"><button class="btn alt" id="re">重新出碼（同一筆）</button><button class="btn alt" id="vd" style="color:var(--red)">作廢這筆</button></div><p class="note">客人掃到後要按「領取」才算數。逾時就按「重新出碼」：金額不變、還是同一筆，舊 QR 失效（最多 ' + c.reissueMax + ' 次）。沒有網路也能產生；正式版會在連線後由中央確認只入帳一次。</p>';
     KiteScan.drawQR($('qr'), r.code, Math.min(260, innerWidth - 90));
     $('cp').onclick = function () { (navigator.clipboard ? navigator.clipboard.writeText(r.code) : Promise.reject()).then(function () { toast('已複製代碼'); }, function () { prompt('長按複製代碼', r.code); }); };
     $('nx').onclick = storeHome;
-    $('re').onclick = function () { var x = K.reissueEarn(r.nonce); if (!x.ok) return toast(x.msg); toast('已重新出碼，還能重出 ' + x.left + ' 次'); storeQR(s, a, x); };
+    $('re').onclick = function () { if (!confirm('重新出碼後，舊 QR 和舊領取連結將失效；金額維持 ' + a.toLocaleString() + ' 元。')) return; var x = K.reissueEarn(r.nonce); if (!x.ok) return toast(x.msg); toast('已重新出碼，還能重出 ' + x.left + ' 次'); storeQR(s, a, x); };
     $('vd').onclick = function () { if (!confirm('作廢這筆？客人掃了也不會入點。')) return; K.voidEarn(r.nonce); toast('已作廢'); storeHome(); };
     var tick = function () { var left = Math.max(0, end - Date.now()), m = Math.floor(left / 60000), sec = Math.floor(left / 1000) % 60; $('cd').textContent = m + ' 分 ' + String(sec).padStart(2, '0') + ' 秒'; if (!left) { clearInterval(timer); $('qr').style.opacity = .2; $('cd').textContent = '已逾時，請按「重新出碼」'; } };
     tick(); timer = setInterval(tick, 1000);
@@ -100,7 +100,7 @@
   }
   function deskHome() {
     stopAll(); var se = sess(); if (!se || !se.desk) return deskLogin(); $('title').textContent = '服務台・' + se.who;
-    app.innerHTML = '<div class="card"><h2>掃客人的兌換 QR</h2><div class="scanBox" id="scan"></div><p class="muted" id="smsg" style="margin:8px 0 0"></p>' +
+    app.innerHTML = '<div class="card"><h2>掃客人的兌換 QR</h2><p class="muted" style="margin:0 0 8px">掃碼只查詢，尚未發放。請核對贈品、數量及狀態；交付後按「確認已交付」。</p><div class="scanBox" id="scan"></div><p class="muted" id="smsg" style="margin:8px 0 0"></p>' +
       '<details style="margin-top:8px"><summary class="muted">手動輸入代碼</summary><textarea id="manual" rows="3" style="width:100%;margin-top:6px;border:1px solid var(--line);border-radius:12px;padding:8px"></textarea><button class="btn alt full" id="chk">查詢</button></details></div>' +
       '<div id="res"></div><div class="card"><h2>今天發出的</h2><ul class="list" id="today"></ul></div><div class="card"><h2>贈品庫存</h2><ul class="list" id="stock"></ul></div><button class="btn alt full" id="out">登出</button>';
     scanner = new KiteScan.Scanner($('scan'), function (code) { check(code); }, function (m) { $('smsg').textContent = m; }); scanner.start();
