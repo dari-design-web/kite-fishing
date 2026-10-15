@@ -234,15 +234,22 @@
     var p = prizeById(pid), m = member(); if (!p || p.on === false) return { ok: false, msg: '這個贈品目前不能換' };
     if (stockLeft(pid) <= 0) return { ok: false, msg: '這個贈品換完了' };
     if (m.status === 'frozen') return { ok: false, msg: '這個會員帳號暫停使用，請洽服務台' };
-    var c0 = cfg(), today = dayKey(), act = m.redeems.filter(function (r) { return r.status !== 'cancel'; });
-    if (c0.redeemPerDay && act.filter(function (r) { return dayKey(r.t) === today; }).length >= c0.redeemPerDay) return { ok: false, msg: '今天已經兌換 ' + c0.redeemPerDay + ' 次了，明天再來' };
-    if (p.perUser && act.filter(function (r) { return r.prize === p.id; }).length >= p.perUser) return { ok: false, msg: '這個贈品每人限換 ' + p.perUser + ' 次' };
-    if (p.from && today < p.from || p.to && today > p.to) return { ok: false, msg: '這個贈品不在兌換期間' };
+    var blk = redeemBlock(pid, m); if (blk) return { ok: false, msg: blk };
     if (m.points < p.points) return { ok: false, msg: '點數不夠，還差 ' + (p.points - m.points) + ' 點' };
     var rcode = rid(6), ts = Date.now().toString(36), body = ['KITE1', 'R', m.id, p.id, p.points, ts, rcode].join('|'), code = body + '|' + hmac(cfg().redeemKey, body);
     addLedger(m, { type: 'redeem', pts: -p.points, prize: p.id, prizeName: p.name, ref: rcode });
     m.redeems.unshift({ id: rcode, prize: p.id, name: p.name, pts: p.points, t: Date.now(), code: code, status: 'wait' }); saveMember(m);
     return { ok: true, code: code, rcode: rcode, prize: p, total: m.points };
+  }
+  /* D82：兌換資格（不含點數與庫存）。取消或逾期退點的單不算在每天次數與每人限換裡 */
+  function redeemBlock(pid, m) {
+    var p = prizeById(pid); m = m || member(); if (!p) return '找不到這個贈品';
+    var c0 = cfg(), today = dayKey(), act = (m.redeems || []).filter(function (r) { return r.status !== 'cancel' && r.status !== 'expired'; });
+    if (p.from && today < p.from) return '這個贈品 ' + p.from.slice(5).replace('-', '/') + ' 才開始兌換';
+    if (p.to && today > p.to) return '這個贈品的兌換期間已經結束';
+    if (p.perUser && act.filter(function (r) { return r.prize === p.id; }).length >= p.perUser) return '這個贈品每人限換 ' + p.perUser + ' 次，你已經換過了';
+    if (c0.redeemPerDay && act.filter(function (r) { return dayKey(r.t) === today; }).length >= c0.redeemPerDay) return '今天已經兌換 ' + c0.redeemPerDay + ' 次了，明天再來';
+    return '';
   }
   function cancelRedeem(rcode) {
     var m = member(), r = m.redeems.filter(function (x) { return x.id === rcode; })[0]; if (!r || r.status !== 'wait') return false;
@@ -332,7 +339,7 @@
   function exportMe() { return JSON.stringify(member()); }
 
   G.KiteCore = {
-    DEFAULTS: DEFAULTS, GAMES: GAMES, cfg: cfg, saveCfg: saveCfg, ruleVer: ruleVer, ruleHistory: ruleHistory, setProfile: setProfile, displayName: displayName, bentoState: bentoState, redeemBento: redeemBento, codeByShort: codeByShort, prizeImg: prizeImg, hasPrizeImg: hasPrizeImg, setPrizeImg: setPrizeImg, resetCfg: resetCfg, audit: audit, auditLog: function () { return rd(K_AUDIT) || []; },
+    DEFAULTS: DEFAULTS, GAMES: GAMES, cfg: cfg, saveCfg: saveCfg, ruleVer: ruleVer, ruleHistory: ruleHistory, setProfile: setProfile, displayName: displayName, bentoState: bentoState, redeemBento: redeemBento, redeemBlock: redeemBlock, codeByShort: codeByShort, prizeImg: prizeImg, hasPrizeImg: hasPrizeImg, setPrizeImg: setPrizeImg, resetCfg: resetCfg, audit: audit, auditLog: function () { return rd(K_AUDIT) || []; },
     member: member, peekMember: function () { return rd(K_MEM); }, saveMember: saveMember, dayKey: dayKey, rid: rid, hmac: hmac, sha256: sha256, utf8: utf8,
     pointsForSpend: pointsForSpend, makeEarnCode: makeEarnCode, claimEarn: claimEarn, storeLog: function () { return rd(K_STORE) || []; }, storeById: storeById,
     eventMult: eventMult, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore,
