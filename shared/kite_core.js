@@ -116,6 +116,15 @@
     return m;
   }
   function saveMember(m) { wr(K_MEM, m); }
+  /* C-196（D77）：我的資訊——暱稱 16 字內（不填就顯示會員編號）、email 與手機選填。原型存在這支手機；正式版存雲端，要先同意會員條款與個資告知 */
+  function setProfile(o) {
+    var nick = String(o.name || '').replace(/[\u0000-\u001f<>]/g, '').trim(), email = String(o.email || '').trim(), phone = String(o.phone || '').replace(/[\s-]/g, '');
+    if (Array.from(nick).length > 16) return { ok: false, field: 'name', msg: '名稱最多 16 個字' };
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { ok: false, field: 'email', msg: 'Email 格式不對' };
+    if (phone) { if (/^\+8869\d{8}$/.test(phone)) phone = '0' + phone.slice(4); if (!/^09\d{8}$/.test(phone)) return { ok: false, field: 'phone', msg: '手機請填 09 開頭的 10 碼' }; }
+    var m = member(); m.name = nick; m.email = email; m.phone = phone; m.profileT = Date.now(); saveMember(m); return { ok: true, member: m };
+  }
+  function displayName(m) { m = m || member(); return m.name || '會員 ' + m.id; }
   function addLedger(m, e) { e.t = e.t || Date.now(); e.rv = e.rv || ruleVer(); m.ledger.unshift(e); m.ledger = m.ledger.slice(0, 500); m.points = Math.max(0, (m.points || 0) + e.pts); }
   function storePointsToday(m) { var d = dayKey(), s = 0; m.ledger.forEach(function (e) { if (e.type === 'store' && dayKey(e.t) === d) s += e.pts; }); return s; }
 
@@ -298,7 +307,7 @@
   function exportMe() { return JSON.stringify(member()); }
 
   G.KiteCore = {
-    DEFAULTS: DEFAULTS, GAMES: GAMES, cfg: cfg, saveCfg: saveCfg, ruleVer: ruleVer, ruleHistory: ruleHistory, codeByShort: codeByShort, prizeImg: prizeImg, hasPrizeImg: hasPrizeImg, setPrizeImg: setPrizeImg, resetCfg: resetCfg, audit: audit, auditLog: function () { return rd(K_AUDIT) || []; },
+    DEFAULTS: DEFAULTS, GAMES: GAMES, cfg: cfg, saveCfg: saveCfg, ruleVer: ruleVer, ruleHistory: ruleHistory, setProfile: setProfile, displayName: displayName, codeByShort: codeByShort, prizeImg: prizeImg, hasPrizeImg: hasPrizeImg, setPrizeImg: setPrizeImg, resetCfg: resetCfg, audit: audit, auditLog: function () { return rd(K_AUDIT) || []; },
     member: member, peekMember: function () { return rd(K_MEM); }, saveMember: saveMember, dayKey: dayKey, rid: rid, hmac: hmac, sha256: sha256, utf8: utf8,
     pointsForSpend: pointsForSpend, makeEarnCode: makeEarnCode, claimEarn: claimEarn, storeLog: function () { return rd(K_STORE) || []; }, storeById: storeById,
     eventMult: eventMult, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore,
