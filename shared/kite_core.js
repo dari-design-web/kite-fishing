@@ -37,7 +37,21 @@
     deskPin: '0000',
     redeemKey: 'desk-demo-key',
     notice: '原型測試中：點數只存在這支手機，不是正式點數。',
-    admin: { user: 'dari', pass: '1677' }   // 原型：寫在網頁裡不安全，正式版要放到雲端驗證
+    admin: { user: 'dari', pass: '1677' },  // 原型：寫在網頁裡不安全，正式版要放到雲端驗證
+    /* v2（工作單 24，D73）後台新增的規則 */
+    expireMode: 'days',           // days＝取得後幾天到期；year＝每年底歸零；never＝不過期
+    redeemHoldDays: 7,            // 兌換單幾天沒領自動取消、退點
+    redeemPerDay: 3,              // 每人每天最多兌換幾次
+    games: {                      // 遊戲開關與防作弊
+      fish: { on: true, maint: false, maxScore: 20000 },
+      fly: { on: true, maint: false, maxScore: 50000 },
+      travel: { on: true, maint: false }, photo: { on: true, maint: false }, stamp: { on: true, maint: false }
+    },
+    storeEvents: [ { id: 'se1', title: '開幕週集點加倍', stores: [], from: '', to: '', mult: 2, on: false } ],
+    notices: [ { id: 'n1', title: '歡迎來到東三東四', body: '在館內消費集點、玩遊戲存分數，就能換小鳶贈品！', from: '', to: '', pin: true, on: true } ],
+    lowStockWarn: 10,
+    site: { name: '東三東四', tel: '', testMode: true },
+    alerts: { burstCount: 5, burstMin: 10, bigAmount: 5000 }
   };
   var GAMES = {
     fish: { name: '小鳶捕魚', levels: { noon: '午後場', dusk: '黃昏場', night: '夜釣場' } },
@@ -90,8 +104,10 @@
   /* ====== 會員（這支手機的客人） ====== */
   function member() {
     var m = rd(K_MEM);
-    if (!m) { m = { id: 'M' + rid(6), name: '', created: Date.now(), points: 0, scoreBank: {}, ledger: [], nonces: [], plays: [], tries: {}, redeems: [], visits: [] }; wr(K_MEM, m); }
+    if (!m) { m = { id: 'M' + rid(6), name: '', created: Date.now(), status: 'ok', tags: [], points: 0, scoreBank: {}, ledger: [], nonces: [], plays: [], tries: {}, redeems: [], visits: [] }; wr(K_MEM, m); }
     var today = dayKey(); if (m.visits[m.visits.length - 1] !== today) { m.visits.push(today); m.visits = m.visits.slice(-120); wr(K_MEM, m); }
+    m.status = m.status || 'ok'; m.tags = m.tags || [];
+    if (!member.busy) { member.busy = true; try { if (housekeep(m)) wr(K_MEM, m); } finally { member.busy = false; } }
     return m;
   }
   function saveMember(m) { wr(K_MEM, m); }
@@ -102,10 +118,11 @@
      格式：KITE1|E|店家|金額|點數|時間(36進位)|一次性編號|簽章
      沒網路也能用：店家端自己算簽章，客人端自己驗；同一個編號只能用一次，超過時間就失效。 */
   function storeById(id) { return cfg().stores.filter(function (s) { return s.id === id; })[0]; }
-  function pointsForSpend(amount) { var c = cfg(); if (amount < c.minSpend) return 0; return Math.floor(amount / c.spendPerPoint); }
+  function storeMult(storeId, t) { var d = dayKey(t), best = 1; (cfg().storeEvents || []).forEach(function (e) { if (e.on && (!e.stores || !e.stores.length || e.stores.indexOf(storeId) >= 0) && (!e.from || d >= e.from) && (!e.to || d <= e.to) && e.mult > best) best = e.mult; }); return best; }
+  function pointsForSpend(amount, storeId) { var c = cfg(), s = storeId && storeById(storeId), per = (s && s.spendPerPoint) || c.spendPerPoint; if (amount < c.minSpend) return 0; return Math.floor(Math.floor(amount / per) * (storeId ? storeMult(storeId) : 1)); }
   function makeEarnCode(storeId, amount) {
     var s = storeById(storeId); if (!s) throw new Error('沒有這個店家');
-    var pts = pointsForSpend(amount), ts = Date.now().toString(36), nonce = rid(8);
+    var pts = pointsForSpend(amount, storeId), ts = Date.now().toString(36), nonce = rid(8);
     var body = ['KITE1', 'E', storeId, amount, pts, ts, nonce].join('|'), code = body + '|' + hmac(s.key, body);
     var log = rd(K_STORE) || []; log.unshift({ t: Date.now(), store: storeId, amount: amount, pts: pts, nonce: nonce, code: code, synced: false }); wr(K_STORE, log.slice(0, 1000));
     return { code: code, pts: pts, nonce: nonce };
@@ -116,7 +133,7 @@
     var c = cfg(), s = storeById(p[2]); if (!s || s.on === false) return { ok: false, msg: '找不到這個店家' };
     if (hmac(s.key, p.slice(0, 7).join('|')) !== p[7]) return { ok: false, msg: 'QR 驗證失敗（可能被改過）' };
     var t = parseInt(p[5], 36); if (Date.now() - t > c.qrExpireMin * 60000) return { ok: false, msg: '這張 QR 已經超過 ' + c.qrExpireMin + ' 分鐘，請店家重新產生' };
-    var m = member(); if (m.nonces.indexOf(p[6]) >= 0) return { ok: false, msg: '這張 QR 已經集過點了' };
+    var m = member(); if (m.status === 'frozen') return { ok: false, msg: '這個會員帳號暫停使用，請洽服務台' }; if (m.nonces.indexOf(p[6]) >= 0) return { ok: false, msg: '這張 QR 已經集過點了' };
     var pts = +p[4], room = c.maxStorePointsPerDay - storePointsToday(m), give = Math.max(0, Math.min(pts, room));
     m.nonces.push(p[6]); m.nonces = m.nonces.slice(-500);
     addLedger(m, { type: 'store', pts: give, store: s.id, storeName: s.name, amount: +p[3], ref: p[6] }); saveMember(m);
@@ -132,9 +149,10 @@
   function triesLeft(game, level) { var c = cfg(), m = member(), k = dayKey() + '|' + game + '|' + level, n = c.gameTries[game] != null ? c.gameTries[game] : c.triesPerLevel; return Math.max(0, n - ((m.tries || {})[k] || 0)); }
   function reportPlay(o) {      // o = { game, level, score, sec }
     var m = member(), k = dayKey() + '|' + o.game + '|' + o.level; m.tries = m.tries || {};
-    var counted = triesLeft(o.game, o.level) > 0, ev = eventMult(o.game), add = counted ? Math.round((o.score || 0) * ev.mult) : 0;
+    var gc = (cfg().games || {})[o.game] || {}, sc = Math.max(0, o.score || 0), capped = gc.maxScore && sc > gc.maxScore; if (capped) sc = gc.maxScore;
+    var counted = m.status !== 'frozen' && gc.on !== false && triesLeft(o.game, o.level) > 0, ev = eventMult(o.game), add = counted ? Math.round(sc * ev.mult) : 0;
     m.tries[k] = (m.tries[k] || 0) + 1;
-    m.plays.unshift({ t: Date.now(), game: o.game, level: String(o.level), score: o.score || 0, sec: Math.round(o.sec || 0), counted: counted, mult: ev.mult, bank: add }); m.plays = m.plays.slice(0, 800);
+    m.plays.unshift({ t: Date.now(), game: o.game, level: String(o.level), score: o.score || 0, capped: !!capped, sec: Math.round(o.sec || 0), counted: counted, mult: ev.mult, bank: add }); m.plays = m.plays.slice(0, 800);
     m.scoreBank[o.game] = (m.scoreBank[o.game] || 0) + add; saveMember(m);
     return { counted: counted, add: add, mult: ev.mult, event: ev.title, bank: m.scoreBank[o.game], left: triesLeft(o.game, o.level) };
   }
@@ -153,6 +171,11 @@
   function makeRedeem(pid) {
     var p = prizeById(pid), m = member(); if (!p || p.on === false) return { ok: false, msg: '這個贈品目前不能換' };
     if (stockLeft(pid) <= 0) return { ok: false, msg: '這個贈品換完了' };
+    if (m.status === 'frozen') return { ok: false, msg: '這個會員帳號暫停使用，請洽服務台' };
+    var c0 = cfg(), today = dayKey(), act = m.redeems.filter(function (r) { return r.status !== 'cancel'; });
+    if (c0.redeemPerDay && act.filter(function (r) { return dayKey(r.t) === today; }).length >= c0.redeemPerDay) return { ok: false, msg: '今天已經兌換 ' + c0.redeemPerDay + ' 次了，明天再來' };
+    if (p.perUser && act.filter(function (r) { return r.prize === p.id; }).length >= p.perUser) return { ok: false, msg: '這個贈品每人限換 ' + p.perUser + ' 次' };
+    if (p.from && today < p.from || p.to && today > p.to) return { ok: false, msg: '這個贈品不在兌換期間' };
     if (m.points < p.points) return { ok: false, msg: '點數不夠，還差 ' + (p.points - m.points) + ' 點' };
     var rcode = rid(6), ts = Date.now().toString(36), body = ['KITE1', 'R', m.id, p.id, p.points, ts, rcode].join('|'), code = body + '|' + hmac(cfg().redeemKey, body);
     addLedger(m, { type: 'redeem', pts: -p.points, prize: p.id, prizeName: p.name, ref: rcode });
@@ -178,6 +201,22 @@
     return { ok: true, prize: r.prize, rcode: r.rcode };
   }
 
+  /* ====== 例行整理：兌換單逾期自動取消退點、點數到期（每次打開會員資料時跑） ====== */
+  function housekeep(m) {
+    var c = cfg(), now = Date.now(), changed = false;
+    (m.redeems || []).forEach(function (r) { if (r.status === 'wait' && c.redeemHoldDays && now - r.t > c.redeemHoldDays * 86400000) { r.status = 'expired'; addLedger(m, { type: 'refund', pts: r.pts, prize: r.prize, prizeName: r.name, ref: r.id, note: '逾期未領自動取消' }); changed = true; } });
+    var exp = expiring(m, 0); if (exp.due > 0) { addLedger(m, { type: 'expire', pts: -Math.min(exp.due, m.points), note: '點數到期' }); changed = true; }
+    return changed;
+  }
+  function expiring(m, days) {      // 先進先出：算出到 now+days 時會到期、還沒用掉的點數
+    var c = cfg(); if (c.expireMode === 'never') return { due: 0 };
+    var lim = Date.now() + (days || 0) * 86400000, gains = [], spent = 0;
+    (m.ledger || []).slice().reverse().forEach(function (e) { if (e.pts > 0 && e.type !== 'refund') gains.push({ t: e.t, left: e.pts }); else if (e.pts < 0) spent += -e.pts; else if (e.type === 'refund') spent -= e.pts; });
+    gains.forEach(function (g) { var u = Math.min(g.left, Math.max(0, spent)); g.left -= u; spent -= u; });
+    var due = 0; gains.forEach(function (g) { var end = c.expireMode === 'year' ? new Date(new Date(g.t).getFullYear(), 11, 31, 23, 59, 59).getTime() : g.t + (c.pointsExpireDays || 365) * 86400000; if (c.pointsExpireDays === 0 && c.expireMode === 'days') return; if (end <= lim) due += g.left; });
+    return { due: due };
+  }
+
   /* ====== 統計（後台）：這支手機的客人＋匯入的其他手機資料 ====== */
   function allMembers() { var a = (rd(K_IMP) || []).slice(), m = rd(K_MEM); if (m && !a.some(function (x) { return x.id === m.id; })) a.unshift(m); return a; }
   function importMembers(list) { var a = rd(K_IMP) || []; list.forEach(function (m) { a = a.filter(function (x) { return x.id !== m.id; }); a.push(m); }); wr(K_IMP, a); audit('匯入 ' + list.length + ' 位客人的資料'); }
@@ -185,10 +224,10 @@
 
   G.KiteCore = {
     DEFAULTS: DEFAULTS, GAMES: GAMES, cfg: cfg, saveCfg: saveCfg, resetCfg: resetCfg, audit: audit, auditLog: function () { return rd(K_AUDIT) || []; },
-    member: member, saveMember: saveMember, dayKey: dayKey, rid: rid, hmac: hmac, sha256: sha256, utf8: utf8,
+    member: member, peekMember: function () { return rd(K_MEM); }, saveMember: saveMember, dayKey: dayKey, rid: rid, hmac: hmac, sha256: sha256, utf8: utf8,
     pointsForSpend: pointsForSpend, makeEarnCode: makeEarnCode, claimEarn: claimEarn, storeLog: function () { return rd(K_STORE) || []; }, storeById: storeById,
     eventMult: eventMult, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore,
     prizeById: prizeById, stockLeft: stockLeft, makeRedeem: makeRedeem, cancelRedeem: cancelRedeem, deskCheck: deskCheck, deskGive: deskGive, deskLog: function () { return rd(K_DESK) || []; },
-    allMembers: allMembers, importMembers: importMembers, exportMe: exportMe
+    allMembers: allMembers, importMembers: importMembers, exportMe: exportMe, expiring: expiring, housekeep: housekeep, storeMult: storeMult, notices: function () { var d = dayKey(); return (cfg().notices || []).filter(function (n) { return n.on && (!n.from || d >= n.from) && (!n.to || d <= n.to); }); }
   };
 })(window);

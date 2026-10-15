@@ -75,6 +75,7 @@ body{background:#8CABD9;display:flex;flex-direction:column;height:100vh;height:1
     var m = K.member(), c = $('chat'), h = new Date().getHours(); c.innerHTML = '<div class="time">今天 ' + String(h).padStart(2, '0') + ':' + String(new Date().getMinutes()).padStart(2, '0') + '</div>';
     say((h < 11 ? '早安' : h < 17 ? '午安' : '晚上好') + '！我是小鳶 🪶 歡迎來到東三東四～');
     say('你現在有 <b>' + m.points + ' 點</b>。在館內消費可以請店家出 QR，點下面的 <b>📷 掃描集點</b> 就能集點；點數可以換贈品喔！');
+    K.notices().filter(function (n) { return n.pin; }).forEach(function (n) { say('📌 <b>' + esc(n.title) + '</b><br>' + esc(n.body)); });
     var ev = todayEvents(); if (ev.length) say('📣 今天的活動：' + ev.map(function (e) { return esc(e.title); }).join('、') + '（' + '<a href="#" data-open="events">看詳情</a>）');
     c.querySelectorAll('[data-open]').forEach(function (a) { a.onclick = function (e) { e.preventDefault(); open(a.dataset.open); }; });
   }
@@ -95,7 +96,7 @@ body{background:#8CABD9;display:flex;flex-direction:column;height:100vh;height:1
       '<div class="card"><h2>🎮 遊戲分數存摺</h2><p class="muted" style="margin:0 0 6px">遊戲分數每滿 ' + c.scorePerPoint.toLocaleString() + ' 分可以換 1 點（零頭留著下次用）。每關每天前 ' + c.triesPerLevel + ' 次的分數才會存進來。</p><ul class="list">' +
       (banks.length ? banks.map(function (g) { var per = K.perPoint(g), b = m.scoreBank[g], n = Math.floor(b / per); return '<li><span class="grow"><b>' + esc(GN[g] ? GN[g].name : g) + '</b><span class="muted">' + b.toLocaleString() + ' 分' + (n ? '・可換 ' + n + ' 點' : '・還差 ' + (per - b % per).toLocaleString() + ' 分') + '</span></span><button class="btn" data-cv="' + g + '"' + (n ? '' : ' disabled') + '>換點</button></li>'; }).join('') : '<li class="muted">還沒有分數，去「🎮 玩遊戲」吧！</li>') + '</ul></div>' +
       '<div class="card"><h2>點數紀錄</h2><ul class="list">' + (m.ledger.slice(0, 30).map(function (e) {
-        var what = e.type === 'store' ? '🧾 ' + esc(e.storeName) + ' 消費 NT$' + e.amount : e.type === 'game' ? '🎮 ' + esc(GN[e.game] ? GN[e.game].name : e.game) + ' 分數換點' : e.type === 'redeem' ? '🎁 兌換 ' + esc(e.prizeName) : e.type === 'refund' ? '↩️ 取消兌換 ' + esc(e.prizeName) : '調整';
+        var what = e.type === 'store' ? '🧾 ' + esc(e.storeName) + ' 消費 NT$' + e.amount : e.type === 'game' ? '🎮 ' + esc(GN[e.game] ? GN[e.game].name : e.game) + ' 分數換點' : e.type === 'redeem' ? '🎁 兌換 ' + esc(e.prizeName) : e.type === 'refund' ? '↩️ ' + (e.note ? esc(e.note) + ' ' : '取消兌換 ') + esc(e.prizeName) : e.type === 'expire' ? '⌛ 點數到期' : e.type === 'adjust' ? '✏️ 調整' + (e.note ? '（' + esc(e.note) + '）' : '') : '調整';
         return '<li><span class="grow"><b>' + what + '</b><span class="muted">' + t2(e.t) + '</span></span><b style="color:' + (e.pts >= 0 ? 'var(--teal)' : 'var(--red)') + '">' + (e.pts >= 0 ? '+' : '') + e.pts + '</b></li>';
       }).join('') || '<li class="muted">還沒有紀錄</li>') + '</ul></div>' +
       '<div class="card"><h2>測試工具</h2><p class="muted" style="margin:0 0 8px">原型的點數只存在這支手機。測試完可以清掉重來（只清客人的點數、紀錄、兌換單）。</p><button class="btn red full" id="wipe">清除我的資料，重新開始</button></div>';
@@ -126,7 +127,7 @@ body{background:#8CABD9;display:flex;flex-direction:column;height:100vh;height:1
   };
   function showTicket(r) {
     $('stitle').textContent = '兌換單'; $('sheet').classList.add('on');
-    $('sbody').innerHTML = '<div class="card" style="text-align:center"><div class="muted">請到服務台出示這個 QR</div><h2 style="font-size:20px;margin:6px 0">🎁 ' + esc(r.name) + '</h2><div class="qrBox" id="tq"></div><p style="margin:8px 0 0">兌換碼 <b style="font-size:20px;letter-spacing:2px">' + r.id + '</b></p><p class="muted">' + t2(r.t) + '・已扣 ' + r.pts + ' 點・' + (r.status === 'done' ? '<span class="pill g">已領取</span>' : r.status === 'cancel' ? '<span class="pill r">已取消</span>' : '<span class="pill o">還沒領</span>') + '</p></div>' +
+    $('sbody').innerHTML = '<div class="card" style="text-align:center"><div class="muted">請到服務台出示這個 QR</div><h2 style="font-size:20px;margin:6px 0">🎁 ' + esc(r.name) + '</h2><div class="qrBox" id="tq"></div><p style="margin:8px 0 0">兌換碼 <b style="font-size:20px;letter-spacing:2px">' + r.id + '</b></p><p class="muted">' + t2(r.t) + '・已扣 ' + r.pts + ' 點・' + (r.status === 'done' ? '<span class="pill g">已領取</span>' : r.status === 'cancel' || r.status === 'expired' ? '<span class="pill r">' + (r.status === 'expired' ? '逾期已退點' : '已取消') + '</span>' : '<span class="pill o">還沒領</span>') + '</p></div>' +
       (r.status === 'wait' ? '<div class="row"><button class="btn alt" id="cp">複製代碼</button><button class="btn red" id="cx">取消並退點</button></div>' : '') + '<button class="btn alt full" id="bk" style="margin-top:10px">看我的兌換</button>';
     KiteScan.drawQR($('tq'), r.code, Math.min(240, innerWidth - 100));
     if ($('cp')) $('cp').onclick = function () { (navigator.clipboard ? navigator.clipboard.writeText(r.code) : Promise.reject()).then(function () { toast('已複製代碼'); }, function () { prompt('長按複製代碼', r.code); }); };
@@ -135,12 +136,12 @@ body{background:#8CABD9;display:flex;flex-direction:column;height:100vh;height:1
   }
   R.mine = function () {
     var rs = K.member().redeems;
-    $('sbody').innerHTML = '<div class="card"><ul class="list">' + (rs.map(function (r, i) { return '<li><span class="grow"><b>' + esc(r.name) + '</b><span class="muted">' + t2(r.t) + '・' + r.id + '・' + r.pts + ' 點</span></span>' + (r.status === 'done' ? '<span class="pill g">已領取</span>' : r.status === 'cancel' ? '<span class="pill r">已取消</span>' : '<button class="btn warn" data-i="' + i + '">出示 QR</button>') + '</li>'; }).join('') || '<li class="muted">還沒有兌換</li>') + '</ul></div><p class="note">原型：服務台在別支手機發放時，這裡要等接上雲端才會自動變「已領取」。</p>';
+    $('sbody').innerHTML = '<div class="card"><ul class="list">' + (rs.map(function (r, i) { return '<li><span class="grow"><b>' + esc(r.name) + '</b><span class="muted">' + t2(r.t) + '・' + r.id + '・' + r.pts + ' 點</span></span>' + (r.status === 'done' ? '<span class="pill g">已領取</span>' : r.status === 'cancel' || r.status === 'expired' ? '<span class="pill r">' + (r.status === 'expired' ? '逾期已退點' : '已取消') + '</span>' : '<button class="btn warn" data-i="' + i + '">出示 QR</button>') + '</li>'; }).join('') || '<li class="muted">還沒有兌換</li>') + '</ul></div><p class="note">原型：服務台在別支手機發放時，這裡要等接上雲端才會自動變「已領取」。</p>';
     $('sbody').querySelectorAll('[data-i]').forEach(function (b) { b.onclick = function () { showTicket(rs[+b.dataset.i]); }; });
   };
   R.events = function () {
     var D = '日一二三四五六', ev = K.cfg().events.filter(function (e) { return e.on; }), today = new Date().getDay();
-    $('sbody').innerHTML = ev.map(function (e) { var on = e.days.indexOf(today) >= 0; return '<div class="card ev"><b>' + esc(e.title) + '</b>' + (on ? ' <span class="pill o">今天有</span>' : '') + '<p class="muted" style="margin:4px 0 0">' + esc(K.GAMES[e.game] ? K.GAMES[e.game].name : e.game) + '・分數 ×' + e.mult + '・星期' + e.days.map(function (d) { return D[d]; }).join('、') + '・' + e.from + '～' + e.to + '</p></div>'; }).join('') || '<div class="card muted">目前沒有活動</div>';
+    var NS = K.notices(); $('sbody').innerHTML = ev.map(function (e) { var on = e.days.indexOf(today) >= 0; return '<div class="card ev"><b>' + esc(e.title) + '</b>' + (on ? ' <span class="pill o">今天有</span>' : '') + '<p class="muted" style="margin:4px 0 0">' + esc(K.GAMES[e.game] ? K.GAMES[e.game].name : e.game) + '・分數 ×' + e.mult + '・星期' + e.days.map(function (d) { return D[d]; }).join('、') + '・' + e.from + '～' + e.to + '</p></div>'; }).join('') || '<div class="card muted">目前沒有活動</div>'; $('sbody').insertAdjacentHTML('afterbegin', NS.map(function (n) { return '<div class="card" style="border-left:4px solid var(--teal)">' + (n.pin ? '📌 ' : '') + '<b>' + esc(n.title) + '</b><p style="margin:4px 0 0">' + esc(n.body) + '</p></div>'; }).join(''));
   };
   /* 玩遊戲：重新排成手機好讀的一欄清單；每個遊戲標今天還能算分幾次、今天的活動 */
   var GL = [
@@ -154,6 +155,7 @@ body{background:#8CABD9;display:flex;flex-direction:column;height:100vh;height:1
     var c = K.cfg();
     $('sbody').innerHTML = '<p class="muted" style="margin:0 0 10px">會算分的遊戲：每關每天前 ' + c.triesPerLevel + ' 次的分數會存進「分數存摺」，每 ' + c.scorePerPoint.toLocaleString() + ' 分換 1 點。</p>' + GL.map(function (g) {
       var G0 = K.GAMES[g.id], lv = Object.keys(G0.levels), ev = K.eventMult(g.id), left = lv.reduce(function (a, l) { return a + K.triesLeft(g.id, l); }, 0);
+      var gc = (K.cfg().games || {})[g.id] || {}; if (gc.on === false) return ''; if (gc.maint) return '<div class="game" style="opacity:.55"><img src="' + g.img + '" alt=""><span><b>' + esc(G0.name) + '</b><span class="muted">🔧 維護中，請稍後再來</span></span></div>';
       var sub = lv.length ? '今天還能算分 ' + left + ' 次' + (ev.mult > 1 ? '・<span style="color:var(--orange);font-weight:800">' + esc(ev.title) + ' ×' + ev.mult + '</span>' : '') : '不算分，輕鬆玩';
       return '<a class="game" href="' + g.href + '"><img src="' + g.img + '" alt="" onerror="this.src=\'' + (g.alt || '../travel/assets/kite_hello.png') + '\'"><span><b>' + esc(G0.name) + '</b><span class="muted">' + esc(g.tip) + '</span><span class="muted">' + sub + '</span></span><span class="go">›</span></a>';
     }).join('') + '<a class="game" href="../meet/"><img src="../meet/assets/pal_f4.webp" alt="" onerror="this.src=\'../travel/assets/kite_hello.png\'"><span><b>港口朋友</b><span class="muted">在館內掃大大的充氣朋友旁的 QR</span></span><span class="go">›</span></a>';
