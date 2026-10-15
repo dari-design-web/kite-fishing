@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>小鳶來港・後台管理</title>
+<link rel="stylesheet" href="../shared/sys.css">
+<style>
+.kpi{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 12px}
+.kpi div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}.kpi b{display:block;font-size:24px}.kpi span{font-size:12px;color:var(--muted)}
+.bars{display:flex;align-items:flex-end;gap:2px;height:110px;padding:6px 0 0;border-bottom:1px solid var(--line)}
+.bars i{flex:1;background:var(--teal);border-radius:3px 3px 0 0;min-height:1px;position:relative}
+.bars i.z{background:#D8E7E6}
+.axis{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:2px}
+.edit{display:grid;grid-template-columns:1fr auto;gap:6px 8px;align-items:center}
+.edit input,.edit select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:16px}
+.item{border:1px solid var(--line);border-radius:14px;padding:10px;margin:0 0 10px;background:#fff}
+.item .row{margin:0 0 6px}.item input,.item select{padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-size:16px;width:100%;background:#fff}
+.days{display:flex;gap:4px;flex-wrap:wrap}.days label{display:inline-flex;align-items:center;gap:2px;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:3px 6px}
+.small{font-size:12px}
+.scrollx{overflow-x:auto}
+</style>
+</head>
+<body>
+<header class="top"><a href="../portal/">‹ 主頁</a><h1>後台管理</h1><button class="lk" type="button" id="logout" hidden>登出</button></header>
+<main class="wrap" id="app"></main>
+<div class="toast" id="toast"></div>
+<script src="../shared/kite_core.js"></script>
+<script>
+/* 後台管理（工作單 23，D71）。帳號 dari／密碼 1677（Dari 指定）。
+   原型：帳密寫在網頁裡、資料只看得到這台裝置＋匯入的資料；正式版改成雲端登入與雲端資料庫（D72：下一步測試才接）。 */
+(function () {
+  var $ = function (id) { return document.getElementById(id); }, app = $('app'), K = KiteCore, SK = 'kiteAdminSession1', tab = 'home';
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function toast(t) { var e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(function () { e.style.display = 'none'; }, 2200); }
+  function t2(t) { var d = new Date(t); return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+  function mins(sec) { return sec >= 3600 ? (sec / 3600).toFixed(1) + ' 小時' : Math.round(sec / 60) + ' 分'; }
+  function logged() { try { return sessionStorage.getItem(SK) === '1'; } catch (e) { return false; } }
+  var GN = function (g) { return K.GAMES[g] ? K.GAMES[g].name : g; }, LN = function (g, l) { return (K.GAMES[g] && K.GAMES[g].levels[l]) || l; };
+
+  function login() {
+    $('logout').hidden = true;
+    app.innerHTML = '<div class="card"><h2>後台登入</h2><label class="f">帳號<input id="u" autocomplete="username" autocapitalize="off"></label><label class="f">密碼<input id="p" type="password" autocomplete="current-password"></label><button class="btn full" id="go">登入</button><p class="note">原型的帳號密碼寫在網頁裡，不安全；正式版會改成雲端登入。</p></div>';
+    $('go').onclick = function () { var a = K.cfg().admin; if ($('u').value.trim() === a.user && $('p').value === a.pass) { try { sessionStorage.setItem(SK, '1'); } catch (e) {} K.audit('後台登入'); main(); } else toast('帳號或密碼不對'); };
+  }
+  var TABS = [['home', '總覽'], ['rule', '點數規則'], ['ev', '遊戲與活動'], ['prize', '贈品'], ['store', '店家與服務台'], ['users', '會員統計'], ['log', '紀錄與資料']];
+  function main() {
+    if (!logged()) return login(); $('logout').hidden = false;
+    app.innerHTML = '<div class="tabs" id="tabs">' + TABS.map(function (t) { return '<button type="button" data-t="' + t[0] + '" aria-pressed="' + (t[0] === tab) + '">' + t[1] + '</button>'; }).join('') + '</div><div id="pane"></div>';
+    $('tabs').querySelectorAll('button').forEach(function (b) { b.onclick = function () { tab = b.dataset.t; main(); }; });
+    V[tab]();
+  }
+  $('logout').onclick = function () { try { sessionStorage.removeItem(SK); } catch (e) {} login(); };
+  function save(c, why) { K.saveCfg(c, why); toast('已儲存'); }
+
+  /* ====== 統計資料整理 ====== */
+  function stats() {
+    var ms = K.allMembers(), plays = [], led = [], red = [];
+    ms.forEach(function (m) { (m.plays || []).forEach(function (p) { plays.push(Object.assign({ mid: m.id }, p)); }); (m.ledger || []).forEach(function (e) { led.push(Object.assign({ mid: m.id }, e)); }); (m.redeems || []).forEach(function (r) { red.push(Object.assign({ mid: m.id }, r)); }); });
+    return { ms: ms, plays: plays, led: led, red: red, desk: K.deskLog(), storeTx: K.storeLog() };
+  }
+  function hourBars(times, label) {
+    var h = new Array(24).fill(0); times.forEach(function (t) { h[new Date(t).getHours()]++; }); var mx = Math.max.apply(null, h.concat([1]));
+    return '<div class="small muted">' + label + '</div><div class="bars">' + h.map(function (v, i) { return '<i class="' + (v ? '' : 'z') + '" style="height:' + Math.max(2, v / mx * 100) + '%" title="' + i + ' 點：' + v + '"></i>'; }).join('') + '</div><div class="axis"><span>0</span><span>6</span><span>12</span><span>18</span><span>23 點</span></div>';
+  }
+
+  var V = {};
+  V.home = function () {
+    var s = stats(), today = K.dayKey(), c = K.cfg();
+    var earned = s.led.filter(function (e) { return e.pts > 0 && e.type !== 'refund'; }).reduce(function (a, e) { return a + e.pts; }, 0);
+    var used = -s.led.filter(function (e) { return e.type === 'redeem'; }).reduce(function (a, e) { return a + e.pts; }, 0);
+    var sec = s.plays.reduce(function (a, p) { return a + (p.sec || 0); }, 0);
+    $('pane').innerHTML = '<div class="kpi"><div><b>' + s.ms.length + '</b><span>會員（這台＋匯入）</span></div><div><b>' + s.ms.filter(function (m) { return (m.visits || []).indexOf(today) >= 0; }).length + '</b><span>今天來過</span></div>' +
+      '<div><b>' + earned + '</b><span>總共發出點數</span></div><div><b>' + used + '</b><span>總共兌換用掉</span></div>' +
+      '<div><b>' + s.plays.length + '</b><span>遊戲局數</span></div><div><b>' + mins(sec) + '</b><span>總遊玩時間</span></div>' +
+      '<div><b>' + s.desk.length + '</b><span>服務台已發贈品</span></div><div><b>' + s.storeTx.length + '</b><span>店家發出集點 QR</span></div></div>' +
+      '<div class="card">' + hourBars(s.plays.map(function (p) { return p.t; }).concat(s.led.map(function (e) { return e.t; })), '使用時間分布（遊戲＋集點＋兌換，依小時）') + '</div>' +
+      '<div class="card"><h2>目前規則</h2><p class="muted" style="margin:0">遊戲 ' + c.scorePerPoint.toLocaleString() + ' 分＝1 點・每關每天算分 ' + c.triesPerLevel + ' 次・消費 ' + c.spendPerPoint + ' 元＝1 點・集點 QR ' + c.qrExpireMin + ' 分鐘有效・每人每天消費點數上限 ' + c.maxStorePointsPerDay + ' 點</p></div>' +
+      '<p class="note">原型：統計只包含這台裝置上的客人資料，以及在「紀錄與資料」匯入的其他手機資料。接上雲端資料庫後會自動包含全部客人。</p>';
+  };
+  V.rule = function () {
+    var c = K.cfg();
+    function f(k, label, unit) { return '<label>' + label + '</label><span><input type="number" min="0" id="r_' + k + '" value="' + c[k] + '" style="width:110px"> ' + (unit || '') + '</span>'; }
+    $('pane').innerHTML = '<div class="card"><h2>點數規則</h2><div class="edit">' +
+      f('scorePerPoint', '遊戲分數換點：幾分＝1 點', '分') + f('triesPerLevel', '每關每天可挑戰（算分）次數', '次') + f('spendPerPoint', '消費多少元＝1 點', '元') + f('minSpend', '最低消費金額才給點', '元') +
+      f('maxStorePointsPerDay', '每人每天消費點數上限', '點') + f('qrExpireMin', '集點 QR 有效時間', '分鐘') + f('redeemExpireMin', '兌換 QR 提醒時間', '分鐘') + f('pointsExpireDays', '點數有效天數（0＝不過期）', '天') +
+      '</div><h2 style="margin-top:14px">個別遊戲覆寫（空白＝跟上面一樣）</h2><div class="edit">' +
+      ['fish', 'fly'].map(function (g) { return '<label>' + GN(g) + '：幾分＝1 點</label><input type="number" min="0" id="gp_' + g + '" value="' + (c.gameScorePerPoint[g] || '') + '" style="width:110px"><label>' + GN(g) + '：每關每天次數</label><input type="number" min="0" id="gt_' + g + '" value="' + (c.gameTries[g] != null ? c.gameTries[g] : '') + '" style="width:110px">'; }).join('') +
+      '</div><label class="f" style="margin-top:12px">客人看到的提醒文字<input id="r_notice" value="' + esc(c.notice) + '"></label><button class="btn full" id="sv">儲存</button></div>';
+    $('sv').onclick = function () {
+      var c2 = K.cfg(); ['scorePerPoint', 'triesPerLevel', 'spendPerPoint', 'minSpend', 'maxStorePointsPerDay', 'qrExpireMin', 'redeemExpireMin', 'pointsExpireDays'].forEach(function (k) { var v = +$('r_' + k).value; if (!isNaN(v) && v >= 0) c2[k] = v; });
+      if (c2.scorePerPoint < 1) c2.scorePerPoint = 1; if (c2.spendPerPoint < 1) c2.spendPerPoint = 1;
+      ['fish', 'fly'].forEach(function (g) { var a = $('gp_' + g).value, b = $('gt_' + g).value; if (a) c2.gameScorePerPoint[g] = +a; else delete c2.gameScorePerPoint[g]; if (b !== '') c2.gameTries[g] = +b; else delete c2.gameTries[g]; });
+      c2.notice = $('r_notice').value; save(c2, '點數規則');
+    };
+  };
+  V.ev = function () {
+    var c = K.cfg(), D = '日一二三四五六';
+    function row(e, i) {
+      return '<div class="item"><div class="row"><input data-k="title" value="' + esc(e.title) + '" placeholder="活動名稱"><label class="small" style="flex:0 0 auto"><input type="checkbox" data-k="on"' + (e.on ? ' checked' : '') + ' style="width:auto"> 開啟</label></div>' +
+        '<div class="row"><select data-k="game">' + ['fish', 'fly'].map(function (g) { return '<option value="' + g + '"' + (g === e.game ? ' selected' : '') + '>' + GN(g) + '</option>'; }).join('') + '</select><input data-k="mult" type="number" step="0.1" min="1" value="' + e.mult + '" title="分數倍數"></div>' +
+        '<div class="row"><input data-k="from" type="time" value="' + e.from + '"><input data-k="to" type="time" value="' + e.to + '"></div>' +
+        '<div class="days">' + [0, 1, 2, 3, 4, 5, 6].map(function (d) { return '<label><input type="checkbox" data-d="' + d + '"' + (e.days.indexOf(d) >= 0 ? ' checked' : '') + '>' + D[d] + '</label>'; }).join('') + '</div>' +
+        '<button class="btn alt small" data-del="' + i + '" style="min-height:36px;margin-top:6px">刪除這個活動</button></div>';
+    }
+    $('pane').innerHTML = '<div class="card"><h2>每日活動（分數加倍）</h2><p class="muted" style="margin:0 0 8px">在活動時段玩，存進分數存摺的分數會乘上倍數。</p><div id="evs">' + c.events.map(row).join('') + '</div><div class="row"><button class="btn alt" id="add">＋新增活動</button><button class="btn" id="sv">儲存</button></div></div>';
+    function collect() { return [].map.call($('evs').querySelectorAll('.item'), function (el, i) { var o = { id: (c.events[i] && c.events[i].id) || 'ev' + K.rid(4) }; el.querySelectorAll('[data-k]').forEach(function (x) { o[x.dataset.k] = x.type === 'checkbox' ? x.checked : x.type === 'number' ? +x.value : x.value; }); o.days = [].filter.call(el.querySelectorAll('[data-d]'), function (x) { return x.checked; }).map(function (x) { return +x.dataset.d; }); return o; }); }
+    $('add').onclick = function () { c.events = collect(); c.events.push({ id: 'ev' + K.rid(4), game: 'fish', title: '新活動', days: [0, 6], from: '10:00', to: '18:00', mult: 2, on: true }); K.saveCfg(c, '新增活動'); V.ev(); };
+    $('pane').querySelectorAll('[data-del]').forEach(function (b) { b.onclick = function () { c.events = collect(); c.events.splice(+b.dataset.del, 1); K.saveCfg(c, '刪除活動'); V.ev(); toast('已刪除'); }; });
+    $('sv').onclick = function () { c.events = collect(); save(c, '每日活動'); };
+  };
+  V.prize = function () {
+    var c = K.cfg(), s = stats();
+    $('pane').innerHTML = '<div class="card"><h2>贈品（點數、數量）</h2><div id="ps">' + c.prizes.map(function (p, i) {
+      return '<div class="item"><div class="row"><input data-k="name" value="' + esc(p.name) + '"><label class="small" style="flex:0 0 auto"><input type="checkbox" data-k="on"' + (p.on !== false ? ' checked' : '') + ' style="width:auto"> 上架</label></div>' +
+        '<div class="row"><label class="small">點數<input data-k="points" type="number" min="0" value="' + p.points + '"></label><label class="small">總數量<input data-k="stock" type="number" min="0" value="' + p.stock + '"></label></div>' +
+        '<div class="small muted">' + p.id + '・已發 ' + (p.stock - K.stockLeft(p.id)) + '・剩 ' + K.stockLeft(p.id) + '</div><button class="btn alt small" data-del="' + i + '" style="min-height:36px;margin-top:6px">刪除</button></div>';
+    }).join('') + '</div><div class="row"><button class="btn alt" id="add">＋新增贈品</button><button class="btn" id="sv">儲存</button></div></div>' +
+      '<div class="card"><h2>查某個贈品的兌換名單</h2><select id="pq" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:12px;font-size:16px;background:#fff">' + c.prizes.map(function (p) { return '<option value="' + p.id + '">' + esc(p.name) + '</option>'; }).join('') + '</select><div id="pl" class="scrollx" style="margin-top:8px"></div></div>';
+    function collect() { return [].map.call($('ps').querySelectorAll('.item'), function (el, i) { var o = { id: (c.prizes[i] && c.prizes[i].id) || 'P' + K.rid(3) }; el.querySelectorAll('[data-k]').forEach(function (x) { o[x.dataset.k] = x.type === 'checkbox' ? x.checked : x.type === 'number' ? +x.value : x.value; }); return o; }); }
+    $('add').onclick = function () { c.prizes = collect(); c.prizes.push({ id: 'P' + K.rid(3), name: '新贈品', points: 10, stock: 10, on: false }); K.saveCfg(c, '新增贈品'); V.prize(); };
+    $('pane').querySelectorAll('[data-del]').forEach(function (b) { b.onclick = function () { if (!confirm('刪除這個贈品？（已兌換紀錄會保留）')) return; c.prizes = collect(); c.prizes.splice(+b.dataset.del, 1); K.saveCfg(c, '刪除贈品'); V.prize(); }; });
+    $('sv').onclick = function () { c.prizes = collect(); save(c, '贈品'); };
+    function list() {
+      var id = $('pq').value, give = {}; s.desk.forEach(function (d) { if (d.prize === id) give[d.rcode] = d; });
+      var rows = s.red.filter(function (r) { return r.prize === id; }); s.desk.forEach(function (d) { if (d.prize === id && !rows.some(function (r) { return r.id === d.rcode; })) rows.push({ id: d.rcode, mid: d.member, t: d.t, status: 'done', pts: d.pts }); });
+      $('pl').innerHTML = rows.length ? '<table class="t"><tr><th>會員</th><th>兌換時間</th><th>兌換碼</th><th>狀態</th><th>發放</th></tr>' + rows.map(function (r) { var g = give[r.id]; return '<tr><td>' + esc(r.mid) + '</td><td>' + t2(r.t) + '</td><td>' + r.id + '</td><td>' + (g || r.status === 'done' ? '已領' : r.status === 'cancel' ? '取消' : '未領') + '</td><td>' + (g ? t2(g.t) + ' ' + esc(g.staff) : '') + '</td></tr>'; }).join('') + '</table><p class="note">共 ' + rows.length + ' 筆</p>' : '<p class="muted">還沒有人兌換</p>';
+    }
+    $('pq').onchange = list; list();
+  };
+  V.store = function () {
+    var c = K.cfg();
+    $('pane').innerHTML = '<div class="card"><h2>店家</h2><div id="ss">' + c.stores.map(function (s, i) {
+      return '<div class="item"><div class="row"><input data-k="name" value="' + esc(s.name) + '"><label class="small" style="flex:0 0 auto"><input type="checkbox" data-k="on"' + (s.on !== false ? ' checked' : '') + ' style="width:auto"> 啟用</label></div><div class="row"><label class="small">店家代碼<input data-k="id" value="' + esc(s.id) + '"></label><label class="small">登入密碼<input data-k="pin" value="' + esc(s.pin) + '"></label></div><label class="small">防偽金鑰（店家 QR 用；改了舊 QR 會失效）<input data-k="key" value="' + esc(s.key) + '"></label><button class="btn alt small" data-del="' + i + '" style="min-height:36px;margin-top:6px">刪除</button></div>';
+    }).join('') + '</div><div class="row"><button class="btn alt" id="add">＋新增店家</button><button class="btn" id="sv">儲存</button></div></div>' +
+      '<div class="card"><h2>服務台</h2><div class="edit"><label>服務台密碼</label><input id="dpin" value="' + esc(c.deskPin) + '" style="width:120px"><label>兌換 QR 防偽金鑰</label><input id="rkey" value="' + esc(c.redeemKey) + '" style="width:160px"></div><button class="btn full" id="sv2" style="margin-top:10px">儲存</button></div>' +
+      '<div class="card"><h2>各店家今天的集點</h2><div id="st"></div></div>';
+    function collect() { return [].map.call($('ss').querySelectorAll('.item'), function (el) { var o = {}; el.querySelectorAll('[data-k]').forEach(function (x) { o[x.dataset.k] = x.type === 'checkbox' ? x.checked : x.value.trim(); }); return o; }); }
+    $('add').onclick = function () { c.stores = collect(); c.stores.push({ id: 'S' + K.rid(3), name: '新店家', pin: String(Math.floor(1000 + Math.random() * 9000)), key: K.rid(12).toLowerCase(), on: true }); K.saveCfg(c, '新增店家'); V.store(); };
+    $('pane').querySelectorAll('[data-del]').forEach(function (b) { b.onclick = function () { if (!confirm('刪除這個店家？')) return; c.stores = collect(); c.stores.splice(+b.dataset.del, 1); K.saveCfg(c, '刪除店家'); V.store(); }; });
+    $('sv').onclick = function () { c.stores = collect(); save(c, '店家'); };
+    $('sv2').onclick = function () { c.deskPin = $('dpin').value.trim(); c.redeemKey = $('rkey').value.trim() || c.redeemKey; save(c, '服務台'); };
+    var today = K.dayKey(), tx = K.storeLog().filter(function (x) { return K.dayKey(x.t) === today; });
+    $('st').innerHTML = '<table class="t"><tr><th>店家</th><th>筆數</th><th>消費金額</th><th>點數</th></tr>' + c.stores.map(function (s) { var a = tx.filter(function (x) { return x.store === s.id; }); return '<tr><td>' + esc(s.name) + '</td><td>' + a.length + '</td><td>' + a.reduce(function (n, x) { return n + x.amount; }, 0).toLocaleString() + '</td><td>' + a.reduce(function (n, x) { return n + x.pts; }, 0) + '</td></tr>'; }).join('') + '</table><p class="note">原型：只看得到「這台裝置」發出的集點 QR。</p>';
+  };
+  V.users = function () {
+    var s = stats(), sel = V.users.sel || '';
+    var rows = s.ms.map(function (m) {
+      var pl = m.plays || [], sec = pl.reduce(function (a, p) { return a + (p.sec || 0); }, 0), sc = pl.reduce(function (a, p) { return a + (p.score || 0); }, 0);
+      return { m: m, n: pl.length, sec: sec, sc: sc, red: (m.redeems || []).filter(function (r) { return r.status !== 'cancel'; }).length, last: (m.visits || []).slice(-1)[0] || '' };
+    });
+    $('pane').innerHTML = '<div class="card scrollx"><h2>會員一覽</h2><table class="t"><tr><th>會員</th><th>點數</th><th>局數</th><th>遊玩時間</th><th>總分</th><th>兌換</th><th>最近</th></tr>' + rows.map(function (r) { return '<tr data-m="' + r.m.id + '" style="cursor:pointer' + (r.m.id === sel ? ';background:#E9F2F1' : '') + '"><td><b>' + esc(r.m.id) + '</b></td><td>' + r.m.points + '</td><td>' + r.n + '</td><td>' + mins(r.sec) + '</td><td>' + r.sc.toLocaleString() + '</td><td>' + r.red + '</td><td>' + esc(r.last.slice(5)) + '</td></tr>'; }).join('') + '</table><p class="note">點一位會員看細節。</p></div>' +
+      '<div class="card scrollx"><h2>各遊戲各關</h2>' + gameTable(s.plays) + '</div><div id="md"></div>';
+    $('pane').querySelectorAll('[data-m]').forEach(function (tr) { tr.onclick = function () { V.users.sel = tr.dataset.m; V.users(); }; });
+    if (sel) { var m = s.ms.filter(function (x) { return x.id === sel; })[0]; if (m) detail(m); }
+  };
+  function gameTable(plays) {
+    var g = {}; plays.forEach(function (p) { var k = p.game + '|' + p.level; (g[k] = g[k] || []).push(p); });
+    var ks = Object.keys(g).sort(); if (!ks.length) return '<p class="muted">還沒有遊戲紀錄（遊戲回報分數會在下一塊接上）</p>';
+    return '<table class="t"><tr><th>遊戲／關卡</th><th>局數</th><th>平均分</th><th>最高分</th><th>時間</th></tr>' + ks.map(function (k) { var a = g[k], gl = k.split('|'), sum = a.reduce(function (n, p) { return n + p.score; }, 0); return '<tr><td>' + esc(GN(gl[0])) + '・' + esc(LN(gl[0], gl[1])) + '</td><td>' + a.length + '</td><td>' + Math.round(sum / a.length).toLocaleString() + '</td><td>' + Math.max.apply(null, a.map(function (p) { return p.score; })).toLocaleString() + '</td><td>' + mins(a.reduce(function (n, p) { return n + (p.sec || 0); }, 0)) + '</td></tr>'; }).join('') + '</table>';
+  }
+  function detail(m) {
+    var pl = m.plays || [];
+    $('md').innerHTML = '<div class="card scrollx"><h2>會員 ' + esc(m.id) + '</h2><p class="muted" style="margin:0 0 8px">加入 ' + t2(m.created) + '・來過 ' + (m.visits || []).length + ' 天・目前 ' + m.points + ' 點</p>' + gameTable(pl.map(function (p) { return p; })) +
+      '<div style="margin-top:10px">' + hourBars(pl.map(function (p) { return p.t; }).concat((m.ledger || []).map(function (e) { return e.t; })), '這位會員的使用時段') + '</div>' +
+      '<h2 style="margin-top:12px">兌換</h2>' + ((m.redeems || []).map(function (r) { return '<div class="small">' + t2(r.t) + '・' + esc(r.name) + '・' + r.pts + ' 點・' + (r.status === 'done' ? '已領' : r.status === 'cancel' ? '取消' : '未領') + '</div>'; }).join('') || '<p class="muted">沒有</p>') +
+      '<h2 style="margin-top:12px">手動調整點數</h2><div class="row"><input id="adj" type="number" placeholder="例如 10 或 -5" style="padding:8px;border:1px solid var(--line);border-radius:10px"><input id="why" placeholder="原因" style="padding:8px;border:1px solid var(--line);border-radius:10px"><button class="btn" id="doadj" style="flex:0 0 auto">調整</button></div><p class="note">原型只能調整「這台裝置」的會員。</p></div>';
+    $('doadj').onclick = function () { var me = K.member(), v = Math.round(+$('adj').value); if (!v) return; if (me.id !== m.id) return toast('只能調整這台裝置的會員'); me.ledger.unshift({ t: Date.now(), type: 'adjust', pts: v, note: $('why').value }); me.points = Math.max(0, me.points + v); K.saveMember(me); K.audit('調整 ' + m.id + ' 點數 ' + v + '（' + $('why').value + '）'); toast('已調整'); V.users(); };
+  }
+  V.log = function () {
+    var a = K.auditLog();
+    $('pane').innerHTML = '<div class="card"><h2>資料</h2><div class="grid2"><button class="btn alt" id="ex">匯出全部（JSON）</button><button class="btn alt" id="exme">匯出這台的會員</button></div>' +
+      '<label class="f" style="margin-top:10px">匯入其他手機匯出的會員資料（貼上 JSON）<textarea id="imp" rows="3"></textarea></label><button class="btn full" id="doimp">匯入</button></div>' +
+      '<div class="card"><h2>清除測試資料</h2><p class="muted" style="margin:0 0 8px">清掉這台裝置上的會員點數、店家集點紀錄、服務台發放紀錄、匯入的資料。設定可以另外還原。</p><div class="grid2"><button class="btn red" id="wipe">清除測試資料</button><button class="btn alt" id="reset">設定還原預設</button></div></div>' +
+      '<div class="card"><h2>操作紀錄</h2>' + (a.slice(0, 60).map(function (x) { return '<div class="small">' + t2(x.t) + '・' + esc(x.what) + '</div>'; }).join('') || '<p class="muted">沒有</p>') + '</div>';
+    function dl(name, text) { var b = new Blob([text], { type: 'application/json' }), u = URL.createObjectURL(b), l = document.createElement('a'); l.href = u; l.download = name; document.body.appendChild(l); l.click(); l.remove(); setTimeout(function () { URL.revokeObjectURL(u); }, 1000); }
+    $('ex').onclick = function () { dl('kite_all_' + K.dayKey() + '.json', JSON.stringify({ cfg: K.cfg(), members: K.allMembers(), store: K.storeLog(), desk: K.deskLog(), audit: K.auditLog() }, null, 1)); };
+    $('exme').onclick = function () { dl('kite_member_' + K.member().id + '.json', K.exportMe()); };
+    $('doimp').onclick = function () { try { var j = JSON.parse($('imp').value); var list = Array.isArray(j) ? j : j.members ? j.members : [j]; list = list.filter(function (m) { return m && m.id && m.ledger; }); if (!list.length) throw 0; K.importMembers(list); toast('匯入 ' + list.length + ' 位'); V.log(); } catch (e) { toast('格式不對'); } };
+    $('wipe').onclick = function () { if (!confirm('確定清除這台裝置的所有測試資料？')) return; ['kiteMember1', 'kiteStoreTx1', 'kiteDeskLog1', 'kiteImported1'].forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} }); K.audit('清除測試資料'); toast('已清除'); V.log(); };
+    $('reset').onclick = function () { if (!confirm('把所有設定還原成預設？')) return; K.resetCfg(); toast('已還原'); V.log(); };
+  };
+  main();
+})();
+</script>
+</body>
+</html>
