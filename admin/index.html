@@ -170,7 +170,7 @@ svg text{font-family:inherit}
     ['客人', [['members', '👥 會員'], ['points', '🪙 點數帳本'], ['pstats', '📊 點數統計'], ['rules', '⚖️ 點數規則']]],
     ['內容', [['games', '🎮 遊戲'], ['events', '📣 活動與公告'], ['prize', '🎁 贈品與兌換']]],
     ['現場', [['stores', '🧾 店家與對帳'], ['desk', '🛎️ 服務台'], ['backfill', '📝 補登／交易恢復'], ['stock', '📦 庫存盤點'], ['shift', '🔁 交班']]],
-    ['分析', [['reports', '📈 報表']]],
+    ['分析', [['rstats', '🎁 兌換統計'], ['mstats', '👥 會員點數統計'], ['reports', '📈 報表']]],
     ['系統', [['system', '🛠️ 系統與資料']]]
   ];
   function app() {
@@ -434,6 +434,69 @@ svg text{font-family:inherit}
     wireTable('t_desk', app);
   };
   /* ---------- 報表 ---------- */
+  /* ====== D84：統計（Dari 10/15 23:36：數量統計、會員點數統計、會員兌換統計） ====== */
+  function perBar(key, per) { return '<div class="filters" style="margin-bottom:12px">期間 ' + [['1', '今天'], ['7', '近 7 天'], ['30', '近 30 天'], ['all', '全部']].map(function (x) { return '<button class="btn ' + (per === x[0] ? '' : 'alt') + ' sm" data-' + key + '="' + x[0] + '">' + x[1] + '</button>'; }).join(' ') + '</div>'; }
+  function kTile(t, v, s) { return '<div class="card kpi"><span>' + t + '</span><b>' + v + '</b>' + (s ? '<small>' + s + '</small>' : '') + '</div>'; }
+  function pct(a, b) { return b ? Math.round(100 * a / b) + '%' : '—'; }
+  function hrs(ms) { if (ms == null) return '—'; var h = ms / 3600000; return h < 1 ? Math.round(h * 60) + ' 分鐘' : h < 48 ? h.toFixed(1) + ' 小時' : (h / 24).toFixed(1) + ' 天'; }
+  /* 🎁 兌換統計：贈品數量、便當、會員兌換 */
+  V.rstats = function (c, D) {
+    var per = V.rstats.p || '30', since = per === 'all' ? 0 : K.dayKey(Date.now() - (+per - 1) * 86400000), inP = function (t) { return !since || K.dayKey(t) >= since; };
+    var given = {}; D.desk.forEach(function (g) { given[g.rcode] = g; });
+    var R = D.red.filter(function (r) { return inP(r.t); }).map(function (r) { var g = given[r.id]; var st = g ? 'done' : r.status; return Object.assign({}, r, { st: st, gt: g ? g.t : (r.status === 'done' ? r.doneT || null : null), staff: g ? g.staff : '' }); });
+    var B = D.led.filter(function (e) { return e.type === 'redeem' && e.virtual && inP(e.t); });
+    var cnt = function (a, s) { return a.filter(function (r) { return r.st === s; }).length; };
+    var done = cnt(R, 'done'), wait = cnt(R, 'wait'), cx = cnt(R, 'cancel'), ex = cnt(R, 'expired'), effective = R.length - cx;
+    var lag = R.filter(function (r) { return r.st === 'done' && r.gt; }).map(function (r) { return r.gt - r.t; }).sort(function (a, b) { return a - b; }), med = lag.length ? lag[Math.floor(lag.length / 2)] : null;
+    var people = {}; R.forEach(function (r) { if (r.st !== 'cancel') people[r.mid] = (people[r.mid] || 0) + 1; }); B.forEach(function (e) { people[e.mid] = (people[e.mid] || 0) + 1; });
+    var np = Object.keys(people).length, rep = Object.keys(people).filter(function (k) { return people[k] >= 2; }).length;
+    var days = Math.max(1, per === 'all' ? Math.ceil((Date.now() - Math.min.apply(null, R.map(function (r) { return r.t; }).concat([Date.now()]))) / 86400000) || 1 : +per);
+    var prows = D.cfg.prizes.map(function (p) {
+      var a = R.filter(function (r) { return r.prize === p.id; }), d = a.filter(function (r) { return r.st === 'done'; }), lg = d.filter(function (r) { return r.gt; }).map(function (r) { return r.gt - r.t; });
+      var used = a.filter(function (r) { return r.st !== 'cancel' && r.st !== 'expired'; }), left = K.stockLeft(p.id), rate = used.length / days;
+      var who = {}; used.forEach(function (r) { who[r.mid] = 1; });
+      return { id: p.id, name: p.name, on: p.on !== false ? '上架' : '下架', pts: p.points, n: a.length, done: d.length, wait: a.filter(function (r) { return r.st === 'wait'; }).length, cancel: a.filter(function (r) { return r.st === 'cancel'; }).length, expired: a.filter(function (r) { return r.st === 'expired'; }).length, usedPts: used.reduce(function (s, r) { return s + r.pts; }, 0), people: Object.keys(who).length, rate: pct(d.length, a.length - a.filter(function (r) { return r.st === 'cancel'; }).length), lag: lg.length ? lg.reduce(function (s, x) { return s + x; }, 0) / lg.length : null, onHand: K.onHand(p.id), left: left, lastDays: rate > 0 ? Math.floor(left / rate) : null };
+    });
+    var brows = (D.cfg.bentos || []).map(function (b) { var a = B.filter(function (e) { return e.bento === b.id; }), who = {}; a.forEach(function (e) { who[e.mid] = 1; }); return { name: b.name, pts: b.points, n: a.length, people: Object.keys(who).length, usedPts: a.reduce(function (s, e) { return s - e.pts; }, 0) }; });
+    var mm = {}; D.ms.forEach(function (m) { mm[m.id] = m; });
+    var mrows = Object.keys(people).map(function (k) { var a = R.filter(function (r) { return r.mid === k; }), b = B.filter(function (e) { return e.mid === k; }), m = mm[k] || {}; var last = Math.max.apply(null, a.map(function (r) { return r.t; }).concat(b.map(function (e) { return e.t; }))); return { id: k, name: m.name || '', n: a.filter(function (r) { return r.st !== 'cancel'; }).length, bento: b.length, done: a.filter(function (r) { return r.st === 'done'; }).length, wait: a.filter(function (r) { return r.st === 'wait'; }).length, cancel: a.filter(function (r) { return r.st === 'cancel' || r.st === 'expired'; }).length, usedPts: a.filter(function (r) { return r.st !== 'cancel' && r.st !== 'expired'; }).reduce(function (s, r) { return s + r.pts; }, 0) + b.reduce(function (s, e) { return s - e.pts; }, 0), bal: m.points || 0, last: last }; }).sort(function (a, b) { return b.usedPts - a.usedPts; });
+    var waitList = D.red.filter(function (r) { return r.status === 'wait' && !given[r.id]; }).map(function (r) { var hd = D.cfg.redeemHoldDays; return Object.assign({}, r, { dl: hd ? r.t + hd * 86400000 : 0, age: Date.now() - r.t }); }).sort(function (a, b) { return a.t - b.t; });
+    c.innerHTML += perBar('rp', per) +
+      '<div class="grid g4" style="margin-bottom:14px">' + kTile('實體兌換單', num(R.length), '有效 ' + num(effective) + '・取消 ' + num(cx) + '・逾期退點 ' + num(ex)) + kTile('已領／未領', num(done) + '／' + num(wait), '領取率 ' + pct(done, effective - 0) + '（已領÷有效單）') + kTile('兌換後多久來領', hrs(med), '中位數・共 ' + lag.length + ' 筆有發放時間') + kTile('兌換人數', num(np), '回頭兌換（2 次以上）' + num(rep) + ' 人・' + pct(rep, np)) + '</div>' +
+      '<div class="grid g4" style="margin-bottom:14px">' + kTile('小鳶便當', num(B.length) + ' 份', '用掉 ' + num(B.reduce(function (s, e) { return s - e.pts; }, 0)) + ' 點') + kTile('實體禮物用掉點數', num(prows.reduce(function (s, r) { return s + r.usedPts; }, 0)), '不含取消與逾期退點') + kTile('目前待領取', num(waitList.length) + ' 張', D.cfg.redeemHoldDays ? '3 天內到期 ' + waitList.filter(function (r) { return r.dl && r.dl > Date.now() && r.dl - Date.now() < 3 * 86400000; }).length + ' 張・已過期限未處理 ' + waitList.filter(function (r) { return r.dl && r.dl <= Date.now(); }).length + ' 張' : '') + kTile('庫存偏低', num(prows.filter(function (r) { return r.left <= (D.cfg.lowStockWarn || 10); }).length) + ' 項', '可兌換 ≤ ' + (D.cfg.lowStockWarn || 10)) + '</div>' +
+      '<div class="card" style="margin-bottom:14px"><h2>各贈品數量<span class="sp"></span><button class="btn alt sm" id="exRP">匯出 CSV</button></h2>' + table('t_rp', [{ k: 'name', t: '贈品' }, { k: 'on', t: '狀態' }, { k: 'pts', t: '點數', num: 1 }, { k: 'n', t: '兌換單', num: 1 }, { k: 'done', t: '已領', num: 1 }, { k: 'wait', t: '未領', num: 1 }, { k: 'cancel', t: '取消', num: 1 }, { k: 'expired', t: '逾期退點', num: 1 }, { k: 'rate', t: '領取率' }, { k: 'lag', t: '平均多久來領', f: function (r) { return hrs(r.lag); }, csv: function (r) { return r.lag == null ? '' : Math.round(r.lag / 60000) + ' 分鐘'; } }, { k: 'people', t: '兌換人數', num: 1 }, { k: 'usedPts', t: '用掉點數', num: 1 }, { k: 'onHand', t: '實物現存', num: 1 }, { k: 'left', t: '可兌換', num: 1 }, { k: 'lastDays', t: '照目前速度還能換', f: function (r) { return r.lastDays == null ? '—' : r.lastDays + ' 天'; }, csv: function (r) { return r.lastDays == null ? '' : r.lastDays; } }], prows) + '<p class="small muted" style="margin:6px 0 0">領取率＝已領÷（兌換單－取消）；「照目前速度還能換」＝可兌換÷期間內每天平均兌換量。</p></div>' +
+      '<div class="grid g21" style="margin-bottom:14px"><div class="card"><h2>會員兌換排行<span class="sp"></span><button class="btn alt sm" id="exRM">匯出 CSV</button></h2>' + table('t_rm', [{ k: 'id', t: '會員' }, { k: 'name', t: '名稱' }, { k: 'n', t: '實體兌換', num: 1 }, { k: 'bento', t: '便當', num: 1 }, { k: 'done', t: '已領', num: 1 }, { k: 'wait', t: '未領', num: 1 }, { k: 'cancel', t: '取消／逾期', num: 1 }, { k: 'usedPts', t: '用掉點數', num: 1 }, { k: 'bal', t: '目前點數', num: 1 }, { k: 'last', t: '最近一次', f: function (r) { return dt(r.last); }, csv: function (r) { return dt(r.last); } }], mrows, { limit: 50, click: function (r) { memberDrawer(r.id); } }) + '<p class="small muted" style="margin:6px 0 0">點一列看會員明細。</p></div>' +
+      '<div class="card"><h2>小鳶便當</h2>' + table('t_rb', [{ k: 'name', t: '便當' }, { k: 'pts', t: '點數', num: 1 }, { k: 'n', t: '份數', num: 1 }, { k: 'people', t: '人數', num: 1 }, { k: 'usedPts', t: '用掉點數', num: 1 }], brows) + '</div></div>' +
+      '<div class="card"><h2>待領取兌換單（由舊到新）<span class="sp"></span><button class="btn alt sm" id="exRW">匯出 CSV</button></h2>' + table('t_rw', [{ k: 't', t: '兌換時間', f: function (r) { return dt(r.t); }, csv: function (r) { return dt(r.t); } }, { k: 'mid', t: '會員' }, { k: 'name', t: '贈品' }, { k: 'id', t: '兌換碼' }, { k: 'age', t: '已等', f: function (r) { return hrs(r.age); }, csv: function (r) { return Math.round(r.age / 3600000) + ' 小時'; } }, { k: 'dl', t: '自動取消時間', f: function (r) { return r.dl ? dt(r.dl) : '不自動取消'; }, csv: function (r) { return r.dl ? dt(r.dl) : ''; } }], waitList) + '</div>' +
+      '<p class="small muted">資料範圍同上方黃色說明（本裝置＋已匯入）。「已領」以服務台發放紀錄為準。</p>';
+    c.querySelectorAll('[data-rp]').forEach(function (b) { b.onclick = function () { V.rstats.p = b.dataset.rp; app(); }; });
+    wireTable('t_rp', app); wireTable('t_rm', app); wireTable('t_rw', app);
+    $('exRP').onclick = function () { var T = table.last.t_rp; csv('兌換統計_贈品', T.cols, T.rows); };
+    $('exRM').onclick = function () { var T = table.last.t_rm; csv('兌換統計_會員', T.cols, T.rows); };
+    $('exRW').onclick = function () { var T = table.last.t_rw; csv('待領取兌換單', T.cols, T.rows); };
+  };
+  /* 👥 會員點數統計：點數分布、閒置、到期、排行 */
+  V.mstats = function (c, D) {
+    var now = Date.now(), d30 = now - 30 * 86400000, mm = D.ms.map(function (m) {
+      var L = m.ledger || [], earned = L.filter(function (e) { return e.pts > 0 && e.type !== 'refund'; }).reduce(function (s, e) { return s + e.pts; }, 0);
+      var spent = -L.filter(function (e) { return e.type === 'redeem'; }).reduce(function (s, e) { return s + e.pts; }, 0) - L.filter(function (e) { return e.type === 'refund'; }).reduce(function (s, e) { return s + e.pts; }, 0);
+      var lastT = Math.max.apply(null, L.map(function (e) { return e.t; }).concat((m.plays || []).map(function (p) { return p.t; })).concat([m.created || 0]));
+      return { id: m.id, name: m.name || '', bal: m.points || 0, earned: earned, spent: spent, store: L.filter(function (e) { return e.type === 'store' || e.type === 'backfill'; }).reduce(function (s, e) { return s + e.pts; }, 0), game: L.filter(function (e) { return e.type === 'game'; }).reduce(function (s, e) { return s + e.pts; }, 0), due30: K.expiring(m, 30).due, last: lastT, idle: lastT < d30, visits: (m.visits || []).length, status: m.status === 'frozen' ? '凍結' : '正常' };
+    });
+    var bals = mm.map(function (x) { return x.bal; }).sort(function (a, b) { return a - b; }), tot = bals.reduce(function (s, x) { return s + x; }, 0), withP = mm.filter(function (x) { return x.bal > 0; });
+    var medB = bals.length ? bals[Math.floor(bals.length / 2)] : 0, idle = mm.filter(function (x) { return x.idle && x.bal > 0; }), due = mm.reduce(function (s, x) { return s + x.due30; }, 0);
+    var earnedAll = mm.reduce(function (s, x) { return s + x.earned; }, 0), spentAll = mm.reduce(function (s, x) { return s + x.spent; }, 0);
+    var BK = [[0, 0, '0 點'], [1, 9, '1～9'], [10, 29, '10～29'], [30, 49, '30～49'], [50, 99, '50～99'], [100, 199, '100～199'], [200, 1e12, '200 點以上']];
+    var dist = BK.map(function (b) { var a = mm.filter(function (x) { return x.bal >= b[0] && x.bal <= b[1]; }); return { k: b[2], n: a.length, pts: a.reduce(function (s, x) { return s + x.bal; }, 0) }; }), mx = Math.max.apply(null, dist.map(function (d) { return d.n; }).concat([1]));
+    var prizes = D.cfg.prizes.filter(function (p) { return p.on !== false; }).map(function (p) { return { name: p.name, pts: p.points, can: mm.filter(function (x) { return x.bal >= p.points; }).length }; }).sort(function (a, b) { return a.pts - b.pts; });
+    c.innerHTML += '<div class="grid g4" style="margin-bottom:14px">' + kTile('會員', num(mm.length), '有點數 ' + num(withP.length) + ' 人・凍結 ' + mm.filter(function (x) { return x.status === '凍結'; }).length + ' 人') + kTile('點數總餘額', num(tot) + ' 點', '平均 ' + (mm.length ? (tot / mm.length).toFixed(1) : 0) + '・中位數 ' + num(medB) + '（未使用點數＝負債）') + kTile('累積發出／使用', num(earnedAll) + '／' + num(spentAll), '使用率 ' + pct(spentAll, earnedAll)) + kTile('閒置點數', num(idle.reduce(function (s, x) { return s + x.bal; }, 0)) + ' 點', idle.length + ' 位 30 天沒來但還有點數・30 天內到期 ' + num(due) + ' 點') + '</div>' +
+      '<div class="grid g2" style="margin-bottom:14px"><div class="card"><h2>點數分布（目前餘額）</h2>' + dist.map(function (d) { return '<div style="display:flex;align-items:center;gap:8px;margin:4px 0"><span style="width:84px" class="small">' + d.k + '</span><span style="flex:1;background:#EEF4F4;border-radius:6px;height:16px;overflow:hidden"><i style="display:block;height:100%;width:' + Math.round(100 * d.n / mx) + '%;background:#2F7F86"></i></span><span class="small" style="width:120px;text-align:right">' + d.n + ' 人・' + num(d.pts) + ' 點</span></div>'; }).join('') + '</div>' +
+      '<div class="card"><h2>現在換得起的人數</h2>' + table('t_mc', [{ k: 'name', t: '贈品' }, { k: 'pts', t: '點數', num: 1 }, { k: 'can', t: '點數夠換的會員', num: 1 }], prizes) + '<p class="small muted" style="margin:6px 0 0">用來判斷贈品點數訂得太高或太低。</p></div></div>' +
+      '<div class="card"><h2>會員點數明細<span class="sp"></span><button class="btn alt sm" id="exMS">匯出 CSV</button></h2>' + table('t_ms', [{ k: 'id', t: '會員' }, { k: 'name', t: '名稱' }, { k: 'bal', t: '目前點數', num: 1 }, { k: 'earned', t: '累積獲得', num: 1 }, { k: 'store', t: '消費＋補登', num: 1 }, { k: 'game', t: '遊戲換點', num: 1 }, { k: 'spent', t: '已使用（扣除退點）', num: 1 }, { k: 'due30', t: '30 天內到期', num: 1 }, { k: 'visits', t: '來訪天數', num: 1 }, { k: 'last', t: '最近活動', f: function (r) { return dt(r.last) + (r.idle ? ' <span class="pill o">閒置</span>' : ''); }, csv: function (r) { return dt(r.last); } }, { k: 'status', t: '狀態' }], mm.sort(function (a, b) { return b.bal - a.bal; }), { limit: 100, click: function (r) { memberDrawer(r.id); } }) + '</div>' +
+      '<p class="small muted">「閒置」＝30 天內沒有集點、遊戲或兌換。資料範圍同上方黃色說明。</p>';
+    wireTable('t_ms', app); wireTable('t_mc', app);
+    $('exMS').onclick = function () { var T = table.last.t_ms; csv('會員點數統計', T.cols, T.rows); };
+  };
   V.reports = function (c, D) {
     var f = V.reports.f || { from: K.dayKey(Date.now() - 13 * 86400000), to: K.dayKey(), kind: 'daily' };
     var days = []; for (var t = new Date(f.from + 'T00:00:00').getTime(); K.dayKey(t) <= f.to; t += 86400000) days.push(K.dayKey(t));
