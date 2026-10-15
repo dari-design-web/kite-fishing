@@ -99,8 +99,11 @@
 
   /* ====== 設定 ====== */
   function cfg() { var c = rd(K_CFG); var d = clone(DEFAULTS); if (!c) return d; for (var k in c) d[k] = c[k]; return d; }
-  function saveCfg(c, why) { wr(K_CFG, c); audit('改設定' + (why ? '：' + why : '')); }
-  function resetCfg() { localStorage.removeItem(K_CFG); audit('設定還原成預設'); }
+  /* C-193：規則版本號。每存一次設定＝新版本（預設是 v1）；每筆交易、點數紀錄記下當時的版本，之後改規則不追溯 */
+  function ruleVer() { return cfg().ruleVer || 1; }
+  function ruleHistory() { return rd('kiteRuleVer1') || []; }
+  function saveCfg(c, why) { var h = ruleHistory(), v = Math.max(c.ruleVer || 1, h[0] ? h[0].v : 1) + 1; c.ruleVer = v; h.unshift({ v: v, t: Date.now(), why: why || '改設定' }); wr('kiteRuleVer1', h.slice(0, 200)); wr(K_CFG, c); audit('改設定 → 規則 v' + v + (why ? '：' + why : '')); }
+  function resetCfg() { localStorage.removeItem(K_CFG); saveCfg(cfg(), '設定還原成預設'); }
   function audit(what) { var a = rd(K_AUDIT) || []; a.unshift({ t: Date.now(), what: what }); wr(K_AUDIT, a.slice(0, 300)); }
 
   /* ====== 會員（這支手機的客人） ====== */
@@ -113,7 +116,7 @@
     return m;
   }
   function saveMember(m) { wr(K_MEM, m); }
-  function addLedger(m, e) { e.t = e.t || Date.now(); m.ledger.unshift(e); m.ledger = m.ledger.slice(0, 500); m.points = Math.max(0, (m.points || 0) + e.pts); }
+  function addLedger(m, e) { e.t = e.t || Date.now(); e.rv = e.rv || ruleVer(); m.ledger.unshift(e); m.ledger = m.ledger.slice(0, 500); m.points = Math.max(0, (m.points || 0) + e.pts); }
   function storePointsToday(m) { var d = dayKey(), s = 0; m.ledger.forEach(function (e) { if (e.type === 'store' && dayKey(e.t) === d) s += e.pts; }); return s; }
 
   /* ====== 店家集點 QR ======
@@ -128,7 +131,7 @@
     var s = storeById(storeId); if (!s) throw new Error('沒有這個店家');
     var pts = pointsForSpend(amount, storeId), ts = Date.now().toString(36), nonce = rid(8);
     var body = ['KITE1', 'E', storeId, amount, pts, ts, nonce].join('|'), code = body + '|' + hmac(s.key, body);
-    var log = rd(K_STORE) || []; log.unshift({ t: Date.now(), store: storeId, amount: amount, pts: pts, nonce: nonce, code: code, synced: false }); wr(K_STORE, log.slice(0, 1000));
+    var log = rd(K_STORE) || []; log.unshift({ t: Date.now(), store: storeId, amount: amount, pts: pts, nonce: nonce, code: code, synced: false, rv: ruleVer() }); wr(K_STORE, log.slice(0, 1000));
     return { code: code, pts: pts, nonce: nonce };
   }
   function reissueEarn(nonce) {      // 同一筆交易重新出碼：金額不變、交易不變，舊 QR 在這台作廢（工作單 01 v5 第二節 B）
@@ -149,7 +152,8 @@
     var m = member(); if (m.status === 'frozen') return { ok: false, msg: '這個會員帳號暫停使用，請洽服務台' }; if (m.nonces.indexOf(p[6]) >= 0) return { ok: false, msg: '這張 QR 已經集過點了' };
     var pts = +p[4], room = c.maxStorePointsPerDay - storePointsToday(m), give = Math.max(0, Math.min(pts, room));
     m.nonces.push(p[6]); m.nonces = m.nonces.slice(-500);
-    addLedger(m, { type: 'store', pts: give, store: s.id, storeName: s.name, amount: +p[3], ref: p[6] }); saveMember(m);
+    var tx0 = sl.filter(function (r) { return r.nonce === p[6]; })[0];      // 用出碼當時的規則版本（同一台裝置才查得到；跨裝置待中央）
+    addLedger(m, { type: 'store', pts: give, store: s.id, storeName: s.name, amount: +p[3], ref: p[6], rv: tx0 && tx0.rv }); saveMember(m);
     var why = give === pts ? (pts > 0 ? 'ok' : (+p[3] < c.minSpend ? 'below' : 'zero')) : give > 0 ? 'partial' : 'quota';   // 工作單24 v5：依實際原因顯示，不把 0 點一律說成額度用完
     return { ok: true, pts: give, expected: pts, capped: give < pts, why: why, minSpend: c.minSpend, store: s.name, amount: +p[3], total: m.points, ref: p[6] };
   }
@@ -286,7 +290,7 @@
   function exportMe() { return JSON.stringify(member()); }
 
   G.KiteCore = {
-    DEFAULTS: DEFAULTS, GAMES: GAMES, cfg: cfg, saveCfg: saveCfg, resetCfg: resetCfg, audit: audit, auditLog: function () { return rd(K_AUDIT) || []; },
+    DEFAULTS: DEFAULTS, GAMES: GAMES, cfg: cfg, saveCfg: saveCfg, ruleVer: ruleVer, ruleHistory: ruleHistory, resetCfg: resetCfg, audit: audit, auditLog: function () { return rd(K_AUDIT) || []; },
     member: member, peekMember: function () { return rd(K_MEM); }, saveMember: saveMember, dayKey: dayKey, rid: rid, hmac: hmac, sha256: sha256, utf8: utf8,
     pointsForSpend: pointsForSpend, makeEarnCode: makeEarnCode, claimEarn: claimEarn, storeLog: function () { return rd(K_STORE) || []; }, storeById: storeById,
     eventMult: eventMult, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore,
