@@ -697,5 +697,6 @@ $('saveBtn').onclick = save; $('shareBtn').onclick = share; $('againBtn').onclic
 LOCS.forEach((l) => { img('pc_' + l[0] + '_a_v2', 'jpg').onload = () => { if ($('shoot').classList.contains('on')) redrawFrame(); }; });
 window.__photo = { stks: () => stks, add: (id) => addSticker(STK.find((d) => d.id === id)), capture, setFrame: (i, s) => { frameI = i; if (s !== undefined) seasonI = s; redrawFrame(); }, useImage };
 </script>
+<script src="../shared/back_line.js"></script>
 </body>
 </html>

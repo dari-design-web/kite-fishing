@@ -226,12 +226,17 @@
     var exp = expiring(m, 0); if (exp.due > 0) { addLedger(m, { type: 'expire', pts: -Math.min(exp.due, m.points), note: '點數到期' }); changed = true; }
     return changed;
   }
-  function expiring(m, days) {      // 先進先出：算出到 now+days 時會到期、還沒用掉的點數
-    var c = cfg(); if (c.expireMode === 'never') return { due: 0 };
-    var lim = Date.now() + (days || 0) * 86400000, gains = [], spent = 0;
-    (m.ledger || []).slice().reverse().forEach(function (e) { if (e.pts > 0 && e.type !== 'refund') gains.push({ t: e.t, left: e.pts }); else if (e.pts < 0) spent += -e.pts; else if (e.type === 'refund') spent -= e.pts; });
-    gains.forEach(function (g) { var u = Math.min(g.left, Math.max(0, spent)); g.left -= u; spent -= u; });
-    var due = 0; gains.forEach(function (g) { var end = c.expireMode === 'year' ? new Date(new Date(g.t).getFullYear(), 11, 31, 23, 59, 59).getTime() : c.expireMode === 'months' ? (function (d) { d.setMonth(d.getMonth() + (c.pointsExpireMonths || 12)); return d.getTime(); })(new Date(g.t)) : g.t + (c.pointsExpireDays || 365) * 86400000; if (c.pointsExpireDays === 0 && c.expireMode === 'days') return; if (end <= lim) due += g.left; });
+  function batchEnd(t0) { var c = cfg(); return c.expireMode === 'never' ? 0 : c.expireMode === 'year' ? new Date(new Date(t0).getFullYear(), 11, 31, 23, 59, 59).getTime() : c.expireMode === 'months' ? (function (d) { d.setMonth(d.getMonth() + (c.pointsExpireMonths || 12)); return d.getTime(); })(new Date(t0)) : (c.pointsExpireDays === 0 ? 0 : t0 + (c.pointsExpireDays || 365) * 86400000); }
+  function batches(m) {      // 先進先出：每一批得到的點數還剩多少、什麼時候到期（end＝0 代表不會到期）
+    var gains = [], spent = 0;
+    (m.ledger || []).slice().reverse().forEach(function (e) { if (e.pts > 0 && e.type !== 'refund') gains.push({ t: e.t, pts: e.pts, left: e.pts, type: e.type, src: e.storeName || e.game || e.note || '' }); else if (e.pts < 0) spent += -e.pts; else if (e.type === 'refund') spent -= e.pts; });
+    gains.forEach(function (g) { var u = Math.min(g.left, Math.max(0, spent)); g.left -= u; spent -= u; g.end = batchEnd(g.t); });
+    return gains.filter(function (g) { return g.left > 0; });
+  }
+  function expiring(m, days) {
+    if (cfg().expireMode === 'never') return { due: 0 };
+    var lim = Date.now() + (days || 0) * 86400000, due = 0;
+    batches(m).forEach(function (g) { if (g.end && g.end <= lim) due += g.left; });
     return { due: due };
   }
 
@@ -286,6 +291,6 @@
     pointsForSpend: pointsForSpend, makeEarnCode: makeEarnCode, claimEarn: claimEarn, storeLog: function () { return rd(K_STORE) || []; }, storeById: storeById,
     eventMult: eventMult, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore,
     prizeById: prizeById, stockLeft: stockLeft, makeRedeem: makeRedeem, cancelRedeem: cancelRedeem, deskCheck: deskCheck, deskGive: deskGive, deskLog: function () { return rd(K_DESK) || []; },
-    allMembers: allMembers, importMembers: importMembers, addAdj: addAdj, adjSum: adjSum, gap: gap, list: list, saveList: saveList, backfill: backfill, claimedRefs: claimedRefs, lookupTx: lookupTx, archiveFull: archiveFull, archives: function () { return (rd('kiteArchive1') || []).map(function (a) { return { id: a.id, t: a.t }; }); }, importPreview: importPreview, dataset: dataset, wipeTest: wipeTest, reissueEarn: reissueEarn, voidEarn: voidEarn, peekEarn: peekEarn, onHand: onHand, reservedCount: reservedCount, exportMe: exportMe, expiring: expiring, housekeep: housekeep, storeMult: storeMult, notices: function () { var d = dayKey(); return (cfg().notices || []).filter(function (n) { return n.on && (!n.from || d >= n.from) && (!n.to || d <= n.to); }); }
+    allMembers: allMembers, importMembers: importMembers, addAdj: addAdj, adjSum: adjSum, gap: gap, list: list, saveList: saveList, backfill: backfill, claimedRefs: claimedRefs, lookupTx: lookupTx, archiveFull: archiveFull, archives: function () { return (rd('kiteArchive1') || []).map(function (a) { return { id: a.id, t: a.t }; }); }, importPreview: importPreview, dataset: dataset, wipeTest: wipeTest, reissueEarn: reissueEarn, voidEarn: voidEarn, peekEarn: peekEarn, onHand: onHand, reservedCount: reservedCount, exportMe: exportMe, expiring: expiring, batches: batches, housekeep: housekeep, storeMult: storeMult, notices: function () { var d = dayKey(); return (cfg().notices || []).filter(function (n) { return n.on && (!n.from || d >= n.from) && (!n.to || d <= n.to); }); }
   };
 })(window);

@@ -92,10 +92,17 @@ body{background:#8CABD9;display:flex;flex-direction:column;height:100vh;height:1
   $('rich').querySelectorAll('button').forEach(function (b) { b.onclick = function () { open(b.dataset.p); }; });
 
   var R = {};
+  function batchCard(m) {      // C-191：每批點數與到期日（先到期的先用）
+    var B = K.batches(m), soon = Date.now() + 30 * 86400000; if (!B.length) return '';
+    var D = function (x) { var d = new Date(x); return d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate(); };
+    var due = B.filter(function (g) { return g.end && g.end <= soon; }).reduce(function (s, g) { return s + g.left; }, 0);
+    return '<div class="card"><h2>⏳ 點數有效期限</h2>' + (due ? '<p style="margin:0 0 6px;color:var(--red);font-weight:700">有 ' + due + ' 點將在 30 天內到期，記得先換小禮物！</p>' : '') + '<p class="muted" style="margin:0 0 6px">換禮物時會先用最早到期的點數。</p><ul class="list">' +
+      B.slice(0, 12).map(function (g) { var near = g.end && g.end <= soon; return '<li><span class="grow"><b>' + g.left + ' 點</b>' + (g.left < g.pts ? '<span class="muted">（原 ' + g.pts + ' 點，已用 ' + (g.pts - g.left) + '）</span>' : '') + '<span class="muted">' + D(g.t) + ' 取得' + (g.src ? '・' + esc(g.src) : '') + '</span></span><b style="color:' + (near ? 'var(--red)' : 'var(--muted)') + ';font-size:13px;white-space:nowrap;margin-left:6px">' + (g.end ? D(g.end) + ' 到期' : '不會到期') + '</b></li>'; }).join('') + (B.length > 12 ? '<li class="muted">還有 ' + (B.length - 12) + ' 批…</li>' : '') + '</ul><p class="muted" style="margin:6px 0 0;font-size:12px">測試版：取得日加 ' + K.cfg().pointsExpireMonths + ' 個月。正式上線的期限規則還在確認中。</p></div>';
+  }
   R.card = function () {
     var m = K.member(), c = K.cfg(), GN = K.GAMES;
     var banks = Object.keys(m.scoreBank || {}).filter(function (g) { return m.scoreBank[g] > 0; });
-    $('sbody').innerHTML = '<div class="ptsCard"><small>目前點數</small><div class="big">' + m.points + ' <span style="font-size:18px">點</span></div><small>會員編號 ' + m.id + '</small><img src="../travel/assets/kite_wave.png" alt=""></div>' +
+    $('sbody').innerHTML = '<div class="ptsCard"><small>目前點數</small><div class="big">' + m.points + ' <span style="font-size:18px">點</span></div><small>會員編號 ' + m.id + '</small><img src="../travel/assets/kite_wave.png" alt=""></div>' + batchCard(m) +
       '<div class="card"><h2>🎮 遊戲分數存摺</h2><p class="muted" style="margin:0 0 6px">遊戲分數每滿 ' + c.scorePerPoint.toLocaleString() + ' 分可以換 1 點（零頭留著下次用）。每關每天前 ' + c.triesPerLevel + ' 次的分數才會存進來。</p><ul class="list">' +
       (banks.length ? banks.map(function (g) { var per = K.perPoint(g), b = m.scoreBank[g], n = Math.floor(b / per); return '<li><span class="grow"><b>' + esc(GN[g] ? GN[g].name : g) + '</b><span class="muted">' + b.toLocaleString() + ' 分' + (n ? '・可換 ' + n + ' 點' : '・還差 ' + (per - b % per).toLocaleString() + ' 分') + '</span></span><button class="btn" data-cv="' + g + '"' + (n ? '' : ' disabled') + '>換點</button></li>'; }).join('') : '<li class="muted">還沒有分數，去「🎮 玩遊戲」吧！</li>') + '</ul></div>' +
       '<div class="card"><h2>點數紀錄</h2><ul class="list">' + (m.ledger.slice(0, 30).map(function (e) {
@@ -165,7 +172,7 @@ body{background:#8CABD9;display:flex;flex-direction:column;height:100vh;height:1
       var G0 = K.GAMES[g.id], lv = Object.keys(G0.levels), ev = K.eventMult(g.id), left = lv.reduce(function (a, l) { return a + K.triesLeft(g.id, l); }, 0);
       var gc = (K.cfg().games || {})[g.id] || {}; if (gc.on === false) return ''; if (gc.maint) return '<div class="game" style="opacity:.55"><img src="' + g.img + '" alt=""><span><b>' + esc(G0.name) + '</b><span class="muted">🔧 維護中，請稍後再來</span></span></div>';
       var sub = lv.length ? '今天還能算分 ' + left + ' 次' + (ev.mult > 1 ? '・<span style="color:var(--orange);font-weight:800">' + esc(ev.title) + ' ×' + ev.mult + '</span>' : '') : '不算分，輕鬆玩';
-      return '<a class="game" href="' + g.href + '"><img src="' + g.img + '" alt="" onerror="this.src=\'' + (g.alt || '../travel/assets/kite_hello.png') + '\'"><span><b>' + esc(G0.name) + '</b><span class="muted">' + esc(g.tip) + '</span><span class="muted">' + sub + '</span></span><span class="go">›</span></a>';
+      return '<a class="game" href="' + g.href + (g.href.indexOf('?') < 0 ? '?' : '&') + 'from=line"><img src="' + g.img + '" alt="" onerror="this.src=\'' + (g.alt || '../travel/assets/kite_hello.png') + '\'"><span><b>' + esc(G0.name) + '</b><span class="muted">' + esc(g.tip) + '</span><span class="muted">' + sub + '</span></span><span class="go">›</span></a>';
     }).join('') + '<a class="game" href="../meet/"><img src="../meet/assets/pal_f4.webp" alt="" onerror="this.src=\'../travel/assets/kite_hello.png\'"><span><b>港口朋友</b><span class="muted">在館內掃大大的充氣朋友旁的 QR</span></span><span class="go">›</span></a>';
   };
 
