@@ -275,7 +275,7 @@ h3{font-size:15px;margin:14px 16px 6px}
   <section class="screen" id="pack">
     <header><button class="back" data-go="home">‹ 小屋</button><h1>打包出門</h1></header>
     <div class="slots">
-      <div class="slot" id="slot0"><b>便當必帶</b><span>選一個便當</span></div>
+      <div class="slot" id="slot0"><b>便當或散步</b><span>選擇這趟的出門方式</span></div>
       <div class="slot" id="slot1"><b>道具可不帶</b><span>空</span></div>
       <div class="slot" id="slot2"><b>道具可不帶</b><span>空</span></div>
     </div>
@@ -284,7 +284,7 @@ h3{font-size:15px;margin:14px 16px 6px}
     <h3>道具</h3>
     <div class="list" id="itemList"></div>
     <div id="stampBox"></div>
-    <div class="dest" id="destInfo">先選一個便當，這裡會告訴你這趟可能去哪裡、大約幾點回來。</div>
+    <div class="dest" id="destInfo">選便當或散步，看看這趟可能去哪裡、大約幾點回來。</div>
     <div class="gobar"><button class="btn" id="goBtn" disabled>出發</button></div>
   </section>
 
@@ -734,7 +734,7 @@ function renderPack() {
   }
   // 背包三格
   const b = pk.bento && CFG.bentos[pk.bento];
-  $('slot0').innerHTML = b ? bentoIcon(pk.bento) + '<span>' + (pk.bento === 'walk' ? '散步' : b.name) + '</span>' : '<b>便當必帶</b><span>選一個便當</span>'; $('slot0').classList.toggle('filled', !!b);
+  $('slot0').innerHTML = b ? bentoIcon(pk.bento) + '<span>' + (pk.bento === 'walk' ? '散步' : b.name) + '</span>' : '<b>便當或散步</b><span>選擇這趟的出門方式</span>'; $('slot0').classList.toggle('filled', !!b);
   for (const i of [0, 1]) { const s = $('slot' + (i + 1)), k = pk.items[i]; s.innerHTML = k ? itemIcon(k) + '<span>' + CFG.items[k].name + '</span>' : '<b>道具可不帶</b><span>' + (pk.bento === 'walk' ? '散步不帶道具' : '空') + '</span>'; s.classList.toggle('filled', !!k); }
   // 郵票指定地點（只能指定已開放、而且這個便當走得到的地點）
   const sb = $('stampBox'); sb.innerHTML = '';
@@ -747,7 +747,7 @@ function renderPack() {
   if (b) {
     const r = reachable(pk.bento), back = Date.now() + b.hours * HOUR, locked = LOCS.filter((l) => b.dists.includes(l.dist) && !locOpen(l));
     $('destInfo').innerHTML = '這趟可能去：<b>' + (pk.pick ? LOCS.find((l) => l.id === pk.pick).name + '（郵票指定）' : r.map((l) => l.name + (l.id === weekLoc().id ? '★' : '')).join('、')) + '</b><br>大約 <b>' + fmtTime(back) + '</b> 回來' + (r.some((l) => l.id === weekLoc().id) ? '<br>★ 本週小鳶特別想去' + weekLoc().name + '，機會加倍，還有限定明信片' : '') + (locked.length ? '<br><span class="muted">還沒開：' + locked.map((l) => l.name + '（' + openHow(l) + '）').join('、') + '</span>' : '') + (pk.bento !== 'special' ? '<br><span class="muted">九份要帶港邊特製便當</span>' : '');
-  } else $('destInfo').textContent = '先選一個便當，這裡會告訴你這趟可能去哪裡、大約幾點回來。';
+  } else $('destInfo').textContent = '選便當或散步，看看這趟可能去哪裡、大約幾點回來。';
   $('goBtn').disabled = !b; $('goBtn').onclick = depart;
 }
 function depart() {
