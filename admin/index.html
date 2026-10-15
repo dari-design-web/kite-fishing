@@ -110,6 +110,7 @@ svg text{font-family:inherit}
     var cf = K.list('kiteImportConflicts1').filter(function (x) { return x.status === 'open'; }).length; if (cf) a.push(['r', '匯入衝突待處理：' + cf + ' 筆（已隔離，沒有入帳）', 'system']);
     var bfp = K.list('kiteBackfill1').filter(function (x) { return x.status === 'pending' || x.status === 'check'; }).length; if (bfp) a.push(['o', '補登待人工核對：' + bfp + ' 筆（資料未齊，不算可用點數）', 'backfill']);
     var exp = D.ms.reduce(function (n, m) { return n + K.expiring(m, 30).due; }, 0); if (exp) a.push(['o', '30 天內會到期的點數：' + num(exp) + ' 點', 'points']);
+    var noImg = c.prizes.filter(function (p) { return p.on !== false && !K.hasPrizeImg(p.id); }); if (noImg.length) a.push(['', '贈品還沒上傳實物照片：' + noImg.map(function (p) { return p.name; }).join('、') + '（客人看到的是暫用圖）', 'prize']);      // C-201
     var wait = D.red.filter(function (r) { return r.status === 'wait'; }).length; if (wait) a.push(['', '還沒領取的兌換單：' + wait + ' 張', 'prize']);
     var dw = new Date().getDay(); c.events.filter(function (e) { return e.on && e.days.indexOf(dw) >= 0; }).forEach(function (e) { a.push(['g', '今天的活動：' + e.title + '（' + GN(e.game) + ' ×' + e.mult + '，' + e.from + '～' + e.to + '）', 'events']); });
     return a;
