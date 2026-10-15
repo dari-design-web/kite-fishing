@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>圖文選單原稿 v2 2500×1200（G-57 插畫＋Claude 疊字）</title>
+<style>
+/* 底圖：ChatGPT G-57 無字版（1810×869 放大到 2500×1200）。字由這頁疊上去，商城名字定案後改 .l2 那一行再截圖即可。 */
+html,body{margin:0}
+body{width:2500px;height:1200px;position:relative;overflow:hidden;background:url(assets/richmenu_art_g57.jpg) 0 0/2500px 1200px no-repeat;font-family:"Noto Sans CJK TC","Noto Sans TC",sans-serif;color:#5A3A22}
+.sign{position:absolute;left:180px;top:120px;width:830px;height:400px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.sign small{font-size:44px;letter-spacing:16px;font-weight:800;color:#2F7F86}
+.sign b{font-size:178px;line-height:1.05;font-weight:900;letter-spacing:14px;color:#5A3A22;text-shadow:0 4px 0 rgba(255,255,255,.8)}
+.sign span{margin-top:14px;font-size:46px;font-weight:800;color:#fff;background:#E2702A;border-radius:999px;padding:8px 36px;box-shadow:0 6px 0 #B4531A}
+.lb{position:absolute;top:1018px;width:560px;height:120px;display:flex;align-items:center;justify-content:center;font-size:86px;font-weight:900;letter-spacing:10px;color:#5A3A22}
+.l1{left:132px}.l2{left:970px}.l3{left:1807px}
+</style>
+</head>
+<body>
+<div class="sign"><small>KITE PARK</small><b>小鳶樂園</b><span>▶ 遊戲大廳</span></div>
+<div class="lb l1">掃碼集點</div><div class="lb l2">港口小舖</div><div class="lb l3">我的</div>
+<script>var n = new URLSearchParams(location.search).get('n'); if (n) document.querySelector('.l2').textContent = n;      // ?n=名稱 可以預覽不同商城名字</script>
+</body>
+</html>

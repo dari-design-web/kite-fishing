@@ -162,7 +162,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
 <div class="testbar">本機測試資料。換手機或瀏覽器不會自動帶過去</div>
 <div class="chat" id="chat"></div>
 <nav class="rich" id="rich" aria-label="圖文選單">
-  <img src="assets/richmenu_v1.jpg" alt="圖文選單：小鳶樂園、掃碼集點、港口小舖、我的" width="2500" height="1200">
+  <img src="assets/richmenu_v2.jpg" alt="圖文選單：小鳶樂園、掃碼集點、港口小舖、我的" width="2500" height="1200">
   <button type="button" class="a1" data-p="park" aria-label="小鳶樂園"></button>
   <button type="button" class="a2" data-p="scan" aria-label="掃碼集點"></button>
   <button type="button" class="a3" data-p="shop" aria-label="港口小舖"></button>
@@ -312,7 +312,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
   function claim(code) {
     var r = K.claimEarn(code), box = $('sres');
     if (r.ok) {
-      box.innerHTML = '<div class="card" style="border:2px solid var(--teal);text-align:center"><div style="font-size:40px">🎉</div><div class="big">+' + r.pts + ' 點</div><p style="margin:4px 0">' + esc(r.store) + '・消費 NT$' + r.amount.toLocaleString() + '</p>' + ({ partial: '<p class="muted">本筆實際入帳 ' + r.pts + ' 點（預計 ' + r.expected + ' 點），已依入帳時的剩餘額度調整。</p>', quota: '<p class="muted">今日消費集點額度已用完，本筆入帳 0 點。不影響遊戲點數規則。</p>', below: '<p class="muted">本筆未達最低消費門檻 ' + r.minSpend + ' 元，未取得消費點數。</p>' }[r.why] || '') + '<p class="muted">交易編號 ' + esc(r.ref || '') + '</p><p class="muted">現在共 ' + r.total + ' 點</p><button class="btn full" id="done">好！</button></div>';
+      box.innerHTML = '<div class="card" style="border:2px solid var(--teal);text-align:center"><div style="font-size:40px">🎉</div><div class="big">+' + r.pts + ' 點</div><p style="margin:4px 0">' + esc(r.store) + '・消費 NT$' + r.amount.toLocaleString() + '</p>' + ({ partial: '<p class="muted">本筆實際入帳 ' + r.pts + ' 點（預計 ' + r.expected + ' 點），已依入帳時的剩餘額度調整。</p>', quota: '<p class="muted">今日消費集點額度已用完，本筆入帳 0 點。不影響遊戲點數規則。</p>', below: '<p class="muted">本筆未達最低消費門檻 ' + r.minSpend + ' 元，未取得消費點數。</p>', zero: '<p class="muted">依本筆適用規則，未取得消費點數。</p>' }[r.why] || '') + '<p class="muted">交易編號 ' + esc(r.ref || '') + '</p><p class="muted">現在共 ' + r.total + ' 點</p><button class="btn full" id="done">好！</button></div>';
       if (scanner) scanner.stop(); $('done').onclick = function () { close(); say('集到 <b>' + r.pts + ' 點</b>了，謝謝你在' + esc(r.store) + '消費！現在共 ' + r.total + ' 點 🪶<br><a href="#" data-open="shop">去港口小舖看看 ›</a>'); };
     } else { box.innerHTML = '<div class="card" style="border:2px solid var(--red)"><b>沒有集到點</b><p style="margin:4px 0 0">' + esc(r.msg) + '</p></div>'; if (scanner) setTimeout(function () { scanner && scanner.reset(); }, 2500); }
     box.scrollIntoView({ behavior: 'smooth' });
