@@ -43,6 +43,7 @@ body{background:#8CABD9;display:flex;flex-direction:column;height:100vh;height:1
 </head>
 <body>
 <header class="lhead"><a href="../portal/" aria-label="回主頁">‹</a><img src="../travel/assets/kite_hello.png" alt=""><b>小鳶來港｜東三東四</b><span class="ver">官方帳號（示意）</span></header>
+<div style="background:#FFF4D6;color:#7A5A00;font-size:12px;text-align:center;padding:3px 8px">本機測試資料。換手機或瀏覽器不會自動帶過去</div>
 <div class="chat" id="chat"></div>
 <nav class="rich" id="rich">
   <button type="button" data-p="card"><span>🪪</span>我的點數</button>
@@ -113,13 +114,13 @@ body{background:#8CABD9;display:flex;flex-direction:column;height:100vh;height:1
   };
   function ask(code) {      // 掃到或貼上只先顯示店家與金額，按「領取」才算數（打開或預覽不消耗 QR）
     var pk = K.peekEarn(code), box = $('sres'); if (!pk) return claim(code);
-    box.innerHTML = '<div class="card" style="border:2px solid var(--teal)"><div class="muted">請確認</div><h2 style="margin:4px 0">' + esc(pk.store) + '</h2><p style="margin:0 0 10px">消費 NT$' + pk.amount.toLocaleString() + '・可得 <b>' + pk.pts + ' 點</b></p><button class="btn full" id="takeIt">領取 ' + pk.pts + ' 點</button></div>';
+    box.innerHTML = '<div class="card" style="border:2px solid var(--teal)"><div class="muted">請確認</div><h2 style="margin:4px 0">' + esc(pk.store) + '，消費 ' + pk.amount.toLocaleString() + ' 元</h2><p style="margin:0 0 10px">預計可得 <b>' + pk.pts + ' 點</b>（實際點數依入帳結果）</p><button class="btn full" id="takeIt">領取這筆點數</button></div>';
     $('takeIt').onclick = function () { claim(code); }; box.scrollIntoView({ behavior: 'smooth' });
   }
   function claim(code) {
     var r = K.claimEarn(code), box = $('sres');
     if (r.ok) {
-      box.innerHTML = '<div class="card" style="border:2px solid var(--teal);text-align:center"><div style="font-size:40px">🎉</div><div class="big">+' + r.pts + ' 點</div><p style="margin:4px 0">' + esc(r.store) + '・消費 NT$' + r.amount.toLocaleString() + '</p>' + (r.capped ? '<p class="muted">今天從消費拿的點數到上限了，多的沒有加。</p>' : '') + '<p class="muted">現在共 ' + r.total + ' 點</p><button class="btn full" id="done">好！</button></div>';
+      box.innerHTML = '<div class="card" style="border:2px solid var(--teal);text-align:center"><div style="font-size:40px">🎉</div><div class="big">+' + r.pts + ' 點</div><p style="margin:4px 0">' + esc(r.store) + '・消費 NT$' + r.amount.toLocaleString() + '</p>' + (r.capped ? '<p class="muted">依目前規則，今日消費集點額度已用完，本筆實際入帳 ' + r.pts + ' 點（預計 ' + r.expected + ' 點）。不影響遊戲點數規則。</p>' : '') + '<p class="muted">交易編號 ' + esc(r.ref || '') + '</p><p class="muted">現在共 ' + r.total + ' 點</p><button class="btn full" id="done">好！</button></div>';
       if (scanner) scanner.stop(); $('done').onclick = function () { close(); say('集到 <b>' + r.pts + ' 點</b>了，謝謝你在' + esc(r.store) + '消費！現在共 ' + r.total + ' 點 🪶'); };
     } else { box.innerHTML = '<div class="card" style="border:2px solid var(--red)"><b>沒有集到點</b><p style="margin:4px 0 0">' + esc(r.msg) + '</p></div>'; if (scanner) setTimeout(function () { scanner && scanner.reset(); }, 2500); }
     box.scrollIntoView({ behavior: 'smooth' });
@@ -130,15 +131,15 @@ body{background:#8CABD9;display:flex;flex-direction:column;height:100vh;height:1
       var left = K.stockLeft(p.id), can = m.points >= p.points && left > 0;
       return '<div class="card prize"><span class="grow"><b>' + esc(p.name) + '</b><span class="muted">' + p.points + ' 點・還可以換 ' + left + ' 個</span></span><button class="btn' + (can ? ' warn' : '') + '" data-p="' + p.id + '"' + (can ? '' : ' disabled') + '>' + (left <= 0 ? '換完了' : can ? '兌換' : '點數不夠') + '</button></div>';
     }).join('');
-    $('sbody').querySelectorAll('[data-p]').forEach(function (b) { b.onclick = function () { var p = K.prizeById(b.dataset.p); if (!confirm('用 ' + p.points + ' 點兌換「' + p.name + '」？\n點數會先扣，到服務台出示 QR 領取；還沒領之前可以取消退點。')) return; var r = K.makeRedeem(p.id); if (!r.ok) return toast(r.msg); showTicket(K.member().redeems[0]); hello(); }; });
+    $('sbody').querySelectorAll('[data-p]').forEach(function (b) { b.onclick = function () { var p = K.prizeById(b.dataset.p); var hd = K.cfg().redeemHoldDays; if (!confirm('使用 ' + p.points + ' 點，保留 1 份「' + p.name + '」。' + (hd ? '\n請於 ' + (function (t) { var d = new Date(t); return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); })(Date.now() + hd * 86400000) + ' 前到服務台領取。' : '') + '\n\n按「確定」＝確認扣點並保留；還沒領之前可以取消。')) return; var r = K.makeRedeem(p.id); if (!r.ok) return toast(r.msg); showTicket(K.member().redeems[0]); hello(); }; });
   };
   function showTicket(r) {
     $('stitle').textContent = '兌換單'; $('sheet').classList.add('on');
-    $('sbody').innerHTML = '<div class="card" style="text-align:center"><div class="muted">請到服務台出示這個 QR</div><h2 style="font-size:20px;margin:6px 0">🎁 ' + esc(r.name) + '</h2><div class="qrBox" id="tq"></div><p style="margin:8px 0 0">兌換碼 <b style="font-size:20px;letter-spacing:2px">' + r.id + '</b></p><p class="muted">' + t2(r.t) + '・已扣 ' + r.pts + ' 點' + (r.status === 'wait' && K.cfg().redeemHoldDays ? '<br>請在 <b>' + (function (d) { return (d.getMonth() + 1) + '/' + d.getDate(); })(new Date(r.t + K.cfg().redeemHoldDays * 86400000)) + '</b> 前到服務台領取' : '') + '・' + (r.status === 'done' ? '<span class="pill g">已領取</span>' : r.status === 'cancel' || r.status === 'expired' ? '<span class="pill r">' + (r.status === 'expired' ? '已逾期（已退點）' : '已取消') + '</span>' : '<span class="pill o">待領取</span>') + '</p></div>' +
+    $('sbody').innerHTML = '<div class="card" style="text-align:center"><div class="muted">請到服務台出示這個 QR</div><h2 style="font-size:20px;margin:6px 0">🎁 ' + esc(r.name) + '</h2><div class="qrBox" id="tq"></div><p style="margin:8px 0 0">兌換碼 <b style="font-size:20px;letter-spacing:2px">' + r.id + '</b></p><p class="muted">' + t2(r.t) + '・已扣 ' + r.pts + ' 點' + (r.status === 'wait' && K.cfg().redeemHoldDays ? '<br>請於 <b>' + (function (t) { var d = new Date(t); return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); })(r.t + K.cfg().redeemHoldDays * 86400000) + '</b> 前到服務台領取' : '') + '・' + (r.status === 'done' ? '<span class="pill g">已領取</span>' : r.status === 'cancel' || r.status === 'expired' ? '<span class="pill r">' + (r.status === 'expired' ? '已逾期（已退點）' : '已取消') + '</span>' : '<span class="pill o">待領取</span>') + '</p></div>' +
       (r.status === 'wait' ? '<div class="row"><button class="btn alt" id="cp">複製代碼</button><button class="btn red" id="cx">取消並退點</button></div>' : '') + '<button class="btn alt full" id="bk" style="margin-top:10px">看我的兌換</button>';
     KiteScan.drawQR($('tq'), r.code, Math.min(240, innerWidth - 100));
     if ($('cp')) $('cp').onclick = function () { (navigator.clipboard ? navigator.clipboard.writeText(r.code) : Promise.reject()).then(function () { toast('已複製代碼'); }, function () { prompt('長按複製代碼', r.code); }); };
-    if ($('cx')) $('cx').onclick = function () { if (confirm('取消這張兌換單，點數退回？')) { K.cancelRedeem(r.id); toast('已取消，點數退回'); open('mine'); hello(); } };
+    if ($('cx')) $('cx').onclick = function () { if (confirm('取消這張兌換單，點數退回？')) { K.cancelRedeem(r.id); toast('本機測試點數已退回 ' + r.pts + ' 點；此為示範，不代表正式退點完成'); open('mine'); hello(); } };
     $('bk').onclick = function () { open('mine'); };
   }
   R.mine = function () {
