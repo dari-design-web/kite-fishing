@@ -156,6 +156,8 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
 .kv{display:flex;flex-direction:column;gap:2px;font-size:12.5px;color:var(--muted);margin-top:6px}.gcard .kv b{display:inline;color:var(--ink);font-size:12.5px}
 .stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 12px}
 .stat3 div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center;font-size:12px;color:var(--muted)}.stat3 b{display:block;font-size:20px;color:var(--ink)}
+/* G59 T04：還沒上傳實物照片的贈品標「示意圖」 */
+.good .im .demo,.detail .im .demo{position:absolute;left:6px;bottom:6px;background:rgba(43,38,32,.72);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;line-height:1.5}.detail .im{position:relative}
 </style>
 </head>
 <body>
@@ -286,6 +288,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
     o.photo = { n: Math.min(ph.n || 0, 10), max: 10, label: '合照 ' + (ph.n || 0) + ' 張', extra: [] };
     var nf = Object.keys(fr).length; o.meet = { n: nf, max: 6, label: '港口朋友 ' + nf + '／6', extra: [] };
     var has = { fish: !!(rd('kiteFishingProg1') || rd('kiteFishingDex2')), fly: !!rd('kiteFlyProgress1'), travel: !!rd('kiteTravel1'), stamp: !!rd('kiteStamp1'), photo: !!rd('kitePhoto1'), meet: !!rd('kiteFriends1') };
+    (K.member().plays || []).forEach(function (p) { if (p.game in has) has[p.game] = true; });      // G59 T01：有遊玩／存摺紀錄就不說「尚無紀錄」
     Object.keys(o).forEach(function (k) { if (!has[k]) { o[k].label = '這個瀏覽器尚無紀錄'; o[k].extra = []; } });      // ChatGPT 意見：沒資料不等於沒玩過（可能在別的手機玩）
     return o;
   }
@@ -298,7 +301,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
       mine.forEach(function (p) { best[p.level] = Math.max(best[p.level] || 0, p.score || 0); });
       var b = (m.scoreBank || {})[g.id] || 0, per = K.perPoint(g.id), n = Math.floor(b / per);
       var kv = (pr.extra || []).map(function (x) { return '<span>' + x[0] + ' <b>' + esc(x[1]) + '</b></span>'; });
-      if (lv.length) { kv.push('<span>總遊玩 <b>' + mine.length + ' 次</b></span>'); lv.forEach(function (l) { kv.push('<span>' + esc(G0.levels[l]) + (best[l] ? ' 最高 <b>' + best[l].toLocaleString() + '</b>' : ' <b>還沒玩</b>') + '・今天剩 <b>' + K.triesLeft(g.id, l) + '</b> 次</span>'); }); }
+      if (lv.length) { kv.push('<span>總遊玩 <b>' + mine.length + ' 次</b></span>'); lv.forEach(function (l) { kv.push('<span>' + esc(G0.levels[l]) + (best[l] ? ' 最高 <b>' + best[l].toLocaleString() + '</b>' : ' <b>還沒玩</b>') + '・今天可算分 <b>' + K.triesLeft(g.id, l) + '</b> 次' + (K.triesLeft(g.id, l) ? '' : '（仍可繼續玩）') + '</span>'); }); }
       return '<div class="card"><div class="gcard"><img src="' + g.icon + '" alt="" onerror="this.src=\'../hub/btn/btn_' + g.id + '.png\'"><div class="g"><b>' + esc(G0.name) + '</b>' + (pr.max ? '<div class="gbar"><i style="width:' + Math.round(100 * pr.n / pr.max) + '%"></i></div><span class="muted">' + esc(pr.label) + '</span>' : '') + '<div class="kv">' + kv.join('') + '</div>' +
         (lv.length ? '<div class="row" style="margin-top:8px"><span class="muted" style="flex:2">存摺 ' + b.toLocaleString() + ' 分' + (n ? '・可換 ' + n + ' 點' : '・還差 ' + (per - b % per).toLocaleString() + ' 分') + '</span><button class="btn" data-cv="' + g.id + '"' + (n ? '' : ' disabled') + ' style="min-height:38px;padding:6px 12px">換點</button></div>' : '') +
         '<a class="btn alt full" style="margin-top:8px;min-height:38px" href="' + gameLink(g) + '">去玩</a></div></div></div>';
@@ -349,7 +352,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
     var list = ps.filter(function (p) { var l = K.stockLeft(p.id); return shopF === 'all' || (shopF === 'can' && m.points >= p.points && l > 0) || (shopF === 'few' && l > 0 && l <= 10); });
     $('sbody').innerHTML = '<div class="shopBan" role="img" aria-label="港口換禮"></div><div class="shopHead"><div class="n"><small>我的點數</small><div class="big">' + m.points + ' <span style="font-size:15px">點</span></div>' + dueText(m) + '</div><button id="toPts">點數明細 ›</button></div>' +
       shopTabs() +
-      (list.length ? '<div class="goods">' + list.map(function (p) { var l = K.stockLeft(p.id), can = m.points >= p.points && l > 0; return '<button class="good' + (can ? '' : ' no') + '" data-item="' + p.id + '"><span class="im"><img src="' + K.prizeImg(p.id) + '" alt="" loading="lazy">' + (l <= 0 ? '<span class="so">已換完</span>' : l <= 10 ? '<span class="hot">剩 ' + l + '</span>' : '') + '</span><span class="tx"><b>' + esc(p.name) + '</b><span class="pp"><span class="p">' + p.points + ' 點</span><span class="l">' + (l > 0 ? (can ? '可兌換' : '還差 ' + (p.points - m.points) + ' 點') : '補貨中') + '</span></span></span></button>'; }).join('') + '</div>' : '<div class="card muted">這個分類目前沒有贈品</div>') +
+      (list.length ? '<div class="goods">' + list.map(function (p) { var l = K.stockLeft(p.id), can = m.points >= p.points && l > 0; return '<button class="good' + (can ? '' : ' no') + '" data-item="' + p.id + '"><span class="im"><img src="' + K.prizeImg(p.id) + '" alt="" loading="lazy">' + (K.hasPrizeImg(p.id) ? '' : '<span class="demo">示意圖</span>') + '' + (l <= 0 ? '<span class="so">已換完</span>' : l <= 10 ? '<span class="hot">剩 ' + l + '</span>' : '') + '</span><span class="tx"><b>' + esc(p.name) + '</b><span class="pp"><span class="p">' + p.points + ' 點</span><span class="l">' + (l > 0 ? (can ? '可兌換' : '還差 ' + (p.points - m.points) + ' 點') : '補貨中') + '</span></span></span></button>'; }).join('') + '</div>' : '<div class="card muted">這個分類目前沒有贈品</div>') +
       '<p class="note">兌換後到服務台出示兌換 QR 領取' + (K.cfg().redeemHoldDays ? '，' + K.cfg().redeemHoldDays + ' 天內沒領會自動取消並退點' : '') + '。</p>';
     $('toPts').onclick = function () { go('points'); };
     $('sbody').querySelectorAll('[data-f]').forEach(function (b) { b.onclick = function () { shopF = b.dataset.f; R.shop(); }; });
@@ -371,7 +374,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
   R.item = function (pid) {
     var p = K.prizeById(pid), m = K.member(); if (!p) return back(); var l = K.stockLeft(p.id), can = m.points >= p.points && l > 0, hd = K.cfg().redeemHoldDays;
     $('stitle').textContent = p.name;
-    $('sbody').innerHTML = '<div class="detail"><div class="im"><img src="' + K.prizeImg(p.id) + '" alt=""></div><h2 style="margin:0 0 4px;font-size:20px">' + esc(p.name) + '</h2><div style="font-size:24px;font-weight:900;color:var(--orange)">' + p.points + ' 點</div>' + (p.desc ? '<p style="margin:8px 0">' + esc(p.desc) + '</p>' : '') +
+    $('sbody').innerHTML = '<div class="detail"><div class="im"><img src="' + K.prizeImg(p.id) + '" alt="">' + (K.hasPrizeImg(p.id) ? '' : '<span class="demo">示意圖，實際樣式以服務台實物為準</span>') + '</div><h2 style="margin:0 0 4px;font-size:20px">' + esc(p.name) + '</h2><div style="font-size:24px;font-weight:900;color:var(--orange)">' + p.points + ' 點</div>' + (p.desc ? '<p style="margin:8px 0">' + esc(p.desc) + '</p>' : '') +
       '<div class="card" style="margin-top:10px"><ul class="list"><li><span class="grow">還可以換</span><b>' + l + ' 個</b></li><li><span class="grow">領取地點</span><b>服務台</b></li>' + (hd ? '<li><span class="grow">領取期限</span><b>兌換後 ' + hd + ' 天內</b></li>' : '') + '<li><span class="grow">我的點數</span><b>' + m.points + ' 點</b></li></ul></div>' +
       '<button class="btn warn full" id="rd"' + (can ? '' : ' disabled') + '>' + (l <= 0 ? '已換完' : can ? '用 ' + p.points + ' 點兌換' : '點數還差 ' + (p.points - m.points) + ' 點') + '</button></div>';
     $('rd').onclick = function () { var q = 1, dl = hd ? t2(Date.now() + hd * 86400000) : ''; ask2('確認兌換', '使用 <b>' + p.points * q + ' 點</b>，保留 ' + q + ' 份「' + esc(p.name) + '」。' + (dl ? '<br>請於 <b>' + dl + '</b> 前到服務台領取。' : '') + '<br><span class="muted">還沒領之前可以取消，點數會退回。</span>', '確認扣點並保留').then(function (ok) { if (!ok) return; var r = K.makeRedeem(p.id); if (!r.ok) return toast(r.msg); go('ticket', K.member().redeems[0].id); hello(); }); };
@@ -404,7 +407,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
       '<label class="f">Email（選填）<input id="pfE" type="email" inputmode="email" value="' + esc(m.email || '') + '" placeholder="例：kite@example.com" autocomplete="email"></label>' +
       '<label class="f">手機（選填）<input id="pfP" type="tel" inputmode="tel" value="' + esc(m.phone || '') + '" placeholder="09xxxxxxxx" autocomplete="tel"></label>' +
       '<p class="muted" id="pfMsg" style="margin:0 0 10px;color:var(--red)"></p><button class="btn full" id="pfOk">儲存</button></div>' +
-      '<div class="card"><p class="muted" style="margin:0">會員編號 <b>' + esc(m.id) + '</b> 不會變，服務台查詢、補登都用這個。<br>email 和手機不是必填，只用來找回帳號或通知兌換（正式版會先請你同意會員條款與個資告知）。<br>原型：資料只存在這支手機。</p></div>';
+      '<div class="card"><p class="muted" style="margin:0">會員編號 <b>' + esc(m.id) + '</b> 不會變，服務台查詢、補登都用這個。<br>Email 和手機為選填。本機測試只作資料示範，不提供帳號找回、也不會發送通知；正式用途與個資告知另行確認。<br>原型：資料只存在這支手機。</p></div>';
     var cnt = function () { var n = Array.from($('pfN').value.trim()).length; $('pfC').textContent = n + '／16'; $('pfC').style.color = n > 16 ? 'var(--red)' : ''; }; $('pfN').oninput = cnt; cnt();
     $('pfOk').onclick = function () { var r = K.setProfile({ name: $('pfN').value, email: $('pfE').value, phone: $('pfP').value }); if (!r.ok) { $('pfMsg').textContent = r.msg; var el = { name: 'pfN', email: 'pfE', phone: 'pfP' }[r.field]; if (el) $(el).focus(); return; } toast('已儲存'); back(); hello(); };
   };
