@@ -208,9 +208,20 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
     say((h < 11 ? '早安' : h < 17 ? '午安' : '晚上好') + (m.name ? '，' + esc(m.name) : '') + '！我是小鳶 🪶 歡迎來到東三東四～');
     var due = K.expiring(m, 30).due, wc = waitCount();
     bubble('<div class="flex"><div class="hero"><img src="../travel/assets/kite_wave.png" alt=""></div><div class="bd"><h3>我的點數</h3><div class="pts"><b>' + m.points + '</b> 點</div><p>' + (due ? '<span style="color:var(--red);font-weight:700">' + due + ' 點 30 天內到期</span>' : '消費掃碼、玩遊戲都能集點') + (wc ? '・有 ' + wc + ' 張兌換單待領取' : '') + '</p></div><div class="ft"><button class="p" data-open="shop">去港口換禮挑禮物</button><button data-open="scan">掃碼集點</button></div></div>', false, true);
+    tips(m);
     K.notices().filter(function (n) { return n.pin; }).forEach(function (n) { say('📌 <b>' + esc(n.title) + '</b><br>' + esc(n.body)); });
     var ev = K.cfg().events.filter(function (e) { return e.on; }), today = new Date().getDay();
     if (ev.length) bubble('<div class="carousel">' + ev.map(function (e) { var on = e.days.indexOf(today) >= 0, G0 = K.GAMES[e.game] || {}; var gi = (GL.filter(function (g) { return g.id === e.game; })[0] || {}).icon; return '<div class="flex"><div class="hero" style="background:linear-gradient(135deg,#FFE7C2,#FFD08A);display:flex;align-items:center;justify-content:center">' + (gi ? '<img src="' + gi + '" alt="" style="position:static;width:76px;height:76px;border-radius:16px">' : '') + '</div><div class="bd"><h3>' + esc(e.title) + '</h3><p>' + esc(G0.name || e.game) + '・分數 ×' + e.mult + (on ? '・<b style="color:var(--orange)">今天有</b>' : '') + '</p></div><div class="ft"><button class="p" data-open="park">去小鳶樂園</button></div></div>'; }).join('') + '</div>', false, true);
+  }
+
+  /* C-203：依情境的小鳶提醒（最多兩則；只看這支手機的資料） */
+  function tips(m) {
+    var B = K.bentoState ? K.bentoState().filter(function (b) { return b.on !== false; }) : [], c = K.cfg();
+    var have = B.reduce(function (a, b) { return a + (b.have || 0); }, 0), buy = B.filter(function (b) { return b.canBuy; });
+    if (B.length && have === 0) say('🍱 小鳶的便當盒空空的～' + (buy.length ? '你的點數已經可以換「' + esc(buy[0].name) + '」（' + buy[0].points + ' 點），換了直接放進便當盒。' : '每天一份港邊飯糰免費，存到 ' + Math.min.apply(null, B.map(function (b) { return b.points; })) + ' 點就能換遠行用的便當。') + '<br><a href="#" data-open="shop" data-arg="bento">去港口換禮看便當 ›</a>');
+    var ps = c.prizes.filter(function (p) { return p.on !== false && p.points > 0 && p.points <= m.points && K.stockLeft(p.id) > 0; }).sort(function (a, b) { return b.points - a.points; });
+    if (ps.length) say('🎁 你的 ' + m.points + ' 點已經可以換「' + esc(ps[0].name) + '」（' + ps[0].points + ' 點）了！' + (K.stockLeft(ps[0].id) <= 10 ? '只剩 ' + K.stockLeft(ps[0].id) + ' 個。' : '') + '<br><a href="#" data-open="item" data-arg="' + esc(ps[0].id) + '">看看這個禮物 ›</a>');
+    else { var nx = c.prizes.filter(function (p) { return p.on !== false && p.points > m.points && K.stockLeft(p.id) > 0; }).sort(function (a, b) { return a.points - b.points; })[0]; if (nx && nx.points - m.points <= 10) say('✨ 再 ' + (nx.points - m.points) + ' 點就能換「' + esc(nx.name) + '」囉！玩小鳶樂園的遊戲也能換點。<br><a href="#" data-open="park">去小鳶樂園 ›</a>'); }
   }
 
   /* ====== 選單與 LIFF 頁 ====== */
@@ -328,7 +339,8 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
   /* ---------- 港口換禮（商城） ---------- */
   var shopF = 'all';
   function dueText(m) { var d = K.expiring(m, 30).due; return d ? '<span class="warn">⏳ ' + d + ' 點 30 天內到期，記得先換</span>' : ''; }
-  R.shop = function () {
+  R.shop = function (arg) {
+    if (arg === 'bento') { shopF = 'bento'; if (stack.length) stack[stack.length - 1][1] = null; }
     var m = K.member(), ps = K.cfg().prizes.filter(function (p) { return p.on !== false; });
     if (shopF === 'bento') return bentoShop(m);
     var list = ps.filter(function (p) { var l = K.stockLeft(p.id); return shopF === 'all' || (shopF === 'can' && m.points >= p.points && l > 0) || (shopF === 'few' && l > 0 && l <= 10); });
