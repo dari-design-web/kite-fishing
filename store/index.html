@@ -75,18 +75,20 @@
   function renderRecent(s) {
     var log = K.storeLog().filter(function (x) { return x.store === s.id; }), today = K.dayKey();
     var tl = log.filter(function (x) { return K.dayKey(x.t) === today; }), sum = tl.reduce(function (a, x) { return a + x.amount; }, 0), pts = tl.reduce(function (a, x) { return a + x.pts; }, 0);
-    $('recent').innerHTML = log.slice(0, 6).map(function (x) { return '<li><span class="grow"><b>NT$ ' + x.amount.toLocaleString() + '・' + x.pts + ' 點</b><span class="muted">' + t2(x.t) + '・編號 ' + x.nonce + '</span></span></li>'; }).join('') || '<li class="muted">還沒有</li>';
+    $('recent').innerHTML = log.slice(0, 6).map(function (x) { return '<li><span class="grow"><b>NT$ ' + x.amount.toLocaleString() + '・' + x.pts + ' 點</b><span class="muted">' + t2(x.t) + '・編號 ' + x.nonce + (x.reissue ? '・重出 ' + x.reissue + ' 次' : '') + '</span></span>' + (x.void ? '<span class="pill r">作廢</span>' : '') + '</li>'; }).join('') || '<li class="muted">還沒有</li>';
     $('sync').textContent = '今天 ' + tl.length + ' 筆、消費 NT$ ' + sum.toLocaleString() + '、發出 ' + pts + ' 點。上傳雲端：待接（原型先存在這台）。';
   }
   function storeQR(s, a, r) {
     stopAll(); var c = K.cfg(), end = Date.now() + c.qrExpireMin * 60000;
     app.innerHTML = '<div class="card qrCard"><div class="muted">' + esc(s.name) + '</div><div class="big">NT$ ' + a.toLocaleString() + '</div><div style="font-weight:800;color:var(--teal)">客人可得 ' + r.pts + ' 點</div>' +
       '<div class="qrBox" id="qr" style="margin:12px 0"></div><div>請客人用「小鳶來港」官方 LINE 的 <b>📷 掃描集點</b> 掃這個 QR</div><div class="muted" style="margin-top:6px">有效時間還剩 <span class="count" id="cd"></span>・只能用一次</div></div>' +
-      '<div class="row"><button class="btn alt" id="cp">複製代碼</button><button class="btn" id="nx">下一位</button></div><p class="note">沒有網路也能掃：這個 QR 自己帶防偽簽章，客人手機會自己驗證。</p>';
+      '<div class="row"><button class="btn alt" id="cp">複製代碼</button><button class="btn" id="nx">下一位</button></div><div class="row" style="margin-top:8px"><button class="btn alt" id="re">重新出碼（同一筆）</button><button class="btn alt" id="vd" style="color:var(--red)">作廢這筆</button></div><p class="note">客人掃到後要按「領取」才算數。逾時就按「重新出碼」：金額不變、還是同一筆，舊 QR 失效（最多 ' + c.reissueMax + ' 次）。沒有網路也能產生；正式版會在連線後由中央確認只入帳一次。</p>';
     KiteScan.drawQR($('qr'), r.code, Math.min(260, innerWidth - 90));
     $('cp').onclick = function () { (navigator.clipboard ? navigator.clipboard.writeText(r.code) : Promise.reject()).then(function () { toast('已複製代碼'); }, function () { prompt('長按複製代碼', r.code); }); };
     $('nx').onclick = storeHome;
-    var tick = function () { var left = Math.max(0, end - Date.now()), m = Math.floor(left / 60000), sec = Math.floor(left / 1000) % 60; $('cd').textContent = m + ' 分 ' + String(sec).padStart(2, '0') + ' 秒'; if (!left) { clearInterval(timer); $('qr').style.opacity = .2; $('cd').textContent = '已過期，請重新產生'; } };
+    $('re').onclick = function () { var x = K.reissueEarn(r.nonce); if (!x.ok) return toast(x.msg); toast('已重新出碼，還能重出 ' + x.left + ' 次'); storeQR(s, a, x); };
+    $('vd').onclick = function () { if (!confirm('作廢這筆？客人掃了也不會入點。')) return; K.voidEarn(r.nonce); toast('已作廢'); storeHome(); };
+    var tick = function () { var left = Math.max(0, end - Date.now()), m = Math.floor(left / 60000), sec = Math.floor(left / 1000) % 60; $('cd').textContent = m + ' 分 ' + String(sec).padStart(2, '0') + ' 秒'; if (!left) { clearInterval(timer); $('qr').style.opacity = .2; $('cd').textContent = '已逾時，請按「重新出碼」'; } };
     tick(); timer = setInterval(tick, 1000);
   }
 
@@ -109,8 +111,8 @@
   function check(code) {
     var r = K.deskCheck(code), box = $('res');
     if (!r.ok) { box.innerHTML = '<div class="card res bad"><h2>⚠️ 不能發放</h2><p style="margin:0">' + esc(r.msg) + '</p><button class="btn alt full" id="again" style="margin-top:10px">繼續掃</button></div>'; }
-    else box.innerHTML = '<div class="card res"><h2>🎁 ' + esc(r.prize.name) + '</h2><p style="margin:0">兌換碼 <b>' + r.rcode + '</b>・會員 ' + esc(r.member) + '・已扣 ' + r.pts + ' 點</p><p class="muted" style="margin:4px 0 10px">客人產生時間 ' + t2(r.t) + (r.late ? ' <span class="pill o">超過 ' + K.cfg().redeemExpireMin + ' 分鐘，請確認是本人</span>' : '') + '・庫存剩 ' + r.stock + '</p>' +
-      '<div class="row"><button class="btn alt" id="again">取消</button><button class="btn warn" id="give"' + (r.stock <= 0 ? ' disabled' : '') + '>確認發放</button></div></div>';
+    else box.innerHTML = '<div class="card res"><h2>🎁 ' + esc(r.prize.name) + '</h2><p style="margin:0">兌換碼 <b>' + r.rcode + '</b>・會員 ' + esc(r.member) + '・已扣 ' + r.pts + ' 點</p><p class="muted" style="margin:4px 0 10px">客人產生時間 ' + t2(r.t) + (r.late ? ' <span class="pill o">超過 ' + K.cfg().redeemExpireMin + ' 分鐘，請確認是本人</span>' : '') + '・實物現存 ' + r.stock + '（其中已保留 ' + r.reserved + '）' + '</p>' +
+      '<div class="row"><button class="btn alt" id="again">取消</button><button class="btn warn" id="give"' + (r.stock <= 0 ? ' disabled' : '') + '>確認已交付</button></div></div>';
     box.scrollIntoView({ behavior: 'smooth', block: 'start' });
     $('again').onclick = function () { box.innerHTML = ''; if (scanner) scanner.reset(); };
     if ($('give')) $('give').onclick = function () { var g = K.deskGive(code, sess().who); if (g.ok) { toast('已發放：' + g.prize.name); box.innerHTML = ''; if (scanner) scanner.reset(); renderDesk(); } else toast(g.msg); };
@@ -118,7 +120,7 @@
   function renderDesk() {
     var today = K.dayKey(), log = K.deskLog().filter(function (x) { return K.dayKey(x.t) === today; });
     $('today').innerHTML = log.slice(0, 20).map(function (x) { return '<li><span class="grow"><b>' + esc(x.prizeName) + '</b><span class="muted">' + t2(x.t) + '・' + x.rcode + '・' + esc(x.staff) + '</span></span></li>'; }).join('') || '<li class="muted">今天還沒有</li>';
-    $('stock').innerHTML = K.cfg().prizes.map(function (p) { var l = K.stockLeft(p.id); return '<li><span class="grow"><b>' + esc(p.name) + '</b><span class="muted">' + p.points + ' 點</span></span><span class="pill' + (l <= 5 ? ' r' : '') + '">剩 ' + l + '</span></li>'; }).join('');
+    $('stock').innerHTML = K.cfg().prizes.map(function (p) { var l = K.stockLeft(p.id); return '<li><span class="grow"><b>' + esc(p.name) + '</b><span class="muted">' + p.points + ' 點</span></span><span class="muted" style="margin-right:6px">現存 ' + K.onHand(p.id) + '・保留 ' + K.reservedCount(p.id) + '</span><span class="pill' + (l <= 5 ? ' r' : '') + '">可換 ' + l + '</span></li>'; }).join('');
   }
 
   if (mode === 'store') { var s0 = sess(); if (s0 && s0.store) storeHome(); else storeLogin(); }

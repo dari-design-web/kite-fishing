@@ -19,8 +19,9 @@ body{background:#8CABD9;display:flex;flex-direction:column;height:100vh;height:1
 .msg.me{justify-content:flex-end}.msg.me .b{background:#85E249;border-radius:16px 4px 16px 16px}
 .msg .b a{color:var(--teal);font-weight:700}
 .time{font-size:11px;color:rgba(255,255,255,.85);text-align:center;margin:6px 0 10px}
-.rich{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,1fr);background:#fff;border-top:1px solid #ddd;padding-bottom:env(safe-area-inset-bottom,0px)}
-.rich button{min-height:74px;border:0;border-right:1px solid #eee;border-bottom:1px solid #eee;background:#FFFDF8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:800;font-size:13.5px;color:var(--ink)}
+.rich{flex:0 0 auto;display:grid;grid-template-columns:repeat(2,1fr);background:#fff;border-top:1px solid #ddd;padding-bottom:env(safe-area-inset-bottom,0px)}
+.rich .cnt{position:absolute;top:6px;right:calc(50% - 46px);min-width:20px;height:20px;border-radius:10px;background:var(--orange);color:#fff;font-style:normal;font-size:12px;line-height:20px;text-align:center}
+.rich button{position:relative;min-height:62px;border:0;border-right:1px solid #eee;border-bottom:1px solid #eee;background:#FFFDF8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:800;font-size:13.5px;color:var(--ink)}
 .rich button span{font-size:24px;line-height:1}
 .rich button:active{background:#E9F2F1}
 .rich .hl{background:#FFF1CC}
@@ -45,11 +46,11 @@ body{background:#8CABD9;display:flex;flex-direction:column;height:100vh;height:1
 <div class="chat" id="chat"></div>
 <nav class="rich" id="rich">
   <button type="button" data-p="card"><span>🪪</span>我的點數</button>
-  <button type="button" data-p="scan" class="hl"><span>📷</span>掃描集點</button>
-  <button type="button" data-p="prize"><span>🎁</span>兌換贈品</button>
-  <button type="button" data-p="games" class="hl"><span>🎮</span>玩遊戲</button>
-  <button type="button" data-p="mine"><span>🎫</span>我的兌換</button>
-  <button type="button" data-p="events"><span>📣</span>活動</button>
+  <button type="button" data-p="scan" class="hl"><span>📷</span>掃碼集點</button>
+  <button type="button" data-p="prize"><span>🎁</span>換小禮物</button>
+  <button type="button" data-p="mine"><span>🎫</span>我的兌換<i class="cnt" id="waitCnt" hidden></i></button>
+  <button type="button" data-p="games" class="hl"><span>🎮</span>和小鳶玩</button>
+  <button type="button" data-p="events"><span>📣</span>港口消息</button>
 </nav>
 <div class="menuBar">選單 ▾</div>
 
@@ -72,6 +73,7 @@ body{background:#8CABD9;display:flex;flex-direction:column;height:100vh;height:1
 
   /* ====== 聊天室開場 ====== */
   function hello() {
+    var m = K.member(), wc = m.redeems.filter(function (r) { return r.status === 'wait'; }).length, wb = $('waitCnt'); if (wb) { wb.hidden = !wc; wb.textContent = wc; }
     var m = K.member(), c = $('chat'), h = new Date().getHours(); c.innerHTML = '<div class="time">今天 ' + String(h).padStart(2, '0') + ':' + String(new Date().getMinutes()).padStart(2, '0') + '</div>';
     say((h < 11 ? '早安' : h < 17 ? '午安' : '晚上好') + '！我是小鳶 🪶 歡迎來到東三東四～');
     say('你現在有 <b>' + m.points + ' 點</b>。在館內消費可以請店家出 QR，點下面的 <b>📷 掃描集點</b> 就能集點；點數可以換贈品喔！');
@@ -82,7 +84,7 @@ body{background:#8CABD9;display:flex;flex-direction:column;height:100vh;height:1
   function todayEvents() { var d = new Date().getDay(); return K.cfg().events.filter(function (e) { return e.on && e.days.indexOf(d) >= 0; }); }
 
   /* ====== 選單頁 ====== */
-  var PAGES = { card: '我的點數', scan: '掃描集點', prize: '兌換贈品', games: '玩遊戲', mine: '我的兌換', events: '活動' };
+  var PAGES = { card: '我的點數', scan: '掃碼集點', prize: '換小禮物', games: '和小鳶玩', mine: '我的兌換', events: '港口消息' };
   function open(p) { if (scanner) { scanner.stop(); scanner = null; } $('stitle').textContent = PAGES[p]; $('sheet').classList.add('on'); $('sbody').scrollTop = 0; R[p](); }
   function close() { if (scanner) { scanner.stop(); scanner = null; } $('sheet').classList.remove('on'); }
   $('close').onclick = close;
@@ -106,9 +108,14 @@ body{background:#8CABD9;display:flex;flex-direction:column;height:100vh;height:1
   R.scan = function () {
     $('sbody').innerHTML = '<div class="card"><div class="scanBox" id="scanBox"></div><p class="muted" id="smsg" style="margin:8px 0 0">開相機中…</p></div>' +
       '<div class="card"><h2>手動輸入</h2><p class="muted" style="margin:0 0 6px">相機不能用、或在同一支手機測試時，把店家給的代碼貼在這裡。</p><textarea id="manual" rows="3" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:8px"></textarea><button class="btn full" id="mbtn" style="margin-top:6px">集點</button></div><div id="sres"></div>';
-    scanner = new KiteScan.Scanner($('scanBox'), claim, function (m) { $('smsg').textContent = m; }); scanner.start();
-    $('mbtn').onclick = function () { claim($('manual').value); };
+    scanner = new KiteScan.Scanner($('scanBox'), ask, function (m) { $('smsg').textContent = m; }); scanner.start();
+    $('mbtn').onclick = function () { ask($('manual').value); };
   };
+  function ask(code) {      // 掃到或貼上只先顯示店家與金額，按「領取」才算數（打開或預覽不消耗 QR）
+    var pk = K.peekEarn(code), box = $('sres'); if (!pk) return claim(code);
+    box.innerHTML = '<div class="card" style="border:2px solid var(--teal)"><div class="muted">請確認</div><h2 style="margin:4px 0">' + esc(pk.store) + '</h2><p style="margin:0 0 10px">消費 NT$' + pk.amount.toLocaleString() + '・可得 <b>' + pk.pts + ' 點</b></p><button class="btn full" id="takeIt">領取 ' + pk.pts + ' 點</button></div>';
+    $('takeIt').onclick = function () { claim(code); }; box.scrollIntoView({ behavior: 'smooth' });
+  }
   function claim(code) {
     var r = K.claimEarn(code), box = $('sres');
     if (r.ok) {
@@ -121,13 +128,13 @@ body{background:#8CABD9;display:flex;flex-direction:column;height:100vh;height:1
     var m = K.member(), ps = K.cfg().prizes.filter(function (p) { return p.on !== false; });
     $('sbody').innerHTML = '<div class="card"><b>你有 ' + m.points + ' 點</b><span class="muted">・選一個贈品，到服務台出示兌換 QR 就能領</span></div>' + ps.map(function (p) {
       var left = K.stockLeft(p.id), can = m.points >= p.points && left > 0;
-      return '<div class="card prize"><span class="grow"><b>' + esc(p.name) + '</b><span class="muted">' + p.points + ' 點・剩 ' + left + ' 個</span></span><button class="btn' + (can ? ' warn' : '') + '" data-p="' + p.id + '"' + (can ? '' : ' disabled') + '>' + (left <= 0 ? '換完了' : can ? '兌換' : '點數不夠') + '</button></div>';
+      return '<div class="card prize"><span class="grow"><b>' + esc(p.name) + '</b><span class="muted">' + p.points + ' 點・還可以換 ' + left + ' 個</span></span><button class="btn' + (can ? ' warn' : '') + '" data-p="' + p.id + '"' + (can ? '' : ' disabled') + '>' + (left <= 0 ? '換完了' : can ? '兌換' : '點數不夠') + '</button></div>';
     }).join('');
     $('sbody').querySelectorAll('[data-p]').forEach(function (b) { b.onclick = function () { var p = K.prizeById(b.dataset.p); if (!confirm('用 ' + p.points + ' 點兌換「' + p.name + '」？\n點數會先扣，到服務台出示 QR 領取；還沒領之前可以取消退點。')) return; var r = K.makeRedeem(p.id); if (!r.ok) return toast(r.msg); showTicket(K.member().redeems[0]); hello(); }; });
   };
   function showTicket(r) {
     $('stitle').textContent = '兌換單'; $('sheet').classList.add('on');
-    $('sbody').innerHTML = '<div class="card" style="text-align:center"><div class="muted">請到服務台出示這個 QR</div><h2 style="font-size:20px;margin:6px 0">🎁 ' + esc(r.name) + '</h2><div class="qrBox" id="tq"></div><p style="margin:8px 0 0">兌換碼 <b style="font-size:20px;letter-spacing:2px">' + r.id + '</b></p><p class="muted">' + t2(r.t) + '・已扣 ' + r.pts + ' 點・' + (r.status === 'done' ? '<span class="pill g">已領取</span>' : r.status === 'cancel' || r.status === 'expired' ? '<span class="pill r">' + (r.status === 'expired' ? '逾期已退點' : '已取消') + '</span>' : '<span class="pill o">還沒領</span>') + '</p></div>' +
+    $('sbody').innerHTML = '<div class="card" style="text-align:center"><div class="muted">請到服務台出示這個 QR</div><h2 style="font-size:20px;margin:6px 0">🎁 ' + esc(r.name) + '</h2><div class="qrBox" id="tq"></div><p style="margin:8px 0 0">兌換碼 <b style="font-size:20px;letter-spacing:2px">' + r.id + '</b></p><p class="muted">' + t2(r.t) + '・已扣 ' + r.pts + ' 點' + (r.status === 'wait' && K.cfg().redeemHoldDays ? '<br>請在 <b>' + (function (d) { return (d.getMonth() + 1) + '/' + d.getDate(); })(new Date(r.t + K.cfg().redeemHoldDays * 86400000)) + '</b> 前到服務台領取' : '') + '・' + (r.status === 'done' ? '<span class="pill g">已領取</span>' : r.status === 'cancel' || r.status === 'expired' ? '<span class="pill r">' + (r.status === 'expired' ? '已逾期（已退點）' : '已取消') + '</span>' : '<span class="pill o">待領取</span>') + '</p></div>' +
       (r.status === 'wait' ? '<div class="row"><button class="btn alt" id="cp">複製代碼</button><button class="btn red" id="cx">取消並退點</button></div>' : '') + '<button class="btn alt full" id="bk" style="margin-top:10px">看我的兌換</button>';
     KiteScan.drawQR($('tq'), r.code, Math.min(240, innerWidth - 100));
     if ($('cp')) $('cp').onclick = function () { (navigator.clipboard ? navigator.clipboard.writeText(r.code) : Promise.reject()).then(function () { toast('已複製代碼'); }, function () { prompt('長按複製代碼', r.code); }); };
@@ -136,7 +143,7 @@ body{background:#8CABD9;display:flex;flex-direction:column;height:100vh;height:1
   }
   R.mine = function () {
     var rs = K.member().redeems;
-    $('sbody').innerHTML = '<div class="card"><ul class="list">' + (rs.map(function (r, i) { return '<li><span class="grow"><b>' + esc(r.name) + '</b><span class="muted">' + t2(r.t) + '・' + r.id + '・' + r.pts + ' 點</span></span>' + (r.status === 'done' ? '<span class="pill g">已領取</span>' : r.status === 'cancel' || r.status === 'expired' ? '<span class="pill r">' + (r.status === 'expired' ? '逾期已退點' : '已取消') + '</span>' : '<button class="btn warn" data-i="' + i + '">出示 QR</button>') + '</li>'; }).join('') || '<li class="muted">還沒有兌換</li>') + '</ul></div><p class="note">原型：服務台在別支手機發放時，這裡要等接上雲端才會自動變「已領取」。</p>';
+    $('sbody').innerHTML = '<div class="card"><ul class="list">' + (rs.map(function (r, i) { return '<li><span class="grow"><b>' + esc(r.name) + '</b><span class="muted">' + t2(r.t) + '・' + r.id + '・' + r.pts + ' 點</span></span>' + (r.status === 'done' ? '<span class="pill g">已領取</span>' : r.status === 'cancel' || r.status === 'expired' ? '<span class="pill r">' + (r.status === 'expired' ? '已逾期（已退點）' : '已取消') + '</span>' : '<button class="btn warn" data-i="' + i + '">出示 QR</button>') + '</li>'; }).join('') || '<li class="muted">還沒有兌換</li>') + '</ul></div><p class="note">原型：服務台在別支手機發放時，這裡要等接上雲端才會自動變「已領取」。</p>';
     $('sbody').querySelectorAll('[data-i]').forEach(function (b) { b.onclick = function () { showTicket(rs[+b.dataset.i]); }; });
   };
   R.events = function () {
