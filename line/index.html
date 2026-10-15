@@ -223,7 +223,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
     var B = K.bentoState ? K.bentoState().filter(function (b) { return b.on !== false; }) : [], c = K.cfg();
     var have = B.reduce(function (a, b) { return a + (b.have || 0); }, 0), buy = B.filter(function (b) { return b.canBuy; });
     if (B.length && have === 0) say('🍱 我的便當盒空空的～' + (buy.length ? '你的點數夠換「' + esc(buy[0].name) + '」（' + buy[0].points + ' 點）喔！換好就會放進便當盒。' : '每天有一份免費港邊飯糰，也可以去港口換禮看看便當喔。') + '<br><a href="#" data-open="shop" data-arg="bento">去港口換禮看便當 ›</a>');
-    var ps = c.prizes.filter(function (p) { return p.on !== false && p.points > 0 && p.points <= m.points && K.stockLeft(p.id) > 0; }).sort(function (a, b) { return b.points - a.points; });
+    var ps = c.prizes.filter(function (p) { return p.on !== false && p.points > 0 && p.points <= m.points && K.stockLeft(p.id) > 0 && !K.redeemBlock(p.id); }).sort(function (a, b) { return b.points - a.points; });
     if (ps.length) say('🎁 你有 ' + m.points + ' 點囉！點數夠換「' + esc(ps[0].name) + '」（' + ps[0].points + ' 點），想看看嗎？' + (K.stockLeft(ps[0].id) <= 10 ? '目前還有 ' + K.stockLeft(ps[0].id) + ' 個。' : '') + '<br><a href="#" data-open="item" data-arg="' + esc(ps[0].id) + '">看看這個禮物 ›</a>');
     else { var nx = c.prizes.filter(function (p) { return p.on !== false && p.points > m.points && K.stockLeft(p.id) > 0; }).sort(function (a, b) { return a.points - b.points; })[0]; if (nx && nx.points - m.points <= 10) say('✨ 再集 ' + (nx.points - m.points) + ' 點，就到「' + esc(nx.name) + '」的兌換點數囉！遊戲分數累積夠了，也能換點數喔。<br><a href="#" data-open="park">去小鳶樂園 ›</a>'); }
   }
@@ -349,10 +349,10 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
     if (arg === 'bento') { shopF = 'bento'; if (stack.length) stack[stack.length - 1][1] = null; }
     var m = K.member(), ps = K.cfg().prizes.filter(function (p) { return p.on !== false; });
     if (shopF === 'bento') return bentoShop(m);
-    var list = ps.filter(function (p) { var l = K.stockLeft(p.id); return shopF === 'all' || (shopF === 'can' && m.points >= p.points && l > 0) || (shopF === 'few' && l > 0 && l <= 10); });
+    var list = ps.filter(function (p) { var l = K.stockLeft(p.id); return shopF === 'all' || (shopF === 'can' && m.points >= p.points && l > 0 && !K.redeemBlock(p.id)) || (shopF === 'few' && l > 0 && l <= 10); });
     $('sbody').innerHTML = '<div class="shopBan" role="img" aria-label="港口換禮"></div><div class="shopHead"><div class="n"><small>我的點數</small><div class="big">' + m.points + ' <span style="font-size:15px">點</span></div>' + dueText(m) + '</div><button id="toPts">點數明細 ›</button></div>' +
       shopTabs() +
-      (list.length ? '<div class="goods">' + list.map(function (p) { var l = K.stockLeft(p.id), can = m.points >= p.points && l > 0; return '<button class="good' + (can ? '' : ' no') + '" data-item="' + p.id + '"><span class="im"><img src="' + K.prizeImg(p.id) + '" alt="" loading="lazy">' + (K.hasPrizeImg(p.id) ? '' : '<span class="demo">示意圖</span>') + '' + (l <= 0 ? '<span class="so">已換完</span>' : l <= 10 ? '<span class="hot">剩 ' + l + '</span>' : '') + '</span><span class="tx"><b>' + esc(p.name) + '</b><span class="pp"><span class="p">' + p.points + ' 點</span><span class="l">' + (l > 0 ? (can ? '可兌換' : '還差 ' + (p.points - m.points) + ' 點') : '補貨中') + '</span></span></span></button>'; }).join('') + '</div>' : '<div class="card muted">這個分類目前沒有贈品</div>') +
+      (list.length ? '<div class="goods">' + list.map(function (p) { var l = K.stockLeft(p.id), blk = K.redeemBlock(p.id), can = !blk && m.points >= p.points && l > 0; return '<button class="good' + (can ? '' : ' no') + '" data-item="' + p.id + '"><span class="im"><img src="' + K.prizeImg(p.id) + '" alt="" loading="lazy">' + (K.hasPrizeImg(p.id) ? '' : '<span class="demo">示意圖</span>') + '' + (l <= 0 ? '<span class="so">已換完</span>' : l <= 10 ? '<span class="hot">剩 ' + l + '</span>' : '') + '</span><span class="tx"><b>' + esc(p.name) + '</b><span class="pp"><span class="p">' + p.points + ' 點</span><span class="l">' + (l > 0 ? (can ? '可兌換' : blk ? (/限換/.test(blk) ? '已換過' : /才開始/.test(blk) ? '尚未開始' : /結束/.test(blk) ? '已結束' : '明天再來') : '還差 ' + (p.points - m.points) + ' 點') : '補貨中') + '</span></span></span></button>'; }).join('') + '</div>' : '<div class="card muted">這個分類目前沒有贈品</div>') +
       '<p class="note">兌換後到服務台出示兌換 QR 領取' + (K.cfg().redeemHoldDays ? '，' + K.cfg().redeemHoldDays + ' 天內沒領會自動取消並退點' : '') + '。</p>';
     $('toPts').onclick = function () { go('points'); };
     $('sbody').querySelectorAll('[data-f]').forEach(function (b) { b.onclick = function () { shopF = b.dataset.f; R.shop(); }; });
@@ -372,11 +372,11 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
       ask2('換便當', '使用 <b>' + b.points + ' 點</b>換 1 份「' + esc(b.name) + '」，直接放進小鳶的便當盒。<br><span class="muted">虛擬商品，換了不能退。</span>', '確認扣點換便當').then(function (ok) { if (!ok) return; var r = K.redeemBento(b.id); if (!r.ok) return toast(r.msg); toast('已放進便當盒（' + r.name + ' ×' + r.have + '），剩 ' + r.total + ' 點'); R.shop(); hello(); }); }; });
   }
   R.item = function (pid) {
-    var p = K.prizeById(pid), m = K.member(); if (!p) return back(); var l = K.stockLeft(p.id), can = m.points >= p.points && l > 0, hd = K.cfg().redeemHoldDays;
+    var p = K.prizeById(pid), m = K.member(); if (!p) return back(); var l = K.stockLeft(p.id), blk = K.redeemBlock(p.id), can = !blk && m.points >= p.points && l > 0, hd = K.cfg().redeemHoldDays;
     $('stitle').textContent = p.name;
     $('sbody').innerHTML = '<div class="detail"><div class="im"><img src="' + K.prizeImg(p.id) + '" alt="">' + (K.hasPrizeImg(p.id) ? '' : '<span class="demo">示意圖，實際樣式以服務台實物為準</span>') + '</div><h2 style="margin:0 0 4px;font-size:20px">' + esc(p.name) + '</h2><div style="font-size:24px;font-weight:900;color:var(--orange)">' + p.points + ' 點</div>' + (p.desc ? '<p style="margin:8px 0">' + esc(p.desc) + '</p>' : '') +
       '<div class="card" style="margin-top:10px"><ul class="list"><li><span class="grow">還可以換</span><b>' + l + ' 個</b></li><li><span class="grow">領取地點</span><b>服務台</b></li>' + (hd ? '<li><span class="grow">領取期限</span><b>兌換後 ' + hd + ' 天內</b></li>' : '') + '<li><span class="grow">我的點數</span><b>' + m.points + ' 點</b></li></ul></div>' +
-      '<button class="btn warn full" id="rd"' + (can ? '' : ' disabled') + '>' + (l <= 0 ? '已換完' : can ? '用 ' + p.points + ' 點兌換' : '點數還差 ' + (p.points - m.points) + ' 點') + '</button></div>';
+      '<button class="btn warn full" id="rd"' + (can ? '' : ' disabled') + '>' + (l <= 0 ? '已換完' : blk ? esc(blk) : can ? '用 ' + p.points + ' 點兌換' : '點數還差 ' + (p.points - m.points) + ' 點') + '</button></div>';
     $('rd').onclick = function () { var q = 1, dl = hd ? t2(Date.now() + hd * 86400000) : ''; ask2('確認兌換', '使用 <b>' + p.points * q + ' 點</b>，保留 ' + q + ' 份「' + esc(p.name) + '」。' + (dl ? '<br>請於 <b>' + dl + '</b> 前到服務台領取。' : '') + '<br><span class="muted">還沒領之前可以取消，點數會退回。</span>', '確認扣點並保留').then(function (ok) { if (!ok) return; var r = K.makeRedeem(p.id); if (!r.ok) return toast(r.msg); go('ticket', K.member().redeems[0].id); hello(); }); };
   };
   R.ticket = function (id) {
