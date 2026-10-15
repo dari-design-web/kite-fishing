@@ -243,7 +243,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
     { id: 'fish', href: '../index.html', icon: '../hub/btn/m/btn_fish.webp', tip: '點水裡的魚，小鳶俯衝去抓' },
     { id: 'fly', href: '../fly/index.html', icon: '../hub/btn/m/btn_fly.webp', tip: '拖著小鳶飛，清掉港口垃圾' },
     { id: 'travel', href: '../travel/index.html', icon: '../hub/btn/m/btn_travel.webp', tip: '準備便當，小鳶會寄明信片' },
-    { id: 'stamp', href: '../stamp/index.html', icon: '../hub/btn/m/btn_stamp.webp', tip: '在館內找立牌，集滿 6 個章' },
+    { id: 'stamp', href: '../stamp/index.html', icon: '../hub/btn/m/btn_stamp.webp', tip: '遇見住在 6 站的港口朋友、蓋章' },
     { id: 'photo', href: '../photo/index.html', icon: '../hub/btn/m/btn_photo.webp', tip: '跟小鳶拍合照、貼貼紙' }
   ];
   function gameLink(g) { return g.href + (g.href.indexOf('?') < 0 ? '?' : '&') + 'from=line'; }
@@ -269,7 +269,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
       (evs.length ? '<div class="lb-ev">🎉 今天的活動：' + evs.map(function (x) { return esc(x.e.title) + '（' + esc(K.GAMES[x.g.id].name) + ' ×' + x.e.mult + '）'; }).join('、') + '</div>' : '') +
       '<div class="lb-sec">' + (evs.length ? '今日推薦' : '人氣遊戲') + '</div><div class="lb-grid">' + booth(fg, 0, true) + '</div>' +
       '<div class="lb-sec">全部遊戲</div><div class="lb-grid">' + GL.filter(function (g) { return g.id !== feat; }).map(function (g, i) { return booth(g, i + 1); }).join('') +
-      '<a class="booth" href="../meet/index.html" style="animation-delay:.3s"><img class="ic" src="../meet/assets/pal_f4.webp" alt="" style="background:#E9F2F1;object-fit:contain"><span class="chip">館內 QR</span><b>港口朋友</b><span class="tip">掃大大的充氣朋友旁的 QR</span>' + (P.meet && P.meet.max ? '<span class="bar"><i style="width:' + Math.round(100 * P.meet.n / P.meet.max) + '%"></i></span><span class="pg">' + esc(P.meet.label) + '</span>' : '') + '</a></div>' +
+      '</div>' +      // D83：港口朋友已併進港灣蓋章散步（每站住一位朋友）
       '<div class="lb-foot"><div class="card" style="margin:0"><b>怎麼用遊戲換點數？</b><p class="muted" style="margin:6px 0 0">會算分的遊戲，每關每天前 ' + c.triesPerLevel + ' 次的分數會存進「分數存摺」，滿 ' + c.scorePerPoint.toLocaleString() + ' 分就能在「我的資訊 → 我的遊戲」換 1 點。</p><button class="btn alt full" style="margin-top:10px" id="toMG">看我的遊戲紀錄</button></div></div></div>';
     $('toMG').onclick = function () { go('mygames'); };
   };
@@ -282,7 +282,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
     var stars = Object.keys(fly.stars || {}).reduce(function (s, k) { var v = fly.stars[k]; return s + (Array.isArray(v) ? v.filter(Boolean).length : +v || 0); }, 0);
     o.fly = { n: stars, max: 12, label: '星星 ' + stars + '／12', extra: [['已開到', '第 ' + Math.max(1, fly.unlocked || 1) + ' 關']] };
     var cards = Object.keys(tv.cards || {}).length; o.travel = { n: cards, max: 24, label: '明信片 ' + cards + '／24', extra: [['旅行次數', (tv.trips || 0) + ' 次'], ['紀念品', Object.keys(tv.souvenirs || {}).length + ' 個']] };
-    var sp = Object.keys(st.spots || {}).length; o.stamp = { n: sp, max: 6, label: '印章 ' + sp + '／6' + (st.complete ? '・已集滿' : ''), extra: [] };
+    var sp = Object.keys(st.spots || {}).length; o.stamp = { n: sp, max: 6, label: '印章 ' + sp + '／6' + (st.complete ? '・已集滿' : '') + '・朋友 ' + Object.keys(fr).length + '／6', extra: [] };      // D83：港口朋友併進蓋章散步
     o.photo = { n: Math.min(ph.n || 0, 10), max: 10, label: '合照 ' + (ph.n || 0) + ' 張', extra: [] };
     var nf = Object.keys(fr).length; o.meet = { n: nf, max: 6, label: '港口朋友 ' + nf + '／6', extra: [] };
     var has = { fish: !!(rd('kiteFishingProg1') || rd('kiteFishingDex2')), fly: !!rd('kiteFlyProgress1'), travel: !!rd('kiteTravel1'), stamp: !!rd('kiteStamp1'), photo: !!rd('kitePhoto1'), meet: !!rd('kiteFriends1') };
@@ -303,7 +303,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
         (lv.length ? '<div class="row" style="margin-top:8px"><span class="muted" style="flex:2">存摺 ' + b.toLocaleString() + ' 分' + (n ? '・可換 ' + n + ' 點' : '・還差 ' + (per - b % per).toLocaleString() + ' 分') + '</span><button class="btn" data-cv="' + g.id + '"' + (n ? '' : ' disabled') + ' style="min-height:38px;padding:6px 12px">換點</button></div>' : '') +
         '<a class="btn alt full" style="margin-top:8px;min-height:38px" href="' + gameLink(g) + '">去玩</a></div></div></div>';
     }).join('');
-    html += '<div class="card"><div class="gcard"><img src="../meet/assets/pal_f4.webp" alt="" style="object-fit:contain;background:#E9F2F1"><div class="g"><b>港口朋友</b><div class="gbar"><i style="width:' + Math.round(100 * P.meet.n / 6) + '%"></i></div><span class="muted">' + P.meet.label + '</span></div></div></div>';
+    if (false) html += '<div class="card"><div class="gcard"><img src="../meet/assets/pal_f4.webp" alt="" style="object-fit:contain;background:#E9F2F1"><div class="g"><b>港口朋友</b><div class="gbar"><i style="width:' + Math.round(100 * P.meet.n / 6) + '%"></i></div><span class="muted">' + P.meet.label + '</span></div></div></div>';
     html += '<p class="note">遊戲進度存在這支手機；正式版會跟著 LINE 帳號走。分數換點規則：每 ' + c.scorePerPoint.toLocaleString() + ' 分＝1 點，每關每天前 ' + c.triesPerLevel + ' 次算分。</p>';
     $('sbody').innerHTML = html;
     $('sbody').querySelectorAll('[data-cv]').forEach(function (b) { b.onclick = function () { var r = K.convertScore(b.dataset.cv); toast(r.ok ? '換到 ' + r.pts + ' 點！' : r.msg); if (r.ok) { R.mygames(); hello(); } }; });
