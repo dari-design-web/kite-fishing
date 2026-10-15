@@ -551,7 +551,7 @@ function render() {
   /* v0.21（C-159）：晚上 6～10 點上方出現「現在蓋的是夜間版章」提示；10 點後到清晨 6 點提醒「今晚打烊了，明天再來」（打烊時間照 Dari 10/13 16:58；文字是建議） */
   { const h = new Date().getHours(), nn = $('nightNow');
     if (h >= CFG.nightFrom && h < CFG.nightTo) { nn.textContent = '🌙 現在是夜間時段：晚上 ' + (CFG.nightTo - 12) + ' 點前蓋的章會是限定的「夜間版」，章旁邊有星星喔！'; nn.className = 'nightNow'; nn.hidden = false; }
-    else if (h >= CFG.nightTo || h < 6) { nn.textContent = '🏮 港邊今晚打烊了，明天再來蓋章吧！護照裡的章都還在。'; nn.className = 'nightNow closed'; nn.hidden = false; } }
+    else if (h >= CFG.nightTo || h < 6) { nn.textContent = '🏮 晚上 ' + (CFG.nightTo - 12) + ' 點後港邊打烊了。現在掃到的章一樣會收進護照；明天白天再來，找還沒見到的朋友吧！'; nn.className = 'nightNow closed'; nn.hidden = false; } }
   $('grid').innerHTML = SPOTS.map((s, i) => {
     const done = !!P.spots[s.id], [x, y] = FRAMES[i], d = FRAME_R * 2, v = P.var[s.id] || '', lv = lvOf(s.id);
     const cls = 'pcell' + (done ? ' done' : '') + (s.id === justId ? ' new' : '') + (done && lv >= 2 ? ' ring' + lv : '');
