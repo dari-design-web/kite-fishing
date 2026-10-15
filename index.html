@@ -378,7 +378,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.26',
+  version: '0.27',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -539,7 +539,7 @@ function resolveDive() {
     things.splice(things.indexOf(best), 1);
     const def = CONFIG.fish[best.type], inEvent = t >= CONFIG.event.from && t < CONFIG.event.to, mult = inEvent ? CONFIG.event.mult : 1, lucky = best.type === LUCKY, gain = def.kg * mult * (lucky ? LUCKY_MUL : 1);
     kg += gain; stats.hits++; stats.counts[best.type]++; if (inEvent) stats.kgInEvent += gain; kite.carry = best.type; firstCatchDone = true;
-    stats.combo++; stats.bestCombo = Math.max(stats.bestCombo, stats.combo);
+    stats.combo++; stats.bestCombo = Math.max(stats.bestCombo, stats.combo); stats.missRun = 0;
     if (!dex[best.type]) { dex[best.type] = true; stats.newDex.push(best.type); try { localStorage.setItem('kiteFishingDex2', JSON.stringify(dex)); } catch (e) {} }
     say((lucky ? '幸運魚！' : '') + def.name + ' +' + PTS(gain) + (mult > 1 ? ' ×' + mult : ''), tx, ty - 18, mult > 1 || def.rare || lucky ? '#FFE08A' : '#fff'); if (lucky) stars(tx, ty, 6, 60, '#FFE08A');
     if (stats.combo >= CONFIG.combo.from) { kg += CONFIG.combo.bonus; stats.comboBonus += CONFIG.combo.bonus; if (stats.combo === CONFIG.combo.from || stats.combo % 5 === 0) say('連抓 ' + stats.combo + '！', tx, ty - 48, '#BFF0D0'); stars(tx, ty, 5, 50, '#9FF0C8'); }      /* C-94：連抓只在第 3、5、10…條跳字，其他用徽章；薄荷綠小水花（ChatGPT C-88 建議） */
@@ -552,7 +552,14 @@ function resolveDive() {
     beep(Math.min(1320, 560 + def.kg * 90 + Math.min(stats.combo, 8) * 45), 0.16, 'triangle', 0.08, 220);
   } else if (shark && Math.abs(tx - shark.x) < 80 && Math.abs(ty - shark.y) < 30) {
     stats.sharkTaps++; say('鯨鯊是朋友', tx, ty - 34, '#FFE08A'); hearts(tx, ty - 10); beep(520, 0.2, 'sine', 0.05, 80);
-  } else { stats.misses++; stats.combo = 0; comboBadge(); say('沒抓到', tx, ty - 18, '#CFE6F2'); beep(220, 0.1, 'sine', 0.04, -40); }
+  } else {
+    /* v0.27（C-179）：連續 3 次沒抓到，小鳶指一條最近的魚（魚身上冒金色星星）並給一句提示，之後每再空 3 次提醒一次；抓到就重算（文字是建議） */
+    stats.misses++; stats.combo = 0; comboBadge(); beep(220, 0.1, 'sine', 0.04, -40);
+    stats.missRun = (stats.missRun || 0) + 1; let near = null, nd = 1e9;
+    if (stats.missRun % 3 === 0) for (const o of things) { if (o.type === 'trash' || o.x < 30 || o.x > W - 30) continue; const d = Math.hypot(o.x - tx, o.y - ty); if (d < nd) { near = o; nd = d; } }
+    if (near) { stars(near.x, near.y, 10, 45, '#FFE08A'); say(['點在魚的正上方試試！', '這條離你最近，抓牠！', '慢慢來，看準了再點～'][(stats.missRun / 3 - 1) % 3], W / 2, near.y - 30, '#FFE08A', true); stats.hintShown = (stats.hintShown || 0) + 1; }
+    else say('沒抓到', tx, ty - 18, '#CFE6F2');
+  }
   kite.state = 'rise';
 }
 
