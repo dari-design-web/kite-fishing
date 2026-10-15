@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>小鳶來港・官方 LINE（示意）</title>
+<link rel="stylesheet" href="../shared/sys.css">
+<style>
+/* 官方 LINE 示意：上面是聊天室、下面是圖文選單；點選單打開的頁面像 LIFF 一樣從下面蓋上來 */
+body{background:#8CABD9;display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
+.lhead{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;background:#273246;color:#fff}
+.lhead a{color:#fff;text-decoration:none;font-size:22px;padding:0 6px;min-height:40px;display:flex;align-items:center}
+.lhead img{width:34px;height:34px;border-radius:50%;background:#fff;object-fit:cover}
+.lhead b{flex:1;font-size:16px}.lhead .ver{font-size:11px;opacity:.7}
+.chat{flex:1;overflow-y:auto;padding:12px 10px 8px}
+.msg{display:flex;gap:8px;align-items:flex-start;margin:0 0 10px}
+.msg img{width:34px;height:34px;border-radius:50%;background:#fff;flex:0 0 34px}
+.msg .b{background:#fff;border-radius:4px 16px 16px 16px;padding:9px 12px;max-width:78%;font-size:14.5px;line-height:1.5;box-shadow:0 1px 1px rgba(0,0,0,.08)}
+.msg.me{justify-content:flex-end}.msg.me .b{background:#85E249;border-radius:16px 4px 16px 16px}
+.msg .b a{color:var(--teal);font-weight:700}
+.time{font-size:11px;color:rgba(255,255,255,.85);text-align:center;margin:6px 0 10px}
+.rich{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,1fr);background:#fff;border-top:1px solid #ddd;padding-bottom:env(safe-area-inset-bottom,0px)}
+.rich button{min-height:74px;border:0;border-right:1px solid #eee;border-bottom:1px solid #eee;background:#FFFDF8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:800;font-size:13.5px;color:var(--ink)}
+.rich button span{font-size:24px;line-height:1}
+.rich button:active{background:#E9F2F1}
+.rich .hl{background:#FFF1CC}
+.menuBar{flex:0 0 auto;text-align:center;background:#fff;border-top:1px solid #ddd;font-size:12px;color:var(--muted);padding:4px}
+.sheet{position:fixed;inset:0;z-index:50;background:var(--bg);display:none;flex-direction:column;max-width:520px;margin:0 auto}
+.sheet.on{display:flex;animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(30px);opacity:.4}}
+.sheet .top{flex:0 0 auto}.sheet .wrap{flex:1;overflow-y:auto}
+.ptsCard{background:linear-gradient(135deg,#2F7F86,#4FA9B8);color:#fff;border-radius:20px;padding:18px;margin:0 0 12px;position:relative;overflow:hidden}
+.ptsCard .big{font-size:44px}.ptsCard small{opacity:.85}
+.ptsCard img{position:absolute;right:8px;bottom:0;width:86px;opacity:.95}
+.game{display:flex;gap:12px;align-items:center;padding:12px;margin:0 0 10px;background:var(--card);border:1px solid var(--line);border-radius:16px;text-decoration:none;color:var(--ink)}
+.game img{width:64px;height:64px;border-radius:14px;object-fit:cover;flex:0 0 64px;background:#E9F2F1}
+.game b{display:block;font-size:16px}.game .muted{display:block}
+.game .go{margin-left:auto;font-size:22px;color:var(--muted)}
+.prize{display:flex;gap:10px;align-items:center}.prize .grow{flex:1}
+.ev{border-left:4px solid var(--orange)}
+</style>
+</head>
+<body>
+<header class="lhead"><a href="../portal/" aria-label="回主頁">‹</a><img src="../travel/assets/kite_hello.png" alt=""><b>小鳶來港｜東三東四</b><span class="ver">官方帳號（示意）</span></header>
+<div class="chat" id="chat"></div>
+<nav class="rich" id="rich">
+  <button type="button" data-p="card"><span>🪪</span>我的點數</button>
+  <button type="button" data-p="scan" class="hl"><span>📷</span>掃描集點</button>
+  <button type="button" data-p="prize"><span>🎁</span>兌換贈品</button>
+  <button type="button" data-p="games" class="hl"><span>🎮</span>玩遊戲</button>
+  <button type="button" data-p="mine"><span>🎫</span>我的兌換</button>
+  <button type="button" data-p="events"><span>📣</span>活動</button>
+</nav>
+<div class="menuBar">選單 ▾</div>
+
+<section class="sheet" id="sheet"><header class="top"><button class="lk" type="button" id="close">✕ 關閉</button><h1 id="stitle"></h1></header><div class="wrap" id="sbody"></div></section>
+<div class="toast" id="toast"></div>
+<script src="../shared/vendor/qrcode.js"></script>
+<script src="../shared/vendor/jsQR.js"></script>
+<script src="../shared/kite_core.js"></script>
+<script src="../shared/kite_scan.js"></script>
+<script>
+/* 客戶官方 LINE 系統（示意）（工作單 23，D71）。正式版這些頁面會變成 LINE 的 LIFF 頁，選單是 LINE 圖文選單。
+   原型：點數存在這支手機（D72），「我的點數」最下面可以清除資料重新開始。 */
+(function () {
+  var $ = function (id) { return document.getElementById(id); }, K = KiteCore, scanner = null;
+  var KITE = '../travel/assets/kite_hello.png';
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function toast(t) { var e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(function () { e.style.display = 'none'; }, 2400); }
+  function t2(t) { var d = new Date(t); return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+  function say(html, me) { var c = $('chat'), d = document.createElement('div'); d.className = 'msg' + (me ? ' me' : ''); d.innerHTML = (me ? '' : '<img src="' + KITE + '" alt="">') + '<div class="b">' + html + '</div>'; c.appendChild(d); c.scrollTop = c.scrollHeight; }
+
+  /* ====== 聊天室開場 ====== */
+  function hello() {
+    var m = K.member(), c = $('chat'), h = new Date().getHours(); c.innerHTML = '<div class="time">今天 ' + String(h).padStart(2, '0') + ':' + String(new Date().getMinutes()).padStart(2, '0') + '</div>';
+    say((h < 11 ? '早安' : h < 17 ? '午安' : '晚上好') + '！我是小鳶 🪶 歡迎來到東三東四～');
+    say('你現在有 <b>' + m.points + ' 點</b>。在館內消費可以請店家出 QR，點下面的 <b>📷 掃描集點</b> 就能集點；點數可以換贈品喔！');
+    var ev = todayEvents(); if (ev.length) say('📣 今天的活動：' + ev.map(function (e) { return esc(e.title); }).join('、') + '（' + '<a href="#" data-open="events">看詳情</a>）');
+    c.querySelectorAll('[data-open]').forEach(function (a) { a.onclick = function (e) { e.preventDefault(); open(a.dataset.open); }; });
+  }
+  function todayEvents() { var d = new Date().getDay(); return K.cfg().events.filter(function (e) { return e.on && e.days.indexOf(d) >= 0; }); }
+
+  /* ====== 選單頁 ====== */
+  var PAGES = { card: '我的點數', scan: '掃描集點', prize: '兌換贈品', games: '玩遊戲', mine: '我的兌換', events: '活動' };
+  function open(p) { if (scanner) { scanner.stop(); scanner = null; } $('stitle').textContent = PAGES[p]; $('sheet').classList.add('on'); $('sbody').scrollTop = 0; R[p](); }
+  function close() { if (scanner) { scanner.stop(); scanner = null; } $('sheet').classList.remove('on'); }
+  $('close').onclick = close;
+  $('rich').querySelectorAll('button').forEach(function (b) { b.onclick = function () { open(b.dataset.p); }; });
+
+  var R = {};
+  R.card = function () {
+    var m = K.member(), c = K.cfg(), GN = K.GAMES;
+    var banks = Object.keys(m.scoreBank || {}).filter(function (g) { return m.scoreBank[g] > 0; });
+    $('sbody').innerHTML = '<div class="ptsCard"><small>目前點數</small><div class="big">' + m.points + ' <span style="font-size:18px">點</span></div><small>會員編號 ' + m.id + '</small><img src="../travel/assets/kite_wave.png" alt=""></div>' +
+      '<div class="card"><h2>🎮 遊戲分數存摺</h2><p class="muted" style="margin:0 0 6px">遊戲分數每滿 ' + c.scorePerPoint.toLocaleString() + ' 分可以換 1 點（零頭留著下次用）。每關每天前 ' + c.triesPerLevel + ' 次的分數才會存進來。</p><ul class="list">' +
+      (banks.length ? banks.map(function (g) { var per = K.perPoint(g), b = m.scoreBank[g], n = Math.floor(b / per); return '<li><span class="grow"><b>' + esc(GN[g] ? GN[g].name : g) + '</b><span class="muted">' + b.toLocaleString() + ' 分' + (n ? '・可換 ' + n + ' 點' : '・還差 ' + (per - b % per).toLocaleString() + ' 分') + '</span></span><button class="btn" data-cv="' + g + '"' + (n ? '' : ' disabled') + '>換點</button></li>'; }).join('') : '<li class="muted">還沒有分數，去「🎮 玩遊戲」吧！</li>') + '</ul></div>' +
+      '<div class="card"><h2>點數紀錄</h2><ul class="list">' + (m.ledger.slice(0, 30).map(function (e) {
+        var what = e.type === 'store' ? '🧾 ' + esc(e.storeName) + ' 消費 NT$' + e.amount : e.type === 'game' ? '🎮 ' + esc(GN[e.game] ? GN[e.game].name : e.game) + ' 分數換點' : e.type === 'redeem' ? '🎁 兌換 ' + esc(e.prizeName) : e.type === 'refund' ? '↩️ 取消兌換 ' + esc(e.prizeName) : '調整';
+        return '<li><span class="grow"><b>' + what + '</b><span class="muted">' + t2(e.t) + '</span></span><b style="color:' + (e.pts >= 0 ? 'var(--teal)' : 'var(--red)') + '">' + (e.pts >= 0 ? '+' : '') + e.pts + '</b></li>';
+      }).join('') || '<li class="muted">還沒有紀錄</li>') + '</ul></div>' +
+      '<div class="card"><h2>測試工具</h2><p class="muted" style="margin:0 0 8px">原型的點數只存在這支手機。測試完可以清掉重來（只清客人的點數、紀錄、兌換單）。</p><button class="btn red full" id="wipe">清除我的資料，重新開始</button></div>';
+    $('sbody').querySelectorAll('[data-cv]').forEach(function (b) { b.onclick = function () { var r = K.convertScore(b.dataset.cv); toast(r.ok ? '換到 ' + r.pts + ' 點！' : r.msg); if (r.ok) { R.card(); hello(); } }; });
+    $('wipe').onclick = function () { if (!confirm('確定清除這支手機的點數與紀錄？')) return; try { localStorage.removeItem('kiteMember1'); } catch (e) {} toast('已清除，重新開始'); R.card(); hello(); };
+  };
+  R.scan = function () {
+    $('sbody').innerHTML = '<div class="card"><div class="scanBox" id="scanBox"></div><p class="muted" id="smsg" style="margin:8px 0 0">開相機中…</p></div>' +
+      '<div class="card"><h2>手動輸入</h2><p class="muted" style="margin:0 0 6px">相機不能用、或在同一支手機測試時，把店家給的代碼貼在這裡。</p><textarea id="manual" rows="3" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:8px"></textarea><button class="btn full" id="mbtn" style="margin-top:6px">集點</button></div><div id="sres"></div>';
+    scanner = new KiteScan.Scanner($('scanBox'), claim, function (m) { $('smsg').textContent = m; }); scanner.start();
+    $('mbtn').onclick = function () { claim($('manual').value); };
+  };
+  function claim(code) {
+    var r = K.claimEarn(code), box = $('sres');
+    if (r.ok) {
+      box.innerHTML = '<div class="card" style="border:2px solid var(--teal);text-align:center"><div style="font-size:40px">🎉</div><div class="big">+' + r.pts + ' 點</div><p style="margin:4px 0">' + esc(r.store) + '・消費 NT$' + r.amount.toLocaleString() + '</p>' + (r.capped ? '<p class="muted">今天從消費拿的點數到上限了，多的沒有加。</p>' : '') + '<p class="muted">現在共 ' + r.total + ' 點</p><button class="btn full" id="done">好！</button></div>';
+      if (scanner) scanner.stop(); $('done').onclick = function () { close(); say('集到 <b>' + r.pts + ' 點</b>了，謝謝你在' + esc(r.store) + '消費！現在共 ' + r.total + ' 點 🪶'); };
+    } else { box.innerHTML = '<div class="card" style="border:2px solid var(--red)"><b>沒有集到點</b><p style="margin:4px 0 0">' + esc(r.msg) + '</p></div>'; if (scanner) setTimeout(function () { scanner && scanner.reset(); }, 2500); }
+    box.scrollIntoView({ behavior: 'smooth' });
+  }
+  R.prize = function () {
+    var m = K.member(), ps = K.cfg().prizes.filter(function (p) { return p.on !== false; });
+    $('sbody').innerHTML = '<div class="card"><b>你有 ' + m.points + ' 點</b><span class="muted">・選一個贈品，到服務台出示兌換 QR 就能領</span></div>' + ps.map(function (p) {
+      var left = K.stockLeft(p.id), can = m.points >= p.points && left > 0;
+      return '<div class="card prize"><span class="grow"><b>' + esc(p.name) + '</b><span class="muted">' + p.points + ' 點・剩 ' + left + ' 個</span></span><button class="btn' + (can ? ' warn' : '') + '" data-p="' + p.id + '"' + (can ? '' : ' disabled') + '>' + (left <= 0 ? '換完了' : can ? '兌換' : '點數不夠') + '</button></div>';
+    }).join('');
+    $('sbody').querySelectorAll('[data-p]').forEach(function (b) { b.onclick = function () { var p = K.prizeById(b.dataset.p); if (!confirm('用 ' + p.points + ' 點兌換「' + p.name + '」？\n點數會先扣，到服務台出示 QR 領取；還沒領之前可以取消退點。')) return; var r = K.makeRedeem(p.id); if (!r.ok) return toast(r.msg); showTicket(K.member().redeems[0]); hello(); }; });
+  };
+  function showTicket(r) {
+    $('stitle').textContent = '兌換單'; $('sheet').classList.add('on');
+    $('sbody').innerHTML = '<div class="card" style="text-align:center"><div class="muted">請到服務台出示這個 QR</div><h2 style="font-size:20px;margin:6px 0">🎁 ' + esc(r.name) + '</h2><div class="qrBox" id="tq"></div><p style="margin:8px 0 0">兌換碼 <b style="font-size:20px;letter-spacing:2px">' + r.id + '</b></p><p class="muted">' + t2(r.t) + '・已扣 ' + r.pts + ' 點・' + (r.status === 'done' ? '<span class="pill g">已領取</span>' : r.status === 'cancel' ? '<span class="pill r">已取消</span>' : '<span class="pill o">還沒領</span>') + '</p></div>' +
+      (r.status === 'wait' ? '<div class="row"><button class="btn alt" id="cp">複製代碼</button><button class="btn red" id="cx">取消並退點</button></div>' : '') + '<button class="btn alt full" id="bk" style="margin-top:10px">看我的兌換</button>';
+    KiteScan.drawQR($('tq'), r.code, Math.min(240, innerWidth - 100));
+    if ($('cp')) $('cp').onclick = function () { (navigator.clipboard ? navigator.clipboard.writeText(r.code) : Promise.reject()).then(function () { toast('已複製代碼'); }, function () { prompt('長按複製代碼', r.code); }); };
+    if ($('cx')) $('cx').onclick = function () { if (confirm('取消這張兌換單，點數退回？')) { K.cancelRedeem(r.id); toast('已取消，點數退回'); open('mine'); hello(); } };
+    $('bk').onclick = function () { open('mine'); };
+  }
+  R.mine = function () {
+    var rs = K.member().redeems;
+    $('sbody').innerHTML = '<div class="card"><ul class="list">' + (rs.map(function (r, i) { return '<li><span class="grow"><b>' + esc(r.name) + '</b><span class="muted">' + t2(r.t) + '・' + r.id + '・' + r.pts + ' 點</span></span>' + (r.status === 'done' ? '<span class="pill g">已領取</span>' : r.status === 'cancel' ? '<span class="pill r">已取消</span>' : '<button class="btn warn" data-i="' + i + '">出示 QR</button>') + '</li>'; }).join('') || '<li class="muted">還沒有兌換</li>') + '</ul></div><p class="note">原型：服務台在別支手機發放時，這裡要等接上雲端才會自動變「已領取」。</p>';
+    $('sbody').querySelectorAll('[data-i]').forEach(function (b) { b.onclick = function () { showTicket(rs[+b.dataset.i]); }; });
+  };
+  R.events = function () {
+    var D = '日一二三四五六', ev = K.cfg().events.filter(function (e) { return e.on; }), today = new Date().getDay();
+    $('sbody').innerHTML = ev.map(function (e) { var on = e.days.indexOf(today) >= 0; return '<div class="card ev"><b>' + esc(e.title) + '</b>' + (on ? ' <span class="pill o">今天有</span>' : '') + '<p class="muted" style="margin:4px 0 0">' + esc(K.GAMES[e.game] ? K.GAMES[e.game].name : e.game) + '・分數 ×' + e.mult + '・星期' + e.days.map(function (d) { return D[d]; }).join('、') + '・' + e.from + '～' + e.to + '</p></div>'; }).join('') || '<div class="card muted">目前沒有活動</div>';
+  };
+  /* 玩遊戲：重新排成手機好讀的一欄清單；每個遊戲標今天還能算分幾次、今天的活動 */
+  var GL = [
+    { id: 'fish', href: '../', img: '../assets/kite_dive_v2.png', tip: '點水裡的魚，小鳶俯衝去抓' },
+    { id: 'fly', href: '../fly/', img: '../photo/assets/stk_kite_fly.png', tip: '拖著小鳶飛，清掉港口垃圾' },
+    { id: 'travel', href: '../travel/', img: '../travel/assets/kite_pack.png', tip: '幫小鳶準備便當，牠會寄明信片回來' },
+    { id: 'stamp', href: '../stamp/', img: '../stamp/assets/stamp_c_kite.png', tip: '在館內找立牌蓋章，集滿 6 個' },
+    { id: 'photo', href: '../photo/', img: '../photo/assets/stk_kite_peace.png', tip: '跟小鳶拍合照、貼貼紙' }
+  ];
+  R.games = function () {
+    var c = K.cfg();
+    $('sbody').innerHTML = '<p class="muted" style="margin:0 0 10px">會算分的遊戲：每關每天前 ' + c.triesPerLevel + ' 次的分數會存進「分數存摺」，每 ' + c.scorePerPoint.toLocaleString() + ' 分換 1 點。</p>' + GL.map(function (g) {
+      var G0 = K.GAMES[g.id], lv = Object.keys(G0.levels), ev = K.eventMult(g.id), left = lv.reduce(function (a, l) { return a + K.triesLeft(g.id, l); }, 0);
+      var sub = lv.length ? '今天還能算分 ' + left + ' 次' + (ev.mult > 1 ? '・<span style="color:var(--orange);font-weight:800">' + esc(ev.title) + ' ×' + ev.mult + '</span>' : '') : '不算分，輕鬆玩';
+      return '<a class="game" href="' + g.href + '"><img src="' + g.img + '" alt="" onerror="this.src=\'' + (g.alt || '../travel/assets/kite_hello.png') + '\'"><span><b>' + esc(G0.name) + '</b><span class="muted">' + esc(g.tip) + '</span><span class="muted">' + sub + '</span></span><span class="go">›</span></a>';
+    }).join('') + '<a class="game" href="../meet/"><img src="../meet/assets/pal_f4.webp" alt="" onerror="this.src=\'../travel/assets/kite_hello.png\'"><span><b>港口朋友</b><span class="muted">在館內掃大大的充氣朋友旁的 QR</span></span><span class="go">›</span></a>';
+  };
+
+  hello();
+  var p0 = new URLSearchParams(location.search).get('p'); if (p0 && R[p0]) open(p0);
+  window.__line = { open: open, claim: claim };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>小鳶來港・系統主頁</title>
+<link rel="stylesheet" href="../shared/sys.css">
+<style>
+.hero{padding:calc(22px + env(safe-area-inset-top,0px)) 18px 18px;background:linear-gradient(180deg,#BFE6F2,#E7F5F4);position:relative;overflow:hidden}
+.hero h1{margin:0;font-size:26px;font-weight:900;letter-spacing:1px}
+.hero p{margin:4px 0 0;color:var(--muted);font-size:13.5px;max-width:66%}
+.hero img{position:absolute;right:12px;bottom:6px;width:92px}
+.sys{display:flex;gap:14px;align-items:center;padding:16px;margin:0 0 12px;border-radius:18px;background:var(--card);border:1px solid var(--line);text-decoration:none;color:var(--ink);box-shadow:0 3px 0 rgba(0,0,0,.04)}
+.sys:active{transform:translateY(2px)}
+.sys .ic{flex:0 0 56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px}
+.sys b{display:block;font-size:17px}.sys small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+.sys .go{margin-left:auto;color:var(--muted);font-size:22px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:-4px 0 12px}
+.split a{min-height:46px}
+</style>
+</head>
+<body>
+<header class="hero">
+  <h1>小鳶來港</h1>
+  <p>東三東四・官方 LINE 會員服務（原型）</p>
+  <img src="../travel/assets/kite_wave.png" alt="">
+</header>
+<main class="wrap">
+  <a class="sys" href="../line/"><span class="ic" style="background:#DDF5E5">💬</span><span><b>客戶官方 LINE</b><small>集點卡、掃描集點、兌換贈品、玩遊戲</small></span><span class="go">›</span></a>
+  <a class="sys" href="../store/?m=store"><span class="ic" style="background:#FCE8D9">🧾</span><span><b>店家消費集點</b><small>輸入消費金額，出 QR 給客人集點</small></span><span class="go">›</span></a>
+  <a class="sys" href="../store/?m=desk"><span class="ic" style="background:#FFF1CC">🎁</span><span><b>服務台贈品兌換</b><small>掃客人的兌換 QR，確認發放贈品</small></span><span class="go">›</span></a>
+  <a class="sys" href="../admin/"><span class="ic" style="background:#E3E9F7">⚙️</span><span><b>後台管理</b><small>點數規則、活動、贈品、店家、統計</small></span><span class="go">›</span></a>
+  <div class="card">
+    <h2>怎麼在一支手機上測試</h2>
+    <p class="muted" style="margin:0">1. 進「店家消費集點」輸入金額產生 QR，按「複製代碼」。<br>2. 進「客戶官方 LINE」→ 掃描集點 → 手動輸入，貼上代碼就會入點。<br>3. 兩支手機測試：一支開店家、一支開客戶 LINE，直接用相機掃。</p>
+    <p class="note" id="note"></p>
+  </div>
+  <a class="btn alt full" href="../hub/">舊版測試首頁（遊戲入口）</a>
+</main>
+<script src="../shared/kite_core.js"></script>
+<script>document.getElementById('note').textContent = '提醒：' + KiteCore.cfg().notice;</script>
+</body>
+</html>

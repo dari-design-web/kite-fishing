@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>小鳶來港・店家集點／服務台兌換</title>
+<link rel="stylesheet" href="../shared/sys.css">
+<style>
+.net{font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;background:#DDF5E5;color:#167A3E}.net.off{background:#F8DCD6;color:var(--red)}
+.amt{font-size:42px;font-weight:900;text-align:right;padding:10px 6px;border-bottom:2px solid var(--line);min-height:68px}
+.amt small{font-size:16px;color:var(--muted);margin-right:4px}
+.gets{text-align:right;color:var(--teal);font-weight:800;margin:6px 4px 10px;min-height:22px}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pad button{min-height:58px;border:1px solid var(--line);border-radius:14px;background:#fff;font-size:24px;font-weight:800}
+.pad button:active{background:#E9F2F1}
+.pad .c{color:var(--red);font-size:18px}
+.qrCard{text-align:center}.qrCard .big{margin:6px 0 0}
+.count{font-weight:800;color:var(--orange)}
+.choose a{margin:0 0 12px}
+.res{border:2px solid var(--teal)}.res.bad{border-color:var(--red)}
+</style>
+</head>
+<body>
+<header class="top"><a href="../portal/">‹ 主頁</a><h1 id="title">店家集點／贈品兌換</h1><span class="net" id="net">有網路</span></header>
+<main class="wrap" id="app"></main>
+<div class="toast" id="toast"></div>
+<script src="../shared/vendor/qrcode.js"></script>
+<script src="../shared/vendor/jsQR.js"></script>
+<script src="../shared/kite_core.js"></script>
+<script src="../shared/kite_scan.js"></script>
+<script>
+/* 店家消費集點＋服務台贈品兌換（工作單 23，D71）。同一個入口，進來選要做哪一個。
+   店家沒網路也能用：QR 在這台裝置上算好（含防偽簽章、一次性編號、10 分鐘有效），客人手機自己驗證入點；有網路時再補上傳（待接雲端）。 */
+(function () {
+  var $ = function (id) { return document.getElementById(id); }, app = $('app'), K = KiteCore;
+  var mode = new URLSearchParams(location.search).get('m') || '', SK = 'kiteStoreSession1', scanner = null, timer = 0;
+  function toast(t) { var e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(function () { e.style.display = 'none'; }, 2200); }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function net() { var n = $('net'); n.textContent = navigator.onLine ? '有網路' : '離線中（照樣可以集點）'; n.classList.toggle('off', !navigator.onLine); }
+  addEventListener('online', net); addEventListener('offline', net); net();
+  function sess() { try { return JSON.parse(sessionStorage.getItem(SK) || 'null'); } catch (e) { return null; } }
+  function setSess(o) { try { sessionStorage.setItem(SK, JSON.stringify(o)); } catch (e) {} }
+  function stopAll() { clearInterval(timer); if (scanner) { scanner.stop(); scanner = null; } }
+  function t2(t) { var d = new Date(t); return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+
+  function choose() {
+    stopAll(); $('title').textContent = '店家集點／贈品兌換';
+    app.innerHTML = '<div class="choose"><a class="btn full" href="?m=store" style="min-height:64px;font-size:18px">🧾 店家消費集點</a><a class="btn warn full" href="?m=desk" style="min-height:64px;font-size:18px">🎁 服務台贈品兌換</a></div>' +
+      '<p class="note">建議：每家店用一支手機或平板，打開這個網頁、加到主畫面就能用，不用另外裝 App。</p>';
+  }
+
+  /* ====== 店家 ====== */
+  function storeLogin() {
+    stopAll(); $('title').textContent = '店家消費集點'; var c = K.cfg();
+    app.innerHTML = '<div class="card"><h2>店家登入</h2><label class="f">店家<select id="st">' + c.stores.filter(function (s) { return s.on !== false; }).map(function (s) { return '<option value="' + s.id + '">' + esc(s.name) + '</option>'; }).join('') + '</select></label>' +
+      '<label class="f">店家密碼（4 碼）<input id="pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off"></label><button class="btn full" id="go">登入</button>' +
+      '<p class="note">測試用密碼：一樓咖啡 1111、港邊小吃 2222、文創選物 3333（後台可改）。</p></div>';
+    $('go').onclick = function () { var s = K.storeById($('st').value); if (s && $('pin').value === s.pin) { setSess({ store: s.id }); storeHome(); } else toast('密碼不對'); };
+  }
+  var amount = '';
+  function storeHome() {
+    stopAll(); var se = sess(), s = se && K.storeById(se.store); if (!s) return storeLogin(); $('title').textContent = s.name; amount = '';
+    var c = K.cfg();
+    app.innerHTML = '<div class="card"><div class="muted">輸入消費金額（每 ' + c.spendPerPoint + ' 元 1 點）</div><div class="amt" id="amt"><small>NT$</small>0</div><div class="gets" id="gets"></div>' +
+      '<div class="pad">' + ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map(function (k) { return '<button type="button" data-k="' + k + '"' + (k === 'C' ? ' class="c"' : '') + '>' + k + '</button>'; }).join('') + '</div>' +
+      '<button class="btn full" id="mk" style="margin-top:12px;min-height:56px;font-size:18px" disabled>產生集點 QR</button></div>' +
+      '<div class="card"><h2>這台最近發出的</h2><ul class="list" id="recent"></ul><p class="note" id="sync"></p></div>' +
+      '<button class="btn alt full" id="out">登出</button>';
+    app.querySelectorAll('.pad button').forEach(function (b) { b.onclick = function () { var k = b.dataset.k; if (k === 'C') amount = ''; else if (k === '⌫') amount = amount.slice(0, -1); else if (amount.length < 6) amount = (amount + k).replace(/^0+/, ''); showAmt(); }; });
+    $('mk').onclick = function () { var a = +amount; if (!a) return; var r = K.makeEarnCode(s.id, a); storeQR(s, a, r); };
+    $('out').onclick = function () { setSess(null); storeLogin(); };
+    renderRecent(s);
+  }
+  function showAmt() { var a = +amount || 0, p = K.pointsForSpend(a); $('amt').innerHTML = '<small>NT$</small>' + a.toLocaleString(); $('gets').textContent = a ? '客人可得 ' + p + ' 點' + (p === 0 ? '（未滿 ' + K.cfg().spendPerPoint + ' 元）' : '') : ''; $('mk').disabled = !a || !p; }
+  function renderRecent(s) {
+    var log = K.storeLog().filter(function (x) { return x.store === s.id; }), today = K.dayKey();
+    var tl = log.filter(function (x) { return K.dayKey(x.t) === today; }), sum = tl.reduce(function (a, x) { return a + x.amount; }, 0), pts = tl.reduce(function (a, x) { return a + x.pts; }, 0);
+    $('recent').innerHTML = log.slice(0, 6).map(function (x) { return '<li><span class="grow"><b>NT$ ' + x.amount.toLocaleString() + '・' + x.pts + ' 點</b><span class="muted">' + t2(x.t) + '・編號 ' + x.nonce + '</span></span></li>'; }).join('') || '<li class="muted">還沒有</li>';
+    $('sync').textContent = '今天 ' + tl.length + ' 筆、消費 NT$ ' + sum.toLocaleString() + '、發出 ' + pts + ' 點。上傳雲端：待接（原型先存在這台）。';
+  }
+  function storeQR(s, a, r) {
+    stopAll(); var c = K.cfg(), end = Date.now() + c.qrExpireMin * 60000;
+    app.innerHTML = '<div class="card qrCard"><div class="muted">' + esc(s.name) + '</div><div class="big">NT$ ' + a.toLocaleString() + '</div><div style="font-weight:800;color:var(--teal)">客人可得 ' + r.pts + ' 點</div>' +
+      '<div class="qrBox" id="qr" style="margin:12px 0"></div><div>請客人用「小鳶來港」官方 LINE 的 <b>📷 掃描集點</b> 掃這個 QR</div><div class="muted" style="margin-top:6px">有效時間還剩 <span class="count" id="cd"></span>・只能用一次</div></div>' +
+      '<div class="row"><button class="btn alt" id="cp">複製代碼</button><button class="btn" id="nx">下一位</button></div><p class="note">沒有網路也能掃：這個 QR 自己帶防偽簽章，客人手機會自己驗證。</p>';
+    KiteScan.drawQR($('qr'), r.code, Math.min(260, innerWidth - 90));
+    $('cp').onclick = function () { (navigator.clipboard ? navigator.clipboard.writeText(r.code) : Promise.reject()).then(function () { toast('已複製代碼'); }, function () { prompt('長按複製代碼', r.code); }); };
+    $('nx').onclick = storeHome;
+    var tick = function () { var left = Math.max(0, end - Date.now()), m = Math.floor(left / 60000), sec = Math.floor(left / 1000) % 60; $('cd').textContent = m + ' 分 ' + String(sec).padStart(2, '0') + ' 秒'; if (!left) { clearInterval(timer); $('qr').style.opacity = .2; $('cd').textContent = '已過期，請重新產生'; } };
+    tick(); timer = setInterval(tick, 1000);
+  }
+
+  /* ====== 服務台 ====== */
+  function deskLogin() {
+    stopAll(); $('title').textContent = '服務台贈品兌換';
+    app.innerHTML = '<div class="card"><h2>服務台登入</h2><label class="f">服務台人員（填名字，會記在發放紀錄）<input id="who" autocomplete="off" placeholder="例如：小美"></label><label class="f">服務台密碼<input id="pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off"></label><button class="btn warn full" id="go">登入</button><p class="note">測試用密碼 0000（後台可改）。</p></div>';
+    $('go').onclick = function () { if ($('pin').value === K.cfg().deskPin) { setSess({ desk: true, who: $('who').value.trim() || '服務台' }); deskHome(); } else toast('密碼不對'); };
+  }
+  function deskHome() {
+    stopAll(); var se = sess(); if (!se || !se.desk) return deskLogin(); $('title').textContent = '服務台・' + se.who;
+    app.innerHTML = '<div class="card"><h2>掃客人的兌換 QR</h2><div class="scanBox" id="scan"></div><p class="muted" id="smsg" style="margin:8px 0 0"></p>' +
+      '<details style="margin-top:8px"><summary class="muted">手動輸入代碼</summary><textarea id="manual" rows="3" style="width:100%;margin-top:6px;border:1px solid var(--line);border-radius:12px;padding:8px"></textarea><button class="btn alt full" id="chk">查詢</button></details></div>' +
+      '<div id="res"></div><div class="card"><h2>今天發出的</h2><ul class="list" id="today"></ul></div><div class="card"><h2>贈品庫存</h2><ul class="list" id="stock"></ul></div><button class="btn alt full" id="out">登出</button>';
+    scanner = new KiteScan.Scanner($('scan'), function (code) { check(code); }, function (m) { $('smsg').textContent = m; }); scanner.start();
+    $('chk').onclick = function () { check($('manual').value); };
+    $('out').onclick = function () { setSess(null); deskLogin(); };
+    renderDesk();
+  }
+  function check(code) {
+    var r = K.deskCheck(code), box = $('res');
+    if (!r.ok) { box.innerHTML = '<div class="card res bad"><h2>⚠️ 不能發放</h2><p style="margin:0">' + esc(r.msg) + '</p><button class="btn alt full" id="again" style="margin-top:10px">繼續掃</button></div>'; }
+    else box.innerHTML = '<div class="card res"><h2>🎁 ' + esc(r.prize.name) + '</h2><p style="margin:0">兌換碼 <b>' + r.rcode + '</b>・會員 ' + esc(r.member) + '・已扣 ' + r.pts + ' 點</p><p class="muted" style="margin:4px 0 10px">客人產生時間 ' + t2(r.t) + (r.late ? ' <span class="pill o">超過 ' + K.cfg().redeemExpireMin + ' 分鐘，請確認是本人</span>' : '') + '・庫存剩 ' + r.stock + '</p>' +
+      '<div class="row"><button class="btn alt" id="again">取消</button><button class="btn warn" id="give"' + (r.stock <= 0 ? ' disabled' : '') + '>確認發放</button></div></div>';
+    box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $('again').onclick = function () { box.innerHTML = ''; if (scanner) scanner.reset(); };
+    if ($('give')) $('give').onclick = function () { var g = K.deskGive(code, sess().who); if (g.ok) { toast('已發放：' + g.prize.name); box.innerHTML = ''; if (scanner) scanner.reset(); renderDesk(); } else toast(g.msg); };
+  }
+  function renderDesk() {
+    var today = K.dayKey(), log = K.deskLog().filter(function (x) { return K.dayKey(x.t) === today; });
+    $('today').innerHTML = log.slice(0, 20).map(function (x) { return '<li><span class="grow"><b>' + esc(x.prizeName) + '</b><span class="muted">' + t2(x.t) + '・' + x.rcode + '・' + esc(x.staff) + '</span></span></li>'; }).join('') || '<li class="muted">今天還沒有</li>';
+    $('stock').innerHTML = K.cfg().prizes.map(function (p) { var l = K.stockLeft(p.id); return '<li><span class="grow"><b>' + esc(p.name) + '</b><span class="muted">' + p.points + ' 點</span></span><span class="pill' + (l <= 5 ? ' r' : '') + '">剩 ' + l + '</span></li>'; }).join('');
+  }
+
+  if (mode === 'store') { var s0 = sess(); if (s0 && s0.store) storeHome(); else storeLogin(); }
+  else if (mode === 'desk') { var d0 = sess(); if (d0 && d0.desk) deskHome(); else deskLogin(); }
+  else choose();
+  window.__store = { storeHome: storeHome, deskHome: deskHome };
+})();
+</script>
+</body>
+</html>
