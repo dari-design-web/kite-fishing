@@ -225,7 +225,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
       <a class="flag" data-href="travel/?fast=1&amp;v1=1">旅行對照舊圖</a>
       <a class="flag" data-href="stamp/?spot=1">模擬掃第 1 點</a>
       <a class="flag" data-href="stamp/print.html">蓋章 QR 立牌版面</a>
-      <a class="flag" data-href="meet/">港口朋友（現場充氣角色彩蛋）</a>
+      <a class="flag" data-href="stamp/?spot=3">港灣蓋章散步＋港口朋友（D83 合一：掃站上 QR 先遇到朋友再蓋章）</a>
     </div>
   </details>
 
@@ -365,7 +365,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
     if (t.state === 'away') { var left = t.trip && t.trip.end ? Math.ceil((t.trip.end - Date.now()) / 60000) : 0, lt = left <= 0 ? '' : left < 60 ? '大約再 ' + left + ' 分鐘就到家，' : '大約再 ' + Math.floor(left / 60) + ' 小時' + (left % 60 ? ' ' + (left % 60) + ' 分' : '') + '到家，';
       return [hi + '我出門旅行中，' + (lt ? lt + '會帶明信片給你～' : '回來會寄明信片給你～') + '先去抓點魚吧！', '', '去抓魚', 'fish']; }
     var fr = read('kiteFriends1') || {}, nf = Object.keys(fr).length;      // v58（C-125）：在現場遇過港口朋友，就提醒還有幾位沒見到
-    if (nf > 0 && nf < 6) return ['館內還有 ' + (6 - nf) + ' 位大大的港口朋友，掃牠們旁邊的 QR 打招呼！', 'meet/', '看朋友', ''];
+    if (nf > 0 && nf < 6) return ['館內還有 ' + (6 - nf) + ' 位港口朋友住在蓋章站，去找牠們、順便蓋章！', 'stamp/', '看護照', ''];
     if (ns < 6) return ['港口還有 ' + (6 - ns) + ' 個章等你來蓋，找找現場的立牌！', 'stamp/', '看護照', 'stamp'];
     return [hi + '你已經是港灣探險家了！今天想玩什麼？', '', '', ''];
   }
