@@ -178,6 +178,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
   </div>
 </div>
 
+<script src="shared/kite_core.js"></script>
 <script>
 /* ===== 暫用配樂（C-70）：用程式即時產生，不用音檔、沒有版權問題。正式配樂來源待 Dari 決定 ===== */
 /* BGM-START｜配樂 v3（C-87，Dari 10/13 09:39：主動加強畫面、配樂、動畫）
@@ -378,7 +379,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.27',
+  version: '0.28',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -956,6 +957,9 @@ function finish() { BGM.stop();
     else if (old !== undefined && old > 0 && gap > 0 && gap <= old * 0.2) { rn.hidden = false; rn.textContent = '只差 ' + PTS(gap) + ' 分就破紀錄！'; ab.textContent = '再一局，破紀錄！'; }
     else rn.hidden = true; }
   add(SES().name + '場最佳', PTS(prog.best[sid]) + ' 分' + (old !== undefined && kg > old ? '　新紀錄' : ''));
+  /* v0.28（C-185，D71）：把這局分數送進官方 LINE 的「遊戲分數存摺」（每關每天前幾次才算、活動時段乘倍數；規則在後台改）。沒有載入共用資料層時（G 槽複本）就跳過 */
+  if (window.KiteCore) { try { const rp = KiteCore.reportPlay({ game: 'fish', level: sid, score: PTS(kg), sec: t });
+    add('官方 LINE 分數存摺', rp.counted ? '+' + rp.add + ' 分' + (rp.mult > 1 ? '（' + rp.event + ' ×' + rp.mult + '）' : '') + '・存摺 ' + rp.bank + ' 分' : '今天這場已經算過分了（明天再來）'); } catch (e) {} }
   /* v0.24（C-162）：結算多一行「今天」——這支手機今天玩了幾局、一共抓了幾條（只記在這支手機；過了午夜重新算） */
   { const d = new Date(), day = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(), td = prog.today && prog.today.d === day ? prog.today : { d: day, g: 0, n: 0 };
     td.g++; td.n += stats.hits || 0; prog.today = td; saveProg();
