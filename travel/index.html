@@ -308,7 +308,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.29',
+  version: '0.30',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -804,8 +804,10 @@ function openLetter() {
   L.innerHTML = '<button class="skip" id="skipL">略過 ››</button><div class="env" id="envL"><img class="closed" src="assets/letter_env.png" alt=""><img class="opened" src="assets/letter_open.png" alt=""><img class="seal" src="assets/letter_seal.png" alt=""></div><p class="tapme" id="tapme">點一下打開信封</p>';
   document.body.appendChild(L);
   const queue = tr.got.map((i) => ({ i })).concat(tr.limited ? [{ lim: LIMITED.find((x) => x.id === tr.limited) }] : []);
-  const extras = []; if (tr.stamps) extras.push('重複的明信片換成 ' + tr.stamps + ' 枚小鳶郵票'); if (tr.souvenir) extras.push('還帶回了紀念品：' + l.souvenir); if (tr.friend) extras.push('在' + l.name + '遇到了 ' + tr.friend + '！'); const pl = palLine(); if (pl) extras.push(pl);
-  const finish = () => { const news = commitTrip(); L.remove(); if (S.titles && Object.keys(S.titles).length) {} go('home'); toast(news.length ? '收進收藏冊了！' : '小鳶回來了'); };
+  /* v0.30（C-177）：信的最後多一句「這是小鳶寄給你的第 N 封信」，第 5、10、20、30 封加一句特別的話（只記封數 S.letters；文字是建議） */
+  const nL = (S.letters || 0) + 1, LM = { 5: '已經第 5 封了，謝謝你一直幫我準備便當！', 10: '第 10 封！你的收藏冊越來越厚了～', 20: '第 20 封！我們一起去過好多地方喔！', 30: '第 30 封！你是小鳶最好的旅伴！' };
+  const extras = ['💌 這是小鳶寄給你的第 ' + nL + ' 封信' + (LM[nL] ? '——' + LM[nL] : '')]; if (tr.stamps) extras.push('重複的明信片換成 ' + tr.stamps + ' 枚小鳶郵票'); if (tr.souvenir) extras.push('還帶回了紀念品：' + l.souvenir); if (tr.friend) extras.push('在' + l.name + '遇到了 ' + tr.friend + '！'); const pl = palLine(); if (pl) extras.push(pl);
+  const finish = () => { S.letters = nL; const news = commitTrip(); L.remove(); if (S.titles && Object.keys(S.titles).length) {} go('home'); toast(news.length ? '收進收藏冊了！' : '小鳶回來了'); };
   $('skipL').onclick = finish;
   let step = 0;
   const showCard = () => {
