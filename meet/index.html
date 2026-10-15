@@ -22,6 +22,9 @@ header .t{flex:1;text-align:right;font-size:12px;font-weight:700;color:#1F5A5F}
 .night .hello{color:#FFF4C2;text-shadow:0 2px 0 #1B2A4A}
 .hello small{display:block;font-size:13px;font-weight:700;letter-spacing:0;color:#1F5A5F;text-shadow:none}
 .night .hello small{color:#DCE8F5}
+.who.boing{animation:boing .45s ease-out}
+@keyframes boing{30%{transform:scale(1.08,.92)}60%{transform:scale(.96,1.05)}}
+.bubble .tk{color:#C2410C}
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1}}
 .who{position:relative;width:78%;max-width:320px;margin-bottom:20px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .who img{display:block;width:100%;height:auto;filter:drop-shadow(0 10px 10px rgba(0,0,0,.2))}
@@ -96,7 +99,7 @@ header a{padding:7px 12px}
 </head>
 <body>
 <main class="phone" id="app">
-  <header><a href="../hub/">‹ 首頁</a><span class="t">港口朋友・原型 v0.8・角色暫用</span></header>
+  <header><a href="../hub/">‹ 首頁</a><span class="t">港口朋友・原型 v0.9・角色暫用</span></header>
   <div class="stage" id="stage"></div>
   <section class="panel" id="panel"></section>
 </main>
@@ -191,7 +194,17 @@ header a{padding:7px 12px}
     for (var i = 0; i < 5; i++) setTimeout(function () { heart(r.left - a.left + r.width * (0.2 + Math.random() * 0.6), r.top - a.top + r.height * 0.3); }, i * 120);
   }
   nx.onclick = function () { chime(1); if (k < lines.length - 1) { k++; show(); return; } finish(); };
-  document.getElementById('who').onclick = function (e) { var a = app.getBoundingClientRect(); heart(e.clientX - a.left - 12, e.clientY - a.top - 20); chime(1); };
+  /* v0.9（C-178）：點朋友會彈一下；連點 5 下，朋友說一句被搔癢的話（每位不同，1.8 秒後回到原本的對話；文字是建議） */
+  var TICKLE = { 1: '哈哈哈，好癢！不要一直戳我的頭啦～', 2: '嗯……誰在戳我？讓我再睡五分鐘嘛……', 3: '嘿嘿，我的背包裡沒有零食啦！', 4: '呵呵，你戳到我的白點點了，好癢喔！', 5: '慢慢來～海龜不怕癢，可是會害羞……', 6: '咻咻！被你戳到，我要發光了！' };
+  var taps = 0, tkT = 0, who = document.getElementById('who');
+  who.onclick = function (e) {
+    var a = app.getBoundingClientRect(); heart(e.clientX - a.left - 12, e.clientY - a.top - 20); chime(1);
+    who.classList.remove('boing'); void who.offsetWidth; who.classList.add('boing');
+    taps++; if (taps % 5 !== 0) return;
+    var keep = bb.innerHTML; clearTimeout(tkT); chime(3);
+    bb.innerHTML = '<b>' + F.name + '</b><span class="tk">' + TICKLE[F.id] + '</span>';
+    tkT = setTimeout(function () { if (bb.querySelector('.tk')) bb.innerHTML = keep; }, 1800);
+  };
   show();
   window.__meet = { finish: finish, friends: FRIENDS };
 })();
