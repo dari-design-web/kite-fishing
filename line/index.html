@@ -422,10 +422,17 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
   };
   R.mine = function () {
     var rs = K.member().redeems;
-    $('sbody').innerHTML = '<div class="card"><ul class="list">' + (rs.map(function (r, i) { return '<li><img src="' + K.prizeImg(r.prize) + '" alt="" style="width:44px;height:44px;border-radius:10px;object-fit:cover;background:#F4EEE2"><span class="grow"><b>' + esc(r.name) + '</b><span class="muted">' + t2(r.t) + '・' + r.id + '・' + r.pts + ' 點</span></span>' + (r.status === 'done' ? '<span class="pill g">已領取</span>' : r.status === 'cancel' || r.status === 'expired' ? '<span class="pill r">' + (r.status === 'expired' ? '已逾期（已退點）' : '已取消') + '</span>' : '<button class="btn warn" data-i="' + i + '">出示 QR</button>') + '</li>'; }).join('') || '<li class="muted">還沒有兌換，去「港口換禮」看看吧</li>') + '</ul></div><p class="note">原型：服務台在別支手機發放時，這裡要等接上雲端才會自動變「已領取」。</p>';
+    $('sbody').innerHTML = '<div class="card"><ul class="list">' + (rs.map(function (r, i) { return '<li><img src="' + K.prizeImg(r.prize) + '" alt="" style="width:44px;height:44px;border-radius:10px;object-fit:cover;background:#F4EEE2"><span class="grow"><b>' + esc(r.name) + '</b><span class="muted">' + t2(r.t) + '・' + r.id + '・' + r.pts + ' 點</span></span>' + (r.status === 'done' ? '<span class="pill g">已領取</span>' : r.status === 'cancel' || r.status === 'expired' ? '<span class="pill r">' + (r.status === 'expired' ? '已逾期（已退點）' : '已取消') + '</span>' : '<button class="btn warn" data-i="' + i + '">出示 QR</button>') + '</li>'; }).join('') || '<li class="muted">還沒有兌換，去「港口換禮」看看吧</li>') + '</ul></div><p class="note">原型：服務台在別支手機發放時，這裡要等接上雲端才會自動變「已領取」。</p>' + mineBento();
     $('sbody').querySelectorAll('[data-i]').forEach(function (b) { b.onclick = function () { go('ticket', rs[+b.dataset.i].id); }; });
+    $('sbody').querySelectorAll('[data-open]').forEach(function (a) { a.onclick = function (e) { e.preventDefault(); go(a.dataset.open, a.dataset.arg); }; });
     Array.prototype.slice.call($('sbody').querySelectorAll('.list > li')).forEach(function (li, i) { if (rs[i]) li.insertAdjacentHTML('afterend', steps(rs[i])); });
   };
+  /* C-207：我的兌換也列出便當（虛擬商品，直接進便當盒，不用到服務台） */
+  function mineBento() {
+    var L = (K.member().ledger || []).filter(function (e) { return e.type === 'redeem' && e.virtual; }).slice(0, 30);
+    return '<h3 style="margin:16px 4px 8px;font-size:15px">🍱 便當兌換</h3><div class="card"><ul class="list">' + (L.map(function (e) { return '<li><img src="../travel/assets/bento_' + esc(e.bento) + '.png" alt="" style="width:44px;height:44px;border-radius:10px;object-fit:contain;background:#FFF4DC"><span class="grow"><b>' + esc(e.prizeName || '便當') + '</b><span class="muted">' + t2(e.t) + '・' + (-e.pts) + ' 點</span></span><span class="pill g">已放進便當盒</span></li>'; }).join('') || '<li class="muted">還沒有換過便當</li>') + '</ul></div>' +
+      (L.length ? '<a class="btn alt full" style="margin-top:10px" href="../travel/index.html?from=line">去「小鳶去旅行」打開便當盒 ›</a>' : '<button class="btn alt full" style="margin-top:10px" data-open="shop" data-arg="bento">去港口換禮看便當 ›</button>');
+  }
   /* C-192：兌換單進度（扣點保留 → 待領取 → 已領取；取消／逾期 → 本機測試已退點） */
   function steps(r) {
     var hd = K.cfg().redeemHoldDays, dl = hd ? t2(r.t + hd * 86400000) : '';
