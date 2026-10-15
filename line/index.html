@@ -272,6 +272,8 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
     var sp = Object.keys(st.spots || {}).length; o.stamp = { n: sp, max: 6, label: '印章 ' + sp + '／6' + (st.complete ? '・已集滿' : ''), extra: [] };
     o.photo = { n: Math.min(ph.n || 0, 10), max: 10, label: '合照 ' + (ph.n || 0) + ' 張', extra: [] };
     var nf = Object.keys(fr).length; o.meet = { n: nf, max: 6, label: '港口朋友 ' + nf + '／6', extra: [] };
+    var has = { fish: !!(rd('kiteFishingProg1') || rd('kiteFishingDex2')), fly: !!rd('kiteFlyProgress1'), travel: !!rd('kiteTravel1'), stamp: !!rd('kiteStamp1'), photo: !!rd('kitePhoto1'), meet: !!rd('kiteFriends1') };
+    Object.keys(o).forEach(function (k) { if (!has[k]) { o[k].label = '這個瀏覽器尚無紀錄'; o[k].extra = []; } });      // ChatGPT 意見：沒資料不等於沒玩過（可能在別的手機玩）
     return o;
   }
   R.mygames = function () {
