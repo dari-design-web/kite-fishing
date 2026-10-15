@@ -112,6 +112,8 @@ header h1{font-size:20px;margin:0;flex:1}
 .stats span{font-size:12px;background:var(--card);border:1.5px solid var(--line);border-radius:999px;padding:3px 10px}
 /* 打包 */
 .slots{display:flex;gap:10px;margin:6px 16px 12px}
+.slot.pop{animation:slotpop .45s cubic-bezier(.3,1.6,.5,1)}
+@keyframes slotpop{0%{transform:scale(.8)}60%{transform:scale(1.08)}100%{transform:none}}      /* v0.31（C-182） */
 .slot{flex:1;height:96px;border:2px dashed var(--line);border-radius:14px;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:13px;text-align:center;padding:4px}
 .slot.filled{border-style:solid;border-color:var(--teal)}
 .slot b{font-size:12px;color:var(--muted);font-weight:400}
@@ -308,7 +310,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.30',
+  version: '0.31',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 3, autoOpenTrips: 10, stampsToPick: 5,
@@ -704,13 +706,16 @@ function bentoIcon(k) {
   return '<img class="ic" src="assets/bento_' + k + '.png" alt="">';      // 五種便當：ChatGPT G-39
 }
 function itemIcon(k) { return '<img class="ic" src="assets/item_' + k + '.png" alt="">'; }
+/* v0.31（C-182）：打包時放進一樣東西，那一格會彈一下，小鳶說一句對這個便當／道具的反應（拿掉不說；文字是建議） */
+const PACK_SAY = { walk: '散步！我去附近繞一圈就回來～', rice: '港邊飯糰，簡單又好吃！', far: '遠行便當！這次可以飛好遠～', squid: '哇，小卷便當！我最愛吃了！', hair: '白帶魚便當，閃閃發亮的！', special: '特製便當！這趟一定很特別～', camera: '帶相機，我會多拍一張明信片給你！', telescope: '望遠鏡！說不定會看到老朋友～', umbrella: '帶雨傘，下雨也不怕！' };
+function packSay(slot, line) { const s = $(slot); if (s) { s.classList.remove('pop'); void s.offsetWidth; s.classList.add('pop'); } if (line) toast('小鳶：' + line); }
 function renderPack() {
   if (S.state !== 'home' || !S.firstDone) { go('home'); return; }
   const bl = $('bentoList'); bl.innerHTML = '';
   for (const k of ['walk', 'rice', 'far', 'squid', 'hair', 'special']) {
     const b = CFG.bentos[k], n = bentoCount(k), btn = document.createElement('button'); btn.className = 'opt'; btn.type = 'button'; btn.setAttribute('aria-pressed', String(pk.bento === k)); btn.disabled = n <= 0;
     btn.innerHTML = bentoIcon(k) + '<span class="tx">' + b.name + '<small>' + b.note + '｜' + (k === 'walk' ? '只到東三東四' : '去' + b.dists.map((d) => DIST_NAME[d]).join('、') + '的地方') + '｜' + (b.hours < 1 ? b.hours * 60 + ' 分鐘' : b.hours + ' 小時') + '</small></span><span class="n">' + (k === 'walk' ? '' : '×' + n) + '</span>';
-    btn.onclick = () => { pk.bento = pk.bento === k ? '' : k; if (k === 'walk') pk.items = []; pk.pick = ''; renderPack(); };
+    btn.onclick = () => { const add = pk.bento !== k; pk.bento = add ? k : ''; if (k === 'walk') pk.items = []; pk.pick = ''; renderPack(); if (add) packSay('slot0', PACK_SAY[k]); };
     bl.appendChild(btn);
   }
   /* v0.26（C-146）：小卷、白帶魚便當都沒有時，直接給一個「去港邊抓魚」的入口（抓到就能做便當） */
@@ -723,7 +728,7 @@ function renderPack() {
   for (const k of ['camera', 'telescope', 'umbrella']) {
     const it = CFG.items[k], has = hasItem(k), on = pk.items.includes(k), btn = document.createElement('button'); btn.className = 'opt'; btn.type = 'button'; btn.setAttribute('aria-pressed', String(on)); btn.disabled = !has || pk.bento === 'walk';
     btn.innerHTML = itemIcon(k) + '<span class="tx">' + it.name + '<small>' + (has ? it.note : '還沒有：' + it.how) + '</small></span>';
-    btn.onclick = () => { if (on) pk.items = pk.items.filter((x) => x !== k); else if (pk.items.length < 2) pk.items.push(k); else toast('道具最多帶兩件'); renderPack(); };
+    btn.onclick = () => { let add = false; if (on) pk.items = pk.items.filter((x) => x !== k); else if (pk.items.length < 2) { pk.items.push(k); add = true; } else toast('道具最多帶兩件'); renderPack(); if (add) packSay('slot' + pk.items.length, PACK_SAY[k]); };
     il.appendChild(btn);
   }
   // 背包三格
