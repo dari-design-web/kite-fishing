@@ -210,6 +210,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
   function hello() {
     var m = K.member(), c = $('chat'), h = new Date().getHours(); c.innerHTML = '<div class="day">今天</div>';
     say((h < 11 ? '早安' : h < 17 ? '午安' : '晚上好') + (m.name ? '，' + esc(m.name) : '') + '！我是小鳶 🪶 歡迎來到東三東四～');
+    if (m.status === 'frozen') say('⚠️ 你的會員帳號目前<b>暫停使用</b>，暫時不能集點和兌換。請到東三東四一樓服務台詢問。');      // D82 C4：凍結時先講清楚，不要等按了才跳錯
     var due = K.expiring(m, 30).due, wc = waitCount();
     bubble('<div class="flex"><div class="hero"><img src="../travel/assets/kite_wave.png" alt=""></div><div class="bd"><h3>我的點數</h3><div class="pts"><b>' + m.points + '</b> 點</div><p>' + (due ? '<span style="color:var(--red);font-weight:700">' + due + ' 點 30 天內到期</span>' : '消費掃碼、玩遊戲都能集點') + (wc ? '・有 ' + wc + ' 張兌換單待領取' : '') + '</p></div><div class="ft"><button class="p" data-open="shop">去港口換禮挑禮物</button><button data-open="scan">掃碼集點</button></div></div>', false, true);
     tips(m);
@@ -220,6 +221,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
 
   /* C-203：依情境的小鳶提醒（最多兩則；只看這支手機的資料） */
   function tips(m) {
+    if (m.status === 'frozen') return;      // D82 C4：凍結時不提醒去換
     var B = K.bentoState ? K.bentoState().filter(function (b) { return b.on !== false; }) : [], c = K.cfg();
     var have = B.reduce(function (a, b) { return a + (b.have || 0); }, 0), buy = B.filter(function (b) { return b.canBuy; });
     if (B.length && have === 0) say('🍱 我的便當盒空空的～' + (buy.length ? '你的點數夠換「' + esc(buy[0].name) + '」（' + buy[0].points + ' 點）喔！換好就會放進便當盒。' : '每天有一份免費港邊飯糰，也可以去港口換禮看看便當喔。') + '<br><a href="#" data-open="shop" data-arg="bento">去港口換禮看便當 ›</a>');
@@ -393,6 +395,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
   R.me = function () {
     var m = K.member(), wc = waitCount(), due = K.expiring(m, 30).due;
     $('sbody').innerHTML = '<div class="meHead"><img src="' + KITE + '" alt=""><div class="n"><b>' + esc(K.displayName(m)) + '</b><span class="muted">會員編號 ' + esc(m.id) + '</span><button class="pill" id="toProf" style="border:0;margin-top:4px">✏️ 修改名稱／聯絡方式</button></div><div class="pt"><b>' + m.points + '</b><span class="muted">點</span></div></div>' +
+      (m.status === 'frozen' ? '<div class="card" style="border-color:#F2C2B8;background:#FFF4F1;color:var(--red);font-weight:700;padding:10px 14px">⚠️ 會員帳號暫停使用中，暫時不能集點和兌換。請洽一樓服務台。</div>' : '') +
       (due ? '<div class="card" style="border-color:#F2C2B8;background:#FFF4F1;color:var(--red);font-weight:700;padding:10px 14px">⏳ 有 ' + due + ' 點將在 30 天內到期</div>' : '') +
       '<div class="meGrid"><button data-to="points"><span>🪙</span>我的點數</button><button data-to="mine"><span>🎫</span>我的兌換' + (wc ? '<i class="cnt">' + wc + '</i>' : '') + '</button><button data-to="mygames"><span>🎮</span>我的遊戲</button><button data-to="news"><span>📣</span>港口消息</button></div>' +
       '<div class="card"><ul class="list"><li><span class="grow"><b>我的資料</b><span class="muted">' + (m.email || m.phone ? esc([m.email, m.phone].filter(Boolean).join('・')) : '還沒填 email／手機（選填）') + '</span></span><button class="btn alt" id="toProf2" style="min-height:36px;padding:4px 12px">修改</button></li><li><span class="grow"><b>點數規則</b><span class="muted">消費每 ' + K.cfg().spendPerPoint + ' 元 1 點（未滿 ' + K.cfg().minSpend + ' 元不集點）・遊戲每 ' + K.cfg().scorePerPoint.toLocaleString() + ' 分 1 點</span></span></li><li><span class="grow"><b>服務台</b><span class="muted">東三東四 一樓（領贈品、補登點數）</span></span></li></ul></div>' +
