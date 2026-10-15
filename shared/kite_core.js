@@ -150,7 +150,8 @@
     var pts = +p[4], room = c.maxStorePointsPerDay - storePointsToday(m), give = Math.max(0, Math.min(pts, room));
     m.nonces.push(p[6]); m.nonces = m.nonces.slice(-500);
     addLedger(m, { type: 'store', pts: give, store: s.id, storeName: s.name, amount: +p[3], ref: p[6] }); saveMember(m);
-    return { ok: true, pts: give, expected: pts, capped: give < pts, store: s.name, amount: +p[3], total: m.points, ref: p[6] };
+    var why = give === pts ? (pts > 0 ? 'ok' : (+p[3] < c.minSpend ? 'below' : 'zero')) : give > 0 ? 'partial' : 'quota';   // 工作單24 v5：依實際原因顯示，不把 0 點一律說成額度用完
+    return { ok: true, pts: give, expected: pts, capped: give < pts, why: why, minSpend: c.minSpend, store: s.name, amount: +p[3], total: m.points, ref: p[6] };
   }
 
   /* ====== 遊戲分數 ====== */
@@ -258,7 +259,7 @@
     }
     var m = rd(K_MEM);
     if (m && m.id === o.member) { var s = storeById(cs.store) || {}; addLedger(m, { type: 'backfill', pts: cs.pts, store: cs.store, storeName: s.name, amount: cs.amount, ref: cs.ref, note: (o.type === 'recover' ? '交易恢復' : '一般補登') + '・' + (o.by || '') }); wr(K_MEM, m); cs.status = 'done'; if (o.type === 'recover') { var L = rd(K_STORE) || []; L.forEach(function (x) { if (x === tx || x.nonce === tx.nonce) x.recovered = true; }); wr(K_STORE, L); } }
-    else cs.status = 'check';      // 工作單 24 v4：會員不在這台裝置＝「待人工核對／資料未齊」，案件已儲存、尚未入帳；本機示範沒有自動傳送
+    else { cs.status = 'check'; cs.missing = '會員不在這台裝置（請核對會員編號與原交易資料）'; }      // 工作單 24 v4：會員不在這台裝置＝「待人工核對／資料未齊」，案件已儲存、尚未入帳；本機示範沒有自動傳送
     cases.unshift(cs); wr('kiteBackfill1', cases); audit((o.type === 'recover' ? '交易恢復' : '一般補登') + ' ' + cs.id + '：會員 ' + o.member + ' ' + cs.pts + ' 點（' + (o.reason || '') + '）');
     return { ok: true, case: cs };
   }
