@@ -139,7 +139,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
         <li><b>連抓</b><span>連續抓到 3 條起，每條多 20 分</span></li>
         <li><b>垃圾</b><span>抓到會暈一下，要避開</span></li>
         <li><b>鯨鯊</b><span>牠是朋友，出現時分數加倍</span></li>
-        <li><b>便當</b><span>一局抓到小卷 3 隻、白帶魚 2 條，就做成便當讓小鳶去旅行</span></li>
+        <li><b>便當</b><span>分數可以換點數；小鳶旅行的便當到官方 LINE「港口換禮」用點數換</span></li>
       </ul>
       <button class="btn" id="startBtn">開始</button>
       <p class="note">原型 v0.26：暫用素材、不發點數。進度只存在這支手機的瀏覽器</p>
@@ -383,6 +383,7 @@ const CONFIG = {
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
+  bentoByPoints: true,      // D80（10/15）：便當全部改到官方 LINE「港口換禮」用點數換；捕魚只給成績→分數存摺→換點
   bento: { squid: 3, hairtail: 2 },      // 一局抓到幾隻以上，結算時直接得到 1 份便當給小鳶去旅行（工作單 11 v4；每局每種最多 1 份）
   duration: 60,                 // 一局秒數
   W: 360, H: 640,               // 邏輯畫布尺寸
@@ -446,7 +447,7 @@ const ALL = /[?&]all=1/.test(location.search);      // 網址加 ?all=1 三場�
 const isOpen = (s) => ALL || !s.unlock || (prog.played[s.unlock] || 0) > 0;
 /* 便當：寫進小鳶去旅行的便當庫存（同一個網站、同一支手機）。去旅行還沒打開過也先存著 */
 function giveBento() {
-  const got = [];
+  const got = []; if (CONFIG.bentoByPoints) return got;
   if (stats.counts.squid >= CONFIG.bento.squid) got.push(['squid', '小卷便當', 'bento_squid']);
   if (stats.counts.hairtail >= CONFIG.bento.hairtail) got.push(['hair', '白帶魚便當', 'bento_hair']);      // 便當圖：ChatGPT G-39，和去旅行同一張
   if (!got.length) return got;
@@ -982,7 +983,7 @@ function finish() { BGM.stop();
     const a = document.createElement('a'); a.href = 'travel/'; a.textContent = '帶給小鳶 →'; bx.appendChild(a);
   }
   /* v0.22（C-148）：沒做成便當時，告訴玩家差多少（小卷 2/3、白帶魚 1/2），下一局知道要追哪種魚 */
-  if (!bg.length) { const sq = stats.counts.squid || 0, hr = stats.counts.hairtail || 0;
+  if (!bg.length && !CONFIG.bentoByPoints) { const sq = stats.counts.squid || 0, hr = stats.counts.hairtail || 0;
     if (sq > 0 || hr > 0) { bx.hidden = false; bx.classList.add('near'); const s = document.createElement('span'); s.textContent = '便當差一點：小卷 ' + sq + ' / ' + CONFIG.bento.squid + ' 隻・白帶魚 ' + hr + ' / ' + CONFIG.bento.hairtail + ' 條。下一局抓夠就能做便當給小鳶！'; bx.appendChild(s); } }
   else bx.classList.remove('near');
   stats.bento = bg.map((g) => g[0]);

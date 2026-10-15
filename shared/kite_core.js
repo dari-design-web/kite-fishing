@@ -43,6 +43,15 @@
     /* v2（工作單 24，D73）後台新增的規則 */
     expireMode: 'months',         // months＝取得後幾個月（預設，照工作單 01 v5）；days＝取得後幾天；year＝每年底歸零；never＝不過期
     redeemHoldDays: 14,           // 兌換單幾天沒領自動取消、退點並釋回保留庫存（工作單 01 v5：14 天；U-36 待 Dari）
+    /* D80（10/15）：小鳶去旅行的便當全部改用點數換（虛擬商品：直接進便當盒，不佔實體庫存、不用服務台）；散步、每天一份飯糰仍免費 */
+    bentos: [
+      { id: 'far', name: '遠行便當', points: 10, on: true, desc: '可以去近、中、遠的地方，旅行 5 小時。' },
+      { id: 'squid', name: '小卷便當', points: 15, on: true, desc: '近、中、遠都能去，3 小時就回來。' },
+      { id: 'hair', name: '白帶魚便當', points: 20, on: true, desc: '近、中、遠，5 小時，一定帶紀念品回來。' },
+      { id: 'special', name: '港邊特製便當', points: 25, on: true, desc: '唯一能去最遠的九份，8 小時，一定帶紀念品。' }
+    ],
+    bentoPerDay: 1,               // 每種便當每天最多換幾份
+    bentoHoldMax: 3,              // 便當盒裡同一種最多放幾份（滿了不能換、不扣點）
     redeemPerDay: 3,              // 每人每天最多兌換幾次
     games: {                      // 遊戲開關與防作弊
       fish: { on: true, maint: false, maxScore: 20000 },
@@ -123,6 +132,20 @@
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { ok: false, field: 'email', msg: 'Email 格式不對' };
     if (phone) { if (/^\+8869\d{8}$/.test(phone)) phone = '0' + phone.slice(4); if (!/^09\d{8}$/.test(phone)) return { ok: false, field: 'phone', msg: '手機請填 09 開頭的 10 碼' }; }
     var m = member(); m.name = nick; m.email = email; m.phone = phone; m.profileT = Date.now(); saveMember(m); return { ok: true, member: m };
+  }
+  /* ====== 小鳶便當（D80）：讀寫去旅行的 kiteTravel1.bento；扣點記在點數帳本（type redeem、virtual） ====== */
+  function travelBento() { var t = rd('kiteTravel1'); if (!t || t.v !== 1) t = { v: 1 }; t.bento = Object.assign({ far: 0, squid: 0, hair: 0, special: 0 }, t.bento || {}); return t; }
+  function bentoState() { var m = member(), d = dayKey(), tb = travelBento().bento, c = cfg(); return (c.bentos || []).map(function (b) { var today = m.ledger.filter(function (e) { return e.type === 'redeem' && e.bento === b.id && dayKey(e.t) === d; }).length; return Object.assign({}, b, { have: tb[b.id] || 0, today: today, canBuy: b.on !== false && today < c.bentoPerDay && (tb[b.id] || 0) < c.bentoHoldMax && m.points >= b.points }); }); }
+  function redeemBento(id) {
+    var c = cfg(), b = (c.bentos || []).filter(function (x) { return x.id === id; })[0], m = member(); if (!b || b.on === false) return { ok: false, msg: '這個便當目前不能換' };
+    if (m.status === 'frozen') return { ok: false, msg: '這個會員帳號暫停使用，請洽服務台' };
+    var t = travelBento(), d = dayKey(); if ((t.bento[id] || 0) >= c.bentoHoldMax) return { ok: false, msg: '便當盒裡的' + b.name + '已經有 ' + c.bentoHoldMax + ' 份，先讓小鳶帶出門吧（沒有扣點）' };
+    if (m.ledger.filter(function (e) { return e.type === 'redeem' && e.bento === id && dayKey(e.t) === d; }).length >= c.bentoPerDay) return { ok: false, msg: b.name + '今天已經換過了，明天再來' };
+    if (m.points < b.points) return { ok: false, msg: '點數不夠，還差 ' + (b.points - m.points) + ' 點' };
+    var ref = 'BT' + rid(6); t.bento[id] = (t.bento[id] || 0) + 1; t.bentoBought = (t.bentoBought || 0) + 1;
+    if (!wr('kiteTravel1', t)) return { ok: false, msg: '這支手機存不下，請稍後再試（沒有扣點）' };
+    addLedger(m, { type: 'redeem', virtual: true, bento: id, pts: -b.points, prizeName: b.name, ref: ref }); saveMember(m);
+    return { ok: true, name: b.name, pts: b.points, have: t.bento[id], total: m.points, ref: ref };
   }
   function displayName(m) { m = m || member(); return m.name || '會員 ' + m.id; }
   function addLedger(m, e) { e.t = e.t || Date.now(); e.rv = e.rv || ruleVer(); m.ledger.unshift(e); m.ledger = m.ledger.slice(0, 500); m.points = Math.max(0, (m.points || 0) + e.pts); }
@@ -307,7 +330,7 @@
   function exportMe() { return JSON.stringify(member()); }
 
   G.KiteCore = {
-    DEFAULTS: DEFAULTS, GAMES: GAMES, cfg: cfg, saveCfg: saveCfg, ruleVer: ruleVer, ruleHistory: ruleHistory, setProfile: setProfile, displayName: displayName, codeByShort: codeByShort, prizeImg: prizeImg, hasPrizeImg: hasPrizeImg, setPrizeImg: setPrizeImg, resetCfg: resetCfg, audit: audit, auditLog: function () { return rd(K_AUDIT) || []; },
+    DEFAULTS: DEFAULTS, GAMES: GAMES, cfg: cfg, saveCfg: saveCfg, ruleVer: ruleVer, ruleHistory: ruleHistory, setProfile: setProfile, displayName: displayName, bentoState: bentoState, redeemBento: redeemBento, codeByShort: codeByShort, prizeImg: prizeImg, hasPrizeImg: hasPrizeImg, setPrizeImg: setPrizeImg, resetCfg: resetCfg, audit: audit, auditLog: function () { return rd(K_AUDIT) || []; },
     member: member, peekMember: function () { return rd(K_MEM); }, saveMember: saveMember, dayKey: dayKey, rid: rid, hmac: hmac, sha256: sha256, utf8: utf8,
     pointsForSpend: pointsForSpend, makeEarnCode: makeEarnCode, claimEarn: claimEarn, storeLog: function () { return rd(K_STORE) || []; }, storeById: storeById,
     eventMult: eventMult, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore,
