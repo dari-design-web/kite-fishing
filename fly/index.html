@@ -172,7 +172,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
     <canvas class="mapfx" id="mapFx" aria-hidden="true"></canvas>
     <h1 class="maptitle" id="mapTitle">小鳶飛行冒險</h1>
     <div id="stageButtons"></div>
-    <p class="mapnote">原型 v0.40：暫用圖、不發點數。測試期間四關都開放</p>
+    <p class="mapnote">原型 v0.41：暫用圖、不發點數。測試期間四關都開放</p>
   </div>
 
   <div class="panel" id="startPanel" hidden>
@@ -233,6 +233,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
   </div>
 </div>
 
+<script src="../shared/kite_core.js"></script>
 <script>
 /* ===== 暫用配樂（C-70）：用程式即時產生，不用音檔、沒有版權問題。正式配樂來源待 Dari 決定 ===== */
 /* BGM-START｜配樂 v3（C-87，Dari 10/13 09:39：主動加強畫面、配樂、動畫）
@@ -433,7 +434,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.40',
+  version: '0.41',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -2581,6 +2582,9 @@ function finish() { BGM.stop();
   const best = progress.best[id]; const sc = scoreFinal(); if (!best || sc > (best.score || 0)) progress.best[id] = { pct, combo: stats.bestCombo, score: sc };
   /* v0.37（C-161）：結算多一行「這關最高分」——破紀錄時寫「新紀錄！」並附上次最高；第一次玩這關不顯示（文字是建議） */
   if (best && best.score) add('這關最高分', sc > best.score ? '🎉 ' + sc + ' 新紀錄！（上次最高 ' + best.score + '）' : best.score + (sc === best.score ? '（追平了！）' : '（還差 ' + (best.score - sc) + ' 分）'));
+  /* v0.41（C-185，D71）：把這局分數送進官方 LINE 的「遊戲分數存摺」（每關每天前幾次才算、活動時段乘倍數；規則在後台改）。G 槽複本沒有共用資料層就跳過 */
+  if (window.KiteCore) { try { const rp = KiteCore.reportPlay({ game: 'fly', level: String(id), score: sc, sec: t });
+    add('官方 LINE 分數存摺', rp.counted ? '+' + rp.add + ' 分' + (rp.mult > 1 ? '（' + rp.event + ' ×' + rp.mult + '）' : '') + '・存摺 ' + rp.bank + ' 分' : '今天這關已經算過分了（明天再來）'); } catch (e) {} }
   const un = $('unlockNote'); un.hidden = true;
   if (won && progress.unlocked <= id && STAGES[id] && !STAGES[id].locked) { progress.unlocked = id + 1; un.textContent = '第 ' + (id + 1) + ' 關「' + STAGES[id].name + '」已開放！'; un.hidden = false; }
   saveProgress();

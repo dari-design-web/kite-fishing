@@ -40,7 +40,7 @@
     admin: { user: 'dari', pass: '1677' }   // 原型：寫在網頁裡不安全，正式版要放到雲端驗證
   };
   var GAMES = {
-    fish: { name: '小鳶捕魚', levels: { morning: '清晨場', day: '白天場', dusk: '黃昏場', night: '夜晚場' } },
+    fish: { name: '小鳶捕魚', levels: { noon: '午後場', dusk: '黃昏場', night: '夜釣場' } },
     fly: { name: '飛行冒險', levels: { '1': '第 1 關', '2': '第 2 關', '3': '第 3 關', '4': '第 4 關' } },
     travel: { name: '小鳶去旅行', levels: {} },
     photo: { name: '小鳶合照館', levels: {} },
