@@ -5,7 +5,7 @@
   try { if (/[?&]from=line\b/.test(location.search)) sessionStorage.setItem('kiteFromLine', '1'); if (sessionStorage.getItem('kiteFromLine') !== '1') return; } catch (e) { if (!/[?&]from=line\b/.test(location.search)) return; }
   function add() {
     if (document.getElementById('kiteBackLine')) return;
-    var a = document.createElement('a'); a.id = 'kiteBackLine'; a.href = base + 'line/index.html'; a.textContent = '‹ 回官方 LINE';
+    var a = document.createElement('a'); a.id = 'kiteBackLine'; a.href = base + 'line/index.html?p=park'; a.textContent = '‹ 回官方 LINE';
     // 貼在左邊中間的綠色小標籤，不擋各遊戲上方的標題與按鈕；剛進來 3 秒先展開寫字，之後收成小標籤
     a.setAttribute('style', 'position:fixed;left:0;top:42%;z-index:2147483000;background:#06C755;color:#fff;font:700 12px/1.15 system-ui,sans-serif;padding:8px 8px 8px 6px;border-radius:0 12px 12px 0;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.25);opacity:.95;white-space:nowrap;transition:padding .3s');
     a.setAttribute('aria-label', '回官方 LINE');

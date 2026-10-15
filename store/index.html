@@ -18,6 +18,7 @@
 .count{font-weight:800;color:var(--orange)}
 .choose a{margin:0 0 12px}
 .res{border:2px solid var(--teal)}.res.bad{border-color:var(--red)}
+.shortCode{margin:10px auto 2px;display:inline-block;padding:6px 14px;border-radius:12px;background:#FFF1CC;color:#7A5A00;font-size:14px}.shortCode b{font-size:24px;letter-spacing:4px;color:var(--ink);font-variant-numeric:tabular-nums;margin-left:6px}
 </style>
 </head>
 <body>
@@ -81,7 +82,7 @@
   function storeQR(s, a, r) {
     stopAll(); var c = K.cfg(), end = Date.now() + c.qrExpireMin * 60000;
     app.innerHTML = '<div class="card qrCard"><div class="muted">' + esc(s.name) + '</div><div class="big">NT$ ' + a.toLocaleString() + '</div><div style="font-weight:800;color:var(--teal)">QR 已產生，尚未入帳。預計可得 ' + r.pts + ' 點</div><div class="muted">實際點數依入帳結果</div>' +
-      '<div class="qrBox" id="qr" style="margin:12px 0"></div><div>請客人用「小鳶來港」官方 LINE 的 <b>📷 掃描集點</b> 掃這個 QR</div><div class="muted" style="margin-top:6px">有效時間還剩 <span class="count" id="cd"></span>・只能用一次</div></div>' +
+      '<div class="qrBox" id="qr" style="margin:12px 0"></div><div>請客人用「小鳶來港」官方 LINE 的 <b>掃碼集點</b> 掃這個 QR</div>' + (r.short ? '<div class="shortCode" id="short">手動代碼 <b>' + r.short.slice(0, 4) + ' ' + r.short.slice(4) + '</b></div>' : '') + '<div class="muted" style="margin-top:6px">有效時間還剩 <span class="count" id="cd"></span>・只能用一次</div></div>' +
       '<div class="row"><button class="btn alt" id="cp">複製代碼</button><button class="btn" id="nx">下一位</button></div><div class="row" style="margin-top:8px"><button class="btn alt" id="re">重新出碼（同一筆）</button><button class="btn alt" id="vd" style="color:var(--red)">作廢這筆</button></div><p class="note">客人掃到後要按「領取」才算數。逾時就按「重新出碼」：金額不變、還是同一筆，舊 QR 失效（最多 ' + c.reissueMax + ' 次）。沒有網路也能產生；正式版會在連線後由中央確認只入帳一次。</p>';
     KiteScan.drawQR($('qr'), r.code, Math.min(260, innerWidth - 90));
     $('cp').onclick = function () { (navigator.clipboard ? navigator.clipboard.writeText(r.code) : Promise.reject()).then(function () { toast('已複製代碼'); }, function () { prompt('長按複製代碼', r.code); }); };

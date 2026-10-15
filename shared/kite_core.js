@@ -26,10 +26,10 @@
       { id: 'ev2', game: 'fly', title: '傍晚飛行加倍', days: [0, 1, 2, 3, 4, 5, 6], from: '16:00', to: '19:00', mult: 1.5, on: true }
     ],
     prizes: [
-      { id: 'P01', name: '小鳶貼紙一張', points: 5, stock: 200, on: true },
-      { id: 'P02', name: '鯨鯊鑰匙圈', points: 30, stock: 50, on: true },
-      { id: 'P03', name: '小鳶帆布袋', points: 80, stock: 20, on: true },
-      { id: 'P04', name: '港邊特製便當兌換券', points: 15, stock: 100, on: true }
+      { id: 'P01', name: '小鳶貼紙一張', points: 5, stock: 200, on: true, desc: '小鳶揮手款防水貼紙，可以貼在水壺或手機殼。' },
+      { id: 'P02', name: '鯨鯊鑰匙圈', points: 30, stock: 50, on: true, desc: '港口的鯨鯊朋友，壓克力雙面印刷。' },
+      { id: 'P03', name: '小鳶帆布袋', points: 80, stock: 20, on: true, desc: '厚帆布托特包，A4 放得下，逛港口剛好。' },
+      { id: 'P04', name: '港邊特製便當兌換券', points: 15, stock: 100, on: true, desc: '到館內合作餐飲出示兌換券，換一份港邊便當。' }
     ],
     stores: [
       { id: 'S01', name: '東三東四 一樓咖啡', pin: '1111', key: 's01-demo-key', on: true },
@@ -131,14 +131,22 @@
     var s = storeById(storeId); if (!s) throw new Error('沒有這個店家');
     var pts = pointsForSpend(amount, storeId), ts = Date.now().toString(36), nonce = rid(8);
     var body = ['KITE1', 'E', storeId, amount, pts, ts, nonce].join('|'), code = body + '|' + hmac(s.key, body);
-    var log = rd(K_STORE) || []; log.unshift({ t: Date.now(), store: storeId, amount: amount, pts: pts, nonce: nonce, code: code, synced: false, rv: ruleVer() }); wr(K_STORE, log.slice(0, 1000));
-    return { code: code, pts: pts, nonce: nonce };
+    var log = rd(K_STORE) || []; var short = shortCode(); log.unshift({ t: Date.now(), store: storeId, amount: amount, pts: pts, nonce: nonce, code: code, short: short, synced: false, rv: ruleVer() }); wr(K_STORE, log.slice(0, 1000));
+    return { code: code, pts: pts, nonce: nonce, short: short };
   }
+  /* C-194（D75）：8 位數字手動代碼。原型只在同一個瀏覽器（同一支手機）查得到；正式版由雲端用這 8 碼查回交易 */
+  function shortCode() { var used = {}; (rd(K_STORE) || []).forEach(function (r) { if (r.short) used[r.short] = 1; }); var s; do { s = String(Math.floor(Math.random() * 1e8)).padStart(8, '0'); } while (used[s]); return s; }
+  function codeByShort(s) { s = String(s || '').replace(/\D/g, ''); if (s.length !== 8) return null; var x = (rd(K_STORE) || []).filter(function (r) { return r.short === s; })[0]; return x ? x.code : null; }
+  /* 贈品圖片：後台上傳裁切成 600×600 JPEG，存在 kitePrizeImg1（不跟設定綁在一起，設定讀寫才不會變慢）；沒上傳用預設圖 */
+  var PRIZE_IMG0 = { P01: '../photo/assets/stk_kite_peace.png', P02: '../assets/whaleshark.png', P03: '../travel/assets/kite_pack.png', P04: '../travel/assets/bento_special.png' };
+  function prizeImg(pid) { var m = rd('kitePrizeImg1') || {}; return m[pid] || PRIZE_IMG0[pid] || '../travel/assets/kite_hello.png'; }
+  function hasPrizeImg(pid) { return !!(rd('kitePrizeImg1') || {})[pid]; }
+  function setPrizeImg(pid, url) { var m = rd('kitePrizeImg1') || {}; if (url) m[pid] = url; else delete m[pid]; if (!wr('kitePrizeImg1', m)) return false; audit((url ? '上傳' : '移除') + '贈品圖片 ' + pid); return true; }
   function reissueEarn(nonce) {      // 同一筆交易重新出碼：金額不變、交易不變，舊 QR 在這台作廢（工作單 01 v5 第二節 B）
     var log = rd(K_STORE) || [], x = log.filter(function (r) { return r.nonce === nonce || r.tx === nonce; })[0]; if (!x) return { ok: false, msg: '找不到這筆交易' };
     var c = cfg(); x.reissue = (x.reissue || 0) + 1; if (x.reissue > c.reissueMax) return { ok: false, msg: '同一筆交易最多重新出碼 ' + c.reissueMax + ' 次，請到服務台處理' };
     var s = storeById(x.store), ts = Date.now().toString(36), n2 = rid(8), body = ['KITE1', 'E', x.store, x.amount, x.pts, ts, n2].join('|'), code = body + '|' + hmac(s.key, body);
-    x.voided = (x.voided || []).concat([x.nonce]); x.tx = x.tx || x.nonce; x.nonce = n2; x.code = code; x.t2 = Date.now(); wr(K_STORE, log); return { ok: true, code: code, pts: x.pts, nonce: n2, left: c.reissueMax - x.reissue };
+    x.voided = (x.voided || []).concat([x.nonce]); x.tx = x.tx || x.nonce; x.nonce = n2; x.code = code; x.short = shortCode(); x.t2 = Date.now(); wr(K_STORE, log); return { ok: true, code: code, pts: x.pts, nonce: n2, short: x.short, left: c.reissueMax - x.reissue };
   }
   function voidEarn(nonce) { var log = rd(K_STORE) || [], x = log.filter(function (r) { return r.nonce === nonce; })[0]; if (!x) return false; x.void = true; wr(K_STORE, log); audit('店家作廢集點 QR ' + nonce); return true; }
   function parse(code) { var p = String(code || '').trim().split('|'); return p[0] === 'KITE1' ? p : null; }
@@ -290,7 +298,7 @@
   function exportMe() { return JSON.stringify(member()); }
 
   G.KiteCore = {
-    DEFAULTS: DEFAULTS, GAMES: GAMES, cfg: cfg, saveCfg: saveCfg, ruleVer: ruleVer, ruleHistory: ruleHistory, resetCfg: resetCfg, audit: audit, auditLog: function () { return rd(K_AUDIT) || []; },
+    DEFAULTS: DEFAULTS, GAMES: GAMES, cfg: cfg, saveCfg: saveCfg, ruleVer: ruleVer, ruleHistory: ruleHistory, codeByShort: codeByShort, prizeImg: prizeImg, hasPrizeImg: hasPrizeImg, setPrizeImg: setPrizeImg, resetCfg: resetCfg, audit: audit, auditLog: function () { return rd(K_AUDIT) || []; },
     member: member, peekMember: function () { return rd(K_MEM); }, saveMember: saveMember, dayKey: dayKey, rid: rid, hmac: hmac, sha256: sha256, utf8: utf8,
     pointsForSpend: pointsForSpend, makeEarnCode: makeEarnCode, claimEarn: claimEarn, storeLog: function () { return rd(K_STORE) || []; }, storeById: storeById,
     eventMult: eventMult, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore,
