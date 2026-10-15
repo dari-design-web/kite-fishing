@@ -201,6 +201,8 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
   /* 底部確認框（回傳 Promise） */
   function ask2(title, body, ok, cancel) { return new Promise(function (res) { var m = document.createElement('div'); m.className = 'modal'; m.innerHTML = '<div class="box"><h3>' + title + '</h3><p>' + body + '</p><div class="row"><button class="btn alt" data-x="0">' + (cancel || '先不要') + '</button><button class="btn warn" data-x="1" id="mOk">' + ok + '</button></div></div>'; document.body.appendChild(m); m.querySelectorAll('[data-x]').forEach(function (b) { b.onclick = function () { m.remove(); res(b.dataset.x === '1'); }; }); m.onclick = function (e) { if (e.target === m) { m.remove(); res(false); } }; }); }
 
+  /* D82：活動今天的狀態（進行中／幾點開始／已結束），不要整天都寫「今天有」 */
+  function evNow(e) { var d = new Date(), hm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); return hm < e.from ? '今天 ' + e.from + ' 開始' : hm > e.to ? '今天已結束' : '進行中'; }
   /* ====== 聊天室開場（像官方帳號的歡迎訊息：文字＋Flex 卡片＋活動輪播） ====== */
   function waitCount() { return K.member().redeems.filter(function (r) { return r.status === 'wait'; }).length; }
   function hello() {
@@ -211,7 +213,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
     tips(m);
     K.notices().filter(function (n) { return n.pin; }).forEach(function (n) { say('📌 <b>' + esc(n.title) + '</b><br>' + esc(n.body)); });
     var ev = K.cfg().events.filter(function (e) { return e.on; }), today = new Date().getDay();
-    if (ev.length) bubble('<div class="carousel">' + ev.map(function (e) { var on = e.days.indexOf(today) >= 0, G0 = K.GAMES[e.game] || {}; var gi = (GL.filter(function (g) { return g.id === e.game; })[0] || {}).icon; return '<div class="flex"><div class="hero" style="background:linear-gradient(135deg,#FFE7C2,#FFD08A);display:flex;align-items:center;justify-content:center">' + (gi ? '<img src="' + gi + '" alt="" style="position:static;width:76px;height:76px;border-radius:16px">' : '') + '</div><div class="bd"><h3>' + esc(e.title) + '</h3><p>' + esc(G0.name || e.game) + '・分數 ×' + e.mult + (on ? '・<b style="color:var(--orange)">今天有</b>' : '') + '</p></div><div class="ft"><button class="p" data-open="park">去小鳶樂園</button></div></div>'; }).join('') + '</div>', false, true);
+    if (ev.length) bubble('<div class="carousel">' + ev.map(function (e) { var on = e.days.indexOf(today) >= 0, G0 = K.GAMES[e.game] || {}; var gi = (GL.filter(function (g) { return g.id === e.game; })[0] || {}).icon; return '<div class="flex"><div class="hero" style="background:linear-gradient(135deg,#FFE7C2,#FFD08A);display:flex;align-items:center;justify-content:center">' + (gi ? '<img src="' + gi + '" alt="" style="position:static;width:76px;height:76px;border-radius:16px">' : '') + '</div><div class="bd"><h3>' + esc(e.title) + '</h3><p>' + esc(G0.name || e.game) + '・分數 ×' + e.mult + (on ? '・<b style="color:var(--orange)">' + evNow(e) + '</b>' : '') + '</p></div><div class="ft"><button class="p" data-open="park">去小鳶樂園</button></div></div>'; }).join('') + '</div>', false, true);
   }
 
   /* C-203：依情境的小鳶提醒（最多兩則；只看這支手機的資料） */
@@ -268,7 +270,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
       '<div class="lb-sec">' + (evs.length ? '今日推薦' : '人氣遊戲') + '</div><div class="lb-grid">' + booth(fg, 0, true) + '</div>' +
       '<div class="lb-sec">全部遊戲</div><div class="lb-grid">' + GL.filter(function (g) { return g.id !== feat; }).map(function (g, i) { return booth(g, i + 1); }).join('') +
       '<a class="booth" href="../meet/index.html" style="animation-delay:.3s"><img class="ic" src="../meet/assets/pal_f4.webp" alt="" style="background:#E9F2F1;object-fit:contain"><span class="chip">館內 QR</span><b>港口朋友</b><span class="tip">掃大大的充氣朋友旁的 QR</span>' + (P.meet && P.meet.max ? '<span class="bar"><i style="width:' + Math.round(100 * P.meet.n / P.meet.max) + '%"></i></span><span class="pg">' + esc(P.meet.label) + '</span>' : '') + '</a></div>' +
-      '<div class="lb-foot"><div class="card" style="margin:0"><b>怎麼用遊戲換點數？</b><p class="muted" style="margin:6px 0 0">會算分的遊戲，每關每天前 ' + c.triesPerLevel + ' 次的分數會存進「分數存摺」，滿 ' + c.scorePerPoint.toLocaleString() + ' 分就能在「我的 → 我的遊戲」換 1 點。</p><button class="btn alt full" style="margin-top:10px" id="toMG">看我的遊戲紀錄</button></div></div></div>';
+      '<div class="lb-foot"><div class="card" style="margin:0"><b>怎麼用遊戲換點數？</b><p class="muted" style="margin:6px 0 0">會算分的遊戲，每關每天前 ' + c.triesPerLevel + ' 次的分數會存進「分數存摺」，滿 ' + c.scorePerPoint.toLocaleString() + ' 分就能在「我的資訊 → 我的遊戲」換 1 點。</p><button class="btn alt full" style="margin-top:10px" id="toMG">看我的遊戲紀錄</button></div></div></div>';
     $('toMG').onclick = function () { go('mygames'); };
   };
 
@@ -296,7 +298,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
       mine.forEach(function (p) { best[p.level] = Math.max(best[p.level] || 0, p.score || 0); });
       var b = (m.scoreBank || {})[g.id] || 0, per = K.perPoint(g.id), n = Math.floor(b / per);
       var kv = (pr.extra || []).map(function (x) { return '<span>' + x[0] + ' <b>' + esc(x[1]) + '</b></span>'; });
-      if (lv.length) { kv.push('<span>總遊玩 <b>' + mine.length + ' 次</b></span>'); lv.forEach(function (l) { kv.push('<span>' + esc(G0.levels[l]) + ' 最高 <b>' + (best[l] || 0).toLocaleString() + '</b>・今天剩 <b>' + K.triesLeft(g.id, l) + '</b> 次</span>'); }); }
+      if (lv.length) { kv.push('<span>總遊玩 <b>' + mine.length + ' 次</b></span>'); lv.forEach(function (l) { kv.push('<span>' + esc(G0.levels[l]) + (best[l] ? ' 最高 <b>' + best[l].toLocaleString() + '</b>' : ' <b>還沒玩</b>') + '・今天剩 <b>' + K.triesLeft(g.id, l) + '</b> 次</span>'); }); }
       return '<div class="card"><div class="gcard"><img src="' + g.icon + '" alt="" onerror="this.src=\'../hub/btn/btn_' + g.id + '.png\'"><div class="g"><b>' + esc(G0.name) + '</b>' + (pr.max ? '<div class="gbar"><i style="width:' + Math.round(100 * pr.n / pr.max) + '%"></i></div><span class="muted">' + esc(pr.label) + '</span>' : '') + '<div class="kv">' + kv.join('') + '</div>' +
         (lv.length ? '<div class="row" style="margin-top:8px"><span class="muted" style="flex:2">存摺 ' + b.toLocaleString() + ' 分' + (n ? '・可換 ' + n + ' 點' : '・還差 ' + (per - b % per).toLocaleString() + ' 分') + '</span><button class="btn" data-cv="' + g.id + '"' + (n ? '' : ' disabled') + ' style="min-height:38px;padding:6px 12px">換點</button></div>' : '') +
         '<a class="btn alt full" style="margin-top:8px;min-height:38px" href="' + gameLink(g) + '">去玩</a></div></div></div>';
@@ -318,6 +320,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
       x.oninput = function () { var v = x.value.replace(/\D/g, ''); if (v.length > 1) { v.split('').slice(0, 8 - i).forEach(function (ch, j) { ins[i + j].value = ch; }); (ins[Math.min(7, i + v.length)] || x).focus(); } else { x.value = v; if (v && ins[i + 1]) ins[i + 1].focus(); } upd(); if (val().length === 8) $('dgo').click(); };
       x.onkeydown = function (e) { if (e.key === 'Backspace' && !x.value && ins[i - 1]) { ins[i - 1].value = ''; ins[i - 1].focus(); upd(); } };
       x.onfocus = function () { x.select(); };
+      x.onpaste = function (e) { var raw = ((e.clipboardData || window.clipboardData) || { getData: function () { return ''; } }).getData('text') || ''; if (/KITE1\|/.test(raw)) { e.preventDefault(); $('manual').value = raw.trim(); $('mbtn').click(); return; } var t = raw.replace(/\D/g, ''); if (!t) return; e.preventDefault(); x.value = t; x.oninput(); };      // D82：店家頁「複製代碼」後整串貼上也能填滿 8 格
     });
     $('dgo').onclick = function () { var code = K.codeByShort(val()); if (!code) { $('sres').innerHTML = '<div class="card" style="border:2px solid var(--red)"><b>找不到這組代碼</b><p class="muted" style="margin:4px 0 0">請再核對一次，或請店員重新出碼。<br>（原型：代碼要在同一支手機出碼才查得到；正式版會連雲端查）</p></div>'; return; } ask(code); };
     $('mbtn').onclick = function () { ask($('manual').value); };
@@ -415,7 +418,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
     var m = K.member(), GN = K.GAMES;
     $('sbody').innerHTML = '<div class="ptsCard"><small>目前點數</small><div class="big">' + m.points + ' <span style="font-size:18px">點</span></div><small>會員編號 ' + m.id + '</small><img src="../travel/assets/kite_wave.png" alt=""></div>' + batchCard(m) +
       '<div class="card"><h2>點數紀錄</h2><ul class="list">' + (m.ledger.slice(0, 30).map(function (e) {
-        var what = e.type === 'store' ? '🧾 ' + esc(e.storeName) + ' 消費 NT$' + e.amount : e.type === 'game' ? '🎮 ' + esc(GN[e.game] ? GN[e.game].name : e.game) + ' 分數換點' : e.type === 'redeem' ? '🎁 兌換 ' + esc(e.prizeName) : e.type === 'refund' ? '↩️ ' + (e.note ? esc(e.note) + ' ' : '取消兌換 ') + esc(e.prizeName) : e.type === 'expire' ? '⌛ 點數到期' : e.type === 'backfill' ? '🧾 補登' + (e.storeName ? ' ' + esc(e.storeName) : '') : e.type === 'adjust' ? '✏️ 調整' + (e.note ? '（' + esc(e.note) + '）' : '') : '調整';
+        var what = e.type === 'store' ? '🧾 ' + esc(e.storeName) + ' 消費 NT$' + e.amount : e.type === 'game' ? '🎮 ' + esc(GN[e.game] ? GN[e.game].name : e.game) + ' 分數換點' : e.type === 'redeem' ? (e.virtual ? '🍱 換便當 ' : '🎁 兌換 ') + esc(e.prizeName) : e.type === 'refund' ? '↩️ ' + (e.note ? esc(e.note) + ' ' : '取消兌換 ') + esc(e.prizeName) : e.type === 'expire' ? '⌛ 點數到期' : e.type === 'backfill' ? '🧾 補登' + (e.storeName ? ' ' + esc(e.storeName) : '') : e.type === 'adjust' ? '✏️ 調整' + (e.note ? '（' + esc(e.note) + '）' : '') : '調整';
         return '<li><span class="grow"><b>' + what + '</b><span class="muted">' + t2(e.t) + '</span></span><b style="color:' + (e.pts >= 0 ? 'var(--teal)' : 'var(--red)') + '">' + (e.pts >= 0 ? '+' : '') + e.pts + '</b></li>';
       }).join('') || '<li class="muted">還沒有紀錄</li>') + '</ul></div><button class="btn alt full" id="toMG2">遊戲分數存摺在「我的遊戲」 ›</button>';
     $('toMG2').onclick = function () { go('mygames'); };
@@ -441,7 +444,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
   }
   R.news = function () {
     var D = '日一二三四五六', ev = K.cfg().events.filter(function (e) { return e.on; }), today = new Date().getDay();
-    var NS = K.notices(); $('sbody').innerHTML = NS.map(function (n) { return '<div class="card" style="border-left:4px solid var(--teal)">' + (n.pin ? '📌 ' : '') + '<b>' + esc(n.title) + '</b><p style="margin:4px 0 0">' + esc(n.body) + '</p></div>'; }).join('') + (ev.map(function (e) { var on = e.days.indexOf(today) >= 0; return '<div class="card ev"><b>' + esc(e.title) + '</b>' + (on ? ' <span class="pill o">今天有</span>' : '') + '<p class="muted" style="margin:4px 0 0">' + esc(K.GAMES[e.game] ? K.GAMES[e.game].name : e.game) + '・分數 ×' + e.mult + '・星期' + e.days.map(function (d) { return D[d]; }).join('、') + '・' + e.from + '～' + e.to + '</p></div>'; }).join('') || '<div class="card muted">目前沒有活動</div>');
+    var NS = K.notices(); $('sbody').innerHTML = NS.map(function (n) { return '<div class="card" style="border-left:4px solid var(--teal)">' + (n.pin ? '📌 ' : '') + '<b>' + esc(n.title) + '</b><p style="margin:4px 0 0">' + esc(n.body) + '</p></div>'; }).join('') + (ev.map(function (e) { var on = e.days.indexOf(today) >= 0; return '<div class="card ev"><b>' + esc(e.title) + '</b>' + (on ? ' <span class="pill o">' + evNow(e) + '</span>' : '') + '<p class="muted" style="margin:4px 0 0">' + esc(K.GAMES[e.game] ? K.GAMES[e.game].name : e.game) + '・分數 ×' + e.mult + '・' + (e.days.length === 7 ? '每天' : '星期' + e.days.slice().sort(function (a, b) { return (a || 7) - (b || 7); }).map(function (d) { return D[d]; }).join('、')) + '・' + e.from + '～' + e.to + '</p></div>'; }).join('') || '<div class="card muted">目前沒有活動</div>');
   };
 
   hello();
