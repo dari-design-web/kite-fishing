@@ -34,6 +34,8 @@ a{color:inherit}
 .hero .kite.nap{animation:none;cursor:pointer}
 .hero .kite{position:absolute;right:10px;bottom:24px;width:118px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.18));animation:bob 3.2s ease-in-out infinite}
 @keyframes bob{50%{transform:translateY(-7px) rotate(-3deg)}}
+.hero .kite.hop{animation:khop .5s cubic-bezier(.3,1.6,.5,1)}
+@keyframes khop{40%{transform:translateY(-22px) rotate(6deg)}}
 .hero h1{position:relative;margin:0;font-size:34px;line-height:1.15;letter-spacing:.08em;color:#14414A;text-shadow:0 2px 0 #fff}
 .hero p{position:relative;margin:4px 0 0;font-size:15px;font-weight:700;color:#1F5A5F}
 .hero .chip{position:relative;display:inline-block;margin-top:10px;font-size:11.5px;font-weight:700;background:rgba(255,253,248,.85);color:#1F5A5F;border-radius:999px;padding:2px 10px}
@@ -178,7 +180,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
     <button class="bagBtn" type="button" id="bagBtn" aria-label="打開小鳶背包"><span class="ic">🎒</span>背包</button><span class="sun"></span><span class="stars"></span><span class="cloud c1"></span><span class="cloud c2"></span>
     <h1>小鳶來港</h1>
     <p>今天想和小鳶玩什麼？</p>
-    <span class="chip">測試首頁 v97・素材都是暫用</span>
+    <span class="chip">測試首頁 v98・素材都是暫用</span>
     <div class="say" id="say" hidden></div>
     <img class="kite" src="../travel/assets/kite_wave.png" alt="">
   </header>
@@ -250,6 +252,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
       <a class="flag" data-href="meet/?f=4">🤭 港口朋友連點 5 下會說怕癢的話（每位不同）</a>
       <a class="flag" data-href="">🎯 捕魚連續 3 次沒抓到，小鳶指一條最近的魚給你</a>
       <a class="flag" data-href="fly/?all=1">😮 飛行時怪獸擦身而過，小鳶頭上跳「好險！」</a>
+      <a class="flag" data-href="hub/">💬 點首頁右上角的小鳶，牠會跳一下跟你聊天</a>
     </div>
   </details>
 
@@ -371,6 +374,20 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
     /* v74（C-157）：晚上 10 點到清晨 5 點，首頁的小鳶換成打瞌睡的樣子（點一下會醒來揮手） */
     var kimg = document.querySelector('.hero .kite'); if (kimg && (hn >= 22 || hn < 5)) { kimg.src = '../travel/assets/kite_nap.png'; kimg.classList.add('nap'); kimg.addEventListener('click', function () { kimg.src = '../travel/assets/kite_wave.png'; kimg.classList.remove('nap'); }); } }      // v71（C-152）：晚上首頁天空變夜晚
   showSay();
+  /* v98（C-181）：白天點首頁的小鳶，牠會跳一下、換說一句閒聊（每點換一句），3 秒後回到原本的「下一步」；睡著時點一下仍是先醒來（文字是建議） */
+  (function () {
+    var k = document.querySelector('.hero .kite'), el = document.getElementById('say'); if (!k || !el) return;
+    var CHAT = ['嘿嘿，被你點到了！', '我最喜歡吃小卷了～', '鯨鯊今天也在港口游泳喔！', '咻～我可以飛得很高很高！', '你今天過得好嗎？', '港口的風好舒服～'], ci = 0, tm = 0;
+    k.style.cursor = 'pointer'; var napDown = false;
+    k.addEventListener('pointerdown', function () { napDown = k.classList.contains('nap'); });
+    k.addEventListener('click', function () {
+      if (napDown || k.classList.contains('nap')) { napDown = false; return; }
+      k.classList.remove('hop'); void k.offsetWidth; k.classList.add('hop');
+      clearTimeout(tm); el.textContent = CHAT[ci % CHAT.length]; ci++; el.hidden = false;
+      el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
+      tm = setTimeout(showSay, 3000);
+    });
+  })();
 
   /* v49（C-113，工作單 21 ③）：小鳶背包。只讀各遊戲存在這支手機的紀錄，不改任何遊戲的資料；有新東西時背包按鈕亮小點 */
   var FISH = [['saba', '鯖魚', 'fish_small'], ['squid', '小卷', 'fish_squid'], ['grunt', '黃雞魚', 'fish_mid'], ['hairtail', '白帶魚', 'fish_hairtail'], ['bream', '赤鯮', 'fish_big'], ['amber', '紅魽', 'fish_amber']];
