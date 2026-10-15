@@ -42,6 +42,8 @@
     admin: { user: 'dari', pass: '1677' },  // 原型：寫在網頁裡不安全，正式版要放到雲端驗證
     /* v2（工作單 24，D73）後台新增的規則 */
     expireMode: 'months',         // months＝取得後幾個月（預設，照工作單 01 v5）；days＝取得後幾天；year＝每年底歸零；never＝不過期
+    deskPlace: '一樓服務台',      // D84：客人兌換單上寫的領取地點（後台規則可改）
+    deskHours: '每天 10:00～22:00', // D84：服務台領取時間（示意，待 Dari 確認）
     redeemHoldDays: 14,           // 兌換單幾天沒領自動取消、退點並釋回保留庫存（工作單 01 v5：14 天；U-36 待 Dari）
     /* D80（10/15）：小鳶去旅行的便當全部改用點數換（虛擬商品：直接進便當盒，不佔實體庫存、不用服務台）；散步、每天一份飯糰仍免費 */
     bentos: [
@@ -265,6 +267,10 @@
     var t = parseInt(p[5], 36), late = Date.now() - t > c.redeemExpireMin * 60000;
     return { ok: true, member: p[2], prize: pr, pts: +p[4], rcode: p[6], t: t, late: late, stock: onHand(pr.id), reserved: reservedCount(pr.id) };
   }
+  /* D84：服務台用 6 碼兌換碼查詢、待領取清單（只看得到這台＋匯入的資料，D72） */
+  function findRedeem(rc) { rc = String(rc || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); if (rc.length !== 6) return null; var hit = null; allMembers().forEach(function (m) { (m.redeems || []).forEach(function (r) { if (!hit && r.id === rc) hit = { m: m, r: r }; }); }); return hit; }
+  function pendingRedeems() { var issued = {}, out = []; (rd(K_DESK) || []).forEach(function (r) { issued[r.rcode] = 1; }); allMembers().forEach(function (m) { (m.redeems || []).forEach(function (r) { if (r.status === 'wait' && !issued[r.id]) out.push({ m: m, r: r }); }); }); return out.sort(function (a, b) { return a.r.t - b.r.t; }); }
+  function memberName(id) { var m = allMembers().filter(function (x) { return x.id === id; })[0]; return m && m.name ? m.name : ''; }
   function deskGive(code, staff) {
     var r = deskCheck(code); if (!r.ok) return r; if (onHand(r.prize.id) <= 0) return { ok: false, msg: '實物沒有了，請管理員處理' };
     var log = rd(K_DESK) || []; log.unshift({ t: Date.now(), rcode: r.rcode, member: r.member, prize: r.prize.id, prizeName: r.prize.name, pts: r.pts, staff: staff || '' }); wr(K_DESK, log);
@@ -343,7 +349,7 @@
     member: member, peekMember: function () { return rd(K_MEM); }, saveMember: saveMember, dayKey: dayKey, rid: rid, hmac: hmac, sha256: sha256, utf8: utf8,
     pointsForSpend: pointsForSpend, makeEarnCode: makeEarnCode, claimEarn: claimEarn, storeLog: function () { return rd(K_STORE) || []; }, storeById: storeById,
     eventMult: eventMult, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore,
-    prizeById: prizeById, stockLeft: stockLeft, makeRedeem: makeRedeem, cancelRedeem: cancelRedeem, deskCheck: deskCheck, deskGive: deskGive, deskLog: function () { return rd(K_DESK) || []; },
+    prizeById: prizeById, stockLeft: stockLeft, makeRedeem: makeRedeem, cancelRedeem: cancelRedeem, deskCheck: deskCheck, deskGive: deskGive, findRedeem: findRedeem, pendingRedeems: pendingRedeems, memberName: memberName, deskLog: function () { return rd(K_DESK) || []; },
     allMembers: allMembers, importMembers: importMembers, addAdj: addAdj, adjSum: adjSum, gap: gap, list: list, saveList: saveList, backfill: backfill, claimedRefs: claimedRefs, lookupTx: lookupTx, archiveFull: archiveFull, archives: function () { return (rd('kiteArchive1') || []).map(function (a) { return { id: a.id, t: a.t }; }); }, importPreview: importPreview, dataset: dataset, wipeTest: wipeTest, reissueEarn: reissueEarn, voidEarn: voidEarn, peekEarn: peekEarn, onHand: onHand, reservedCount: reservedCount, exportMe: exportMe, expiring: expiring, batches: batches, housekeep: housekeep, storeMult: storeMult, notices: function () { var d = dayKey(); return (cfg().notices || []).filter(function (n) { return n.on && (!n.from || d >= n.from) && (!n.to || d <= n.to); }); }
   };
 })(window);
