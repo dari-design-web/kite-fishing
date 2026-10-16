@@ -580,7 +580,7 @@ svg text{font-family:inherit}
     var g = D.cfg, a = K.auditLog();
     var cs = K.cloudStatus();
     c.innerHTML += '<div class="card" style="margin-bottom:14px"><h2>☁️ 雲端同步（測試期：Google 試算表）<span class="sp"></span>' + (cs.url ? (cs.err ? '<span class="pill r">' + esc(cs.err) + '</span>' : '<span class="pill g">已連線</span>') : '<span class="pill gr">未設定</span>') + '</h2>' +
-      '<p class="small muted" style="margin-top:0">接上後：客人手機、店家、服務台的集點、兌換、核銷都會傳到雲端，後台每 15 秒更新；後台改的設定、贈品與券圖片也會發到每台裝置。設定步驟見 G 槽 Claude產出／雲端測試資料庫_設定步驟_v3.md。</p>' +
+      '<p class="small muted" style="margin-top:0">接上後：客人手機、店家、服務台的集點、兌換、核銷都會傳到雲端，後台每 15 秒更新；後台改的設定、贈品與券圖片也會發到每台裝置。設定步驟見 G 槽 Claude產出／雲端測試資料庫_設定步驟_v4.md。</p>' +
       '<div class="form" style="grid-template-columns:140px 1fr"><label>Apps Script 網址</label><input id="cu" value="' + esc(localStorage.getItem('kiteCloudUrl') || '') + '" placeholder="' + esc(cs.url && !localStorage.getItem('kiteCloudUrl') ? '（網站內建）' + cs.url : 'https://script.google.com/macros/s/……/exec') + '"><label>後台金鑰</label><input id="ck" type="password" value="' + esc(localStorage.getItem('kiteCloudAdminKey') || '') + '" placeholder="和 Apps Script 裡 ADMIN_KEY 同一串"></div>' +
       '<div class="filters" style="margin-top:8px"><button class="btn" id="cSave">儲存並連線</button><button class="btn alt" id="cNow">立即同步</button><button class="btn alt" id="cCfg"' + (cs.admin ? '' : ' disabled') + '>把目前設定與圖片發到所有裝置</button><span class="sp"></span><button class="btn red" id="cWipe"' + (cs.admin ? '' : ' disabled') + '>清空全部測試資料（雲端＋每台）</button></div>' +
       '<p class="small muted">這台裝置 ' + esc(cs.dev) + '・第 ' + cs.epoch + ' 輪測試資料・雲端會員 ' + cs.members + ' 位・最後下載 ' + (cs.lastPull ? dt(cs.lastPull) : '—') + '・最後上傳 ' + (cs.lastPush ? dt(cs.lastPush) : '—') + '</p></div>';
