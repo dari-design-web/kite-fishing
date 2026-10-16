@@ -152,7 +152,7 @@
   /* D98：小鳶旅行帶回的券（KITE1|C|…）——核對後按「確認使用」核銷，同一張不能用兩次 */
   function checkCoupon(code) {
     var r = K.couponCheck(code), box = $('res');
-    box.innerHTML = r.ok ? '<div class="card res"><div class="muted">這是客人的優惠券</div><h2>🎟️ ' + esc(r.name) + '</h2><p style="margin:0">' + esc(r.desc || '') + '</p><p class="muted" style="margin:4px 0 10px">券號 ' + r.id + '・會員 ' + esc(r.member) + '・有效到 ' + t2(r.exp) + '</p><div class="row"><button class="btn alt" id="again">返回掃碼</button><button class="btn warn" id="use">確認使用</button></div></div>'
+    box.innerHTML = r.ok ? '<div class="card res"><div class="muted">這是客人的優惠券</div><div style="display:flex;gap:12px;align-items:center;margin:6px 0">' + K.couponFaceHTML(r, 72) + '<div><h2 style="margin:0">' + esc(r.name) + '</h2>' + (r.store ? '<div class="muted">適用專櫃：<b>' + esc(r.store) + '</b>（請確認是本櫃的券）</div>' : '') + '</div></div><p style="margin:0">' + esc(r.desc || '') + '</p><p class="muted" style="margin:4px 0 10px">券號 ' + r.id + '・會員 ' + esc(r.member) + '・有效到 ' + t2(r.exp) + '</p><div class="row"><button class="btn alt" id="again">返回掃碼</button><button class="btn warn" id="use">確認使用</button></div></div>'
       : '<div class="card res bad"><h2>⚠️ 不能使用</h2><p style="margin:0">' + esc(r.msg) + '</p><button class="btn alt full" id="again" style="margin-top:10px">繼續掃</button></div>';
     box.scrollIntoView({ behavior: 'smooth', block: 'start' });
     $('again').onclick = function () { box.innerHTML = ''; if (scanner) scanner.reset(); };

@@ -14,7 +14,7 @@
     gamePointMode: 'tier',        // 'tier'＝每日累計階梯（D97）；'bank'＝舊的分數存摺（每 scorePerPoint 分換 1 點）
     gameTiers: [[1200, 1], [3000, 2], [4500, 3], [6000, 4], [8000, 5], [10000, 6], [13000, 7], [17000, 8], [22000, 9], [30000, 10]],
     gameDailyCap: 10,             // 每天遊戲最多拿幾點（基礎點＋活動加送點合計）
-    eventCapMult: false,          // 活動時每日上限要不要跟著倍數放大（G-73 建議不放大：高手本來就滿 10，放大會讓純遊戲最快 3 天湊 50；後台可改）
+    eventCapMult: true,           // D99（Dari 10/17）：活動時每日上限跟著倍數放大（兩倍活動＝當天最多 20 點）；後台可改
     scorePerPoint: 1000,          // 舊制（bank）：遊戲分數多少分換 1 點
     gameScorePerPoint: {},        // 個別遊戲覆寫，例如 { fish: 500 }
     triesPerLevel: 1,             // 每關每天幾次算分（超過還能玩，只是不算分）
@@ -36,12 +36,22 @@
     /* D98：小鳶去旅行回家時，偶爾帶回點數（依這趟帶的便當決定機率）；每人每月從旅行最多拿 monthCap 點 */
     travelGift: { on: true, monthCap: 20, chance: { walk: 0, rice: 0, far: 0.15, squid: 0.2, hair: 0.25, special: 0.3 }, dist: [[1, 50], [2, 25], [3, 15], [4, 7], [5, 3]] },      // G-73：免費散步／飯糰不帶點；平均每趟期望 0.28～0.56 點，低於便當價格 3 成；不受遊戲／消費活動加倍
     /* D98：小鳶帶回的券（折扣券、抵用券；後台設定），放進 LINE「我的兌換 → 我的券」，到店出示 QR 由店員核銷 */
-    coupons: [ { id: 'C01', name: '港邊咖啡折 20 元（示範）', store: '', desc: '示範券：正式內容、店家與張數由後台設定', chance: 0.05, monthQty: 50, validDays: 14, on: false } ],      // G-73：預設關閉，等確定誰出成本、哪家店、面額與張數再開；一趟只會帶回點數或券其中一種
+    /* D99（Dari 10/17）：券由後台新增（含圖檔）；以下是用館內專櫃名稱做的「示意券」，面額與條件都是假設，正式內容要跟專櫃談好再改。
+       face＝券上大字；store＝適用專櫃（文字）；chance＝每趟帶回這張的機率；monthQty＝全館每月最多發幾張；一趟最多帶回一張券 */
+    coupons: [
+      { id: 'C01', name: '三奇壹號 咖啡 9 折券', store: '三奇壹號', face: '9折', desc: '咖啡飲品 9 折，限當次結帳使用一次（示意）', chance: 0.02, monthQty: 30, validDays: 14, on: true },
+      { id: 'C02', name: '檀島咖啡 折 20 元', store: '檀島咖啡', face: '折$20', desc: '單筆滿 200 元折 20 元（示意）', chance: 0.02, monthQty: 30, validDays: 14, on: true },
+      { id: 'C03', name: '布娜飛 9 折券', store: '布娜飛', face: '9折', desc: '店內商品 9 折（示意）', chance: 0.015, monthQty: 20, validDays: 14, on: true },
+      { id: 'C04', name: '札幌藥妝 滿 500 折 50', store: '札幌藥妝', face: '折$50', desc: '單筆滿 500 元折 50 元（示意）', chance: 0.015, monthQty: 20, validDays: 30, on: true },
+      { id: 'C05', name: '金春喜 9 折券', store: '金春喜', face: '9折', desc: '店內商品 9 折（示意）', chance: 0.015, monthQty: 20, validDays: 14, on: true },
+      { id: 'C06', name: '饗泰多 滿 1,000 折 100', store: '饗泰多', face: '折$100', desc: '內用單筆滿 1,000 元折 100 元（示意）', chance: 0.01, monthQty: 10, validDays: 30, on: true }
+    ],
+    couponMemberMonth: 2,         // D99：每人每月最多從旅行拿幾張券（防同一人包走）
     prizes: [
-      { id: 'P01', name: '小鳶貼紙一張', points: 5, stock: 200, on: true, desc: '小鳶揮手款防水貼紙，可以貼在水壺或手機殼。' },
-      { id: 'P02', name: '鯨鯊鑰匙圈', points: 30, stock: 50, on: true, desc: '港口的鯨鯊朋友，壓克力雙面印刷。' },
-      { id: 'P03', name: '小鳶帆布袋', points: 80, stock: 20, on: true, desc: '厚帆布托特包，A4 放得下，逛港口剛好。' },
-      { id: 'P04', name: '合作餐飲兌換券', points: 15, stock: 100, on: true, desc: '到館內合作餐飲出示兌換券，換一份港邊餐點（和小鳶去旅行的「港邊特製便當」不同）。' }
+      { id: 'P01', name: '小鳶貼紙一張', points: 5, stock: 200, on: true, perUser: 1, perUserPer: 'month', desc: '小鳶揮手款防水貼紙，可以貼在水壺或手機殼。' },
+      { id: 'P02', name: '鯨鯊鑰匙圈', points: 30, stock: 50, on: true, perUser: 1, perUserPer: 'month', desc: '港口的鯨鯊朋友，壓克力雙面印刷。' },
+      { id: 'P03', name: '小鳶帆布袋', points: 80, stock: 20, on: true, perUser: 1, perUserPer: 'month', desc: '厚帆布托特包，A4 放得下，逛港口剛好。' },
+      { id: 'P04', name: '合作餐飲兌換券', points: 15, stock: 100, on: true, perUser: 1, perUserPer: 'month', desc: '到館內合作餐飲出示兌換券，換一份港邊餐點（和小鳶去旅行的「港邊特製便當」不同）。' }
     ],
     stores: [
       { id: 'S01', name: '東三東四 一樓咖啡', pin: '1111', key: 's01-demo-key', on: true },
@@ -67,6 +77,7 @@
     bentoPerDay: 1,               // 每種便當每天最多換幾份
     bentoHoldMax: 3,              // 便當盒裡同一種最多放幾份（滿了不能換、不扣點）
     redeemPerDay: 3,              // 每人每天最多兌換幾次
+    /* D99：每項贈品可以設每人限換幾份（perUser）與計算期間（perUserPer：day 每天／month 每月／all 活動期間總共）；預設每人每月 1 份 */
     games: {                      // 遊戲開關與防作弊
       fish: { on: true, maint: false, maxScore: 20000 },
       fly: { on: true, maint: false, maxScore: 50000 },
@@ -121,7 +132,11 @@
   }
 
   /* ====== 設定 ====== */
-  function cfg() { var c = rd(K_CFG); var d = clone(DEFAULTS); if (!c) return d; for (var k in c) d[k] = c[k]; return d; }
+  function cfg() { var c = rd(K_CFG); var d = clone(DEFAULTS); if (!c) return d; for (var k in c) d[k] = c[k];
+    /* D99 舊設定升級：只有舊的一張「示範」券就換成新的專櫃示意券；贈品沒設過每人限換的，補上預設每人每月 1 份 */
+    if (c.coupons && c.coupons.length === 1 && /示範/.test(c.coupons[0].name || '')) d.coupons = clone(DEFAULTS.coupons);
+    (d.prizes || []).forEach(function (p) { if (p.perUser === undefined) { p.perUser = 1; p.perUserPer = 'month'; } });
+    return d; }
   /* C-193：規則版本號。每存一次設定＝新版本（預設是 v1）；每筆交易、點數紀錄記下當時的版本，之後改規則不追溯 */
   function ruleVer() { return cfg().ruleVer || 1; }
   function ruleHistory() { return rd('kiteRuleVer1') || []; }
@@ -187,6 +202,10 @@
   /* 贈品圖片：後台上傳裁切成 600×600 JPEG，存在 kitePrizeImg1（不跟設定綁在一起，設定讀寫才不會變慢）；沒上傳用預設圖 */
   var PRIZE_IMG0 = { P01: '../photo/assets/stk_kite_peace.png', P02: '../assets/whaleshark.png', P03: '../travel/assets/kite_pack.png', P04: '../travel/assets/bento_special.png' };
   function prizeImg(pid) { var m = rd('kitePrizeImg1') || {}; return m[pid] || PRIZE_IMG0[pid] || '../travel/assets/kite_hello.png'; }
+  function couponUsedCount(cid) { return (rd('kiteCouponUsed1') || []).filter(function (u) { return u.cid === cid; }).length; }
+  function couponFaceHTML(e, w) { var im = couponImg(e.cid || e.id), es = function (t) { return String(t || '').replace(/[&<>"]/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]; }); };
+    return im ? '<img src="' + im + '" alt="" style="width:' + w + 'px;height:' + w + 'px;border-radius:12px;object-fit:cover;flex:none">' : '<span style="display:inline-flex;flex:none;flex-direction:column;align-items:center;justify-content:center;width:' + w + 'px;height:' + w + 'px;border-radius:12px;background:linear-gradient(135deg,#F7C548,#E8833A);color:#5A2A0C;font-weight:900;line-height:1.1;text-align:center;border:2px dashed #fff;box-sizing:border-box;box-shadow:0 2px 6px rgba(0,0,0,.12)"><span style="font-size:' + Math.round(w / 4) + 'px">' + es(e.face || '券') + '</span><span style="font-size:' + Math.max(9, Math.round(w / 8)) + 'px;font-weight:700">' + es((e.store || '').slice(0, 5)) + '</span></span>'; }
+  function couponImg(cid) { return (rd('kitePrizeImg1') || {})[cid] || ''; }      // D99：券圖（後台上傳，沒有就用券面樣式）
   function hasPrizeImg(pid) { return !!(rd('kitePrizeImg1') || {})[pid]; }
   function setPrizeImg(pid, url) { var m = rd('kitePrizeImg1') || {}; if (url) m[pid] = url; else delete m[pid]; if (!wr('kitePrizeImg1', m)) return false; audit((url ? '上傳' : '移除') + '贈品圖片 ' + pid); return true; }
   function reissueEarn(nonce) {      // 同一筆交易重新出碼：金額不變、交易不變，舊 QR 在這台作廢（工作單 01 v5 第二節 B）
@@ -270,12 +289,13 @@
       p = Math.min(p, left); addLedger(m, { type: 'travel', pts: p, bento: bento, ref: ref || '' }); out.pts = p;
     }
     var iss = couponIssued(), cs = (c.coupons || []).filter(function (x) { return x.on && (iss[x.id] || 0) < (x.monthQty || 0); });
-    for (var j = 0; j < cs.length && !out.coupon && !out.pts; j++) if (rnd() < (cs[j].chance || 0)) out.coupon = grantCoupon(m, cs[j]);      // G-73：一趟只帶回點數或券其中一種
+    var myC = (m.coupons || []).filter(function (x) { return monthKey(x.t) === monthKey(); }).length;
+    if (!out.pts && cs.length && myC < (c.couponMemberMonth == null ? 2 : c.couponMemberMonth)) { var rr = rnd(), acc = 0; for (var j = 0; j < cs.length; j++) { acc += cs[j].chance || 0; if (rr < acc) { out.coupon = grantCoupon(m, cs[j]); break; } } }      // G-73：一趟只帶回點數或券其中一種；D99：多張券合併抽一次，每人每月有上限
     saveMember(m); return out;
   }
   function grantCoupon(m, cp) {
     var id = rid(6), exp = Date.now() + (cp.validDays || 14) * 86400000, body = ['KITE1', 'C', m.id, cp.id, exp.toString(36), id].join('|'), code = body + '|' + hmac(cfg().redeemKey, body);
-    m.coupons = m.coupons || []; var o = { id: id, cid: cp.id, name: cp.name, store: cp.store || '', desc: cp.desc || '', t: Date.now(), exp: exp, code: code, status: 'ok' }; m.coupons.unshift(o);
+    m.coupons = m.coupons || []; var o = { id: id, cid: cp.id, name: cp.name, store: cp.store || '', face: cp.face || '', desc: cp.desc || '', t: Date.now(), exp: exp, code: code, status: 'ok' }; m.coupons.unshift(o);
     var all = rd('kiteCouponIssued1') || {}, mk = monthKey(); all[mk] = all[mk] || {}; all[mk][cp.id] = (all[mk][cp.id] || 0) + 1; wr('kiteCouponIssued1', all);
     return o;
   }
@@ -286,7 +306,7 @@
     var cp = (c.coupons || []).filter(function (x) { return x.id === p[3]; })[0], exp = parseInt(p[4], 36);
     var used = (rd('kiteCouponUsed1') || []).filter(function (u) { return u.id === p[5]; })[0]; if (used) return { ok: false, msg: '這張券已於 ' + new Date(used.t).toLocaleString('zh-TW', { hour12: false }) + ' 使用過' };
     if (Date.now() > exp) return { ok: false, msg: '這張券已過期（' + new Date(exp).toLocaleDateString('zh-TW') + '）' };
-    return { ok: true, member: p[2], id: p[5], cid: p[3], name: cp ? cp.name : p[3], desc: cp ? cp.desc : '', store: cp ? cp.store : '', exp: exp };
+    return { ok: true, member: p[2], id: p[5], cid: p[3], name: cp ? cp.name : p[3], desc: cp ? cp.desc : '', store: cp ? cp.store : '', face: cp ? cp.face || '' : '', exp: exp };
   }
   function couponUse(code, who) {
     var r = couponCheck(code); if (!r.ok) return r;
@@ -322,7 +342,8 @@
     var c0 = cfg(), today = dayKey(), act = (m.redeems || []).filter(function (r) { return r.status !== 'cancel' && r.status !== 'expired'; });
     if (p.from && today < p.from) return '這個贈品 ' + p.from.slice(5).replace('-', '/') + ' 才開始兌換';
     if (p.to && today > p.to) return '這個贈品的兌換期間已經結束';
-    if (p.perUser && act.filter(function (r) { return r.prize === p.id; }).length >= p.perUser) return '這個贈品每人限換 ' + p.perUser + ' 次，你已經換過了';
+    var per = p.perUserPer || 'all', PN = { day: '每天', month: '每月', all: '' }[per] || '', inPer = function (r) { return per === 'day' ? dayKey(r.t) === today : per === 'month' ? monthKey(r.t) === monthKey() : true; };
+    if (p.perUser && act.filter(function (r) { return r.prize === p.id && inPer(r); }).length >= p.perUser) return '這個贈品每人' + PN + '限換 ' + p.perUser + ' 份，你' + (PN ? PN.slice(1) === '天' ? '今天' : '這個月' : '') + '已經換過了';
     if (c0.redeemPerDay && act.filter(function (r) { return dayKey(r.t) === today; }).length >= c0.redeemPerDay) return '今天已經兌換 ' + c0.redeemPerDay + ' 次了，明天再來';
     return '';
   }
@@ -436,7 +457,7 @@
     member: member, peekMember: function () { return rd(K_MEM); }, saveMember: saveMember, dayKey: dayKey, rid: rid, hmac: hmac, sha256: sha256, utf8: utf8,
     pointsForSpend: pointsForSpend, makeEarnCode: makeEarnCode, claimEarn: claimEarn, storeLog: function () { return rd(K_STORE) || []; }, storeById: storeById,
     eventMult: eventMult, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore, tierPts: tierPts, nextTier: nextTier, gameToday: gameToday, storeBonusPts: storeBonusPts,
-    travelGift: travelGift, travelPtsThisMonth: function () { return travelPtsThisMonth(member()); }, myCoupons: myCoupons, couponCheck: couponCheck, couponUse: couponUse, couponIssued: couponIssued,
+    travelGift: travelGift, travelPtsThisMonth: function () { return travelPtsThisMonth(member()); }, myCoupons: myCoupons, couponCheck: couponCheck, couponUse: couponUse, couponIssued: couponIssued, couponImg: couponImg, couponUsedCount: couponUsedCount, couponFaceHTML: couponFaceHTML,
     prizeById: prizeById, stockLeft: stockLeft, makeRedeem: makeRedeem, cancelRedeem: cancelRedeem, deskCheck: deskCheck, deskGive: deskGive, findRedeem: findRedeem, pendingRedeems: pendingRedeems, memberName: memberName, markGiven: markGiven, deskLog: function () { return rd(K_DESK) || []; },
     allMembers: allMembers, importMembers: importMembers, addAdj: addAdj, adjSum: adjSum, gap: gap, list: list, saveList: saveList, backfill: backfill, claimedRefs: claimedRefs, lookupTx: lookupTx, archiveFull: archiveFull, archives: function () { return (rd('kiteArchive1') || []).map(function (a) { return { id: a.id, t: a.t }; }); }, importPreview: importPreview, dataset: dataset, wipeTest: wipeTest, reissueEarn: reissueEarn, voidEarn: voidEarn, peekEarn: peekEarn, onHand: onHand, reservedCount: reservedCount, exportMe: exportMe, expiring: expiring, batches: batches, housekeep: housekeep, storeMult: storeMult, notices: function () { var d = dayKey(); return (cfg().notices || []).filter(function (n) { return n.on && (!n.from || d >= n.from) && (!n.to || d <= n.to); }); }
   };
