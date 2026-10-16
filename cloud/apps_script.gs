@@ -43,12 +43,23 @@ function viewMember_(m) {
   sh.appendRow(row);
 }
 
+function lite_(m) {
+  return { id: m.id, name: m.name || '', status: m.status, lite: true, points: m.points, nonces: m.nonces || [], redeems: m.redeems || [],
+    coupons: (m.coupons || []).map(function (x) { return { id: x.id, cid: x.cid, t: x.t, status: x.status }; }),
+    ledger: (m.ledger || []).filter(function (e) { return e.ref && (e.type === 'store' || e.type === 'backfill'); }).map(function (e) { return { type: e.type, ref: e.ref, t: e.t, pts: e.pts }; }) };
+}
 function doGet(e) {
   var p = (e && e.parameter) || {};
   if (p.k !== PLAYER_KEY && p.k !== ADMIN_KEY) return out_({ ok: false, msg: 'key' });
   var D = rows_(), M = meta_(), logs = {};
+  if (p.a === 'me' && p.uid) {      // 換手機／清了瀏覽器：用 LINE 帳號找回自己的會員資料（測試期；正式版要在伺服器驗 LINE 的 ID token）
+    var hit = all_(D, 'member').filter(function (m) { return m.line && m.line.uid === p.uid; }).sort(function (a, b) { return (b.ledger || []).length - (a.ledger || []).length; })[0];
+    return out_({ ok: true, epoch: M.epoch, member: hit || null });
+  }
   all_(D, 'device').forEach(function (d) { Object.keys(d.logs || {}).forEach(function (k) { logs[k] = (logs[k] || []).concat(d.logs[k] || []); }); });
-  var o = { ok: true, t: Date.now(), epoch: M.epoch, cfgT: M.cfgT, imgVer: M.imgVer, members: all_(D, 'member'), logs: logs, cfg: one_(D, 'cfg', 'cfg'), ops: all_(D, 'op') };
+  var ms = all_(D, 'member');
+  if (p.full !== '1') ms = ms.map(lite_);      // 客人手機、店家、服務台只拿需要的部分（省流量）；後台拿完整資料
+  var o = { ok: true, t: Date.now(), epoch: M.epoch, cfgT: M.cfgT, imgVer: M.imgVer, members: ms, logs: logs, cfg: one_(D, 'cfg', 'cfg'), ops: all_(D, 'op') };
   if (String(p.imgVer || '') !== String(M.imgVer)) o.images = one_(D, 'images', 'images') || {};
   return out_(o);
 }
@@ -78,4 +89,27 @@ function doPost(e) {
     }
     return out_({ ok: false, msg: 'a' });
   } finally { lock.releaseLock(); }
+}
+
+/* ====== 官方 LINE 圖文選單（上線前 Dari 執行一次）======
+   1) LINE Developers 的 Messaging API 頻道 → 發行「Channel access token（長期）」
+   2) 這個 Apps Script 左邊齒輪「專案設定 → 指令碼屬性」新增兩個：LINE_TOKEN（上面那串）、LIFF_ID（LIFF 的 ID）
+   3) 上方函式選 setupRichMenu → 按「執行」（第一次會問授權，允許「連線到外部服務」）
+   圖用網站上的 line/assets/richmenu_v3.jpg（2500×1200）：上面一整條「小鳶樂園」、下面三格「掃碼集點／港口換禮／我的資訊」。 */
+var SITE = 'https://dari-design-web.github.io/kite-fishing/';
+function setupRichMenu() {
+  var pr = PropertiesService.getScriptProperties(), tok = pr.getProperty('LINE_TOKEN'), liff = pr.getProperty('LIFF_ID');
+  if (!tok || !liff) throw new Error('請先在「專案設定 → 指令碼屬性」填 LINE_TOKEN 和 LIFF_ID');
+  var H = { Authorization: 'Bearer ' + tok }, L = function (p) { return 'https://liff.line.me/' + liff + '?p=' + p + '&liff=1'; };
+  var area = function (x, y, w, h, p, label) { return { bounds: { x: x, y: y, width: w, height: h }, action: { type: 'uri', label: label, uri: L(p) } }; };
+  var body = { size: { width: 2500, height: 1200 }, selected: true, name: '小鳶樂園選單 v3', chatBarText: '小鳶樂園選單',
+    areas: [area(0, 0, 2500, 612, 'park', '小鳶樂園'), area(0, 612, 833, 588, 'scan', '掃碼集點'), area(833, 612, 834, 588, 'shop', '港口換禮'), area(1667, 612, 833, 588, 'me', '我的資訊')] };
+  var r = UrlFetchApp.fetch('https://api.line.me/v2/bot/richmenu', { method: 'post', contentType: 'application/json', headers: H, payload: JSON.stringify(body), muteHttpExceptions: true });
+  if (r.getResponseCode() !== 200) throw new Error('建立選單失敗：' + r.getContentText());
+  var id = JSON.parse(r.getContentText()).richMenuId, img = UrlFetchApp.fetch(SITE + 'line/assets/richmenu_v3.jpg').getBlob();
+  r = UrlFetchApp.fetch('https://api-data.line.me/v2/bot/richmenu/' + id + '/content', { method: 'post', contentType: 'image/jpeg', headers: H, payload: img.getBytes(), muteHttpExceptions: true });
+  if (r.getResponseCode() !== 200) throw new Error('上傳圖片失敗：' + r.getContentText());
+  r = UrlFetchApp.fetch('https://api.line.me/v2/bot/user/all/richmenu/' + id, { method: 'post', headers: H, muteHttpExceptions: true });
+  if (r.getResponseCode() !== 200) throw new Error('設成預設選單失敗：' + r.getContentText());
+  Logger.log('完成：圖文選單 ' + id + ' 已設成所有好友的預設選單');
 }
