@@ -174,6 +174,7 @@ svg text{font-family:inherit}
     ['分析', [['rstats', '🎁 兌換統計'], ['mstats', '👥 會員點數統計'], ['reports', '📈 報表']]],
     ['系統', [['system', '🛠️ 系統與資料']]]
   ];
+  K.onCloud(function () { var a = document.activeElement; if (a && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) return; if (document.querySelector('#drawer.on, [style*="z-index:200"]')) return; if (sess()) app(); });
   function app() {
     var s = sess(); if (!s) return login(); var D = data(), al = alerts(D);
     root.innerHTML = '<div class="app"><nav class="side"><div class="brand"><img src="../travel/assets/kite_hello.png" alt="">小鳶來港 後台</div>' + NAV.map(function (g) { return '<div class="grp">' + g[0] + '</div>' + g[1].map(function (n) { return '<button data-v="' + n[0] + '" class="' + (view === n[0] ? 'on' : '') + '">' + n[1] + (n[0] === 'dash' && al.length ? '<span class="badge">' + al.length + '</span>' : '') + '</button>'; }).join(''); }).join('') +
@@ -184,7 +185,7 @@ svg text{font-family:inherit}
     $('lo').onclick = function () { localStorage.removeItem(SK); login(); };
     $('q').onkeydown = function (e) { if (e.key === 'Enter') search(this.value.trim()); };
     var title = ''; NAV.forEach(function (g) { g[1].forEach(function (n) { if (n[0] === view) title = n[1].replace(/^\S+\s/, ''); }); }); $('vt').textContent = title;
-    var c = $('c'), ds = K.dataset(), imp = ds.imports || [], li = imp[imp.length - 1]; c.innerHTML = '<div class="test"><b>資料範圍：本裝置＋已匯入的測試資料</b>（不是全館即時資料，D72）・資料集 ' + ds.id + '・來源：這台' + (imp.length ? '＋匯入 ' + imp.length + ' 次、最後匯入 ' + dt(li.t) : '') + '・會員 ' + D.ms.length + ' 位。接雲端資料庫後才是全部客人。</div>';
+    var c = $('c'), ds = K.dataset(), imp = ds.imports || [], li = imp[imp.length - 1]; var cs = K.cloudStatus(); c.innerHTML = cs.url ? '<div class="test"' + (cs.err ? ' style="background:#FBE3DE"' : '') + '><b>資料範圍：雲端測試資料庫（Google 試算表）＋這台</b>・會員 ' + D.ms.length + ' 位・' + (cs.lastPull ? '最後同步 ' + dt(cs.lastPull) : '同步中…') + (cs.err ? '・<b>' + esc(cs.err) + '</b>' : '') + '・每 15 秒自動更新。上線前到「系統」按「清空全部測試資料」。</div>' : '<div class="test"><b>資料範圍：本裝置＋已匯入的測試資料</b>（還沒接雲端，D72）・資料集 ' + ds.id + '・來源：這台' + (imp.length ? '＋匯入 ' + imp.length + ' 次、最後匯入 ' + dt(li.t) : '') + '・會員 ' + D.ms.length + ' 位。到「系統 → 雲端同步」貼上網址就能收到所有測試玩家的資料。</div>';
     V[view](c, D, al);
   }
   function search(s) {
@@ -247,7 +248,7 @@ svg text{font-family:inherit}
   }
   function memberDrawer(id) {
     var D = data(), m = D.ms.filter(function (x) { return x.id === id; })[0]; if (!m) return;
-    var pm = K.peekMember(), me = !!pm && pm.id === m.id, pl = m.plays || [], g = {};
+    var pm = K.peekMember(), me0 = !!pm && pm.id === m.id, cop = !me0 && K.cloudStatus().admin, me = me0 || cop, pl = m.plays || [], g = {};
     pl.forEach(function (p) { var k = p.game + '|' + p.level; (g[k] = g[k] || []).push(p); });
     drawer('<h2 style="margin:0 0 4px">' + (m.name ? esc(m.name) + ' <span class="muted" style="font-weight:400">' + esc(m.id) + '</span>' : '會員 ' + esc(m.id)) + ' ' + (m.status === 'frozen' ? '<span class="pill r">凍結</span>' : '<span class="pill g">正常</span>') + '</h2><p class="muted" style="margin:0 0 14px">加入 ' + dt(m.created) + '・來過 ' + (m.visits || []).length + ' 天・目前 <b>' + m.points + '</b> 點・30 天內到期 ' + K.expiring(m, 30).due + ' 點' + (me ? '' : '・<span class="pill o">匯入資料（只能看）</span>') + '</p>' + (m.email || m.phone ? '<p class="small" style="margin:-8px 0 14px">📧 ' + esc(m.email || '—') + '　📱 ' + esc(m.phone || '—') + '</p>' : '') +
       '<div class="card" style="margin-bottom:12px"><h2>操作</h2><div class="filters"><input id="adj" type="number" placeholder="加減點數（例：10、-5）" style="width:150px"><input id="why" placeholder="原因（必填）" style="width:200px"><button class="btn" id="doadj"' + (me ? '' : ' disabled') + '>調整</button></div>' +
@@ -258,6 +259,14 @@ svg text{font-family:inherit}
       '<div class="card" style="margin-bottom:12px"><h2>點數帳本</h2>' + table('t_ml', [{ k: 't', t: '時間', f: function (r) { return dt(r.t); } }, { k: 'type', t: '類型', f: function (r) { return TL(r); } }, { k: 'x', t: '內容', f: function (r) { return esc(r.storeName ? r.storeName + ' NT$' + num(r.amount) : r.prizeName || (r.game ? GN(r.game) : '') || r.note || ''); } }, { k: 'pts', t: '點數', num: 1, f: function (r) { return (r.pts > 0 ? '+' : '') + r.pts; } }], m.ledger || [], { limit: 100 }) + '</div>' +
       '<div class="card"><h2>兌換</h2>' + table('t_mr', [{ k: 't', t: '時間', f: function (r) { return dt(r.t); } }, { k: 'name', t: '贈品' }, { k: 'id', t: '兌換碼' }, { k: 'pts', t: '點數', num: 1 }, { k: 'status', t: '狀態', f: stPill }], m.redeems || []) + '</div>');
     if (!me) return;
+    if (cop) {      // D100：別支手機的會員——操作送到雲端，那支手機下次連線時套用
+      var send = function (op, msg) { op.member = id; K.cloudOp(op).then(function (r) { toast(r && r.ok ? msg + '（客人手機下次連線時生效）' : '送出失敗：' + (r && r.msg || '')); }); };
+      $('doadj').onclick = function () { var v = Math.round(+$('adj').value), why = $('why').value.trim(); if (!v || !why) return toast('請填點數和原因'); K.audit('調整會員 ' + id + ' 點數 ' + (v > 0 ? '+' : '') + v + '（' + why + '）'); send({ type: 'adjust', pts: v, note: why }, '已送出調整'); };
+      $('frz').onclick = function () { var f2 = m.status !== 'frozen'; K.audit((f2 ? '凍結' : '解除凍結') + '會員 ' + id); send({ type: f2 ? 'freeze' : 'unfreeze' }, f2 ? '已送出凍結' : '已送出解除凍結'); };
+      $('rst').onclick = function () { K.audit('重設會員 ' + id + ' 今天的遊戲次數'); send({ type: 'resetTries' }, '已送出重設'); };
+      $('stag').onclick = function () { var tg = $('tag').value.split(/[、,，\s]+/).filter(Boolean); K.audit('會員 ' + id + ' 標籤：' + tg.join('、')); send({ type: 'tags', tags: tg }, '已送出標籤'); };
+      return;
+    }
     $('doadj').onclick = function () { var v = Math.round(+$('adj').value), why = $('why').value.trim(); if (!v || !why) return toast('請填點數和原因'); var x = K.member(); x.ledger.unshift({ t: Date.now(), type: 'adjust', pts: v, note: why }); x.points = Math.max(0, x.points + v); K.saveMember(x); K.audit('調整會員 ' + x.id + ' 點數 ' + (v > 0 ? '+' : '') + v + '（' + why + '）'); toast('已調整'); app(); memberDrawer(id); };
     $('frz').onclick = function () { var x = K.member(); x.status = x.status === 'frozen' ? 'ok' : 'frozen'; K.saveMember(x); K.audit((x.status === 'frozen' ? '凍結' : '解除凍結') + '會員 ' + x.id); app(); memberDrawer(id); };
     $('rst').onclick = function () { var x = K.member(), d = K.dayKey(); Object.keys(x.tries || {}).forEach(function (k) { if (k.indexOf(d) === 0) delete x.tries[k]; }); K.saveMember(x); K.audit('重設會員 ' + x.id + ' 今天的遊戲次數'); toast('已重設'); };
@@ -568,6 +577,12 @@ svg text{font-family:inherit}
   /* ---------- 系統與資料 ---------- */
   V.system = function (c, D) {
     var g = D.cfg, a = K.auditLog();
+    var cs = K.cloudStatus();
+    c.innerHTML += '<div class="card" style="margin-bottom:14px"><h2>☁️ 雲端同步（測試期：Google 試算表）<span class="sp"></span>' + (cs.url ? (cs.err ? '<span class="pill r">' + esc(cs.err) + '</span>' : '<span class="pill g">已連線</span>') : '<span class="pill gr">未設定</span>') + '</h2>' +
+      '<p class="small muted" style="margin-top:0">接上後：客人手機、店家、服務台的集點、兌換、核銷都會傳到雲端，後台每 15 秒更新；後台改的設定、贈品與券圖片也會發到每台裝置。設定步驟見 G 槽 Claude產出／雲端測試資料庫_設定步驟_v1.md。</p>' +
+      '<div class="form" style="grid-template-columns:140px 1fr"><label>Apps Script 網址</label><input id="cu" value="' + esc(localStorage.getItem('kiteCloudUrl') || '') + '" placeholder="' + esc(cs.url && !localStorage.getItem('kiteCloudUrl') ? '（網站內建）' + cs.url : 'https://script.google.com/macros/s/……/exec') + '"><label>後台金鑰</label><input id="ck" type="password" value="' + esc(localStorage.getItem('kiteCloudAdminKey') || '') + '" placeholder="和 Apps Script 裡 ADMIN_KEY 同一串"></div>' +
+      '<div class="filters" style="margin-top:8px"><button class="btn" id="cSave">儲存並連線</button><button class="btn alt" id="cNow">立即同步</button><button class="btn alt" id="cCfg"' + (cs.admin ? '' : ' disabled') + '>把目前設定與圖片發到所有裝置</button><span class="sp"></span><button class="btn red" id="cWipe"' + (cs.admin ? '' : ' disabled') + '>清空全部測試資料（雲端＋每台）</button></div>' +
+      '<p class="small muted">這台裝置 ' + esc(cs.dev) + '・第 ' + cs.epoch + ' 輪測試資料・雲端會員 ' + cs.members + ' 位・最後下載 ' + (cs.lastPull ? dt(cs.lastPull) : '—') + '・最後上傳 ' + (cs.lastPush ? dt(cs.lastPush) : '—') + '</p></div>';
     c.innerHTML += '<div class="grid g2"><div class="card"><h2>網站設定</h2><div class="form" style="grid-template-columns:140px 1fr"><label>館名</label><input id="sn" value="' + esc(g.site.name) + '"><label>客服電話</label><input id="st" value="' + esc(g.site.tel) + '"><label>測試模式</label><label style="display:flex;align-items:center;gap:6px;white-space:nowrap;font-weight:400"><input type="checkbox" id="tm"' + (g.site.testMode ? ' checked' : '') + '>顯示「原型測試中」</label></div><button class="btn" id="svS" style="margin-top:12px">儲存</button></div>' +
       '<div class="card"><h2>後台帳號</h2><div class="form" style="grid-template-columns:140px 1fr"><label>帳號</label><input id="au" value="' + esc(g.admin.user) + '"><label>新密碼</label><input id="ap" type="password" placeholder="不改就留空"></div><button class="btn" id="svA" style="margin-top:12px">儲存</button><p class="small muted">多帳號與權限（超級管理員／營運／會計／客服）要接雲端後才做（工作單 24 第 4-1 節）。</p></div>' +
       '<div class="card"><h2>資料</h2><div class="filters"><button class="btn alt" id="exA">匯出全部（JSON）</button><button class="btn alt" id="exM">匯出這台的會員</button></div><textarea id="imp" rows="3" placeholder="把別支手機匯出的會員資料（JSON）貼在這裡" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px"></textarea><button class="btn" id="doI" style="margin-top:8px">匯入</button></div>' +
@@ -583,6 +598,10 @@ svg text{font-family:inherit}
     $('wipe').onclick = function () { var D2 = data(); var s = prompt('會清除這台電腦的：會員 ' + D2.ms.length + ' 位（含匯入）、點數紀錄 ' + D2.led.length + ' 筆、店家 QR ' + D2.tx.length + ' 筆、服務台發放 ' + D2.desk.length + ' 筆。設定與操作紀錄保留。\n建議先按「匯出全部」備份。\n確定請輸入「清除」兩個字：'); if (s !== '清除') return toast('沒有清除'); var d = K.wipeTest(); if (!d) return toast('封存已滿 3 份，請先匯出並整理封存後再清除；這次沒有清除任何資料'); toast('已清除，新資料集 ' + d.id); app(); };
     c.querySelectorAll('[data-cfx]').forEach(function (b) { b.onclick = function () { var l = K.list('kiteImportConflicts1'); l.forEach(function (x) { if (x.id === b.dataset.cfx) { x.status = 'closed'; x.closedT = Date.now(); } }); K.saveList('kiteImportConflicts1', l); K.audit('關閉匯入衝突 ' + b.dataset.cfx + '（保留原本）'); app(); }; });
     $('reset').onclick = function () { if (!confirm('把所有設定還原成預設？')) return; K.resetCfg(); toast('已還原'); app(); };
+    $('cSave').onclick = function () { var u = $('cu').value.trim(), k = $('ck').value.trim(); if (u && !/^https:\/\/script\.google(usercontent)?\.com\/.+\/exec$|^http:\/\/localhost/.test(u)) return toast('網址應該是 https://script.google.com/macros/s/……/exec'); if (u) localStorage.setItem('kiteCloudUrl', u); else localStorage.removeItem('kiteCloudUrl'); if (k) localStorage.setItem('kiteCloudAdminKey', k); else localStorage.removeItem('kiteCloudAdminKey'); K.audit('雲端同步設定已更新'); toast('已儲存，連線中…'); K.cloudStart(); K.cloudSync().then(function () { app(); }); };
+    $('cNow').onclick = function () { toast('同步中…'); K.cloudSync().then(function () { var s2 = K.cloudStatus(); toast(s2.err || '已同步'); app(); }); };
+    $('cCfg').onclick = function () { K.saveCfg(K.cfg(), '發布設定到所有裝置'); K.cloudPush().then(function (r) { toast(r && r.ok ? '已發布' : '發布失敗：' + (K.cloudStatus().err || '請檢查後台金鑰')); app(); }); };
+    $('cWipe').onclick = function () { var s2 = prompt('會清空雲端上所有測試玩家的會員、點數、集點、兌換、券紀錄，每台手機下次連線也會自動清掉本機測試資料。後台設定與圖片保留。\n\n確定要清空，請輸入「清空」兩個字：'); if (s2 !== '清空') return; K.cloudWipe().then(function (r) { if (!r || !r.ok) return toast('清空失敗：' + (r && r.msg || '連不上')); K.audit('清空全部雲端測試資料（第 ' + r.epoch + ' 輪開始）'); toast('已清空，第 ' + r.epoch + ' 輪測試開始'); K.cloudPull(true).then(function () { app(); }); }); };
   };
 
   /* ---------- 補登／交易恢復（D54：兩種都限當天；工作單 24 v3 第四節 C） ---------- */

@@ -235,6 +235,8 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
   var stack = [];
   function open(p, arg, keep) { if (scanner) { scanner.stop(); scanner = null; } if (!keep) stack = []; stack.push([p, arg]); $('stitle').textContent = PAGES[p] || ''; var sh = $('sheet'); sh.className = 'sheet on' + (p === 'park' ? ' park' : ''); $('back').hidden = stack.length < 2; $('sbody').scrollTop = 0; R[p](arg); }
   function go(p, arg) { open(p, arg, true); }
+  /* D100：雲端同步回來（服務台發放、券核銷、後台調整、新設定）就重畫目前這頁；後台清空測試資料時整頁重新載入 */
+  K.onCloud(function (e) { if (e && e.wiped) return location.reload(); if (scanner || document.querySelector('.modal')) return; var t = stack[stack.length - 1]; if (t && $('sheet').classList.contains('on') && ['points', 'mine', 'coupon', 'ticket', 'shop', 'item', 'park', 'mygames', 'me'].indexOf(t[0]) >= 0) { var y = $('sbody').scrollTop; R[t[0]](t[1]); $('sbody').scrollTop = y; } });
   function close() { if (scanner) { scanner.stop(); scanner = null; } $('sheet').className = 'sheet'; stack = []; }
   function back() { stack.pop(); var t = stack.pop(); if (t) open(t[0], t[1], true); else close(); }
   $('close').onclick = close; $('back').onclick = back;
