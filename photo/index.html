@@ -188,7 +188,7 @@ button{font-family:inherit}
   </section>
 </div>
 <div class="sheet" id="frameSheet" hidden><div class="sheetin"><h3>選相框</h3><div class="fgrid" id="fgrid"></div><button class="btn ghost" id="fsClose" type="button">關閉</button></div></div>
-<div class="sheet" id="camSheet" hidden><div class="sheetin"><h3>相機打不開</h3><p id="camWhy"></p><button class="btn" id="snapBtn" type="button">用手機相機拍一張</button><button class="btn ghost" id="camAlbum" type="button">從相簿選照片</button><button class="btn ghost" id="csClose" type="button">關閉</button></div></div>
+<div class="sheet" id="camSheet" hidden><div class="sheetin"><h3>相機打不開</h3><p id="camWhy"></p><button class="btn" id="extBtn" type="button" hidden>用手機瀏覽器開啟（可以直接拍）</button><button class="btn" id="snapBtn" type="button">用手機相機拍一張</button><button class="btn ghost" id="camAlbum" type="button">從相簿選照片</button><button class="btn ghost" id="csClose" type="button">關閉</button></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -387,7 +387,7 @@ const SND_ICON = (() => {
 </script>
 <script>
 /* 小鳶合照館 原型 v0.1（工作單 11 v4 P2）。貼紙、相框、解鎖方式都是建議，等 Dari 確認；正式素材之後開單給 ChatGPT */
-const CFG = { version: '0.21', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
+const CFG = { version: '0.22', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
 const $ = (id) => document.getElementById(id);
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = 'none'), 2400); }
@@ -568,6 +568,10 @@ function camFail(e) {
   else if (n === 'NotFoundError' || n === 'OverconstrainedError') why = '找不到可以用的相機。';
   else if (n === 'NotReadableError') why = '相機正在被別的 App 使用，關掉後再試一次。';
   else why = (inLine ? '在 LINE 裡面' : framed ? '在嵌入的網頁裡' : '這個瀏覽器') + '不能直接開即時相機。可以用下面的「用手機相機拍一張」，拍完一樣能放貼紙和相框。';
+  /* v0.22（D90，Dari 10/16）：LINE 內建瀏覽器常常不給網頁用相機，而且「用手機相機拍一張」在 Android LINE 會變成開相簿。
+     在 LINE 裡改成第一顆按鈕「用手機瀏覽器開啟」（LINE 支援網址加 openExternalBrowser=1 直接用外部瀏覽器開），備案按鈕改名為「選照片或拍照」，說明也照實寫 */
+  if (inLine) { why = 'LINE 裡面的瀏覽器不讓網頁直接開相機。按「用手機瀏覽器開啟」，換到 Chrome 或 Safari 就可以邊看貼紙邊拍；或到手機設定讓 LINE 可以使用相機後再試一次。'; $('snapBtn').textContent = '選照片或拍照（會跳出手機選單）'; }
+  $('extBtn').hidden = !inLine;
   $('camWhy').textContent = why + (n ? '（' + n + '）' : ''); $('camSheet').hidden = false;
 }
 function stopCam() { if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; } }
@@ -677,6 +681,7 @@ async function share() {
 $('ver').textContent = 'v' + CFG.version;
 $('camBtn').onclick = async () => { if (!(await openCam())) { /* 留在首頁，提示改用相簿或示範背景 */ } };
 $('albumBtn').onclick = () => $('file').click(); $('album2').onclick = () => $('file').click();
+$('extBtn').onclick = () => { const u = new URL(location.href); u.searchParams.set('openExternalBrowser', '1'); location.href = u.toString(); };
 $('snapBtn').onclick = () => { $('camSheet').hidden = true; $('snap').click(); };
 $('camAlbum').onclick = () => { $('camSheet').hidden = true; $('file').click(); };
 $('csClose').onclick = () => { $('camSheet').hidden = true; };
