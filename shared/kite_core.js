@@ -257,7 +257,9 @@
     var cap = Math.round((c.gameDailyCap || 0) * (c.eventCapMult ? maxM : 1)), bonus = Math.floor(bonusF + 1e-9), pts = Math.min(cap, base + bonus);
     var got = (m.ledger || []).filter(function (e) { return e.type === 'game' && e.day === d; }).reduce(function (n, e) { return n + e.pts; }, 0);
     var nx = pts >= cap ? null : nextTier(total);
-    return { total: total, base: base, bonus: bonus, pts: pts, got: got, cap: cap, next: nx };
+    var dd = new Date(), tm = 1; (c.events || []).forEach(function (e) { if (e.on && (e.days || []).indexOf(dd.getDay()) >= 0 && (!e.dateFrom || d >= e.dateFrom) && (!e.dateTo || d <= e.dateTo) && e.mult > tm) tm = e.mult; });
+    var capMax = c.eventCapMult ? Math.max(cap, Math.round((c.gameDailyCap || 0) * tm)) : cap;      // D99：今天有加倍活動時，上限最多可到幾點（給畫面提示）
+    return { total: total, base: base, bonus: bonus, pts: pts, got: got, cap: cap, capMax: capMax, next: nx };
   }
   function triesLeft(game, level) { var c = cfg(), m = member(), k = dayKey() + '|' + game + '|' + level, n = c.gameTries[game] != null ? c.gameTries[game] : c.triesPerLevel; return Math.max(0, n - ((m.tries || {})[k] || 0)); }
   function reportPlay(o) {      // o = { game, level, score, sec }

@@ -57,6 +57,8 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
 /* LIFF 頁 */
 .sheet{position:fixed;inset:0;z-index:50;background:var(--bg);display:none;flex-direction:column;max-width:520px;margin:0 auto}
 .sheet.on{display:flex;animation:up .22s ease-out}
+/* D100：在官方 LINE 裡（LIFF）打開時，不顯示示意用的聊天室與圖文選單，直接是那一頁 */
+body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.inliff .testbar{display:none!important}body.inliff .sheet.on{animation:none}
 @keyframes up{from{transform:translateY(30px);opacity:.4}}
 .sheet .top{flex:0 0 auto}.sheet .wrap{flex:1;overflow-y:auto}
 .sheet.park .top{background:#163F57;color:#fff;border-bottom:0}.sheet.park .top .lk,.sheet.park .top h1{color:#fff}
@@ -233,11 +235,13 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
   /* ====== 選單與 LIFF 頁 ====== */
   var PAGES = { park: '小鳶樂園', scan: '掃碼集點', shop: '港口換禮', me: '我的資訊', profile: '修改我的資料', points: '我的點數', mine: '我的兌換', coupon: '我的券', mygames: '我的遊戲', news: '港口消息', item: '贈品', ticket: '兌換單' };
   var stack = [];
-  function open(p, arg, keep) { if (scanner) { scanner.stop(); scanner = null; } if (!keep) stack = []; stack.push([p, arg]); $('stitle').textContent = PAGES[p] || ''; var sh = $('sheet'); sh.className = 'sheet on' + (p === 'park' ? ' park' : ''); $('back').hidden = stack.length < 2; $('sbody').scrollTop = 0; R[p](arg); }
+  function open(p, arg, keep) { if (scanner) { scanner.stop(); scanner = null; } if (!keep) stack = []; stack.push([p, arg]); $('stitle').textContent = PAGES[p] || ''; if (INLIFF) document.title = (PAGES[p] || '') + '｜' + (K.cfg().site.name || '東三東四'); var sh = $('sheet'); sh.className = 'sheet on' + (p === 'park' ? ' park' : ''); $('back').hidden = stack.length < 2; $('sbody').scrollTop = 0; R[p](arg); }
   function go(p, arg) { open(p, arg, true); }
   /* D100：雲端同步回來（服務台發放、券核銷、後台調整、新設定）就重畫目前這頁；後台清空測試資料時整頁重新載入 */
   K.onCloud(function (e) { if (e && e.wiped) return location.reload(); if (scanner || document.querySelector('.modal')) return; var t = stack[stack.length - 1]; if (t && $('sheet').classList.contains('on') && ['points', 'mine', 'coupon', 'ticket', 'shop', 'item', 'park', 'mygames', 'me'].indexOf(t[0]) >= 0) { var y = $('sbody').scrollTop; R[t[0]](t[1]); $('sbody').scrollTop = y; } });
-  function close() { if (scanner) { scanner.stop(); scanner = null; } $('sheet').className = 'sheet'; stack = []; }
+  var INLIFF = /[?&]liff=1/.test(location.search) || /[?&]liff\.state=/.test(location.search) || / Line\//i.test(navigator.userAgent);
+  if (INLIFF) document.body.classList.add('inliff');
+  function close() { if (scanner) { scanner.stop(); scanner = null; } if (INLIFF) { if (window.liff && liff.isInClient && liff.isInClient()) return liff.closeWindow(); stack = []; return open('park'); } $('sheet').className = 'sheet'; stack = []; }
   function back() { stack.pop(); var t = stack.pop(); if (t) open(t[0], t[1], true); else close(); }
   $('close').onclick = close; $('back').onclick = back;
   $('rich').querySelectorAll('button').forEach(function (b) { b.onclick = function () { open(b.dataset.p); }; });
@@ -271,7 +275,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
       '<span class="spark" style="left:22%;top:118px"></span><span class="spark" style="left:47%;top:132px;animation-delay:.8s"></span><span class="spark" style="left:68%;top:124px;animation-delay:1.5s"></span>' +
       '<svg class="wave" viewBox="0 0 800 46" preserveAspectRatio="none"><path d="M0 22 Q50 6 100 22 T200 22 T300 22 T400 22 T500 22 T600 22 T700 22 T800 22 V46 H0Z" fill="#1C5470" opacity=".55"/><path d="M0 30 Q50 16 100 30 T200 30 T300 30 T400 30 T500 30 T600 30 T700 30 T800 30 V46 H0Z" fill="#1C5470"/></svg>' +
       '<div class="lb-title"><small>KITE PARK・GAME LOBBY</small><b>小鳶樂園</b></div></div>' +
-      (TIER ? '<div class="lb-player"><img src="' + KITE + '" alt=""><div class="s"><b>' + esc(K.displayName(m)) + '</b><span>今天累計 ' + gt.total.toLocaleString() + ' 分' + (gt.next ? '・再 ' + gt.next.need.toLocaleString() + ' 分多 1 點' : '・今天已拿滿') + '</span></div><div class="bank">今天遊戲點<b>' + gt.pts + ' / ' + gt.cap + '</b></div></div>' : '<div class="lb-player"><img src="' + KITE + '" alt=""><div class="s"><b>' + esc(K.displayName(m)) + '</b><span>今天還能算分 ' + left + ' 次・每 ' + c.scorePerPoint.toLocaleString() + ' 分換 1 點</span></div><div class="bank">分數存摺<b>' + bank.toLocaleString() + '</b></div></div>') +
+      (TIER ? '<div class="lb-player"><img src="' + KITE + '" alt=""><div class="s"><b>' + esc(K.displayName(m)) + '</b><span>今天累計 ' + gt.total.toLocaleString() + ' 分' + (gt.next ? '・再 ' + gt.next.need.toLocaleString() + ' 分多 1 點' : '・今天已拿滿') + '</span></div><div class="bank">今天遊戲點<b>' + gt.pts + ' / ' + gt.cap + '</b>' + (gt.capMax > gt.cap ? '<span style="display:block;font-size:11px;font-weight:700;opacity:.8">活動最多 ' + gt.capMax + '</span>' : '') + '</div></div>' : '<div class="lb-player"><img src="' + KITE + '" alt=""><div class="s"><b>' + esc(K.displayName(m)) + '</b><span>今天還能算分 ' + left + ' 次・每 ' + c.scorePerPoint.toLocaleString() + ' 分換 1 點</span></div><div class="bank">分數存摺<b>' + bank.toLocaleString() + '</b></div></div>') +
       (evs.length ? '<div class="lb-ev">🎉 今天的活動：' + evs.map(function (x) { return esc(x.e.title) + '（' + esc(K.GAMES[x.g.id].name) + ' ×' + x.e.mult + '）'; }).join('、') + '</div>' : '') +
       '<div class="lb-sec">' + (evs.length ? '今日推薦' : '人氣遊戲') + '</div><div class="lb-grid">' + booth(fg, 0, true) + '</div>' +
       '<div class="lb-sec">全部遊戲</div><div class="lb-grid">' + GL.filter(function (g) { return g.id !== feat; }).map(function (g, i) { return booth(g, i + 1); }).join('') +
@@ -480,7 +484,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
   hello();
   /* D100：在官方 LINE 裡打開時用 LINE 帳號登入（LIFF_ID 設好之後才會動作）；換手機時從雲端找回點數 */
   K.liffStart({ login: true }).then(function (m) { if (!m) return; hello && hello(); var t = stack[stack.length - 1]; if (t && $('sheet').classList.contains('on')) R[t[0]](t[1]); });
-  var p0 = new URLSearchParams(location.search).get('p'); p0 = { card: 'points', prize: 'shop', games: 'park', events: 'news' }[p0] || p0; if (new URLSearchParams(location.search).get('tab') === 'bento') shopF = 'bento'; if (p0 && R[p0]) open(p0);      // 舊連結（v1 選單名稱）也能開
+  var p0 = new URLSearchParams(location.search).get('p'); p0 = { card: 'points', prize: 'shop', games: 'park', events: 'news' }[p0] || p0; if (new URLSearchParams(location.search).get('tab') === 'bento') shopF = 'bento'; if (p0 && R[p0]) open(p0); else if (INLIFF) open('park');      // 舊連結（v1 選單名稱）也能開
   window.__line = { open: open, go: go, claim: claim, close: close };
 })();
 </script>

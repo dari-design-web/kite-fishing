@@ -90,3 +90,26 @@ function doPost(e) {
     return out_({ ok: false, msg: 'a' });
   } finally { lock.releaseLock(); }
 }
+
+/* ====== 官方 LINE 圖文選單（上線前 Dari 執行一次）======
+   1) LINE Developers 的 Messaging API 頻道 → 發行「Channel access token（長期）」
+   2) 這個 Apps Script 左邊齒輪「專案設定 → 指令碼屬性」新增兩個：LINE_TOKEN（上面那串）、LIFF_ID（LIFF 的 ID）
+   3) 上方函式選 setupRichMenu → 按「執行」（第一次會問授權，允許「連線到外部服務」）
+   圖用網站上的 line/assets/richmenu_v3.jpg（2500×1200）：上面一整條「小鳶樂園」、下面三格「掃碼集點／港口換禮／我的資訊」。 */
+var SITE = 'https://dari-design-web.github.io/kite-fishing/';
+function setupRichMenu() {
+  var pr = PropertiesService.getScriptProperties(), tok = pr.getProperty('LINE_TOKEN'), liff = pr.getProperty('LIFF_ID');
+  if (!tok || !liff) throw new Error('請先在「專案設定 → 指令碼屬性」填 LINE_TOKEN 和 LIFF_ID');
+  var H = { Authorization: 'Bearer ' + tok }, L = function (p) { return 'https://liff.line.me/' + liff + '?p=' + p + '&liff=1'; };
+  var area = function (x, y, w, h, p, label) { return { bounds: { x: x, y: y, width: w, height: h }, action: { type: 'uri', label: label, uri: L(p) } }; };
+  var body = { size: { width: 2500, height: 1200 }, selected: true, name: '小鳶樂園選單 v3', chatBarText: '小鳶樂園選單',
+    areas: [area(0, 0, 2500, 612, 'park', '小鳶樂園'), area(0, 612, 833, 588, 'scan', '掃碼集點'), area(833, 612, 834, 588, 'shop', '港口換禮'), area(1667, 612, 833, 588, 'me', '我的資訊')] };
+  var r = UrlFetchApp.fetch('https://api.line.me/v2/bot/richmenu', { method: 'post', contentType: 'application/json', headers: H, payload: JSON.stringify(body), muteHttpExceptions: true });
+  if (r.getResponseCode() !== 200) throw new Error('建立選單失敗：' + r.getContentText());
+  var id = JSON.parse(r.getContentText()).richMenuId, img = UrlFetchApp.fetch(SITE + 'line/assets/richmenu_v3.jpg').getBlob();
+  r = UrlFetchApp.fetch('https://api-data.line.me/v2/bot/richmenu/' + id + '/content', { method: 'post', contentType: 'image/jpeg', headers: H, payload: img.getBytes(), muteHttpExceptions: true });
+  if (r.getResponseCode() !== 200) throw new Error('上傳圖片失敗：' + r.getContentText());
+  r = UrlFetchApp.fetch('https://api.line.me/v2/bot/user/all/richmenu/' + id, { method: 'post', headers: H, muteHttpExceptions: true });
+  if (r.getResponseCode() !== 200) throw new Error('設成預設選單失敗：' + r.getContentText());
+  Logger.log('完成：圖文選單 ' + id + ' 已設成所有好友的預設選單');
+}
