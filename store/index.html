@@ -82,7 +82,7 @@
     var log = K.storeLog().filter(function (x) { return x.store === s.id; }), today = K.dayKey();
     var tl = log.filter(function (x) { return K.dayKey(x.t) === today; }), sum = tl.reduce(function (a, x) { return a + x.amount; }, 0), pts = tl.reduce(function (a, x) { return a + x.pts; }, 0);
     $('recent').innerHTML = log.slice(0, 6).map(function (x) { return '<li><span class="grow"><b>NT$ ' + x.amount.toLocaleString() + '・' + x.pts + ' 點</b><span class="muted">' + t2(x.t) + '・編號 ' + x.nonce + (x.reissue ? '・重出 ' + x.reissue + ' 次' : '') + '</span></span>' + (x.void ? '<span class="pill r">作廢</span>' : '') + '</li>'; }).join('') || '<li class="muted">還沒有</li>';
-    $('sync').textContent = '今天 ' + tl.length + ' 筆、消費 NT$ ' + sum.toLocaleString() + '、發出 ' + pts + ' 點。上傳雲端：待接（原型先存在這台）。';
+    $('sync').textContent = '今天 ' + tl.length + ' 筆、消費 NT$ ' + sum.toLocaleString() + '、發出 ' + pts + ' 點。' + (K.cloudStatus().url ? (K.cloudStatus().err ? '雲端：' + K.cloudStatus().err + '（資料先存在這台，連上後自動補傳）' : '已同步到雲端。') : '上傳雲端：待接（原型先存在這台）。');
   }
   function storeQR(s, a, r) {
     stopAll(); var c = K.cfg(), end = Date.now() + c.qrExpireMin * 60000;
@@ -109,7 +109,7 @@
     app.innerHTML = '<div class="card"><h2>掃客人的兌換 QR</h2><p class="muted" style="margin:0 0 8px">掃碼只查詢，尚未發放。請核對贈品、數量及狀態；交付後按「確認已交付」。</p><div class="scanBox" id="scan"></div><p class="muted" id="smsg" style="margin:8px 0 0"></p>' +
       '<label class="muted" for="rc" style="display:block;margin-top:10px">QR 掃不到？請客人唸兌換單上的 6 碼兌換碼</label><div class="rcIn"><input id="rc" maxlength="7" autocomplete="off" autocapitalize="characters" placeholder="例：AB3K7Q"><button class="btn warn" id="rcGo">查詢</button></div>' +
       '<details style="margin-top:8px"><summary class="muted">貼上完整代碼（客人按「複製代碼」傳來的）</summary><textarea id="manual" rows="3" style="width:100%;margin-top:6px;border:1px solid var(--line);border-radius:12px;padding:8px"></textarea><button class="btn alt full" id="chk">查詢</button></details></div>' +
-      '<div id="res"></div><div class="card"><h2>待領取 <span class="muted" id="wn" style="font-size:14px;font-weight:400"></span></h2><ul class="list wl" id="wait"></ul><p class="note">只列得出這台看得到的兌換單（原型資料存在各自手機，D72）；接雲端後就是全館。</p></div>' + bfCard() + '<div class="card"><h2>今天發出的</h2><p class="muted" id="tsum" style="margin:-4px 0 6px"></p><ul class="list" id="today"></ul></div><div class="card"><h2>贈品庫存</h2><ul class="list" id="stock"></ul></div><button class="btn alt full" id="out">登出</button>';
+      '<div id="res"></div><div class="card"><h2>待領取 <span class="muted" id="wn" style="font-size:14px;font-weight:400"></span></h2><ul class="list wl" id="wait"></ul>' + (K.cloudStatus().url ? '<p class="note">全館的兌換單（雲端同步，約 1 分鐘更新一次；客人剛換的單可以直接用兌換碼查）。</p>' : '<p class="note">只列得出這台看得到的兌換單（原型資料存在各自手機，D72）；接雲端後就是全館。</p>') + '</div>' + bfCard() + '<div class="card"><h2>今天發出的</h2><p class="muted" id="tsum" style="margin:-4px 0 6px"></p><ul class="list" id="today"></ul></div><div class="card"><h2>贈品庫存</h2><ul class="list" id="stock"></ul></div><button class="btn alt full" id="out">登出</button>';
     scanner = new KiteScan.Scanner($('scan'), function (code) { /* G60-03：核對卡或完成卡還在時不讀下一張碼 */ if ($('res').innerHTML) return; check(code); }, function (m) { $('smsg').textContent = m; }); scanner.start();
     $('chk').onclick = function () { var v = $('manual').value.trim(); if (/^[A-Za-z0-9]{6}$/.test(v)) byShort(v); else check(v); };
     $('rcGo').onclick = function () { byShort($('rc').value); };
@@ -138,11 +138,12 @@
   }
   function listBf() { var d = K.dayKey(), L = K.list('kiteBackfill1').filter(function (x) { return K.dayKey(x.t) === d; }); $('bfList').innerHTML = L.slice(0, 10).map(function (x) { return '<li><span class="grow"><b>' + (x.type === 'recover' ? '交易恢復' : '一般補登') + '・' + x.pts + ' 點</b><span class="muted">' + t2(x.t) + '・' + x.id + '・' + esc(x.by || '') + '</span></span><span class="pill' + (x.status === 'done' ? '' : ' r') + '">' + (x.status === 'done' ? '已入帳' : '待人工核對') + '</span></li>'; }).join(''); }
   /* D84：用 6 碼兌換碼查。查到就走同一個核對畫面；查不到說清楚原因 */
-  function byShort(v) {
+  function byShort(v, again) {
     v = String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); var box = $('res');
     if (v.length !== 6) return toast('兌換碼是 6 碼英文和數字');
     var h = K.findRedeem(v), msg = '';
-    if (!h) msg = '這台查不到兌換碼 ' + v + '。原型的兌換單存在客人自己的手機（D72），請改掃客人手機上的 QR。';
+    if (!h && !again && K.cloudStatus().url) { toast('到雲端查詢中…'); return K.cloudPull(true).then(function () { byShort(v, 1); }); }      // D100：客人剛換的單，先跟雲端對一次
+    if (!h) msg = K.cloudStatus().url ? '雲端查不到兌換碼 ' + v + '。請確認客人唸的碼，或請客人打開手機讓兌換單同步後再試，也可以直接掃客人手機上的 QR。' : '這台查不到兌換碼 ' + v + '。原型的兌換單存在客人自己的手機（D72），請改掃客人手機上的 QR。';
     else if (h.r.status === 'cancel') msg = '兌換碼 ' + v + ' 已被客人取消，點數已退回，不能發放';
     else if (h.r.status === 'expired') msg = '兌換碼 ' + v + ' 已逾期自動取消，點數已退回，不能發放';
     else if (!h.r.code) msg = '兌換碼 ' + v + ' 是匯入的資料，缺少驗證碼，請改掃客人手機上的 QR';
@@ -171,6 +172,7 @@
       box.scrollIntoView({ behavior: 'smooth', block: 'start' }); renderDesk();
       $('next').onclick = function () { box.innerHTML = ''; if (scanner) scanner.reset(); window.scrollTo({ top: 0, behavior: 'smooth' }); }; };
   }
+  K.onCloud(function () { if ($('wait')) renderDesk(); });      // D100：雲端同步回來就更新待領清單
   function renderDesk() {
     var today = K.dayKey(), log = K.deskLog().filter(function (x) { return K.dayKey(x.t) === today; });
     var W = K.pendingRedeems(), hd = K.cfg().redeemHoldDays; $('wn').textContent = W.length ? W.length + ' 張・由舊到新' + (W.length > 15 ? '（只列最早 15 張，其他請用兌換碼查）' : '') : '';
