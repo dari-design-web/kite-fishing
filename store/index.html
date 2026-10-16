@@ -163,7 +163,7 @@
   }
   function renderDesk() {
     var today = K.dayKey(), log = K.deskLog().filter(function (x) { return K.dayKey(x.t) === today; });
-    var W = K.pendingRedeems(), hd = K.cfg().redeemHoldDays; $('wn').textContent = W.length ? W.length + ' 張・由舊到新' : '';
+    var W = K.pendingRedeems(), hd = K.cfg().redeemHoldDays; $('wn').textContent = W.length ? W.length + ' 張・由舊到新' + (W.length > 15 ? '（只列最早 15 張，其他請用兌換碼查）' : '') : '';
     $('wait').innerHTML = W.slice(0, 15).map(function (x, i) { var nm = x.m.name || '', dl = hd ? x.r.t + hd * 86400000 : 0, soon = dl && dl - Date.now() < 3 * 86400000; return '<li data-w="' + x.r.id + '"><img src="' + K.prizeImg(x.r.prize) + '" alt="" style="width:40px;height:40px;border-radius:8px;object-fit:contain;background:#F4EEE2"><span class="grow"><b>' + esc(x.r.name) + '</b><span class="muted">' + x.r.id + '・' + (nm ? esc(nm) : esc(x.m.id)) + '・' + t2(x.r.t) + '</span></span>' + (soon ? '<span class="pill r">' + (dl <= Date.now() ? '已過期限' : '快到期') + '</span>' : '<span class="pill o">待領</span>') + '</li>'; }).join('') || '<li class="muted">目前沒有待領取的兌換單</li>';
     $('wait').querySelectorAll('[data-w]').forEach(function (li) { li.onclick = function () { byShort(li.dataset.w); }; });
     var sub = {}; log.forEach(function (x) { sub[x.prizeName] = (sub[x.prizeName] || 0) + 1; });

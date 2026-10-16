@@ -274,6 +274,7 @@
   function pendingRedeems() { var issued = {}, out = []; (rd(K_DESK) || []).forEach(function (r) { issued[r.rcode] = 1; }); allMembers().forEach(function (m) { (m.redeems || []).forEach(function (r) { if (r.status === 'wait' && !issued[r.id]) out.push({ m: m, r: r }); }); }); return out.sort(function (a, b) { return a.r.t - b.r.t; }); }
   /* D84：客人 QR 壞掉／手機沒電時，後台手動標記已領（記在服務台發放紀錄，manual＝true，寫操作紀錄） */
   function markGiven(rc, staff, why) {
+    why = String(why || '').trim(); if (!why) return { ok: false, msg: '請填原因（例如：客人手機沒電，已核對姓名與兌換碼）' };      // G60-07
     var h = findRedeem(rc); if (!h) return { ok: false, msg: '這台查不到這張兌換單' };
     if (h.r.status !== 'wait') return { ok: false, msg: '這張兌換單不是待領取狀態' };
     var hd = cfg().redeemHoldDays; if (hd && Date.now() - h.r.t > hd * 86400000) return { ok: false, msg: '這張兌換單已超過 ' + hd + ' 天領取期限，不能標記已領' };
