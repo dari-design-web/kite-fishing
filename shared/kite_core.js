@@ -480,8 +480,8 @@
     if (CL.cfgDirty && ak) { b.cfg = rd(K_CFG); b.cfgT = (b.cfg || {}).cfgT || Date.now(); }
     if (CL.imgDirty && ak) b.images = rd('kitePrizeImg1') || {};
     var cd = CL.cfgDirty, id = CL.imgDirty; CL.cfgDirty = CL.imgDirty = false;
-    return cloudPost(b).then(function (r) { CL.lastPush = Date.now(); if (r && r.msg === 'epoch') return cloudPull(true); if (!r || !r.ok) { CL.err = '上傳失敗：' + (r && r.msg || '?'); CL.cfgDirty = CL.cfgDirty || cd; CL.imgDirty = CL.imgDirty || id; } else CL.err = ''; return r; })
-      .catch(function (e) { CL.err = '連不上雲端'; CL.cfgDirty = CL.cfgDirty || cd; CL.imgDirty = CL.imgDirty || id; });
+    return cloudPost(b).then(function (r) { CL.lastPush = Date.now(); if (r && r.msg === 'epoch') return cloudPull(true); if (!r || !r.ok) { CL.err = '上傳失敗：' + (r && r.msg || '?'); CL.pending = true; CL.cfgDirty = CL.cfgDirty || cd; CL.imgDirty = CL.imgDirty || id; } else { CL.err = ''; CL.pending = false; } return r; })
+      .catch(function (e) { CL.err = '連不上雲端'; CL.pending = true; CL.cfgDirty = CL.cfgDirty || cd; CL.imgDirty = CL.imgDirty || id; });
   }
   function schedulePush(k) { if (CL.pulling) return; if (k === 'kitePrizeImg1') CL.imgDirty = true; if (!cloudUrl()) return; clearTimeout(CL.timer); CL.timer = setTimeout(cloudPush, 1200); }
   G.__kiteCloudPush = schedulePush;
@@ -519,7 +519,7 @@
         applyToMe({ logs: logs, ops: r.ops || [] });
       } finally { CL.pulling = false; }
       CL.lastPull = Date.now(); CL.err = '';
-      if (wiped) { cloudPush(); }
+      if (wiped || CL.pending) { cloudPush(); }      // 之前沒傳上去的（斷網時）連上後自動補傳
       CL.subs.forEach(function (f) { try { f({ wiped: wiped }); } catch (e) {} }); return r;
     }).catch(function (e) { CL.busy = false; CL.err = '連不上雲端'; return null; });
   }
