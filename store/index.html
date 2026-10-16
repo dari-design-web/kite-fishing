@@ -110,7 +110,7 @@
       '<label class="muted" for="rc" style="display:block;margin-top:10px">QR 掃不到？請客人唸兌換單上的 6 碼兌換碼</label><div class="rcIn"><input id="rc" maxlength="7" autocomplete="off" autocapitalize="characters" placeholder="例：AB3K7Q"><button class="btn warn" id="rcGo">查詢</button></div>' +
       '<details style="margin-top:8px"><summary class="muted">貼上完整代碼（客人按「複製代碼」傳來的）</summary><textarea id="manual" rows="3" style="width:100%;margin-top:6px;border:1px solid var(--line);border-radius:12px;padding:8px"></textarea><button class="btn alt full" id="chk">查詢</button></details></div>' +
       '<div id="res"></div><div class="card"><h2>待領取 <span class="muted" id="wn" style="font-size:14px;font-weight:400"></span></h2><ul class="list wl" id="wait"></ul><p class="note">只列得出這台看得到的兌換單（原型資料存在各自手機，D72）；接雲端後就是全館。</p></div>' + bfCard() + '<div class="card"><h2>今天發出的</h2><p class="muted" id="tsum" style="margin:-4px 0 6px"></p><ul class="list" id="today"></ul></div><div class="card"><h2>贈品庫存</h2><ul class="list" id="stock"></ul></div><button class="btn alt full" id="out">登出</button>';
-    scanner = new KiteScan.Scanner($('scan'), function (code) { check(code); }, function (m) { $('smsg').textContent = m; }); scanner.start();
+    scanner = new KiteScan.Scanner($('scan'), function (code) { /* G60-03：核對卡或完成卡還在時不讀下一張碼 */ if ($('res').innerHTML) return; check(code); }, function (m) { $('smsg').textContent = m; }); scanner.start();
     $('chk').onclick = function () { var v = $('manual').value.trim(); if (/^[A-Za-z0-9]{6}$/.test(v)) byShort(v); else check(v); };
     $('rcGo').onclick = function () { byShort($('rc').value); };
     $('rc').onkeydown = function (e) { if (e.key === 'Enter') byShort($('rc').value); };
@@ -153,7 +153,7 @@
     var r = K.deskCheck(code), box = $('res');
     if (!r.ok) { box.innerHTML = '<div class="card res bad"><h2>⚠️ 不能發放</h2><p style="margin:0">' + esc(r.msg) + '</p><button class="btn alt full" id="again" style="margin-top:10px">繼續掃</button></div>'; }
     else { var nm = K.memberName(r.member); box.innerHTML = '<div class="card res"><div class="pz"><img src="' + K.prizeImg(r.prize.id) + '" alt=""><div><div class="muted">請交付這個贈品 1 份</div><h2>🎁 ' + esc(r.prize.name) + '</h2></div></div><p class="who">' + (nm ? esc(nm) + ' <span class="muted" style="font-weight:400">' + esc(r.member) + '</span>' : '會員 ' + esc(r.member)) + '</p><p style="margin:0">兌換碼 <b style="letter-spacing:2px">' + r.rcode + '</b>・已扣 ' + r.pts + ' 點</p><p class="muted" style="margin:4px 0 10px">客人產生時間 ' + t2(r.t) + (r.late ? ' <span class="pill o">超過 ' + K.cfg().redeemExpireMin + ' 分鐘，請確認是本人</span>' : '') + '・實物現存 ' + r.stock + '（其中已保留 ' + r.reserved + '）' + '</p>' +
-      '<div class="row"><button class="btn alt" id="again">取消</button><button class="btn warn" id="give"' + (r.stock <= 0 ? ' disabled' : '') + '>確認已交付</button></div></div>'; }
+      '<div class="row"><button class="btn alt" id="again">返回掃碼</button><button class="btn warn" id="give"' + (r.stock <= 0 ? ' disabled' : '') + '>確認已交付</button></div></div>'; }
     box.scrollIntoView({ behavior: 'smooth', block: 'start' });
     $('again').onclick = function () { box.innerHTML = ''; if (scanner) scanner.reset(); };
     if ($('give')) $('give').onclick = function () { var g = K.deskGive(code, sess().who); if (!g.ok) return toast(g.msg);
