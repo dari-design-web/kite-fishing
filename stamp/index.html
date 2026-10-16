@@ -436,7 +436,7 @@ const SND_ICON = (() => {
 /* BGM-END */
 </script>
 <script>
-const CFG = { version: '1.0', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
+const CFG = { version: '1.1', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
 const FRAMES = [[53.3333, 40.4444], [25.0463, 46.1481], [18.9352, 75.4815], [44.4907, 86.7407], [75.9722, 77.4815], [80.5093, 56.037]], FRAME_R = 10.37;      // v0.8：G-50 港區小地圖六圈中心（%）；章容器 224px＝寬 20.74%（ChatGPT 地圖位置 JSON）
 const ROUTE = [[1, 2, [[[462.8, 559.4], [449.0, 561.0], [429.0, 568.0], [410.0, 578.0], [378.3, 588.2]]]], [2, 3, [[[330.7, 717.1], [339.0, 730.0], [337.8, 734.0]], [[294.0, 784.0], [285.0, 790.0], [301.0, 820.0], [313.0, 859.0], [313.0, 902.0], [299.0, 934.0], [287.3, 944.5]]]], [3, 4, [[[290.9, 1089.4], [315.0, 1109.0], [339.0, 1130.0], [360.0, 1145.0], [372.6, 1147.7]]]], [4, 5, [[[590.5, 1181.6], [615.0, 1184.0], [638.0, 1178.0], [662.0, 1171.0], [688.0, 1157.0], [709.0, 1138.0], [736.5, 1115.3]]]], [5, 6, [[[750.1, 963.3], [721.0, 929.0], [730.0, 903.0], [740.0, 879.0], [752.0, 857.0], [786.2, 827.8]]]], [6, 1, [[[797.0, 674.6], [784.0, 660.0], [760.0, 636.0], [742.0, 613.0], [718.0, 591.0], [700.0, 579.0], [686.0, 575.3]]]]];      // 每段 [起站, 終站, 可見路段（原圖像素）]；稱號帶的斷口不補線
 /* 6 個蓋章點（實際位置待 Dari 現勘）。color：每站主色（工作單 18）；title：蓋到就拿到的稱號（建議）；riddle：還沒去時的提示 */
@@ -631,12 +631,13 @@ function pressSheet(s, v, done) {
 }
 function showStory(s, fresh, newTitles, extra, v) {
   v = v || P.var[s.id] || '';
-  const got = newTitles.length ? '<div class="gotT">' + newTitles.map((t) => '<div>🏅 <span>拿到稱號<br><b>' + t + '</b></span>' + (COMBOS.some((c) => c.title === t) || t === SECRET.title ? '<i>隱藏稱號</i>' : '') + '</div>').join('') + '</div>' : '';
+  /* D86（Dari 10/16）：同一次解鎖好幾個稱號時（例如蓋完第 6 章會一起拿到隱藏稱號），只放大第一個，其他收成一行，不再一張一張疊 */
+  const isHid = (t) => COMBOS.some((c) => c.title === t) || t === SECRET.title;
+  const got = newTitles.length ? '<div class="gotT"><div>🏅 <span>拿到稱號<br><b>' + newTitles[0] + '</b></span>' + (isHid(newTitles[0]) ? '<i>隱藏稱號</i>' : '') + '</div></div>' + (newTitles.length > 1 ? '<p class="again" style="margin-top:6px">還一起拿到 ' + (newTitles.length - 1) + ' 個稱號：<b>' + newTitles.slice(1).map((t) => t + (isHid(t) ? '（隱藏）' : '')).join('、') + '</b>（在護照「我的稱號」看）</p>' : '') : '';
   $('sheet').innerHTML = '<div class="big">' + stampV(s, v) + '</div><h3>' + (fresh ? (extra ? '章升級了！' : '蓋到「' + s.name + '」章了！') : s.name + '章・' + s.title) + '</h3>' + (v ? '<p class="again" style="color:#B07D1A;font-weight:700">這是「' + VAR_NAME[v] + '」章</p>' : '') + (extra ? '<p class="again">' + extra + '</p>' : '') + got +
     '<div class="say"><img src="../travel/assets/' + (fresh ? 'kite_happy' : 'kite_home') + '.png" alt=""><p>' + s.lines.join('<br>') + '</p></div>' +
     (s.rec ? '<div class="rec">' + s.rec + '</div>' : '') +
-    (fresh && OBS[s.id] ? '<div class="obs' + ((P.found || {})[s.id] ? ' done' : '') + '" id="obs"><b>👀 一起找找看（大人小孩輪流）</b><p>' + ((P.found || {})[s.id] ? '一起找到了！' : OBS[s.id]) + '</p>' + ((P.found || {})[s.id] ? '' : '<div class="row"><button class="yes" type="button" id="obsYes">找到了！</button><button class="no" type="button" id="obsNo">略過</button></div>') + '</div>' : '') +
-    (fresh ? '<div class="hear" id="hear"><b>👂 港口聲音尋寶（可略過）</b><p>停下腳步，閉上眼睛聽 5 秒，你聽到什麼？</p><button class="go" type="button" id="hearGo">開始聽</button></div>' : '') +
+    (fresh && OBS[s.id] ? '<div class="obs' + ((P.found || {})[s.id] ? ' done' : '') + '" id="obs"><b>👀 一起找找看</b><p>' + ((P.found || {})[s.id] ? '一起找到了！' : OBS[s.id]) + '</p>' + ((P.found || {})[s.id] ? '' : '<div class="row"><button class="yes" type="button" id="obsYes">找到了！</button><button class="no" type="button" id="obsNo">略過</button></div>') + '</div>' : '') +
     '<p class="again">' + (n() < 6 ? '還差 ' + (6 - n()) + ' 個章' : '6 個都蓋好了！') + '</p>' + (fresh && nextSpot() ? '<div class="nextTip">🧭 下一站猜猜看：<b>' + nextSpot().riddle + '</b></div>' : '') + '<button class="btn" type="button" id="ovOk">看護照</button>';      // v0.20（C-141）：蓋完章馬上給下一站的謎語，不用回護照找
   $('ov').hidden = false;
   if (newTitles.length) setTimeout(() => sfx('pop'), 300);

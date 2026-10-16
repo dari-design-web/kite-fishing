@@ -411,7 +411,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
       '<label class="f">Email（選填）<input id="pfE" type="email" inputmode="email" value="' + esc(m.email || '') + '" placeholder="例：kite@example.com" autocomplete="email"></label>' +
       '<label class="f">手機（選填）<input id="pfP" type="tel" inputmode="tel" value="' + esc(m.phone || '') + '" placeholder="09xxxxxxxx" autocomplete="tel"></label>' +
       '<p class="muted" id="pfMsg" style="margin:0 0 10px;color:var(--red)"></p><button class="btn full" id="pfOk">儲存</button></div>' +
-      '<div class="card"><p class="muted" style="margin:0">會員編號 <b>' + esc(m.id) + '</b> 不會變，服務台查詢、補登都用這個。<br>Email 和手機為選填。本機測試只作資料示範，不提供帳號找回、也不會發送通知；正式用途與個資告知另行確認。<br>原型：資料只存在這支手機。</p></div>';
+      '<div class="card"><p class="muted" style="margin:0">會員編號 <b>' + esc(m.id) + '</b> 不會變，服務台查詢、補登都用這個。<br>Email 和手機為選填。本機測試只作資料示範，不提供帳號找回、也不會發送通知；資料管理單位：大日開發有限公司；正式版的個資告知會在開始收集前提供。<br>原型：資料只存在這支手機。</p></div>';
     var cnt = function () { var n = Array.from($('pfN').value.trim()).length; $('pfC').textContent = n + '／16'; $('pfC').style.color = n > 16 ? 'var(--red)' : ''; }; $('pfN').oninput = cnt; cnt();
     $('pfOk').onclick = function () { var r = K.setProfile({ name: $('pfN').value, email: $('pfE').value, phone: $('pfP').value }); if (!r.ok) { $('pfMsg').textContent = r.msg; var el = { name: 'pfN', email: 'pfE', phone: 'pfP' }[r.field]; if (el) $(el).focus(); return; } toast('已儲存'); back(); hello(); };
   };
