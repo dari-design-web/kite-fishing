@@ -233,7 +233,7 @@ summary{font-weight:700;font-size:14px;cursor:pointer}
     <button class="btn" type="button" id="shareBtn">存成護照圖片</button>
     <a class="btn light" href="../travel/" id="toTravel">回小鳶的小屋</a>
   </div>
-  <details>
+  <details id="devBox" hidden>
     <summary>測試：模擬掃 QR／感應印章</summary>
     <div class="tools" id="tools"></div>
     <p class="note" style="margin-top:8px">正式版是在現場掃 QR，網址會帶點的編號（例如 <code>?spot=3</code>）。原型 <span id="ver"></span>：彩色章、夜間章、港區小地圖都已換上 ChatGPT（G-50）的暫用正式圖；稱號名稱、稀有機率、夜間時間、祕密章條件都是建議，等 Dari 決定。蓋章只存在這支手機。</p>
@@ -435,19 +435,19 @@ const SND_ICON = (() => {
 /* BGM-END */
 </script>
 <script>
-const CFG = { version: '1.2', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
+const CFG = { version: '1.3', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
 const FRAMES = [[53.3333, 40.4444], [25.0463, 46.1481], [18.9352, 75.4815], [44.4907, 86.7407], [75.9722, 77.4815], [80.5093, 56.037]], FRAME_R = 10.37;      // v0.8：G-50 港區小地圖六圈中心（%）；章容器 224px＝寬 20.74%（ChatGPT 地圖位置 JSON）
 const ROUTE = [[1, 2, [[[462.8, 559.4], [449.0, 561.0], [429.0, 568.0], [410.0, 578.0], [378.3, 588.2]]]], [2, 3, [[[330.7, 717.1], [339.0, 730.0], [337.8, 734.0]], [[294.0, 784.0], [285.0, 790.0], [301.0, 820.0], [313.0, 859.0], [313.0, 902.0], [299.0, 934.0], [287.3, 944.5]]]], [3, 4, [[[290.9, 1089.4], [315.0, 1109.0], [339.0, 1130.0], [360.0, 1145.0], [372.6, 1147.7]]]], [4, 5, [[[590.5, 1181.6], [615.0, 1184.0], [638.0, 1178.0], [662.0, 1171.0], [688.0, 1157.0], [709.0, 1138.0], [736.5, 1115.3]]]], [5, 6, [[[750.1, 963.3], [721.0, 929.0], [730.0, 903.0], [740.0, 879.0], [752.0, 857.0], [786.2, 827.8]]]], [6, 1, [[[797.0, 674.6], [784.0, 660.0], [760.0, 636.0], [742.0, 613.0], [718.0, 591.0], [700.0, 579.0], [686.0, 575.3]]]]];      // 每段 [起站, 終站, 可見路段（原圖像素）]；稱號帶的斷口不補線
 /* 6 個蓋章點（實際位置待 Dari 現勘）。color：每站主色（工作單 18）；title：蓋到就拿到的稱號（建議）；riddle：還沒去時的提示 */
 /* v1.0（D83）：站 → 住在那裡的港口朋友（meet/ 的朋友編號） */
 const PAL_OF = { 1: 1, 2: 3, 3: 4, 4: 6, 5: 2, 6: 5 }, PAL_NAME = { 1: '探頭小鳶', 2: '剛到港口的小鳶', 3: '鯨鯊', 4: '會發光的小卷', 5: '打盹小鳶', 6: '海龜' };      // 依站編號
 const SPOTS = [
-  { id: 1, name: '小鳶', hint: '旅客服務中心入口', riddle: '一進門就會看到我', icon: 'kite', color: '#E39A1F', title: '港口新朋友', lines: ['我第一次飛來這裡的時候，好緊張喔！', '後來發現大家都好親切。', '歡迎你也來玩～'] },
-  { id: 2, name: '郵輪', hint: '看得到郵輪的碼頭邊', riddle: '聽得到海浪、看得到大船', icon: 'ship', color: '#2F6DB5', title: '數船小達人', lines: ['你看你看，大船來了！', '我每天都在數有幾艘船，', '數到手指不夠用啦！'] },
-  { id: 3, name: '鯨鯊', hint: '鯨鯊拍照點', riddle: '有個很大很溫柔的朋友', icon: 'shark', color: '#1E9E9A', title: '鯨鯊的好朋友', lines: ['這裡是我跟鯨鯊好朋友拍照的地方。', '牠游得慢慢的，可是好溫柔喔。'] },
-  { id: 4, name: '碗筷', hint: '美食區的專櫃前', riddle: '香香的味道從這裡飄出來', icon: 'bowl', color: '#E0662F', title: '港邊小吃家', lines: ['肚子咕嚕咕嚕叫了嗎？', '這裡有好多好吃的，', '我最喜歡港邊的點心了！'], rec: '今天的推薦：剛起鍋的炸蝦捲，酥酥的！（示範文字；正式管理方式待確認）' },
-  { id: 5, name: '椅子', hint: '室內休息區', riddle: '下雨天我都躲在這裡', icon: 'chair', color: '#8A5BC2', title: '躲雨小專家', lines: ['下雨的時候，我都躲在這裡等雨停。', '坐一下，休息一下下吧。'] },
-  { id: 6, name: '小車', hint: '停車場出口', riddle: '要回家的時候會經過', icon: 'car', color: '#3E9B4F', title: '下次見大使', lines: ['要回家了嗎？', '下次再來找我玩喔，', '我會在港口等你！'] }
+  { id: 1, name: '小鳶', hint: '旅客服務中心入口', riddle: '一進門就會看到我', icon: 'kite', color: '#E39A1F', title: '港口新朋友', say: '歡迎來到港口！我第一次來也好緊張～', lines: ['我第一次飛來這裡的時候，好緊張喔！', '後來發現大家都好親切。', '歡迎你也來玩～'] },
+  { id: 2, name: '郵輪', hint: '看得到郵輪的碼頭邊', riddle: '聽得到海浪、看得到大船', icon: 'ship', color: '#2F6DB5', title: '數船小達人', say: '你看，大船來了！一起數數看有幾艘？', lines: ['你看你看，大船來了！', '我每天都在數有幾艘船，', '數到手指不夠用啦！'] },
+  { id: 3, name: '鯨鯊', hint: '鯨鯊拍照點', riddle: '有個很大很溫柔的朋友', icon: 'shark', color: '#1E9E9A', title: '鯨鯊的好朋友', say: '這裡是我跟鯨鯊好朋友拍照的地方！', lines: ['這裡是我跟鯨鯊好朋友拍照的地方。', '牠游得慢慢的，可是好溫柔喔。'] },
+  { id: 4, name: '碗筷', hint: '美食區的專櫃前', riddle: '香香的味道從這裡飄出來', icon: 'bowl', color: '#E0662F', title: '港邊小吃家', say: '香香的！港邊的點心我最喜歡了～', lines: ['肚子咕嚕咕嚕叫了嗎？', '這裡有好多好吃的，', '我最喜歡港邊的點心了！'], rec: '今天的推薦：剛起鍋的炸蝦捲，酥酥的！（示範文字；正式管理方式待確認）' },
+  { id: 5, name: '椅子', hint: '室內休息區', riddle: '下雨天我都躲在這裡', icon: 'chair', color: '#8A5BC2', title: '躲雨小專家', say: '下雨也不怕，在這裡休息一下吧。', lines: ['下雨的時候，我都躲在這裡等雨停。', '坐一下，休息一下下吧。'] },
+  { id: 6, name: '小車', hint: '停車場出口', riddle: '要回家的時候會經過', icon: 'car', color: '#3E9B4F', title: '下次見大使', say: '下次再來找我玩，我在港口等你！', lines: ['要回家了嗎？', '下次再來找我玩喔，', '我會在港口等你！'] }
 ];
 /* 組合稱號（隱藏，蓋到才知道；Dari 10/13 照建議）與祕密章（條件見 SECRET_NEED） */
 const COMBOS = [
@@ -592,7 +592,7 @@ function scan(id) {
   const s = SPOTS.find((x) => x.id === id); if (!s) return;
   try { const fr = JSON.parse(localStorage.getItem('kiteFriends1') || '{}') || {}; if (!fr[PAL_OF[id]]) { fr[PAL_OF[id]] = Date.now(); localStorage.setItem('kiteFriends1', JSON.stringify(fr)); } } catch (e) {}      // v1.0：蓋到這站＝見過住在這站的朋友
   const first = !P.spots[s.id], d = today(), days = P.days[s.id] || [], newDay = !first && !days.includes(d);
-  if (!first && !newDay) { showStory(s, false, []); return; }
+  if (!first && !newDay) { againSheet(s); return; }      // v1.3（G-61）：同一天重掃同一站，直接告訴你章已經在護照裡，不再重看整段
   const v = rollVar(); forceVar = '';
   /* v0.6：掃到就先存進度，蓋章動畫中途離開也不會掉章（ChatGPT G-50 意見） */
   if (first) { P.spots[s.id] = Date.now(); P.order.push(s.id); justId = s.id; }
@@ -604,6 +604,11 @@ function scan(id) {
   const toStory = () => showStory(s, true, fresh, first ? '' : '同一站不同天再蓋，章升級到 Lv' + lvOf(s.id) + '！', P.var[s.id]);
   if (P.fast && n() > 1) { sfx('stamp'); if (nv === 'gold' || nv === 'rainbow') setTimeout(() => sfx('chime'), 250); toStory(); return; }      // v0.9：選過「直接看結果」就記住，之後直接看結果（第一章仍有完整演出）
   pressSheet(s, nv || v, () => showStory(s, true, fresh, first ? '' : '同一站不同天再蓋，章升級到 Lv' + lvOf(s.id) + '！', P.var[s.id]));
+}
+function againSheet(s) {
+  $('sheet').innerHTML = '<div class="big">' + stampV(s, P.var[s.id] || '') + '</div><h3>今天已經蓋過「' + s.name + '」章了</h3><p class="again">章已經收在護照裡。' + (n() < 6 ? '還差 ' + (6 - n()) + ' 個章' + (nextSpot() ? '，下一站猜猜看：<b>' + nextSpot().riddle + '</b>' : '') : '6 個都蓋好了！') + '</p><p class="again" style="font-size:13px">換一天再來蓋，這個章會升級喔。</p><button class="btn" type="button" id="ovOk">看護照</button>';
+  $('ov').hidden = false; sfx('pop');
+  $('ovOk').onclick = () => { $('ov').hidden = true; render(); };
 }
 function pressSheet(s, v, done) {
   $('sheet').innerHTML = '<h3>' + s.hint + '</h3><button class="press" type="button" id="press" style="--c:' + s.color + '" aria-label="按住印章蓋下去">' +
@@ -631,11 +636,12 @@ function pressSheet(s, v, done) {
 }
 function showStory(s, fresh, newTitles, extra, v) {
   v = v || P.var[s.id] || '';
+  if (fresh && !extra && n() === 6 && !P.rewarded) { render(); checkDone(s, newTitles); return; }      // v1.3（G-61）：第 6 章的結果和集滿畫面合成一次，不用連按兩次
   /* D86（Dari 10/16）：同一次解鎖好幾個稱號時（例如蓋完第 6 章會一起拿到隱藏稱號），只放大第一個，其他收成一行，不再一張一張疊 */
   const isHid = (t) => COMBOS.some((c) => c.title === t) || t === SECRET.title;
   const got = newTitles.length ? '<div class="gotT"><div>🏅 <span>拿到稱號<br><b>' + newTitles[0] + '</b></span>' + (isHid(newTitles[0]) ? '<i>隱藏稱號</i>' : '') + '</div></div>' + (newTitles.length > 1 ? '<p class="again" style="margin-top:6px">還一起拿到 ' + (newTitles.length - 1) + ' 個稱號：<b>' + newTitles.slice(1).map((t) => t + (isHid(t) ? '（隱藏）' : '')).join('、') + '</b>（在護照「我的稱號」看）</p>' : '') : '';
   $('sheet').innerHTML = '<div class="big">' + stampV(s, v) + '</div><h3>' + (fresh ? (extra ? '章升級了！' : '蓋到「' + s.name + '」章了！') : s.name + '章・' + s.title) + '</h3>' + (v ? '<p class="again" style="color:#B07D1A;font-weight:700">這是「' + VAR_NAME[v] + '」章</p>' : '') + (extra ? '<p class="again">' + extra + '</p>' : '') + got +
-    '<div class="say"><img src="../travel/assets/' + (fresh ? 'kite_happy' : 'kite_home') + '.png" alt=""><p>' + s.lines.join('<br>') + '</p></div>' +
+    '<div class="say"><img src="../travel/assets/' + (fresh ? 'kite_happy' : 'kite_home') + '.png" alt=""><p>' + (fresh && s.say ? s.say : s.lines.join('<br>')) + '</p></div>' +      // v1.3（G-61⑤）：剛蓋完只說一句，完整台詞留在重看
     (s.rec ? '<div class="rec">' + s.rec + '</div>' : '') +
     (fresh && OBS[s.id] ? '<div class="obs' + ((P.found || {})[s.id] ? ' done' : '') + '" id="obs"><b>👀 一起找找看</b><p>' + ((P.found || {})[s.id] ? '一起找到了！' : OBS[s.id]) + '</p>' + ((P.found || {})[s.id] ? '' : '<div class="row"><button class="yes" type="button" id="obsYes">找到了！</button><button class="no" type="button" id="obsNo">略過</button></div>') + '</div>' : '') +
     '<p class="again">' + (n() < 6 ? '還差 ' + (6 - n()) + ' 個章' : '6 個都蓋好了！') + '</p>' + (fresh && nextSpot() ? '<div class="nextTip">🧭 下一站猜猜看：<b>' + nextSpot().riddle + '</b></div>' : '') + '<button class="btn" type="button" id="ovOk">看護照</button>';      // v0.20（C-141）：蓋完章馬上給下一站的謎語，不用回護照找
@@ -653,13 +659,14 @@ function showStory(s, fresh, newTitles, extra, v) {
   $('ovOk').onclick = () => { $('ov').hidden = true; const landing = justId && !REDUCE; render(); setTimeout(() => { if ($('ov').hidden) checkDone(); }, landing ? 700 : 0); };      // v0.6：最後一個章先落到護照上，再跳集滿（ChatGPT C-87 複查）
 }
 const REDUCE = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-function checkDone() {
+function checkDone(last, newTitles) {
   if (n() < 6 || P.rewarded) return;
   P.complete = true; P.rewarded = true; save(); confetti(); sfx('chime');
-  $('sheet').innerHTML = '<img src="assets/pc_passport.jpg" alt="港灣探險護照紀念明信片" style="width:100%;border-radius:8px;border:5px solid #fff;box-shadow:0 6px 16px rgba(0,0,0,.25);transform:rotate(-2deg)"><h3>港灣探險護照集滿了！</h3>' +
+  const more = (newTitles || []).filter((t) => t !== '東三東四港灣探險家');
+  $('sheet').innerHTML = (last ? '<p class="again" style="font-weight:700;color:' + last.color + '">咚！第 6 個「' + last.name + '」章也蓋好了' + (P.var[last.id] ? '（' + VAR_NAME[P.var[last.id]] + '章）' : '') + '</p>' : '') + '<img src="assets/pc_passport.jpg" alt="港灣探險護照紀念明信片" style="width:100%;border-radius:8px;border:5px solid #fff;box-shadow:0 6px 16px rgba(0,0,0,.25);transform:rotate(-2deg)"><h3>港灣探險護照集滿了！</h3>' +
     '<div class="gotT"><div>🏅 <span>你現在是<br><b>東三東四港灣探險家</b></span><i>集滿稱號</i></div></div>' +
     '<div class="say"><img src="../travel/assets/item_umbrella.png" alt=""><p>謝謝你陪我走完一圈！<br>這把雨傘送給你，<br>下雨天也可以帶我去旅行喔～</p></div>' +
-    '<p class="again">拿到：護照紀念明信片（小屋收藏冊「港灣護照」）、小鳶的雨傘（小屋背包），6 個章也都變成合照館的貼紙了。' + (P.secret ? '' : '聽說還有一個祕密章……') + '</p><button class="btn" type="button" id="doneCard">📷 儲存完成卡</button><a class="btn light" href="../photo/" style="display:block;text-align:center;margin-top:8px;text-decoration:none">去合照館用章合照</a><button class="btn light" type="button" id="ovOk" style="margin-top:8px">回護照</button>';
+    (more.length ? '<p class="again">還一起拿到稱號：<b>' + more.join('、') + '</b></p>' : '') + '<p class="again">拿到：護照紀念明信片（小屋收藏冊「港灣護照」）、小鳶的雨傘（小屋背包），6 個章也都變成合照館的貼紙了。' + (P.secret ? '' : '聽說還有一個祕密章……') + '</p><button class="btn" type="button" id="doneCard">📷 儲存完成卡</button><a class="btn light" href="../photo/" style="display:block;text-align:center;margin-top:8px;text-decoration:none">去合照館用章合照</a><button class="btn light" type="button" id="ovOk" style="margin-top:8px">回護照</button>';
   $('ov').hidden = false; $('ovOk').onclick = () => { $('ov').hidden = true; render(); }; $('doneCard').onclick = () => { $('ov').hidden = true; render(); sharePassport(); };
 }
 /* ===== 存成「我的港灣護照」圖片（只在手機上產生，不上傳） ===== */
@@ -772,13 +779,18 @@ function confetti() {
 if (secretOk()) P.secret = P.secret || Date.now();
 syncTitles(); save(); render(); drawSnd();
 if (n() === 6 && !P.rewarded) setTimeout(() => { if ($('ov').hidden) checkDone(); }, 400);      // v0.7：第 6 章蓋完卻沒看到集滿就離開，下次打開補發（ChatGPT C-92 意見）
+/* v1.3（G-61⑰）：測試工具只給團隊看：網址加 ?dev=1（這支手機記住）、本機或 G 碟單頁版才出現；一般旅客看不到 */
+try { if (/[?&]dev=1/.test(location.search)) localStorage.setItem('kiteDev', '1'); if (/[?&]dev=0/.test(location.search)) localStorage.removeItem('kiteDev'); } catch (e) {}
+const DEV = (() => { try { if (localStorage.getItem('kiteDev') === '1') return true; } catch (e) {} return /^(localhost|127\.0\.0\.1|)$/.test(location.hostname); })();
+$('devBox').hidden = !DEV;
 $('titleBar').onclick = openTitles;
 $('shareBtn').onclick = sharePassport;
 $('snd').onclick = (e) => { e.stopPropagation(); sndOn = !sndOn; SND_ICON.save(sndOn); bgmSync(); drawSnd(); };
 document.addEventListener('pointerdown', () => { if (sndOn && !BGM.on) bgmSync(); }, { passive: true });      // 手機要先點一下才能出聲
 const m = /[?&](?:spot|s)=(\d)/.exec(location.search), FL = /[?&]from=line/.test(location.search);
 /* v1.0（D83）：每一站住著一位港口朋友。掃 QR（?spot=N）先到朋友那裡打招呼，朋友說完帶 &met=1 回來蓋章；舊的朋友 QR（meet/?f=N）也會走同一條路 */
-if (m && !/[?&]met=1/.test(location.search) && PAL_OF[+m[1]]) { location.replace('../meet/?f=' + PAL_OF[+m[1]] + '&spot=' + m[1] + (FL ? '&from=line' : '')); }
+if (m && !/[?&]met=1/.test(location.search) && PAL_OF[+m[1]] && !P.spots[+m[1]]) {      // v1.3（G-61）：這站已經蓋過（見過朋友），重掃就直接收章，不再先跑一次朋友頁
+  location.replace('../meet/?f=' + PAL_OF[+m[1]] + '&spot=' + m[1] + (FL ? '&from=line' : '')); }
 else if (m) { try { const fv = sessionStorage.getItem('kiteForceVar'); if (fv) { forceVar = fv; sessionStorage.removeItem('kiteForceVar'); } } catch (e) {} scan(+m[1]); history.replaceState(null, '', location.pathname + (FL ? '?from=line' : '')); }
       // v1.2（G-61、D86）：拿掉「我的港灣小劇場」入口（Dari：沒什麼意義），改成 6 站集滿的完成卡＋合照館港灣章貼紙
 window.__stamp = { theater: openTheater, P: () => P, scan, force: (v) => { forceVar = v; }, share: sharePassport };
