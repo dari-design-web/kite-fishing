@@ -434,7 +434,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.41',
+  version: '0.42',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -1152,18 +1152,19 @@ function drawMarketUI() {
     ctx.restore();
   }
   if (!menu) return;
-  const x = 70, y = 90, w = 220, h = 70, pop = menu.pop > 0 ? 1 + menu.pop * 0.12 : 1;      // 菜單卡
+  const x = 70, y = 88, w = 220, h = 84, pop = menu.pop > 0 ? 1 + menu.pop * 0.12 : 1;      // 菜單卡（v0.42：卡片加高，字都放在紙面內、加淺色描邊，手機上不再被卡片邊框和背景吃掉）
   ctx.save(); ctx.translate(x + w / 2, y + h / 2); ctx.scale(pop, pop); ctx.translate(-w / 2, -h / 2);
   if (img.ui_menu_card) ctx.drawImage(img.ui_menu_card, 0, 0, w, h); else { ctx.fillStyle = '#FFF3DA'; ctx.fillRect(0, 0, w, h); }
-  ctx.font = "700 10px 'Noto Sans TC','PingFang TC',system-ui,sans-serif"; ctx.textAlign = 'center'; ctx.fillStyle = '#7A4A2A'; ctx.fillText('點菜單 ' + (menu.n + 1), w / 2, 17);
+  const label = (s, tx, ty, size, col) => { ctx.font = '700 ' + size + "px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif"; ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,246,226,.95)'; ctx.strokeText(s, tx, ty); ctx.fillStyle = col; ctx.fillText(s, tx, ty); };
   menu.list.forEach((ty, k) => {
-    const cx = 44 + k * 66, cy = 38, spr = NIGHT_SPR[ty], im = spr && img[spr[0]], done = k < menu.i, cur = k === menu.i;
-    if (k) { ctx.fillStyle = '#B57A4A'; ctx.fillText('›', cx - 33, cy + 4); }
-    if (cur) { ctx.strokeStyle = '#E8A33A'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, 16 + (calm ? 0 : Math.sin(clock * 6) * 1.5), 0, 6.2832); ctx.stroke(); }
-    ctx.globalAlpha = done ? 0.35 : 1; if (im) { const s = 26 / Math.max(im.width, im.height); ctx.drawImage(im, cx - im.width * s / 2, cy - im.height * s / 2, im.width * s, im.height * s); }
+    const cx = 44 + k * 66, cy = 37, spr = NIGHT_SPR[ty], im = spr && img[spr[0]], done = k < menu.i, cur = k === menu.i;
+    if (k) label('›', cx - 33, cy + 5, 14, '#B57A4A');
+    if (cur) { ctx.strokeStyle = '#E8A33A'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, 15 + (calm ? 0 : Math.sin(clock * 6) * 1.5), 0, 6.2832); ctx.stroke(); }
+    ctx.globalAlpha = done ? 0.35 : 1; if (im) { const s = 24 / Math.max(im.width, im.height); ctx.drawImage(im, cx - im.width * s / 2, cy - im.height * s / 2, im.width * s, im.height * s); }
     ctx.globalAlpha = 1; if (done) { ctx.strokeStyle = '#2E9E5B'; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(cx - 8, cy); ctx.lineTo(cx - 2, cy + 7); ctx.lineTo(cx + 10, cy - 8); ctx.stroke(); }
   });
-  const nm = (T[menu.list[menu.i]] || {}).name || ''; ctx.fillStyle = '#5A3420'; ctx.font = "700 10.5px 'Noto Sans TC','PingFang TC',system-ui,sans-serif"; ctx.fillText('下一道：' + nm, w / 2, 63);
+  const nm = (T[menu.list[menu.i]] || {}).name || '';
+  label('點菜單 ' + (menu.n + 1) + (nm ? '・下一道：' + nm : '・全部完成！'), w / 2, 67, 12, '#5A3420');
   ctx.restore();
 }
 function drawClouds() {
