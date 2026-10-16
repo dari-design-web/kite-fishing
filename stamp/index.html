@@ -628,7 +628,8 @@ function pressSheet(s, v, done) {
   };
   const step = () => { const k = Math.min(1, (performance.now() - t0) / NEED); set(k); if (k >= 1) finish(); else raf = requestAnimationFrame(step); };
   btn.addEventListener('pointerdown', (e) => { if (fin) return; e.preventDefault(); try { btn.setPointerCapture(e.pointerId); } catch (x) {} t0 = performance.now(); raf = requestAnimationFrame(step); if (sndOn && !BGM.on) bgmSync(); });
-  const up = () => { if (fin) return; cancelAnimationFrame(raf); hd.style.transition = 'transform .25s cubic-bezier(.3,1.5,.6,1)'; set(0); setTimeout(() => (hd.style.transition = ''), 260); $('holdTxt').textContent = '再按久一點點～（章已經收好了）'; };
+  const up = () => { if (fin || !btn.isConnected) return; cancelAnimationFrame(raf);      // 夜測：離開蓋章畫面後切背景，舊的監聽不再動作（原本會出錯）
+    hd.style.transition = 'transform .25s cubic-bezier(.3,1.5,.6,1)'; set(0); setTimeout(() => (hd.style.transition = ''), 260); $('holdTxt').textContent = '再按久一點點～（章已經收好了）'; };
   btn.addEventListener('pointerup', up); btn.addEventListener('pointercancel', up);
   document.addEventListener('visibilitychange', () => { if (document.hidden) up(); }); window.addEventListener('blur', up, { once: true });      // v0.7：切到背景就取消壓印，回來不會自己蓋完
   btn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); finish(); } });
