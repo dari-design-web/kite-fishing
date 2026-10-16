@@ -342,7 +342,7 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
   function ask(code) {      // 掃到或輸入只先顯示店家與金額，按「領取」才算數（打開或預覽不消耗 QR）
     var pk = K.peekEarn(code), box = $('sres'); if (!pk) return claim(code);
     box.innerHTML = '<div class="card" style="border:2px solid var(--teal)"><div class="muted">請確認</div><h2 style="margin:4px 0">' + esc(pk.store) + '，消費 ' + pk.amount.toLocaleString() + ' 元</h2><p style="margin:0 0 10px">預計可得 <b>' + pk.pts + ' 點</b>（實際點數依入帳結果）</p><button class="btn full" id="takeIt">領取這筆點數</button></div>';
-    $('takeIt').onclick = function () { claim(code); }; box.scrollIntoView({ behavior: 'smooth' });
+    $('takeIt').onclick = function () { var b = this; b.disabled = true; b.textContent = '確認中…'; if (K.cloudStatus().url) K.cloudPull(true).then(function () { claim(code); }); else claim(code); };      // D100：先跟雲端對一次，避免同一張 QR 被兩支手機領 box.scrollIntoView({ behavior: 'smooth' });
   }
   function claim(code) {
     var r = K.claimEarn(code), box = $('sres');

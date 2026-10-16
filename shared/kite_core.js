@@ -228,6 +228,7 @@
     var t = parseInt(p[5], 36); if (Date.now() - t > c.qrExpireMin * 60000) return { ok: false, msg: '這個 QR 已過期，請店員重新出碼' };
     var sl = lg(K_STORE); if (sl.some(function (r) { return (r.voided || []).indexOf(p[6]) >= 0; })) return { ok: false, msg: 'QR 已更新，請掃新的' }; if (sl.some(function (r) { return r.nonce === p[6] && r.void; })) return { ok: false, msg: '這張 QR 已被店家作廢' }; if (sl.some(function (r) { return r.nonce === p[6] && r.recovered; })) return { ok: false, msg: '這筆已經由服務台補登入帳了' };
     var m = member(); if (m.status === 'frozen') return { ok: false, msg: '這個會員帳號暫停使用，請洽服務台' }; if (m.nonces.indexOf(p[6]) >= 0) return { ok: false, msg: '這張 QR 已經集過點了' };
+    if (allMembers().some(function (o) { return o.id !== m.id && ((o.nonces || []).indexOf(p[6]) >= 0 || (o.ledger || []).some(function (e) { return e.ref === p[6] && (e.type === 'store' || e.type === 'backfill'); })); })) return { ok: false, msg: '這張 QR 已經被別的帳號集過點了，請洽店員' };      // D100：跨手機防重複（看雲端）
     var pts = +p[4], room = c.maxStorePointsPerDay - storePointsToday(m), give = Math.max(0, Math.min(pts, room));
     m.nonces.push(p[6]); m.nonces = m.nonces.slice(-500);
     var tx0 = sl.filter(function (r) { return r.nonce === p[6]; })[0];      // 用出碼當時的規則版本（同一台裝置才查得到；跨裝置待中央）
@@ -524,7 +525,7 @@
   function cloudStart(every) {
     if (!cloudUrl() || typeof fetch === 'undefined' || CL.started) return; CL.started = true;
     var me = rd(K_MEM); if (memberWorthPush(me) || (rd(K_STORE) || []).length || (rd(K_DESK) || []).length) cloudPush();
-    cloudPull(); setInterval(function () { if (!document.hidden) cloudPull(); }, every || (devRole() === 'admin' ? 15000 : 30000));
+    cloudPull(); setInterval(function () { if (!document.hidden) cloudPull(); }, every || (devRole() === 'admin' ? 15000 : 60000));
     document.addEventListener('visibilitychange', function () { if (!document.hidden) cloudPull(); });
   }
   function cloudOp(op) { var ak = cloudAdminKey(); if (!cloudUrl() || !ak) return Promise.resolve({ ok: false, msg: '還沒設定雲端或後台金鑰' }); return cloudPost({ a: 'op', k: ak, op: op }).then(function (r) { cloudPull(true); return r; }); }

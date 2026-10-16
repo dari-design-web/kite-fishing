@@ -104,6 +104,7 @@ svg text{font-family:inherit}
     var a = [], c = D.cfg, al = c.alerts || {};
     c.prizes.forEach(function (p) { var l = K.stockLeft(p.id); if (p.on !== false && l <= (p.warn != null ? p.warn : c.lowStockWarn)) a.push(['o', '庫存偏低：' + p.name + ' 剩 ' + l, 'prize']); });
     var seen = {}; D.tx.forEach(function (x) { seen[x.nonce] = (seen[x.nonce] || 0); });
+    var byRef = {}; D.led.filter(function (e) { return e.type === 'store' && e.ref; }).forEach(function (e) { (byRef[e.ref] = byRef[e.ref] || {})[e.mid] = 1; }); Object.keys(byRef).forEach(function (r) { var ids = Object.keys(byRef[r]); if (ids.length > 1) a.push(['r', '同一張集點 QR 被 ' + ids.length + ' 個帳號領走：' + r + '（' + ids.join('、') + '）', 'points']); });      // D100
     var byM = {}; D.led.filter(function (e) { return e.type === 'store'; }).forEach(function (e) { (byM[e.mid] = byM[e.mid] || []).push(e.t); });
     Object.keys(byM).forEach(function (mid) { var ts = byM[mid].sort(); for (var i = 0; i + (al.burstCount || 5) - 1 < ts.length; i++) if (ts[i + (al.burstCount || 5) - 1] - ts[i] < (al.burstMin || 10) * 60000) { a.push(['r', '集點異常：會員 ' + mid + ' 在 ' + (al.burstMin || 10) + ' 分鐘內集點 ' + (al.burstCount || 5) + ' 次以上', 'points']); break; } });
     D.led.filter(function (e) { return e.type === 'store' && e.amount >= (al.bigAmount || 5000); }).slice(0, 3).forEach(function (e) { a.push(['o', '大額消費：' + e.storeName + ' NT$' + num(e.amount) + '（' + e.mid + '）', 'points']); });
