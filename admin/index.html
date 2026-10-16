@@ -186,7 +186,7 @@ svg text{font-family:inherit}
     $('lo').onclick = function () { localStorage.removeItem(SK); login(); };
     $('q').onkeydown = function (e) { if (e.key === 'Enter') search(this.value.trim()); };
     var title = ''; NAV.forEach(function (g) { g[1].forEach(function (n) { if (n[0] === view) title = n[1].replace(/^\S+\s/, ''); }); }); $('vt').textContent = title;
-    var c = $('c'), ds = K.dataset(), imp = ds.imports || [], li = imp[imp.length - 1]; var cs = K.cloudStatus(); c.innerHTML = cs.url ? '<div class="test"' + (cs.err ? ' style="background:#FBE3DE"' : '') + '><b>資料範圍：雲端測試資料庫（Google 試算表）＋這台</b>・會員 ' + D.ms.length + ' 位・' + (cs.lastPull ? '最後同步 ' + dt(cs.lastPull) : '同步中…') + (cs.err ? '・<b>' + esc(cs.err) + '</b>' : '') + '・每 15 秒自動更新。上線前到「系統」按「清空全部測試資料」。</div>' : '<div class="test"><b>資料範圍：本裝置＋已匯入的測試資料</b>（還沒接雲端，D72）・資料集 ' + ds.id + '・來源：這台' + (imp.length ? '＋匯入 ' + imp.length + ' 次、最後匯入 ' + dt(li.t) : '') + '・會員 ' + D.ms.length + ' 位。到「系統 → 雲端同步」貼上網址就能收到所有測試玩家的資料。</div>';
+    var c = $('c'), ds = K.dataset(), imp = ds.imports || [], li = imp[imp.length - 1]; var cs = K.cloudStatus(); c.innerHTML = cs.url ? '<div class="test"' + (cs.err ? ' style="background:#FBE3DE"' : '') + '><b>資料範圍：雲端測試資料庫（Google 試算表）＋這台</b>・會員 ' + D.ms.length + ' 位・' + (cs.lastPull ? '最後同步 ' + dt(cs.lastPull) : '同步中…') + (cs.err ? '・<b>' + esc(cs.err) + '</b>' : '') + '・每 15 秒自動更新。上線前到「系統」按「清空全部測試資料」。' + (cs.admin ? '' : '<br><b>還沒輸入後台金鑰：只看得到精簡資料（沒有點數明細、遊戲紀錄），請到「系統 → 雲端同步」輸入。</b>') + '</div>' : '<div class="test"><b>資料範圍：本裝置＋已匯入的測試資料</b>（還沒接雲端，D72）・資料集 ' + ds.id + '・來源：這台' + (imp.length ? '＋匯入 ' + imp.length + ' 次、最後匯入 ' + dt(li.t) : '') + '・會員 ' + D.ms.length + ' 位。到「系統 → 雲端同步」貼上網址就能收到所有測試玩家的資料。</div>';
     V[view](c, D, al);
   }
   function search(s) {
@@ -580,7 +580,7 @@ svg text{font-family:inherit}
     var g = D.cfg, a = K.auditLog();
     var cs = K.cloudStatus();
     c.innerHTML += '<div class="card" style="margin-bottom:14px"><h2>☁️ 雲端同步（測試期：Google 試算表）<span class="sp"></span>' + (cs.url ? (cs.err ? '<span class="pill r">' + esc(cs.err) + '</span>' : '<span class="pill g">已連線</span>') : '<span class="pill gr">未設定</span>') + '</h2>' +
-      '<p class="small muted" style="margin-top:0">接上後：客人手機、店家、服務台的集點、兌換、核銷都會傳到雲端，後台每 15 秒更新；後台改的設定、贈品與券圖片也會發到每台裝置。設定步驟見 G 槽 Claude產出／雲端測試資料庫_設定步驟_v2.md。</p>' +
+      '<p class="small muted" style="margin-top:0">接上後：客人手機、店家、服務台的集點、兌換、核銷都會傳到雲端，後台每 15 秒更新；後台改的設定、贈品與券圖片也會發到每台裝置。設定步驟見 G 槽 Claude產出／雲端測試資料庫_設定步驟_v4.md。</p>' +
       '<div class="form" style="grid-template-columns:140px 1fr"><label>Apps Script 網址</label><input id="cu" value="' + esc(localStorage.getItem('kiteCloudUrl') || '') + '" placeholder="' + esc(cs.url && !localStorage.getItem('kiteCloudUrl') ? '（網站內建）' + cs.url : 'https://script.google.com/macros/s/……/exec') + '"><label>後台金鑰</label><input id="ck" type="password" value="' + esc(localStorage.getItem('kiteCloudAdminKey') || '') + '" placeholder="和 Apps Script 裡 ADMIN_KEY 同一串"></div>' +
       '<div class="filters" style="margin-top:8px"><button class="btn" id="cSave">儲存並連線</button><button class="btn alt" id="cNow">立即同步</button><button class="btn alt" id="cCfg"' + (cs.admin ? '' : ' disabled') + '>把目前設定與圖片發到所有裝置</button><span class="sp"></span><button class="btn red" id="cWipe"' + (cs.admin ? '' : ' disabled') + '>清空全部測試資料（雲端＋每台）</button></div>' +
       '<p class="small muted">這台裝置 ' + esc(cs.dev) + '・第 ' + cs.epoch + ' 輪測試資料・雲端會員 ' + cs.members + ' 位・最後下載 ' + (cs.lastPull ? dt(cs.lastPull) : '—') + '・最後上傳 ' + (cs.lastPush ? dt(cs.lastPush) : '—') + '</p></div>';
@@ -601,7 +601,7 @@ svg text{font-family:inherit}
     $('reset').onclick = function () { if (!confirm('把所有設定還原成預設？')) return; K.resetCfg(); toast('已還原'); app(); };
     $('cSave').onclick = function () { var u = $('cu').value.trim(), k = $('ck').value.trim(); if (u && !/^https:\/\/script\.google(usercontent)?\.com\/.+\/exec$|^http:\/\/localhost/.test(u)) return toast('網址應該是 https://script.google.com/macros/s/……/exec'); if (u) localStorage.setItem('kiteCloudUrl', u); else localStorage.removeItem('kiteCloudUrl'); if (k) localStorage.setItem('kiteCloudAdminKey', k); else localStorage.removeItem('kiteCloudAdminKey'); K.audit('雲端同步設定已更新'); toast('已儲存，連線中…'); K.cloudStart(); K.cloudSync().then(function () { app(); }); };
     $('cNow').onclick = function () { toast('同步中…'); K.cloudSync().then(function () { var s2 = K.cloudStatus(); toast(s2.err || '已同步'); app(); }); };
-    $('cCfg').onclick = function () { K.saveCfg(K.cfg(), '發布設定到所有裝置'); K.cloudPush().then(function (r) { toast(r && r.ok ? '已發布' : '發布失敗：' + (K.cloudStatus().err || '請檢查後台金鑰')); app(); }); };
+    $('cCfg').onclick = function () { K.saveCfg(K.cfg(), '發布設定到所有裝置'); K.cloudMarkAll(); K.cloudPush().then(function (r) { toast(r && r.ok ? '已發布' : '發布失敗：' + (K.cloudStatus().err || '請檢查後台金鑰')); app(); }); };
     $('cWipe').onclick = function () { var s2 = prompt('會清空雲端上所有測試玩家的會員、點數、集點、兌換、券紀錄，每台手機下次連線也會自動清掉本機測試資料。後台設定與圖片保留。\n\n確定要清空，請輸入「清空」兩個字：'); if (s2 !== '清空') return; K.cloudWipe().then(function (r) { if (!r || !r.ok) return toast('清空失敗：' + (r && r.msg || '連不上')); K.audit('清空全部雲端測試資料（第 ' + r.epoch + ' 輪開始）'); toast('已清空，第 ' + r.epoch + ' 輪測試開始'); K.cloudPull(true).then(function () { app(); }); }); };
   };
 

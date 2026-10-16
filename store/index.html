@@ -172,7 +172,7 @@
       box.scrollIntoView({ behavior: 'smooth', block: 'start' }); renderDesk();
       $('next').onclick = function () { box.innerHTML = ''; if (scanner) scanner.reset(); window.scrollTo({ top: 0, behavior: 'smooth' }); }; };
   }
-  K.onCloud(function () { if ($('wait')) renderDesk(); });      // D100：雲端同步回來就更新待領清單
+  K.onCloud(function () { if ($('wait')) renderDesk(); var se = sess(); if ($('recent') && se && se.store) renderRecent(K.storeById(se.store)); });      // D100：雲端同步回來就更新待領清單
   function renderDesk() {
     var today = K.dayKey(), log = K.deskLog().filter(function (x) { return K.dayKey(x.t) === today; });
     var W = K.pendingRedeems(), hd = K.cfg().redeemHoldDays; $('wn').textContent = W.length ? W.length + ' 張・由舊到新' + (W.length > 15 ? '（只列最早 15 張，其他請用兌換碼查）' : '') : '';
