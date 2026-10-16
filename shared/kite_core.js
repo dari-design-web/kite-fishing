@@ -9,7 +9,12 @@
   /* ====== 預設設定（後台可改） ====== */
   var DEFAULTS = {
     v: 1,
-    scorePerPoint: 1000,          // 遊戲分數多少分換 1 點
+    /* D97／D98（10/17）：遊戲改成「當天所有遊戲累計總分」照階梯換點，每天最多 gameDailyCap 點，自動入帳（不用再到分數存摺換）。
+       階梯是 [累計總分門檻, 點數]；機器人實測一天上限約 44,000 分（捕魚 3 場約 33,000＋飛行 4 關約 10,600），所以 10 點要 30,000 分（數字待 Claude×ChatGPT 定案） */
+    gamePointMode: 'tier',        // 'tier'＝每日累計階梯（D97）；'bank'＝舊的分數存摺（每 scorePerPoint 分換 1 點）
+    gameTiers: [[1500, 1], [3000, 2], [4500, 3], [6000, 4], [8000, 5], [10000, 6], [13000, 7], [17000, 8], [22000, 9], [30000, 10]],
+    gameDailyCap: 10,             // 每天遊戲最多拿幾點（活動倍數會一起乘）
+    scorePerPoint: 1000,          // 舊制（bank）：遊戲分數多少分換 1 點
     gameScorePerPoint: {},        // 個別遊戲覆寫，例如 { fish: 500 }
     triesPerLevel: 1,             // 每關每天幾次算分（超過還能玩，只是不算分）
     gameTries: {},                // 個別遊戲覆寫，例如 { fly: 2 }
@@ -21,10 +26,16 @@
     redeemExpireMin: 30,          // 兌換 QR 幾分鐘內有效
     pointsExpireDays: 365,        // 點數有效天數（expireMode=days 時用；0＝不過期）
     pointsExpireMonths: 12,       // 點數有效月數（expireMode=months 時用；工作單 01 v5：取得後 12 個月、先到期先扣）
-    events: [                     // 每日活動：某遊戲在某時段分數加倍
-      { id: 'ev1', game: 'fish', title: '週末捕魚加倍', days: [0, 6], from: '00:00', to: '23:59', mult: 2, on: true },
-      { id: 'ev2', game: 'fly', title: '傍晚飛行加倍', days: [0, 1, 2, 3, 4, 5, 6], from: '16:00', to: '19:00', mult: 1.5, on: true }
+    events: [                     // 遊戲活動：某遊戲（或 all＝全部遊戲）在某些星期、時段、日期區間點數加倍（D98：階梯制下乘在「點數」上，當天上限也一起乘）
+      { id: 'ev1', game: 'fish', title: '週末捕魚加倍', days: [0, 6], from: '00:00', to: '23:59', dateFrom: '', dateTo: '', mult: 2, on: true },
+      { id: 'ev2', game: 'fly', title: '傍晚飛行加倍', days: [0, 1, 2, 3, 4, 5, 6], from: '16:00', to: '19:00', dateFrom: '', dateTo: '', mult: 1.5, on: true }
     ],
+    /* D97：消費滿額加點（期間、店家可選；同一筆只取加最多的一條；最低消費門檻照舊） */
+    storeBonus: [ { id: 'sb1', title: '單筆滿 1,000 元加 5 點', stores: [], minAmount: 1000, add: 5, from: '', to: '', on: false } ],
+    /* D98：小鳶去旅行回家時，偶爾帶回點數（依這趟帶的便當決定機率）；每人每月從旅行最多拿 monthCap 點 */
+    travelGift: { on: true, monthCap: 20, chance: { walk: 0, rice: 0.1, far: 0.2, squid: 0.25, hair: 0.3, special: 0.4 }, dist: [[1, 45], [2, 25], [3, 15], [4, 10], [5, 5]] },
+    /* D98：小鳶帶回的券（折扣券、抵用券；後台設定），放進 LINE「我的兌換 → 我的券」，到店出示 QR 由店員核銷 */
+    coupons: [ { id: 'C01', name: '港邊咖啡折 20 元（示範）', store: '', desc: '示範券：正式內容、店家與張數由後台設定', chance: 0.08, monthQty: 50, validDays: 14, on: true } ],
     prizes: [
       { id: 'P01', name: '小鳶貼紙一張', points: 5, stock: 200, on: true, desc: '小鳶揮手款防水貼紙，可以貼在水壺或手機殼。' },
       { id: 'P02', name: '鯨鯊鑰匙圈', points: 30, stock: 50, on: true, desc: '港口的鯨鯊朋友，壓克力雙面印刷。' },
@@ -47,10 +58,10 @@
     redeemHoldDays: 14,           // 兌換單幾天沒領自動取消、退點並釋回保留庫存（工作單 01 v5：14 天；U-36 待 Dari）
     /* D80（10/15）：小鳶去旅行的便當全部改用點數換（虛擬商品：直接進便當盒，不佔實體庫存、不用服務台）；散步、每天一份飯糰仍免費 */
     bentos: [
-      { id: 'far', name: '遠行便當', points: 10, on: true, desc: '可以去近、中、遠的地方，旅行 5 小時。' },
-      { id: 'squid', name: '小卷便當', points: 15, on: true, desc: '近、中、遠都能去，3 小時就回來。' },
-      { id: 'hair', name: '白帶魚便當', points: 20, on: true, desc: '近、中、遠，5 小時，一定帶紀念品回來。' },
-      { id: 'special', name: '港邊特製便當', points: 25, on: true, desc: '唯一能去最遠的九份，8 小時，一定帶紀念品。' }
+      { id: 'far', name: '遠行便當', points: 3, on: true, desc: '可以去近、中、遠的地方，旅行 5 小時。' },
+      { id: 'squid', name: '小卷便當', points: 5, on: true, desc: '近、中、遠都能去，3 小時就回來。' },
+      { id: 'hair', name: '白帶魚便當', points: 8, on: true, desc: '近、中、遠，5 小時，一定帶紀念品回來。' },
+      { id: 'special', name: '港邊特製便當', points: 12, on: true, desc: '唯一能去最遠的九份，8 小時，一定帶紀念品。' }
     ],
     bentoPerDay: 1,               // 每種便當每天最多換幾份
     bentoHoldMax: 3,              // 便當盒裡同一種最多放幾份（滿了不能換、不扣點）
@@ -160,7 +171,8 @@
   function storeMult(storeId, t) { var d = dayKey(t), best = 1; (cfg().storeEvents || []).forEach(function (e) { if (e.on && (!e.stores || !e.stores.length || e.stores.indexOf(storeId) >= 0) && (!e.from || d >= e.from) && (!e.to || d <= e.to) && e.mult > best) best = e.mult; }); return best; }
   function pointsForSpend(amount, storeId) {      // 工作單 24 v4：A＜T → 0；A≥T → 向下取整（A÷N×M）；日上限在入帳時再套
     var c = cfg(), s = storeId && storeById(storeId), per = (s && s.spendPerPoint) || c.spendPerPoint, m = storeId ? storeMult(storeId) : 1;
-    if (amount < c.minSpend) return 0; return Math.floor(amount / per * m + 1e-9); }
+    if (amount < c.minSpend) return 0; return Math.floor(amount / per * m + 1e-9) + storeBonusPts(amount, storeId); }
+  function storeBonusPts(amount, storeId, t) { var d = dayKey(t), best = 0; (cfg().storeBonus || []).forEach(function (b) { if (b.on && amount >= (b.minAmount || 0) && (!b.stores || !b.stores.length || b.stores.indexOf(storeId) >= 0) && (!b.from || d >= b.from) && (!b.to || d <= b.to) && b.add > best) best = b.add; }); return best; }
   function makeEarnCode(storeId, amount) {
     var s = storeById(storeId); if (!s) throw new Error('沒有這個店家');
     var pts = pointsForSpend(amount, storeId), ts = Date.now().toString(36), nonce = rid(8);
@@ -203,8 +215,21 @@
   /* ====== 遊戲分數 ====== */
   function eventMult(game, t) {
     var d = new Date(t || Date.now()), hm = pad(d.getHours()) + ':' + pad(d.getMinutes()), best = 1, title = '';
-    cfg().events.forEach(function (e) { if (e.on && e.game === game && e.days.indexOf(d.getDay()) >= 0 && hm >= e.from && hm <= e.to && e.mult > best) { best = e.mult; title = e.title; } });
+    var dk = dayKey(d.getTime());
+    cfg().events.forEach(function (e) { if (e.on && (e.game === game || e.game === 'all') && (e.days || []).indexOf(d.getDay()) >= 0 && hm >= e.from && hm <= e.to && (!e.dateFrom || dk >= e.dateFrom) && (!e.dateTo || dk <= e.dateTo) && e.mult > best) { best = e.mult; title = e.title; } });
     return { mult: best, title: title };
+  }
+  /* D97／D98：每日累計總分階梯 */
+  function tierPts(total) { var p = 0; (cfg().gameTiers || []).forEach(function (r) { if (total >= r[0] && r[1] > p) p = r[1]; }); return p; }
+  function nextTier(total) { var t = (cfg().gameTiers || []).filter(function (r) { return r[0] > total; }).sort(function (a, b) { return a[0] - b[0]; })[0]; return t ? { need: t[0] - total, at: t[0], pts: t[1] } : null; }
+  function gameToday(m) {      // 今天算分的局：總分、乘上活動後該拿的點、已入帳的點
+    m = m || member(); var d = dayKey(), c = cfg(), total = 0, eff = 0, maxM = 1;
+    (m.plays || []).forEach(function (p) { if (!p.counted || dayKey(p.t) !== d) return; var raw = p.raw != null ? p.raw : Math.round((p.bank || 0) / (p.mult || 1)), mu = p.mult || 1; total += raw; eff += raw * mu; if (mu > maxM) maxM = mu; });
+    var cap = Math.round((c.gameDailyCap || 0) * maxM), base = tierPts(total), pts = Math.min(cap, Math.floor(base * (total ? eff / total : 1) + 1e-9));
+    var got = (m.ledger || []).filter(function (e) { return e.type === 'game' && e.day === d; }).reduce(function (n, e) { return n + e.pts; }, 0);
+    var mu = total ? eff / total : 1, nx = base >= (c.gameDailyCap || 0) ? null : nextTier(total);
+    if (nx) nx.pts = Math.min(cap, Math.floor(nx.pts * mu + 1e-9));      // 有活動時，下一格的點數也照今天的加倍顯示
+    return { total: total, base: base, pts: pts, got: got, cap: cap, mult: mu, next: nx && nx.pts > pts ? nx : (nx ? Object.assign(nx, { pts: pts + 1 }) : null) };
   }
   function triesLeft(game, level) { var c = cfg(), m = member(), k = dayKey() + '|' + game + '|' + level, n = c.gameTries[game] != null ? c.gameTries[game] : c.triesPerLevel; return Math.max(0, n - ((m.tries || {})[k] || 0)); }
   function reportPlay(o) {      // o = { game, level, score, sec }
@@ -212,14 +237,58 @@
     var gc = (cfg().games || {})[o.game] || {}, sc = Math.max(0, o.score || 0), capped = gc.maxScore && sc > gc.maxScore; if (capped) sc = gc.maxScore;
     var counted = m.status !== 'frozen' && gc.on !== false && triesLeft(o.game, o.level) > 0, ev = eventMult(o.game), add = counted ? Math.round(sc * ev.mult) : 0;
     m.tries[k] = (m.tries[k] || 0) + 1;
-    m.plays.unshift({ t: Date.now(), game: o.game, level: String(o.level), score: o.score || 0, capped: !!capped, sec: Math.round(o.sec || 0), counted: counted, mult: ev.mult, bank: add }); m.plays = m.plays.slice(0, 800);
-    m.scoreBank[o.game] = (m.scoreBank[o.game] || 0) + add; saveMember(m);
-    return { counted: counted, add: add, mult: ev.mult, event: ev.title, bank: m.scoreBank[o.game], left: triesLeft(o.game, o.level) };
+    var tier = cfg().gamePointMode === 'tier';
+    m.plays.unshift({ t: Date.now(), game: o.game, level: String(o.level), score: o.score || 0, capped: !!capped, sec: Math.round(o.sec || 0), counted: counted, mult: ev.mult, raw: counted ? sc : 0, bank: tier ? 0 : add }); m.plays = m.plays.slice(0, 800);
+    if (!tier) { m.scoreBank[o.game] = (m.scoreBank[o.game] || 0) + add; saveMember(m); return { counted: counted, add: add, mult: ev.mult, event: ev.title, bank: m.scoreBank[o.game], left: triesLeft(o.game, o.level) }; }
+    /* D97：階梯制——把今天累計的點數補到應得的數字（只增不減，當天上限內） */
+    var g = gameToday(m), gain = Math.max(0, g.pts - g.got);
+    if (gain > 0) addLedger(m, { type: 'game', pts: gain, game: o.game, day: dayKey(), note: '今日累計 ' + g.total + ' 分' });
+    saveMember(m);
+    return { tier: true, counted: counted, add: counted ? sc : 0, mult: ev.mult, event: ev.title, today: g.total, pts: g.pts, gain: gain, cap: g.cap, next: g.next, total: m.points, left: triesLeft(o.game, o.level) };
   }
   function perPoint(game) { var c = cfg(); return c.gameScorePerPoint[game] || c.scorePerPoint; }
   function convertScore(game) {      // 分數存摺換點：每滿 perPoint 分換 1 點，零頭留著
     var m = member(), per = perPoint(game), bank = m.scoreBank[game] || 0, pts = Math.floor(bank / per); if (pts <= 0) return { ok: false, msg: '還差 ' + (per - bank) + ' 分才能換 1 點' };
     m.scoreBank[game] = bank - pts * per; addLedger(m, { type: 'game', pts: pts, game: game, used: pts * per }); saveMember(m); return { ok: true, pts: pts, total: m.points };
+  }
+
+  /* ====== D98：小鳶去旅行帶回的伴手禮（點數、券） ====== */
+  function monthKey(t) { return dayKey(t).slice(0, 7); }
+  function travelPtsThisMonth(m) { var mk = monthKey(); return (m.ledger || []).filter(function (e) { return e.type === 'travel' && monthKey(e.t) === mk; }).reduce(function (n, e) { return n + e.pts; }, 0); }
+  function couponIssued() { var o = rd('kiteCouponIssued1') || {}, mk = monthKey(); return o[mk] || {}; }
+  function travelGift(bento, ref, rnd) {      // 旅行回家時呼叫一次；rnd 給測試用
+    rnd = rnd || Math.random; var c = cfg(), tg = c.travelGift || {}, m = member(), out = { pts: 0, coupon: null };
+    if (m.status === 'frozen') return out;
+    var left = (tg.monthCap || 0) - travelPtsThisMonth(m), ch = (tg.chance || {})[bento] || 0;
+    if (tg.on && left > 0 && rnd() < ch) {
+      var dist = tg.dist || [[1, 1]], sum = dist.reduce(function (n, x) { return n + x[1]; }, 0), r = rnd() * sum, p = dist[0][0];
+      for (var i = 0; i < dist.length; i++) { r -= dist[i][1]; if (r < 0) { p = dist[i][0]; break; } }
+      p = Math.min(p, left); addLedger(m, { type: 'travel', pts: p, bento: bento, ref: ref || '' }); out.pts = p;
+    }
+    var iss = couponIssued(), cs = (c.coupons || []).filter(function (x) { return x.on && (iss[x.id] || 0) < (x.monthQty || 0); });
+    for (var j = 0; j < cs.length && !out.coupon; j++) if (rnd() < (cs[j].chance || 0)) out.coupon = grantCoupon(m, cs[j]);
+    saveMember(m); return out;
+  }
+  function grantCoupon(m, cp) {
+    var id = rid(6), exp = Date.now() + (cp.validDays || 14) * 86400000, body = ['KITE1', 'C', m.id, cp.id, exp.toString(36), id].join('|'), code = body + '|' + hmac(cfg().redeemKey, body);
+    m.coupons = m.coupons || []; var o = { id: id, cid: cp.id, name: cp.name, store: cp.store || '', desc: cp.desc || '', t: Date.now(), exp: exp, code: code, status: 'ok' }; m.coupons.unshift(o);
+    var all = rd('kiteCouponIssued1') || {}, mk = monthKey(); all[mk] = all[mk] || {}; all[mk][cp.id] = (all[mk][cp.id] || 0) + 1; wr('kiteCouponIssued1', all);
+    return o;
+  }
+  function myCoupons() { var m = member(), ch = false; (m.coupons || []).forEach(function (x) { if (x.status === 'ok' && Date.now() > x.exp) { x.status = 'expired'; ch = true; } }); if (ch) saveMember(m); return m.coupons || []; }
+  function couponCheck(code) {
+    var p = parse(code), c = cfg(); if (!p || p[1] !== 'C' || p.length !== 7) return { ok: false, msg: '這不是券的 QR' };
+    if (hmac(c.redeemKey, p.slice(0, 6).join('|')) !== p[6]) return { ok: false, msg: 'QR 驗證失敗（可能被改過）' };
+    var cp = (c.coupons || []).filter(function (x) { return x.id === p[3]; })[0], exp = parseInt(p[4], 36);
+    var used = (rd('kiteCouponUsed1') || []).filter(function (u) { return u.id === p[5]; })[0]; if (used) return { ok: false, msg: '這張券已於 ' + new Date(used.t).toLocaleString('zh-TW', { hour12: false }) + ' 使用過' };
+    if (Date.now() > exp) return { ok: false, msg: '這張券已過期（' + new Date(exp).toLocaleDateString('zh-TW') + '）' };
+    return { ok: true, member: p[2], id: p[5], cid: p[3], name: cp ? cp.name : p[3], desc: cp ? cp.desc : '', store: cp ? cp.store : '', exp: exp };
+  }
+  function couponUse(code, who) {
+    var r = couponCheck(code); if (!r.ok) return r;
+    var u = rd('kiteCouponUsed1') || []; u.unshift({ id: r.id, cid: r.cid, member: r.member, t: Date.now(), who: who || '' }); wr('kiteCouponUsed1', u.slice(0, 2000));
+    var lm = rd(K_MEM); if (lm && lm.id === r.member) { (lm.coupons || []).forEach(function (x) { if (x.id === r.id) { x.status = 'used'; x.usedT = Date.now(); } }); wr(K_MEM, lm); }
+    audit('核銷券 ' + r.id + '（' + r.name + '）會員 ' + r.member); return r;
   }
 
   /* ====== 兌換 ======
@@ -362,7 +431,8 @@
     DEFAULTS: DEFAULTS, GAMES: GAMES, cfg: cfg, saveCfg: saveCfg, ruleVer: ruleVer, ruleHistory: ruleHistory, setProfile: setProfile, displayName: displayName, bentoState: bentoState, redeemBento: redeemBento, redeemBlock: redeemBlock, codeByShort: codeByShort, prizeImg: prizeImg, hasPrizeImg: hasPrizeImg, setPrizeImg: setPrizeImg, resetCfg: resetCfg, audit: audit, auditLog: function () { return rd(K_AUDIT) || []; },
     member: member, peekMember: function () { return rd(K_MEM); }, saveMember: saveMember, dayKey: dayKey, rid: rid, hmac: hmac, sha256: sha256, utf8: utf8,
     pointsForSpend: pointsForSpend, makeEarnCode: makeEarnCode, claimEarn: claimEarn, storeLog: function () { return rd(K_STORE) || []; }, storeById: storeById,
-    eventMult: eventMult, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore,
+    eventMult: eventMult, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore, tierPts: tierPts, nextTier: nextTier, gameToday: gameToday, storeBonusPts: storeBonusPts,
+    travelGift: travelGift, travelPtsThisMonth: function () { return travelPtsThisMonth(member()); }, myCoupons: myCoupons, couponCheck: couponCheck, couponUse: couponUse, couponIssued: couponIssued,
     prizeById: prizeById, stockLeft: stockLeft, makeRedeem: makeRedeem, cancelRedeem: cancelRedeem, deskCheck: deskCheck, deskGive: deskGive, findRedeem: findRedeem, pendingRedeems: pendingRedeems, memberName: memberName, markGiven: markGiven, deskLog: function () { return rd(K_DESK) || []; },
     allMembers: allMembers, importMembers: importMembers, addAdj: addAdj, adjSum: adjSum, gap: gap, list: list, saveList: saveList, backfill: backfill, claimedRefs: claimedRefs, lookupTx: lookupTx, archiveFull: archiveFull, archives: function () { return (rd('kiteArchive1') || []).map(function (a) { return { id: a.id, t: a.t }; }); }, importPreview: importPreview, dataset: dataset, wipeTest: wipeTest, reissueEarn: reissueEarn, voidEarn: voidEarn, peekEarn: peekEarn, onHand: onHand, reservedCount: reservedCount, exportMe: exportMe, expiring: expiring, batches: batches, housekeep: housekeep, storeMult: storeMult, notices: function () { var d = dayKey(); return (cfg().notices || []).filter(function (n) { return n.on && (!n.from || d >= n.from) && (!n.to || d <= n.to); }); }
   };

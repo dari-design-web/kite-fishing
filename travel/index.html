@@ -216,6 +216,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 /* C-124：短螢幕按鈕至少約 36～40 點高，手指好按 */
 #bgmBtn.gear{min-height:38px;min-width:42px}
 </style>
+<script src="../shared/kite_core.js"></script>
 </head>
 <body>
 <!-- LOADER-START v1（C-103，C-88⑥）：載入超過 0.35 秒才淡入的小鳶等待畫面，載完立刻收起；圖是小鳶揮手暫用圖縮小內嵌，所以複製到別的資料夾也不用改路徑 -->
@@ -318,10 +319,10 @@ const CFG = {
   bentos: {
     walk:    { name: '不帶便當・在家附近散步', note: '隨時可以，不算旅行次數', dists: ['home'], hours: 0.5 },
     rice:    { name: '港邊飯糰', note: '每天一份，免費', dists: ['near', 'mid'], hours: 2 },
-    far:     { name: '遠行便當', note: '港口換禮 10 點', dists: ['near', 'mid', 'far'], hours: 5 },
-    squid:   { name: '小卷便當', note: '港口換禮 15 點', dists: ['near', 'mid', 'far'], hours: 3 },
-    hair:    { name: '白帶魚便當', note: '港口換禮 20 點；一定帶紀念品', dists: ['near', 'mid', 'far'], hours: 5, souvenir: true },
-    special: { name: '港邊特製便當', note: '港口換禮 25 點；可以去九份；一定帶紀念品', dists: ['near', 'mid', 'far', 'farthest'], hours: 8, souvenir: true }
+    far:     { name: '遠行便當', note: '港口換禮', dists: ['near', 'mid', 'far'], hours: 5 },
+    squid:   { name: '小卷便當', note: '港口換禮', dists: ['near', 'mid', 'far'], hours: 3 },
+    hair:    { name: '白帶魚便當', note: '港口換禮；一定帶紀念品', dists: ['near', 'mid', 'far'], hours: 5, souvenir: true },
+    special: { name: '港邊特製便當', note: '港口換禮；可以去九份；一定帶紀念品', dists: ['near', 'mid', 'far', 'farthest'], hours: 8, souvenir: true }
   },
   items: {
     camera:    { name: '相機', note: '多帶一張明信片回來', how: '飛行冒險過任一關' },
@@ -715,7 +716,7 @@ function renderPack() {
   const bl = $('bentoList'); bl.innerHTML = '';
   for (const k of ['walk', 'rice', 'far', 'squid', 'hair', 'special']) {
     const b = CFG.bentos[k], n = bentoCount(k), btn = document.createElement('button'); btn.className = 'opt'; btn.type = 'button'; btn.setAttribute('aria-pressed', String(pk.bento === k)); btn.disabled = n <= 0;
-    btn.innerHTML = bentoIcon(k) + '<span class="tx">' + b.name + '<small>' + b.note + '｜' + (k === 'walk' ? '只到東三東四' : '去' + b.dists.map((d) => DIST_NAME[d]).join('、') + '的地方') + '｜' + (b.hours < 1 ? b.hours * 60 + ' 分鐘' : b.hours + ' 小時') + '</small></span><span class="n">' + (k === 'walk' ? '' : '×' + n) + '</span>';
+    btn.innerHTML = bentoIcon(k) + '<span class="tx">' + b.name + '<small>' + bentoNote(k, b.note) + '｜' + (k === 'walk' ? '只到東三東四' : '去' + b.dists.map((d) => DIST_NAME[d]).join('、') + '的地方') + '｜' + (b.hours < 1 ? b.hours * 60 + ' 分鐘' : b.hours + ' 小時') + '</small></span><span class="n">' + (k === 'walk' ? '' : '×' + n) + '</span>';
     btn.onclick = () => { const add = pk.bento !== k; pk.bento = add ? k : ''; if (k === 'walk') pk.items = []; pk.pick = ''; renderPack(); if (add) packSay('slot0', PACK_SAY[k]); };
     bl.appendChild(btn);
   }
@@ -787,6 +788,8 @@ function commitTrip() {
   if (!tr.walk) { S.trips++; if (!tr.first && CFG.farEvery) { S.farAcc++; if (S.farAcc >= CFG.farEvery) { S.farAcc = 0; S.bento.far++; tr.gotFar = true; } } }      // 第一次也算一次旅行；散步不算
   S.titles = calcTitles(); S.trip = null; S.state = 'home'; save(); return news;
 }
+/* D98：便當價格跟著後台（KiteCore）走，不寫死在說明裡 */
+function bentoNote(k, note) { try { const bb = (window.KiteCore ? KiteCore.cfg().bentos || [] : []).find((x) => x.id === k); return bb ? note.replace('港口換禮', '港口換禮 ' + bb.points + ' 點') : note; } catch (e) { return note; } }
 function calcTitles() {
   const t = {}; for (const l of LOCS) if (l.cards.every((c, i) => S.cards[cardId(l, i)])) t['loc-' + l.id] = l.name + '常客';
   const non9 = LOCS.filter((l) => l.id !== 'jiufen').every((l) => l.cards.every((c, i) => S.cards[cardId(l, i)])); if (non9) t.traveler = '港灣旅行家';
@@ -806,13 +809,15 @@ function palLine() { let fr = {}; try { fr = JSON.parse(localStorage.getItem('ki
 function openLetter() {
   if (S.state !== 'back' || !S.trip) return;
   const tr = S.trip, l = LOCS.find((x) => x.id === tr.dest);
+  /* D98：回家時抽一次伴手禮（點數、券），記在這趟旅行上，重開頁面不會重抽；散步與第一趟不抽 */
+  if (!tr.gift && window.KiteCore && !tr.walk && !tr.first) { try { tr.gift = KiteCore.travelGift(tr.bento, 'TR-' + tr.start); } catch (e) { tr.gift = { pts: 0 }; } save(); }
   PET.hide(); const L = document.createElement('div'); L.className = 'letter';
   L.innerHTML = '<button class="skip" id="skipL">略過 ››</button><div class="env" id="envL"><img class="closed" src="assets/letter_env.png" alt=""><img class="opened" src="assets/letter_open.png" alt=""><img class="seal" src="assets/letter_seal.png" alt=""></div><p class="tapme" id="tapme">點一下打開信封</p>';
   document.body.appendChild(L);
   const queue = tr.got.map((i) => ({ i })).concat(tr.limited ? [{ lim: LIMITED.find((x) => x.id === tr.limited) }] : []);
   /* v0.30（C-177）：信的最後多一句「這是小鳶寄給你的第 N 封信」，第 5、10、20、30 封加一句特別的話（只記封數 S.letters；文字是建議） */
   const nL = (S.letters || 0) + 1, LM = { 5: '已經第 5 封了，謝謝你一直幫我準備便當！', 10: '第 10 封！你的收藏冊越來越厚了～', 20: '第 20 封！我們一起去過好多地方喔！', 30: '第 30 封！你是小鳶最好的旅伴！' };
-  const extras = ['💌 這是小鳶寄給你的第 ' + nL + ' 封信' + (LM[nL] ? '——' + LM[nL] : '')]; if (tr.stamps) extras.push('重複的明信片換成 ' + tr.stamps + ' 枚小鳶郵票'); if (tr.souvenir) extras.push('還帶回了紀念品：' + l.souvenir); if (tr.friend) extras.push('在' + l.name + '遇到了 ' + tr.friend + '！'); const pl = palLine(); if (pl) extras.push(pl);
+  const extras = ['💌 這是小鳶寄給你的第 ' + nL + ' 封信' + (LM[nL] ? '——' + LM[nL] : '')]; if (tr.stamps) extras.push('重複的明信片換成 ' + tr.stamps + ' 枚小鳶郵票'); if (tr.souvenir) extras.push('還帶回了紀念品：' + l.souvenir); if (tr.friend) extras.push('在' + l.name + '遇到了 ' + tr.friend + '！'); if (tr.gift && tr.gift.pts) extras.push('🪙 小鳶在路上撿到 ' + tr.gift.pts + ' 點，已經存進官方 LINE 的點數了！'); if (tr.gift && tr.gift.coupon) extras.push('🎟️ 小鳶帶回一張「' + tr.gift.coupon.name + '」，放在官方 LINE「我的兌換 → 我的券」'); const pl = palLine(); if (pl) extras.push(pl);
   const finish = () => { S.letters = nL; const news = commitTrip(); L.remove(); if (S.titles && Object.keys(S.titles).length) {} go('home'); toast(news.length ? '收進收藏冊了！' : '小鳶回來了'); };
   $('skipL').onclick = finish;
   let step = 0;

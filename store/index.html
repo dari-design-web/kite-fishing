@@ -149,7 +149,17 @@
     if (msg) { box.innerHTML = '<div class="card res bad"><h2>⚠️ 不能發放</h2><p style="margin:0">' + esc(msg) + '</p><button class="btn alt full" id="again" style="margin-top:10px">繼續</button></div>'; $('again').onclick = function () { box.innerHTML = ''; }; box.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
     $('rc').value = ''; check(h.r.code);
   }
+  /* D98：小鳶旅行帶回的券（KITE1|C|…）——核對後按「確認使用」核銷，同一張不能用兩次 */
+  function checkCoupon(code) {
+    var r = K.couponCheck(code), box = $('res');
+    box.innerHTML = r.ok ? '<div class="card res"><div class="muted">這是客人的優惠券</div><h2>🎟️ ' + esc(r.name) + '</h2><p style="margin:0">' + esc(r.desc || '') + '</p><p class="muted" style="margin:4px 0 10px">券號 ' + r.id + '・會員 ' + esc(r.member) + '・有效到 ' + t2(r.exp) + '</p><div class="row"><button class="btn alt" id="again">返回掃碼</button><button class="btn warn" id="use">確認使用</button></div></div>'
+      : '<div class="card res bad"><h2>⚠️ 不能使用</h2><p style="margin:0">' + esc(r.msg) + '</p><button class="btn alt full" id="again" style="margin-top:10px">繼續掃</button></div>';
+    box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $('again').onclick = function () { box.innerHTML = ''; if (scanner) scanner.reset(); };
+    if ($('use')) $('use').onclick = function () { var u = K.couponUse(code, sess().who); if (!u.ok) return toast(u.msg); box.innerHTML = '<div class="card ok"><div class="big">✅</div><h2>券已使用</h2><p style="margin:8px 0 2px;font-size:18px;font-weight:800">' + esc(u.name) + '</p><p class="muted" style="margin:0">券號 ' + u.id + '・' + t2(Date.now()) + '・經手 ' + esc(sess().who) + '</p><button class="btn warn full" id="next" style="margin-top:12px">下一位</button></div>'; $('next').onclick = function () { box.innerHTML = ''; if (scanner) scanner.reset(); }; };
+  }
   function check(code) {
+    if (String(code || '').indexOf('KITE1|C|') === 0) return checkCoupon(code);
     var r = K.deskCheck(code), box = $('res');
     if (!r.ok) { box.innerHTML = '<div class="card res bad"><h2>⚠️ 不能發放</h2><p style="margin:0">' + esc(r.msg) + '</p><button class="btn alt full" id="again" style="margin-top:10px">繼續掃</button></div>'; }
     else { var nm = K.memberName(r.member); box.innerHTML = '<div class="card res"><div class="pz"><img src="' + K.prizeImg(r.prize.id) + '" alt=""><div><div class="muted">請交付這個贈品 1 份</div><h2>🎁 ' + esc(r.prize.name) + '</h2></div></div><p class="who">' + (nm ? esc(nm) + ' <span class="muted" style="font-weight:400">' + esc(r.member) + '</span>' : '會員 ' + esc(r.member)) + '</p><p style="margin:0">兌換碼 <b style="letter-spacing:2px">' + r.rcode + '</b>・已扣 ' + r.pts + ' 點</p><p class="muted" style="margin:4px 0 10px">客人產生時間 ' + t2(r.t) + (r.late ? ' <span class="pill o">超過 ' + K.cfg().redeemExpireMin + ' 分鐘，請確認是本人</span>' : '') + '・實物現存 ' + r.stock + '（其中已保留 ' + r.reserved + '）' + '</p>' +
