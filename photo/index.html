@@ -135,9 +135,8 @@ button{font-family:inherit}
     <img class="homekite" src="assets/stk_kite_wave.png" alt="">
     <div class="homein">
       <h1>小鳶合照館</h1>
-      <p>按「拍照」會打開手機的相機，放大縮小、換鏡頭都跟平常一樣；拍好回來再放小鳶、鯨鯊和相框。</p>
-      <button class="btn" id="snapMain" type="button">📷　拍照</button>
-      <button class="btn light" id="camBtn" type="button">邊看貼紙邊拍</button>
+      <p>按「拍照」打開相機，一邊看小鳶、鯨鯊貼紙和相框一邊拍；下方可以切換 0.6／1／2／3／5 倍。</p>
+      <button class="btn" id="camBtn" type="button">📷　拍照</button>
       <button class="btn ghost" id="albumBtn" type="button">從相簿選照片</button>
       <button class="btn ghost" id="demoBtn" type="button" style="border:0;font-size:13px;padding:6px">用示範背景試試 ›</button>
       <input type="file" id="file" accept="image/*" hidden>
@@ -388,7 +387,7 @@ const SND_ICON = (() => {
 </script>
 <script>
 /* 小鳶合照館 原型 v0.1（工作單 11 v4 P2）。貼紙、相框、解鎖方式都是建議，等 Dari 確認；正式素材之後開單給 ChatGPT */
-const CFG = { version: '0.19', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
+const CFG = { version: '0.20', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
 const $ = (id) => document.getElementById(id);
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = 'none'), 2400); }
@@ -501,17 +500,48 @@ let stream = null, facing = 'user', src = 'none', lensId = null, lenses = [];
 /* v0.5（Dari 10/12 23:25）：相機不裁邊、可變焦、可換鏡頭。手機有提供硬體變焦就直接調鏡頭（有的手機能拉到 0.5 倍廣角）；沒有就用畫面放大 */
 const VIEW = { fit: true, z: 1, hw: null };
 function track() { return stream && stream.getVideoTracks()[0]; }
-function setupZoom() {      // v0.8：倍率按鈕。手機有硬體變焦就列出它真的支援的倍率（例如 0.6／1／2／3），沒有就給 1／2 畫面放大
-  const t = track(), cap = t && t.getCapabilities ? t.getCapabilities() : {};
-  let steps;
-  if (cap.zoom && cap.zoom.max > cap.zoom.min) { VIEW.hw = cap.zoom; steps = [cap.zoom.min < 1 ? cap.zoom.min : null, 1, 2, 3, 5, 10].filter((v) => v !== null && v >= cap.zoom.min && v <= cap.zoom.max).slice(0, 5); VIEW.zv = (t.getSettings && t.getSettings().zoom) || 1; VIEW.z = 1; }
-  else { VIEW.hw = null; steps = [1, 2]; VIEW.z = 1; VIEW.zv = 1; }
-  const box = $('zpills'); box.innerHTML = steps.map((v) => '<button type="button" data-z="' + v + '">' + (Math.round(v * 10) / 10) + (v === 1 ? '×' : '') + '</button>').join('');
-  box.querySelectorAll('button').forEach((b) => (b.onclick = () => setZoom(+b.dataset.z)));
-  $('camtools').hidden = src !== 'cam'; markZoom(); applyView();
+/* v0.20（D86，Dari 10/16）：只留「邊看貼紙邊拍」一種拍照；倍率支援手機鏡頭 0.6／1／2／3／5（10）。
+   1 倍以上用相機本身的變焦（手機沒開放就改畫面放大）；0.6 倍要換到超廣角鏡頭（三星等手機在瀏覽器會列出多顆後鏡頭）。 */
+let wideId = null, mainBackId = null;
+async function findWide() {
+  try {
+    const cur = track() && track().getSettings ? track().getSettings().deviceId : null;
+    const ds = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'videoinput' && /back|rear|environment|後/i.test(d.label));
+    if (ds.length < 2) return null;
+    const pick = ds.find((d) => /camera2 2\b/.test(d.label) && d.deviceId !== cur) || ds.find((d) => d.deviceId !== cur && !/camera2 0\b/.test(d.label) && !/tele|望遠/i.test(d.label));
+    return pick ? pick.deviceId : null;
+  } catch (e) { return null; }
 }
-function markZoom() { const cur = VIEW.hw ? VIEW.zv : VIEW.z; $('zpills').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(Math.abs(+b.dataset.z - cur) < 0.05))); }
-function setZoom(v) { const t = track(); if (VIEW.hw && t) { VIEW.zv = v; t.applyConstraints({ advanced: [{ zoom: v }] }).catch(() => {}); } else { VIEW.z = v; applyView(); } markZoom(); }
+function setupZoom() {
+  const t = track(), cap = t && t.getCapabilities ? t.getCapabilities() : {};
+  VIEW.z = 1;
+  if (cap.zoom && cap.zoom.max > cap.zoom.min) { VIEW.hw = cap.zoom; VIEW.zv = (t.getSettings && t.getSettings().zoom) || 1; }
+  else { VIEW.hw = null; VIEW.zv = 1; }
+  const onWide = !!(lensId && lensId === wideId);
+  const steps = [1, 2, 3, 5].concat(VIEW.hw && VIEW.hw.max >= 10 ? [10] : []);
+  if (VIEW.hw && VIEW.hw.min < 1 && VIEW.hw.min <= 0.7) steps.unshift(Math.round(VIEW.hw.min * 10) / 10);      // 這顆鏡頭本身就能拉到 0.6
+  const box = $('zpills');
+  const draw = (wide) => {
+    box.innerHTML = (wide && steps[0] >= 1 ? '<button type="button" data-z="w">.6</button>' : '') + steps.map((v) => '<button type="button" data-z="' + v + '">' + (v < 1 ? String(v).replace(/^0/, '') : v) + (v === 1 ? '×' : '') + '</button>').join('');
+    box.querySelectorAll('button').forEach((b) => (b.onclick = () => b.dataset.z === 'w' ? goWide() : setZoom(+b.dataset.z)));
+    markZoom();
+  };
+  draw(facing === 'environment' && (onWide || !!wideId));
+  if (facing === 'environment' && !onWide && !wideId) findWide().then((id) => { if (id) { wideId = id; draw(true); } });
+  $('camtools').hidden = src !== 'cam'; applyView();
+}
+async function goWide() { if (!wideId) return; if (lensId !== wideId) { mainBackId = track() && track().getSettings ? track().getSettings().deviceId : null; lensId = wideId; await openCam(); toast('換到廣角鏡頭（0.6 倍）'); } }
+function markZoom() {
+  const onWide = !!(lensId && lensId === wideId), cur = onWide ? 'w' : (VIEW.hw ? VIEW.zv * VIEW.z : VIEW.z);
+  $('zpills').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.z === 'w' ? onWide : !onWide && Math.abs(+b.dataset.z - cur) < 0.05)));
+}
+async function setZoom(v) {
+  if (lensId && lensId === wideId) { lensId = mainBackId; await openCam(); }      // 從廣角回到主鏡頭
+  const t = track();
+  if (VIEW.hw && t) { const hz = Math.max(VIEW.hw.min, Math.min(v, VIEW.hw.max)); VIEW.zv = hz; VIEW.z = v / hz; t.applyConstraints({ advanced: [{ zoom: hz }] }).catch(() => {}); applyView(); }      // 超過鏡頭上限的部分用畫面放大補
+  else { VIEW.z = v; applyView(); }
+  markZoom();
+}
 function applyView() {
   const mirror = src === 'cam' && facing === 'user' && !lensId, sx = (mirror ? -1 : 1) * VIEW.z;
   for (const id of ['video', 'bgimg']) $(id).style.transform = 'scale(' + sx + ',' + VIEW.z + ')';
@@ -669,7 +699,7 @@ function openFrames() {
 $('frameBtn').onclick = openFrames;
 $('fsClose').onclick = () => { $('frameSheet').hidden = true; };
 $('flipBtn').onclick = () => { if (src !== 'cam') return; facing = facing === 'user' ? 'environment' : 'user'; lensId = null; openCam(); };
-$('snapMain').onclick = () => $('snap').click();      // v0.8：主要拍照＝打開手機自己的相機
+      // v0.20（D86）：首頁只剩一個「拍照」（即時相機＋貼紙）；相機打不開時，說明視窗裡仍可改用手機內建相機
 $('clearBtn').onclick = () => { stks.forEach((o) => o.el.remove()); stks = []; sel = null; $('hint').hidden = false; };
 /* v0.14（C-136）：3 秒自拍——打開後按快門會倒數 3、2、1 再拍，一家人可以把手機放好一起入鏡 */
 let timerOn = false, counting = false;
