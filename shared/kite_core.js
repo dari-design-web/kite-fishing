@@ -530,12 +530,35 @@
   }
   function cloudOp(op) { var ak = cloudAdminKey(); if (!cloudUrl() || !ak) return Promise.resolve({ ok: false, msg: '還沒設定雲端或後台金鑰' }); return cloudPost({ a: 'op', k: ak, op: op }).then(function (r) { cloudPull(true); return r; }); }
   function cloudWipe() { var ak = cloudAdminKey(); if (!cloudUrl() || !ak) return Promise.resolve({ ok: false, msg: '還沒設定雲端或後台金鑰' }); return cloudPost({ a: 'wipe', k: ak }).then(function (r) { if (r && r.ok) { wipeLocal(); wr('kiteCloudEpoch', r.epoch); } return r; }); }
+  /* ====== D100：官方 LINE（LIFF）登入——拿到 LINE 帳號就把會員綁上去；換手機時用 LINE 帳號從雲端找回點數 ======
+     LIFF_ID 由 Dari 在 LINE Developers 建好 LIFF 後填入（之前不會有任何動作）。只有官方 LINE 頁（line/）會要求登入，遊戲頁只是順便讀取。 */
+  var LIFF_ID = '';
+  function liffId() { try { return localStorage.getItem('kiteLiffId') || LIFF_ID; } catch (e) { return LIFF_ID; } }
+  function loadLiff() { return new Promise(function (ok, no) { if (G.liff) return ok(G.liff); var s = document.createElement('script'); s.src = 'https://static.line-scdn.net/liff/edge/2/sdk.js'; s.onload = function () { ok(G.liff); }; s.onerror = no; document.head.appendChild(s); }); }
+  function liffStart(o) {
+    o = o || {}; var id = liffId(); if (!id || typeof document === 'undefined') return Promise.resolve(null);
+    return loadLiff().then(function (L) { return L.init({ liffId: id }).then(function () { return L; }); }).then(function (L) {
+      if (!L.isLoggedIn()) { if (o.login) L.login({ redirectUri: location.href }); return null; }
+      return L.getProfile().then(function (p) { return linkLine({ uid: p.userId, name: p.displayName, pic: p.pictureUrl || '' }); });
+    }).catch(function (e) { CL.liffErr = String(e && e.message || e); return null; });
+  }
+  function linkLine(lp) {
+    var m = member(), fresh = !(m.ledger || []).length && !(m.redeems || []).length && !(m.plays || []).length;
+    if (m.line && m.line.uid === lp.uid) { m.line.name = lp.name; m.line.pic = lp.pic; m.line.t = Date.now(); saveMember(m); return Promise.resolve(m); }
+    var u = cloudUrl();
+    var restore = fresh && u && typeof fetch !== 'undefined' ? fetch(u + (u.indexOf('?') < 0 ? '?' : '&') + 'k=' + CLOUD_PLAYER_KEY + '&a=me&uid=' + encodeURIComponent(lp.uid)).then(function (r) { return r.json(); }).catch(function () { return null; }) : Promise.resolve(null);
+    return restore.then(function (r) {
+      if (r && r.member && r.member.id) { var x = r.member; x.line = Object.assign({}, x.line, { name: lp.name, pic: lp.pic, t: Date.now() }); wr(K_MEM, x); audit('用 LINE 帳號找回會員 ' + x.id); return x; }
+      m = member(); if (m.line && m.line.uid && m.line.uid !== lp.uid) audit('這支手機換了 LINE 帳號（' + m.line.uid.slice(-4) + ' → ' + lp.uid.slice(-4) + '）');
+      m.line = { uid: lp.uid, name: lp.name, pic: lp.pic, t: Date.now() }; if (!m.name) m.name = lp.name; saveMember(m); return m;
+    });
+  }
   function cloudStatus() { var c = rd('kiteCloud1') || {}; return { url: cloudUrl(), admin: !!cloudAdminKey(), lastPull: CL.lastPull, lastPush: CL.lastPush, err: CL.err, members: (c.members || []).length, epoch: rd('kiteCloudEpoch') || 0, dev: devId() }; }
   if (typeof document !== 'undefined' && typeof fetch !== 'undefined') setTimeout(function () { cloudStart(); }, 50);
 
   G.KiteCore = {
     DEFAULTS: DEFAULTS, GAMES: GAMES, cfg: cfg, saveCfg: saveCfg, ruleVer: ruleVer, ruleHistory: ruleHistory, setProfile: setProfile, displayName: displayName, bentoState: bentoState, redeemBento: redeemBento, redeemBlock: redeemBlock, codeByShort: codeByShort, prizeImg: prizeImg, hasPrizeImg: hasPrizeImg, setPrizeImg: setPrizeImg, resetCfg: resetCfg, audit: audit, auditLog: function () { return rd(K_AUDIT) || []; },
-    cloudPull: cloudPull, cloudPush: cloudPush, cloudSync: cloudSync, cloudOp: cloudOp, cloudWipe: cloudWipe, cloudStatus: cloudStatus, onCloud: function (f) { CL.subs.push(f); }, cloudStart: cloudStart,
+    cloudPull: cloudPull, cloudPush: cloudPush, cloudSync: cloudSync, cloudOp: cloudOp, cloudWipe: cloudWipe, cloudStatus: cloudStatus, onCloud: function (f) { CL.subs.push(f); }, cloudStart: cloudStart, liffStart: liffStart, linkLine: linkLine, liffId: liffId,
     member: member, peekMember: function () { return rd(K_MEM); }, saveMember: saveMember, dayKey: dayKey, rid: rid, hmac: hmac, sha256: sha256, utf8: utf8,
     pointsForSpend: pointsForSpend, makeEarnCode: makeEarnCode, claimEarn: claimEarn, storeLog: function () { return lg(K_STORE); }, storeById: storeById,
     eventMult: eventMult, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore, tierPts: tierPts, nextTier: nextTier, gameToday: gameToday, storeBonusPts: storeBonusPts,

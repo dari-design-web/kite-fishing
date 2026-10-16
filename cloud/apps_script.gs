@@ -52,6 +52,10 @@ function doGet(e) {
   var p = (e && e.parameter) || {};
   if (p.k !== PLAYER_KEY && p.k !== ADMIN_KEY) return out_({ ok: false, msg: 'key' });
   var D = rows_(), M = meta_(), logs = {};
+  if (p.a === 'me' && p.uid) {      // 換手機／清了瀏覽器：用 LINE 帳號找回自己的會員資料（測試期；正式版要在伺服器驗 LINE 的 ID token）
+    var hit = all_(D, 'member').filter(function (m) { return m.line && m.line.uid === p.uid; }).sort(function (a, b) { return (b.ledger || []).length - (a.ledger || []).length; })[0];
+    return out_({ ok: true, epoch: M.epoch, member: hit || null });
+  }
   all_(D, 'device').forEach(function (d) { Object.keys(d.logs || {}).forEach(function (k) { logs[k] = (logs[k] || []).concat(d.logs[k] || []); }); });
   var ms = all_(D, 'member');
   if (p.full !== '1') ms = ms.map(lite_);      // 客人手機、店家、服務台只拿需要的部分（省流量）；後台拿完整資料

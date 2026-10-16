@@ -478,6 +478,8 @@ body{background:#8DA7CF;display:flex;flex-direction:column;height:100vh;height:1
   };
 
   hello();
+  /* D100：在官方 LINE 裡打開時用 LINE 帳號登入（LIFF_ID 設好之後才會動作）；換手機時從雲端找回點數 */
+  K.liffStart({ login: true }).then(function (m) { if (!m) return; hello && hello(); var t = stack[stack.length - 1]; if (t && $('sheet').classList.contains('on')) R[t[0]](t[1]); });
   var p0 = new URLSearchParams(location.search).get('p'); p0 = { card: 'points', prize: 'shop', games: 'park', events: 'news' }[p0] || p0; if (new URLSearchParams(location.search).get('tab') === 'bento') shopF = 'bento'; if (p0 && R[p0]) open(p0);      // 舊連結（v1 選單名稱）也能開
   window.__line = { open: open, go: go, claim: claim, close: close };
 })();
