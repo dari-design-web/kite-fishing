@@ -265,6 +265,8 @@
     var lm = rd(K_MEM), lr = lm && lm.id === p[2] && (lm.redeems || []).filter(function (x) { return x.id === p[6]; })[0];      // D82：同一台裝置能看到客人那邊時，已取消／逾期的單不能再發
     if (lr && (lr.status === 'cancel' || lr.status === 'expired')) return { ok: false, msg: '這張兌換單已' + (lr.status === 'cancel' ? '被客人取消' : '逾期自動取消') + '，點數已退回，不能發放' };
     var t = parseInt(p[5], 36), late = Date.now() - t > c.redeemExpireMin * 60000;
+    /* G60-01：超過領取保留期限的單不能發放（匯入資料、沒重開客人頁的舊單也一樣擋）；同一台的客人資料順便做到期退點 */
+    if (c.redeemHoldDays && Date.now() - t > c.redeemHoldDays * 86400000) { if (lm && lm.id === p[2]) member(); return { ok: false, msg: '這張兌換單已超過 ' + c.redeemHoldDays + ' 天領取期限（' + new Date(t + c.redeemHoldDays * 86400000).toLocaleString('zh-TW', { hour12: false }) + ' 到期），不能發放；點數會自動退回，請客人重新兌換' }; }
     return { ok: true, member: p[2], prize: pr, pts: +p[4], rcode: p[6], t: t, late: late, stock: onHand(pr.id), reserved: reservedCount(pr.id) };
   }
   /* D84：服務台用 6 碼兌換碼查詢、待領取清單（只看得到這台＋匯入的資料，D72） */
@@ -274,6 +276,7 @@
   function markGiven(rc, staff, why) {
     var h = findRedeem(rc); if (!h) return { ok: false, msg: '這台查不到這張兌換單' };
     if (h.r.status !== 'wait') return { ok: false, msg: '這張兌換單不是待領取狀態' };
+    var hd = cfg().redeemHoldDays; if (hd && Date.now() - h.r.t > hd * 86400000) return { ok: false, msg: '這張兌換單已超過 ' + hd + ' 天領取期限，不能標記已領' };
     var log = rd(K_DESK) || []; if (log.some(function (x) { return x.rcode === h.r.id; })) return { ok: false, msg: '這張已經發放過了' };
     if (onHand(h.r.prize) <= 0) return { ok: false, msg: '實物沒有了，請先補貨' };
     log.unshift({ t: Date.now(), rcode: h.r.id, member: h.m.id, prize: h.r.prize, prizeName: h.r.name, pts: h.r.pts, staff: staff || '後台', manual: true, note: why || '' }); wr(K_DESK, log);
