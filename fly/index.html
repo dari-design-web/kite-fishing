@@ -2585,7 +2585,7 @@ function finish() { BGM.stop();
   if (best && best.score) add('這關最高分', sc > best.score ? '🎉 ' + sc + ' 新紀錄！（上次最高 ' + best.score + '）' : best.score + (sc === best.score ? '（追平了！）' : '（還差 ' + (best.score - sc) + ' 分）'));
   /* v0.41（C-185，D71）：把這局分數送進官方 LINE 的「遊戲分數存摺」（每關每天前幾次才算、活動時段乘倍數；規則在後台改）。G 槽複本沒有共用資料層就跳過 */
   if (window.KiteCore) { try { const rp = KiteCore.reportPlay({ game: 'fly', level: String(id), score: sc, sec: t });
-    add(rp.tier ? '官方 LINE 點數' : '官方 LINE 分數存摺', (rp.tier ? (rp.counted ? '今天累計 ' + rp.today.toLocaleString() + ' 分＝' + rp.pts + ' 點' + (rp.gain ? '（這局 +' + rp.gain + ' 點）' : '') + (rp.next ? '・再 ' + rp.next.need.toLocaleString() + ' 分可到 ' + rp.next.pts + ' 點' : rp.pts >= rp.cap ? '・今天已拿滿' : '') + (rp.mult > 1 ? '・' + rp.event + ' ×' + rp.mult : '') : '今天這關已經算過分了（明天再來）') : rp.counted ? '+' + rp.add + ' 分' + (rp.mult > 1 ? '（' + rp.event + ' ×' + rp.mult + '）' : '') + '・存摺 ' + rp.bank + ' 分' : '今天這關已經算過分了（明天再來）')); } catch (e) {} }
+    add(rp.tier ? '官方 LINE 點數' : '官方 LINE 分數存摺', (rp.tier ? (rp.counted ? '今天累計 ' + rp.today.toLocaleString() + ' 分＝' + rp.pts + ' 點' + (rp.gain ? '（這局 +' + rp.gain + ' 點）' : '') + (rp.next ? '・再 ' + rp.next.need.toLocaleString() + ' 分多 1 點' : rp.pts >= rp.cap ? '・今天已拿滿' : '') + (rp.mult > 1 ? '・' + rp.event + ' ×' + rp.mult : '') : '今天這關已經算過分了（明天再來）') : rp.counted ? '+' + rp.add + ' 分' + (rp.mult > 1 ? '（' + rp.event + ' ×' + rp.mult + '）' : '') + '・存摺 ' + rp.bank + ' 分' : '今天這關已經算過分了（明天再來）')); } catch (e) {} }
   const un = $('unlockNote'); un.hidden = true;
   if (won && progress.unlocked <= id && STAGES[id] && !STAGES[id].locked) { progress.unlocked = id + 1; un.textContent = '第 ' + (id + 1) + ' 關「' + STAGES[id].name + '」已開放！'; un.hidden = false; }
   saveProgress();

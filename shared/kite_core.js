@@ -12,8 +12,9 @@
     /* D97／D98（10/17）：遊戲改成「當天所有遊戲累計總分」照階梯換點，每天最多 gameDailyCap 點，自動入帳（不用再到分數存摺換）。
        階梯是 [累計總分門檻, 點數]；機器人實測一天上限約 44,000 分（捕魚 3 場約 33,000＋飛行 4 關約 10,600），所以 10 點要 30,000 分（數字待 Claude×ChatGPT 定案） */
     gamePointMode: 'tier',        // 'tier'＝每日累計階梯（D97）；'bank'＝舊的分數存摺（每 scorePerPoint 分換 1 點）
-    gameTiers: [[1500, 1], [3000, 2], [4500, 3], [6000, 4], [8000, 5], [10000, 6], [13000, 7], [17000, 8], [22000, 9], [30000, 10]],
-    gameDailyCap: 10,             // 每天遊戲最多拿幾點（活動倍數會一起乘）
+    gameTiers: [[1200, 1], [3000, 2], [4500, 3], [6000, 4], [8000, 5], [10000, 6], [13000, 7], [17000, 8], [22000, 9], [30000, 10]],
+    gameDailyCap: 10,             // 每天遊戲最多拿幾點（基礎點＋活動加送點合計）
+    eventCapMult: false,          // 活動時每日上限要不要跟著倍數放大（G-73 建議不放大：高手本來就滿 10，放大會讓純遊戲最快 3 天湊 50；後台可改）
     scorePerPoint: 1000,          // 舊制（bank）：遊戲分數多少分換 1 點
     gameScorePerPoint: {},        // 個別遊戲覆寫，例如 { fish: 500 }
     triesPerLevel: 1,             // 每關每天幾次算分（超過還能玩，只是不算分）
@@ -33,9 +34,9 @@
     /* D97：消費滿額加點（期間、店家可選；同一筆只取加最多的一條；最低消費門檻照舊） */
     storeBonus: [ { id: 'sb1', title: '單筆滿 1,000 元加 5 點', stores: [], minAmount: 1000, add: 5, from: '', to: '', on: false } ],
     /* D98：小鳶去旅行回家時，偶爾帶回點數（依這趟帶的便當決定機率）；每人每月從旅行最多拿 monthCap 點 */
-    travelGift: { on: true, monthCap: 20, chance: { walk: 0, rice: 0.1, far: 0.2, squid: 0.25, hair: 0.3, special: 0.4 }, dist: [[1, 45], [2, 25], [3, 15], [4, 10], [5, 5]] },
+    travelGift: { on: true, monthCap: 20, chance: { walk: 0, rice: 0, far: 0.15, squid: 0.2, hair: 0.25, special: 0.3 }, dist: [[1, 50], [2, 25], [3, 15], [4, 7], [5, 3]] },      // G-73：免費散步／飯糰不帶點；平均每趟期望 0.28～0.56 點，低於便當價格 3 成；不受遊戲／消費活動加倍
     /* D98：小鳶帶回的券（折扣券、抵用券；後台設定），放進 LINE「我的兌換 → 我的券」，到店出示 QR 由店員核銷 */
-    coupons: [ { id: 'C01', name: '港邊咖啡折 20 元（示範）', store: '', desc: '示範券：正式內容、店家與張數由後台設定', chance: 0.08, monthQty: 50, validDays: 14, on: true } ],
+    coupons: [ { id: 'C01', name: '港邊咖啡折 20 元（示範）', store: '', desc: '示範券：正式內容、店家與張數由後台設定', chance: 0.05, monthQty: 50, validDays: 14, on: false } ],      // G-73：預設關閉，等確定誰出成本、哪家店、面額與張數再開；一趟只會帶回點數或券其中一種
     prizes: [
       { id: 'P01', name: '小鳶貼紙一張', points: 5, stock: 200, on: true, desc: '小鳶揮手款防水貼紙，可以貼在水壺或手機殼。' },
       { id: 'P02', name: '鯨鯊鑰匙圈', points: 30, stock: 50, on: true, desc: '港口的鯨鯊朋友，壓克力雙面印刷。' },
@@ -222,14 +223,17 @@
   /* D97／D98：每日累計總分階梯 */
   function tierPts(total) { var p = 0; (cfg().gameTiers || []).forEach(function (r) { if (total >= r[0] && r[1] > p) p = r[1]; }); return p; }
   function nextTier(total) { var t = (cfg().gameTiers || []).filter(function (r) { return r[0] > total; }).sort(function (a, b) { return a[0] - b[0]; })[0]; return t ? { need: t[0] - total, at: t[0], pts: t[1] } : null; }
-  function gameToday(m) {      // 今天算分的局：總分、乘上活動後該拿的點、已入帳的點
-    m = m || member(); var d = dayKey(), c = cfg(), total = 0, eff = 0, maxM = 1;
-    (m.plays || []).forEach(function (p) { if (!p.counted || dayKey(p.t) !== d) return; var raw = p.raw != null ? p.raw : Math.round((p.bank || 0) / (p.mult || 1)), mu = p.mult || 1; total += raw; eff += raw * mu; if (mu > maxM) maxM = mu; });
-    var cap = Math.round((c.gameDailyCap || 0) * maxM), base = tierPts(total), pts = Math.min(cap, Math.floor(base * (total ? eff / total : 1) + 1e-9));
+  function gameToday(m) {      // 今天算分的局：總分、基礎點、活動加送點、已入帳的點
+    m = m || member(); var d = dayKey(), c = cfg(), total = 0, base = 0, bonusF = 0, maxM = 1;
+    /* G-73：活動只加送「活動時段內新增的基礎點」×(倍數−1)，不回頭翻倍活動前已拿的點；照時間順序一局一局累計 */
+    (m.plays || []).filter(function (p) { return p.counted && dayKey(p.t) === d; }).sort(function (a, b) { return a.t - b.t; }).forEach(function (p) {
+      var raw = p.raw != null ? p.raw : Math.round((p.bank || 0) / (p.mult || 1)), mu = p.mult || 1, nb;
+      total += raw; nb = tierPts(total); if (mu > 1) bonusF += (mu - 1) * (nb - base); base = nb; if (mu > maxM) maxM = mu;
+    });
+    var cap = Math.round((c.gameDailyCap || 0) * (c.eventCapMult ? maxM : 1)), bonus = Math.floor(bonusF + 1e-9), pts = Math.min(cap, base + bonus);
     var got = (m.ledger || []).filter(function (e) { return e.type === 'game' && e.day === d; }).reduce(function (n, e) { return n + e.pts; }, 0);
-    var mu = total ? eff / total : 1, nx = base >= (c.gameDailyCap || 0) ? null : nextTier(total);
-    if (nx) nx.pts = Math.min(cap, Math.floor(nx.pts * mu + 1e-9));      // 有活動時，下一格的點數也照今天的加倍顯示
-    return { total: total, base: base, pts: pts, got: got, cap: cap, mult: mu, next: nx && nx.pts > pts ? nx : (nx ? Object.assign(nx, { pts: pts + 1 }) : null) };
+    var nx = pts >= cap ? null : nextTier(total);
+    return { total: total, base: base, bonus: bonus, pts: pts, got: got, cap: cap, next: nx };
   }
   function triesLeft(game, level) { var c = cfg(), m = member(), k = dayKey() + '|' + game + '|' + level, n = c.gameTries[game] != null ? c.gameTries[game] : c.triesPerLevel; return Math.max(0, n - ((m.tries || {})[k] || 0)); }
   function reportPlay(o) {      // o = { game, level, score, sec }
@@ -266,7 +270,7 @@
       p = Math.min(p, left); addLedger(m, { type: 'travel', pts: p, bento: bento, ref: ref || '' }); out.pts = p;
     }
     var iss = couponIssued(), cs = (c.coupons || []).filter(function (x) { return x.on && (iss[x.id] || 0) < (x.monthQty || 0); });
-    for (var j = 0; j < cs.length && !out.coupon; j++) if (rnd() < (cs[j].chance || 0)) out.coupon = grantCoupon(m, cs[j]);
+    for (var j = 0; j < cs.length && !out.coupon && !out.pts; j++) if (rnd() < (cs[j].chance || 0)) out.coupon = grantCoupon(m, cs[j]);      // G-73：一趟只帶回點數或券其中一種
     saveMember(m); return out;
   }
   function grantCoupon(m, cp) {
