@@ -505,7 +505,7 @@
   function cloudPull(force) {
     var u = cloudUrl(); if (!u || typeof fetch === 'undefined') return Promise.resolve(null);
     if (CL.busy && !force) return Promise.resolve(null); CL.busy = true;
-    return fetch(u + (u.indexOf('?') < 0 ? '?' : '&') + 'k=' + encodeURIComponent(cloudAdminKey() || CLOUD_PLAYER_KEY) + '&imgVer=' + (rd('kiteCloudImgVer') || '') + '&_=' + Date.now()).then(function (r) { return r.json(); }).then(function (r) {
+    return fetch(u + (u.indexOf('?') < 0 ? '?' : '&') + 'k=' + encodeURIComponent(cloudAdminKey() || CLOUD_PLAYER_KEY) + '&imgVer=' + (rd('kiteCloudImgVer') || '') + (devRole() === 'admin' ? '&full=1' : '') + '&_=' + Date.now()).then(function (r) { return r.json(); }).then(function (r) {
       CL.busy = false; if (!r || !r.ok) { CL.err = '下載失敗：' + (r && r.msg || '?'); return null; }
       CL.pulling = true; var wiped = false;
       try {

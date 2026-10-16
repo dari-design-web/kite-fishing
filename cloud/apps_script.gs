@@ -43,12 +43,19 @@ function viewMember_(m) {
   sh.appendRow(row);
 }
 
+function lite_(m) {
+  return { id: m.id, name: m.name || '', status: m.status, lite: true, points: m.points, nonces: m.nonces || [], redeems: m.redeems || [],
+    coupons: (m.coupons || []).map(function (x) { return { id: x.id, cid: x.cid, t: x.t, status: x.status }; }),
+    ledger: (m.ledger || []).filter(function (e) { return e.ref && (e.type === 'store' || e.type === 'backfill'); }).map(function (e) { return { type: e.type, ref: e.ref, t: e.t, pts: e.pts }; }) };
+}
 function doGet(e) {
   var p = (e && e.parameter) || {};
   if (p.k !== PLAYER_KEY && p.k !== ADMIN_KEY) return out_({ ok: false, msg: 'key' });
   var D = rows_(), M = meta_(), logs = {};
   all_(D, 'device').forEach(function (d) { Object.keys(d.logs || {}).forEach(function (k) { logs[k] = (logs[k] || []).concat(d.logs[k] || []); }); });
-  var o = { ok: true, t: Date.now(), epoch: M.epoch, cfgT: M.cfgT, imgVer: M.imgVer, members: all_(D, 'member'), logs: logs, cfg: one_(D, 'cfg', 'cfg'), ops: all_(D, 'op') };
+  var ms = all_(D, 'member');
+  if (p.full !== '1') ms = ms.map(lite_);      // 客人手機、店家、服務台只拿需要的部分（省流量）；後台拿完整資料
+  var o = { ok: true, t: Date.now(), epoch: M.epoch, cfgT: M.cfgT, imgVer: M.imgVer, members: ms, logs: logs, cfg: one_(D, 'cfg', 'cfg'), ops: all_(D, 'op') };
   if (String(p.imgVer || '') !== String(M.imgVer)) o.images = one_(D, 'images', 'images') || {};
   return out_(o);
 }
