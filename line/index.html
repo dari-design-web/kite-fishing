@@ -241,6 +241,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
   K.onCloud(function (e) { if (e && e.wiped) return location.reload(); if (scanner || document.querySelector('.modal')) return; var t = stack[stack.length - 1]; if (t && $('sheet').classList.contains('on') && ['points', 'mine', 'coupon', 'ticket', 'shop', 'item', 'park', 'mygames', 'me'].indexOf(t[0]) >= 0) { var y = $('sbody').scrollTop; R[t[0]](t[1]); $('sbody').scrollTop = y; } });
   var INLIFF = /[?&]liff=1/.test(location.search) || /[?&]liff\.state=/.test(location.search) || / Line\//i.test(navigator.userAgent);
   if (INLIFF) document.body.classList.add('inliff');
+  if (K.cloudStatus().url) document.querySelector('.testbar').textContent = '測試期資料（已同步到雲端）。正式上線前會全部清空';
   function close() { if (scanner) { scanner.stop(); scanner = null; } if (INLIFF) { if (window.liff && liff.isInClient && liff.isInClient()) return liff.closeWindow(); stack = []; return open('park'); } $('sheet').className = 'sheet'; stack = []; }
   function back() { stack.pop(); var t = stack.pop(); if (t) open(t[0], t[1], true); else close(); }
   $('close').onclick = close; $('back').onclick = back;
@@ -408,7 +409,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
   /* ---------- 我的 ---------- */
   R.me = function () {
     var m = K.member(), wc = waitCount(), due = K.expiring(m, 30).due;
-    $('sbody').innerHTML = '<div class="meHead"><img src="' + KITE + '" alt=""><div class="n"><b>' + esc(K.displayName(m)) + '</b><span class="muted">會員編號 ' + esc(m.id) + '</span><button class="pill" id="toProf" style="border:0;margin-top:4px">✏️ 修改名稱／聯絡方式</button></div><div class="pt"><b>' + m.points + '</b><span class="muted">點</span></div></div>' +
+    $('sbody').innerHTML = '<div class="meHead"><img src="' + KITE + '" alt=""><div class="n"><b>' + esc(K.displayName(m)) + '</b><span class="muted">會員編號 ' + esc(m.id) + '</span><button class="pill" id="toProf" style="border:0;margin-top:6px;padding:9px 14px;min-height:38px">✏️ 修改名稱／聯絡方式</button></div><div class="pt"><b>' + m.points + '</b><span class="muted">點</span></div></div>' +
       (m.status === 'frozen' ? '<div class="card" style="border-color:#F2C2B8;background:#FFF4F1;color:var(--red);font-weight:700;padding:10px 14px">⚠️ 會員帳號暫停使用中，暫時不能集點和兌換。請洽一樓服務台。</div>' : '') +
       (due ? '<div class="card" style="border-color:#F2C2B8;background:#FFF4F1;color:var(--red);font-weight:700;padding:10px 14px">⏳ 有 ' + due + ' 點將在 30 天內到期</div>' : '') +
       '<div class="meGrid"><button data-to="points"><span>🪙</span>我的點數</button><button data-to="mine"><span>🎫</span>我的兌換' + (wc ? '<i class="cnt">' + wc + '</i>' : '') + '</button><button data-to="mygames"><span>🎮</span>我的遊戲</button><button data-to="news"><span>📣</span>港口消息</button></div>' +
