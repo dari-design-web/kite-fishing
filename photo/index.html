@@ -387,7 +387,7 @@ const SND_ICON = (() => {
 </script>
 <script>
 /* 小鳶合照館 原型 v0.1（工作單 11 v4 P2）。貼紙、相框、解鎖方式都是建議，等 Dari 確認；正式素材之後開單給 ChatGPT */
-const CFG = { version: '0.20', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
+const CFG = { version: '0.21', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
 const $ = (id) => document.getElementById(id);
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = 'none'), 2400); }
@@ -397,6 +397,7 @@ const fly = read('kiteFlyProgress1') || {}, dex = read('kiteFishingDex2') || {},
 const cleared = (n) => CFG.all || !!(fly.stars && fly.stars[n] && fly.stars[n][0]);
 const caught = (k) => CFG.all || !!dex[k];
 const friends = read('kiteFriends1') || {}, metPal = (n) => CFG.all || !!friends[n];      // v0.13（C-128）：在現場見過的港口朋友變成貼紙
+const stampP = read('kiteStamp1') || {}, gotSpot = (n) => CFG.all || !!(stampP.spots && stampP.spots[n]);      // v0.21（G-61、D86）：蓋到的港灣章變成合照貼紙，每蓋一站開一張
 const hasSv = (k) => CFG.all || !!(trip.souvenirs && trip.souvenirs[k]);
 const LOCS = [['home', '東三東四', '小鯨鯊吊飾'], ['miaokou', '基隆廟口', '小燈籠'], ['zhengbin', '正濱漁港', '彩色小木屋'], ['heping', '和平島', '小貝殼'], ['badouzi', '八斗子', '小車票'], ['shenao', '深澳', '豆腐岩小石頭'], ['chaojing', '潮境公園', '海星小飾品'], ['jiufen', '九份', '芋圓碗']];
 const STK = [
@@ -421,7 +422,8 @@ const STK = [
   { tab: '漁獲', id: 'fish_hairtail_v2', name: '白帶魚', s: 0.5, ok: () => caught('hairtail'), how: '捕魚抓過白帶魚' },
   { tab: '漁獲', id: 'fish_amber_v2', name: '紅魽', s: 0.45, ok: () => caught('amber'), how: '捕魚抓過紅魽' }
 ].concat([['探頭小鳶', 0.36], ['打盹小鳶', 0.42], ['剛到港口的小鳶', 0.36], ['鯨鯊', 0.5], ['海龜', 0.34], ['小卷', 0.34]].map(([nm, sc], i) => ({ tab: '港口朋友', id: 'pal_f' + (i + 1), name: nm, s: sc, ok: () => metPal(i + 1), how: '在館內找到充氣的' + nm + '，掃旁邊的 QR' }))).concat(LOCS.map(([id, loc, nm]) => ({ tab: '紀念品', id: 'sv_' + id, name: nm, s: 0.2, ok: () => hasSv(id), how: '小鳶去旅行從' + loc + '帶回來' })));
-const TABS = ['小鳶與鯨鯊', '港口朋友', '飛行朋友', '漁獲', '紀念品'];
+STK.push(...[['kite', '小鳶章'], ['ship', '郵輪章'], ['shark', '鯨鯊章'], ['bowl', '碗筷章'], ['chair', '椅子章'], ['car', '小車章']].map(([ic, nm], i) => ({ tab: '港灣章', id: '../../stamp/assets/stamp_c_' + ic, name: nm, s: 0.3, ok: () => gotSpot(i + 1), how: '港灣蓋章散步蓋到第 ' + (i + 1) + ' 站' })));
+const TABS = ['小鳶與鯨鯊', '港口朋友', '港灣章', '飛行朋友', '漁獲', '紀念品'];
 const IMG = {};
 function img(id, ext) { if (!IMG[id]) { IMG[id] = new Image(); IMG[id].src = 'assets/' + id + '.' + (ext || 'png'); } return IMG[id]; }
 

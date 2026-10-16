@@ -223,7 +223,6 @@ summary{font-weight:700;font-size:14px;cursor:pointer}
     <svg class="route" id="route" viewBox="0 0 1080 1350" preserveAspectRatio="none" aria-hidden="true"></svg>
     <div id="grid"></div>
   </section>
-  <button class="thBtn" type="button" id="thBtn">🎭 我的港灣小劇場</button>
   <div class="palShelf" id="palLink"></div>
   <details class="drawer" id="drawer"><summary>祕密章・港口札記・集滿獎勵</summary>
   <div class="secret" id="secret"></div>
@@ -436,7 +435,7 @@ const SND_ICON = (() => {
 /* BGM-END */
 </script>
 <script>
-const CFG = { version: '1.1', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
+const CFG = { version: '1.2', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
 const FRAMES = [[53.3333, 40.4444], [25.0463, 46.1481], [18.9352, 75.4815], [44.4907, 86.7407], [75.9722, 77.4815], [80.5093, 56.037]], FRAME_R = 10.37;      // v0.8：G-50 港區小地圖六圈中心（%）；章容器 224px＝寬 20.74%（ChatGPT 地圖位置 JSON）
 const ROUTE = [[1, 2, [[[462.8, 559.4], [449.0, 561.0], [429.0, 568.0], [410.0, 578.0], [378.3, 588.2]]]], [2, 3, [[[330.7, 717.1], [339.0, 730.0], [337.8, 734.0]], [[294.0, 784.0], [285.0, 790.0], [301.0, 820.0], [313.0, 859.0], [313.0, 902.0], [299.0, 934.0], [287.3, 944.5]]]], [3, 4, [[[290.9, 1089.4], [315.0, 1109.0], [339.0, 1130.0], [360.0, 1145.0], [372.6, 1147.7]]]], [4, 5, [[[590.5, 1181.6], [615.0, 1184.0], [638.0, 1178.0], [662.0, 1171.0], [688.0, 1157.0], [709.0, 1138.0], [736.5, 1115.3]]]], [5, 6, [[[750.1, 963.3], [721.0, 929.0], [730.0, 903.0], [740.0, 879.0], [752.0, 857.0], [786.2, 827.8]]]], [6, 1, [[[797.0, 674.6], [784.0, 660.0], [760.0, 636.0], [742.0, 613.0], [718.0, 591.0], [700.0, 579.0], [686.0, 575.3]]]]];      // 每段 [起站, 終站, 可見路段（原圖像素）]；稱號帶的斷口不補線
 /* 6 個蓋章點（實際位置待 Dari 現勘）。color：每站主色（工作單 18）；title：蓋到就拿到的稱號（建議）；riddle：還沒去時的提示 */
@@ -562,6 +561,7 @@ function render() {
   $('grid').querySelectorAll('.pcell').forEach((b) => (b.onclick = () => { const s = SPOTS.find((x) => x.id === +b.dataset.id); if (P.spots[s.id]) showStory(s, false, []); else hintSheet(s); }));
   $('route').innerHTML = routeSVG();
   justId = 0; $('passport').classList.toggle('full', n() === 6 && !!P.complete);
+  $('shareBtn').textContent = n() >= 6 ? '📷 儲存完成卡' : '存成護照圖片';
   $('count').textContent = n() + ' / 6'; $('prog').style.width = (n() / 6 * 100) + '%';
   /* v0.22（C-167）：走到一半（3 站）和只差一站（5 站）時，進度文字加一句打氣（只差一站時進度條會一閃一閃）（文字是建議） */
   $('prog').classList.toggle('almost', n() === 5);
@@ -659,8 +659,8 @@ function checkDone() {
   $('sheet').innerHTML = '<img src="assets/pc_passport.jpg" alt="港灣探險護照紀念明信片" style="width:100%;border-radius:8px;border:5px solid #fff;box-shadow:0 6px 16px rgba(0,0,0,.25);transform:rotate(-2deg)"><h3>港灣探險護照集滿了！</h3>' +
     '<div class="gotT"><div>🏅 <span>你現在是<br><b>東三東四港灣探險家</b></span><i>集滿稱號</i></div></div>' +
     '<div class="say"><img src="../travel/assets/item_umbrella.png" alt=""><p>謝謝你陪我走完一圈！<br>這把雨傘送給你，<br>下雨天也可以帶我去旅行喔～</p></div>' +
-    '<p class="again">拿到：護照紀念明信片（小屋收藏冊「港灣護照」）、小鳶的雨傘（小屋背包）。' + (P.secret ? '' : '聽說還有一個祕密章……') + '</p><button class="btn" type="button" id="ovOk">好耶！</button>';
-  $('ov').hidden = false; $('ovOk').onclick = () => { $('ov').hidden = true; render(); };
+    '<p class="again">拿到：護照紀念明信片（小屋收藏冊「港灣護照」）、小鳶的雨傘（小屋背包），6 個章也都變成合照館的貼紙了。' + (P.secret ? '' : '聽說還有一個祕密章……') + '</p><button class="btn" type="button" id="doneCard">📷 儲存完成卡</button><a class="btn light" href="../photo/" style="display:block;text-align:center;margin-top:8px;text-decoration:none">去合照館用章合照</a><button class="btn light" type="button" id="ovOk" style="margin-top:8px">回護照</button>';
+  $('ov').hidden = false; $('ovOk').onclick = () => { $('ov').hidden = true; render(); }; $('doneCard').onclick = () => { $('ov').hidden = true; render(); sharePassport(); };
 }
 /* ===== 存成「我的港灣護照」圖片（只在手機上產生，不上傳） ===== */
 function loadImg(src) { return new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; }); }
@@ -780,7 +780,7 @@ const m = /[?&](?:spot|s)=(\d)/.exec(location.search), FL = /[?&]from=line/.test
 /* v1.0（D83）：每一站住著一位港口朋友。掃 QR（?spot=N）先到朋友那裡打招呼，朋友說完帶 &met=1 回來蓋章；舊的朋友 QR（meet/?f=N）也會走同一條路 */
 if (m && !/[?&]met=1/.test(location.search) && PAL_OF[+m[1]]) { location.replace('../meet/?f=' + PAL_OF[+m[1]] + '&spot=' + m[1] + (FL ? '&from=line' : '')); }
 else if (m) { try { const fv = sessionStorage.getItem('kiteForceVar'); if (fv) { forceVar = fv; sessionStorage.removeItem('kiteForceVar'); } } catch (e) {} scan(+m[1]); history.replaceState(null, '', location.pathname + (FL ? '?from=line' : '')); }
-$('thBtn').onclick = openTheater;
+      // v1.2（G-61、D86）：拿掉「我的港灣小劇場」入口（Dari：沒什麼意義），改成 6 站集滿的完成卡＋合照館港灣章貼紙
 window.__stamp = { theater: openTheater, P: () => P, scan, force: (v) => { forceVar = v; }, share: sharePassport };
 </script>
 <script src="../shared/back_line.js"></script>
