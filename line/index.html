@@ -123,9 +123,11 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
 .trk-h{display:flex;align-items:center;gap:8px;margin:0 2px 8px}.trk-h b{font-size:15px}.trk-h .sp{flex:1}.trk-h .tot{font-size:12px;color:var(--muted)}.trk-h .tot b{font-size:15px;color:var(--orange)}
 .trk-row{position:relative;display:grid;grid-template-columns:repeat(var(--n),1fr);align-items:end}
 .trk-node{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:none;padding:0;font:inherit;color:inherit;min-height:44px;justify-content:flex-end;cursor:default}
+
+.trk-node img{width:30px;height:30px;display:block;object-fit:contain}.trk-node.lit img{animation:litp 1.6s ease-in-out infinite}
 .trk-node .c{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:900;background:#EFE8DA;color:#A99B86;border:2px solid #E3D9C8;transition:transform .2s}
 .trk-node.lit{cursor:pointer}.trk-node.lit .c{background:radial-gradient(circle at 35% 30%,#FFF6C8,#FFC531 55%,#E79A12);color:#7A4A00;border-color:#fff;box-shadow:0 0 0 3px rgba(255,197,49,.35),0 0 14px 4px rgba(255,197,49,.65);animation:litp 1.1s ease-in-out infinite}
-@keyframes litp{50%{transform:scale(1.12) translateY(-2px)}}
+@keyframes litp{50%{transform:scale(1.06) translateY(-1px)}}
 .trk-node.got .c{background:#2F7F86;color:#fff;border-color:#2F7F86}
 .trk-node.ev .c{width:34px;height:34px;font-size:16px}.trk-node.ev:not(.lit):not(.got) .c{border-style:dashed}
 .trk-node .pop{position:absolute;top:-6px;font-weight:900;color:var(--orange);font-size:15px;animation:popup .9s ease-out forwards;pointer-events:none}
@@ -138,9 +140,13 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
 .trk-lab span.on{color:#2F7F86;font-weight:800}
 .trk-f{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12.5px;color:var(--muted)}.trk-f .sp{flex:1}
 .trk-f .btn{min-height:36px;padding:6px 12px;font-size:13px}
+.trk-f .trk-go{min-height:44px;padding:6px 16px;font-size:15px;font-weight:900;display:flex;flex-direction:column;align-items:center;line-height:1.15;flex:none}.trk-f .trk-go small{font-size:11px;font-weight:700;opacity:.85}
+.trk-f>span{flex:1}
+.trk-ev{display:flex;align-items:center;gap:6px;margin-top:8px;border-radius:999px;background:#FFF3DA;padding:4px 12px 4px 4px;font-size:12.5px;width:max-content;max-width:100%}.trk-ev img{width:26px;height:26px}.trk-ev.lit{background:linear-gradient(90deg,#FFE3A3,#FFF3DA);font-weight:700}.trk-ev b{color:var(--orange)}
+.st-note{margin:10px 12px 0;border-radius:12px;background:rgba(255,255,255,.14);color:#fff;font-size:13px;padding:8px 12px}
 .trk details{margin-top:6px;font-size:12px;color:var(--muted)}.trk summary{cursor:pointer;color:#2F7F86;font-weight:700}
 .lb-player .mg{border:1px solid #E3D9C8;background:#FFF8EA;color:var(--ink);border-radius:12px;padding:6px 9px;font:inherit;font-size:12px;font-weight:800;white-space:nowrap}
-@media (prefers-reduced-motion:reduce){.trk-node.lit .c,.trk-bar i:after{animation:none}}
+@media (prefers-reduced-motion:reduce){.trk-node.lit .c,.trk-node.lit img,.trk-bar i:after{animation:none}}
 .lb-foot{padding:18px 12px calc(28px + env(safe-area-inset-bottom,0px));color:var(--ink)}
 .lb-hero .sky{will-change:transform}
 @media (prefers-reduced-motion:reduce){.lb-hero .sky,.lb-hero .spark,.lb-hero .cloud,.lb-hero .kite,.lb-hero .wave,.booth .ic,.lb-ev:after{animation:none}}
@@ -282,7 +288,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
   ];
   function gameLink(g) { return g.href + (g.href.indexOf('?') < 0 ? '?' : '&') + 'from=line'; }
   R.park = function () {
-    var st0 = K.settleGame ? K.settleGame() : 0; if (st0) setTimeout(function () { toast('前幾天亮著沒領的 ' + st0 + ' 點，已經自動幫你領好了'); }, 300);
+    var st0 = K.settleGame ? K.settleGame() : 0;
     var c = K.cfg(), m = K.member(), P = progress(), bank = Object.keys(m.scoreBank || {}).reduce(function (s, k) { return s + (m.scoreBank[k] || 0); }, 0), TIER = c.gamePointMode === 'tier', gt = K.gameToday();
     var left = 0; GL.forEach(function (g) { var lv = Object.keys(K.GAMES[g.id].levels); left += lv.reduce(function (a, l) { return a + K.triesLeft(g.id, l); }, 0); });
     var evs = GL.map(function (g) { var e = K.eventMult(g.id); return e.mult > 1 ? { g: g, e: e } : null; }).filter(Boolean), feat = evs[0] ? evs[0].g.id : 'fish';
@@ -300,7 +306,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
       '<span class="spark" style="left:22%;top:118px"></span><span class="spark" style="left:47%;top:132px;animation-delay:.8s"></span><span class="spark" style="left:68%;top:124px;animation-delay:1.5s"></span>' +
       '<svg class="wave" viewBox="0 0 800 46" preserveAspectRatio="none"><path d="M0 22 Q50 6 100 22 T200 22 T300 22 T400 22 T500 22 T600 22 T700 22 T800 22 V46 H0Z" fill="#1C5470" opacity=".55"/><path d="M0 30 Q50 16 100 30 T200 30 T300 30 T400 30 T500 30 T600 30 T700 30 T800 30 V46 H0Z" fill="#1C5470"/></svg>' +
       '<div class="lb-title"><small>KITE PARK・GAME LOBBY</small><b>小鳶樂園</b></div></div>' +
-      (TIER ? '<div class="lb-player"><img src="' + KITE + '" alt=""><div class="s"><b>' + esc(K.displayName(m)) + '</b><span>我的點數 <b style="display:inline;font-size:14px;color:var(--orange)">' + (m.points || 0) + '</b> 點</span></div><button class="mg" id="toMG">📊 遊戲紀錄</button></div>' + (c.gameClaim === 'tap' ? track(gt) : '<div class="trk"><div class="trk-h"><b>今天遊戲點 ' + gt.pts + ' / ' + gt.cap + '</b></div>' + tierTable(gt.total) + '</div>') : '<div class="lb-player"><img src="' + KITE + '" alt=""><div class="s"><b>' + esc(K.displayName(m)) + '</b><span>今天還能算分 ' + left + ' 次・每 ' + c.scorePerPoint.toLocaleString() + ' 分換 1 點</span></div><div class="bank">分數存摺<b>' + bank.toLocaleString() + '</b></div></div>') +
+      (TIER ? '<div class="lb-player"><img src="' + KITE + '" alt=""><div class="s"><b>' + esc(K.displayName(m)) + '</b><span>我的點數 <b style="display:inline;font-size:14px;color:var(--orange)">' + (m.points || 0) + '</b> 點</span></div><button class="mg" id="toMG">📊 遊戲紀錄</button></div>' + (st0 ? '<div class="st-note">🎁 漏領的 ' + st0 + ' 點，幫你收好囉！</div>' : '') + (c.gameClaim === 'tap' ? track(gt) : '<div class="trk"><div class="trk-h"><b>今天遊戲點 ' + gt.pts + ' / ' + gt.cap + '</b></div>' + tierTable(gt.total) + '</div>') : '<div class="lb-player"><img src="' + KITE + '" alt=""><div class="s"><b>' + esc(K.displayName(m)) + '</b><span>今天還能算分 ' + left + ' 次・每 ' + c.scorePerPoint.toLocaleString() + ' 分換 1 點</span></div><div class="bank">分數存摺<b>' + bank.toLocaleString() + '</b></div></div>') +
       (evs.length ? '<div class="lb-ev">🎉 今天的活動：' + evs.map(function (x) { return esc(x.e.title) + '（' + esc(K.GAMES[x.g.id].name) + ' ×' + x.e.mult + '）'; }).join('、') + '</div>' : '') +
       '<div class="lb-sec">' + (evs.length ? '今日推薦' : '人氣遊戲') + '</div><div class="lb-grid">' + booth(fg, 0, true) + '</div>' +
       '<div class="lb-sec">全部遊戲</div><div class="lb-grid">' + GL.filter(function (g) { return g.id !== feat; }).map(function (g, i) { return booth(g, i + 1); }).join('') +
@@ -309,31 +315,32 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
     var mg = function () { go('mygames'); }; if ($('toMG')) $('toMG').onclick = mg; if ($('toMG2')) $('toMG2').onclick = mg; wireTrack(R.park);
   };
 
-  /* D102：今日積分條——每格＋1 點，下面是分數門檻，中間是今天累計分數；到了就發亮，點一下入帳 */
+  /* D102／G74：今日積分條——十格等距（第 5、10 格是寶箱，仍各 +1），格間照各段門檻比例填；點任一亮格或「領取 N 點」一次領完；活動加送放在下方膠囊 */
   function track(gt) {
-    var c = K.cfg(), T = (c.gameTiers || []).slice().sort(function (a, b) { return a[0] - b[0]; }), n = T.length, base = gt.base, got = gt.got, gotB = Math.min(got, base), bonus = Math.max(0, gt.pts - base), gotE = Math.max(0, got - base);
+    var c = K.cfg(), T = (c.gameTiers || []).slice().sort(function (a, b) { return a[0] - b[0]; }), n = T.length, base = gt.base, got = gt.got, gotB = Math.min(got, base), bonus = Math.max(0, gt.pts - base), gotE = Math.max(0, got - base), evLeft = bonus - gotE;
     var seg = 0; while (seg < n && gt.total >= T[seg][0]) seg++;
     var frac = seg >= n ? 1 : (gt.total - (seg ? T[seg - 1][0] : 0)) / (T[seg][0] - (seg ? T[seg - 1][0] : 0)), pos = seg >= n ? n - 0.5 : seg === 0 ? frac * 0.5 : seg - 0.5 + frac, fill = Math.min(100, pos / n * 100);      // 第 i 格在第 i 欄的正中間
     var k = function (v) { return v >= 1000 ? (Math.round(v / 100) / 10) + 'k' : String(v); };
-    var ev = gt.capMax > gt.cap || bonus > 0, cols = n + (ev ? 1 : 0);
-    var nodes = T.map(function (t, i) { var idx = i + 1, st = idx <= gotB ? 'got' : idx <= base ? 'lit' : ''; return '<button type="button" class="trk-node ' + st + '" data-tk="' + idx + '" aria-label="' + (st === 'lit' ? '領 1 點' : st === 'got' ? '已領' : '累計 ' + t[0] + ' 分可領 1 點') + '"><span class="c">' + (st === 'got' ? '✓' : '+1') + '</span></button>'; }).join('');
-    if (ev) { var el = bonus - gotE; nodes += '<button type="button" class="trk-node ev ' + (el > 0 ? 'lit' : bonus && !el ? 'got' : '') + '" data-tk="ev" aria-label="活動加送"><span class="c">' + (el > 0 ? '+' + el : bonus && !el ? '✓' : '🎉') + '</span></button>'; }
-    var labs = T.map(function (t, i) { return '<span class="' + (gt.total >= t[0] ? 'on' : '') + '">' + k(t[0]) + '</span>'; }).join('') + (ev ? '<span>加送</span>' : '');
-    var claim = gt.claim;
-    return '<div class="trk" id="trk" style="--n:' + cols + '"><div class="trk-h"><b>今日遊戲積分</b><span class="sp"></span><span class="tot">今天 <b>' + gt.total.toLocaleString() + '</b> 分</span></div>' +
-      '<div class="trk-row">' + nodes + '</div><div class="trk-bar" style="margin-right:' + (ev ? 'calc(100% / ' + cols + ')' : '0') + '"><i style="width:' + fill.toFixed(1) + '%"></i></div><div class="trk-lab">' + labs + '</div>' +
-      '<div class="trk-f"><span>' + (claim ? '✨ 有 <b style="color:var(--orange)">' + claim + '</b> 點亮著，點一下就領' : gt.next ? '再 <b>' + gt.next.need.toLocaleString() + '</b> 分亮下一格' : gt.pts >= gt.cap ? '今天的格子都領完了，明天再來' : '') + '</span><span class="sp"></span>' + (claim > 1 ? '<button class="btn" id="tkAll">全部領取</button>' : '') + '</div>' +
-      '<details><summary>怎麼算？</summary>捕魚、飛行每關每天前 ' + c.triesPerLevel + ' 次的分數加起來，到了門檻那一格就會發亮，每格 1 點，每天最多 ' + c.gameDailyCap + ' 點' + (c.eventCapMult ? '（加倍活動時上限跟著加倍，多的放在最後的「加送」格）' : '') + '。亮著忘了領也沒關係，隔天打開會自動幫你補進帳。</details></div>';
+    var nodes = T.map(function (t, i) { var idx = i + 1, st = idx <= gotB ? 'got' : idx <= base ? 'lit' : 'off', kind = (idx % 5 === 0) ? 'chest' : 'coin'; return '<button type="button" class="trk-node ' + (st === 'off' ? '' : st) + '" data-tk="' + idx + '" aria-label="' + (st === 'lit' ? '亮了，點一下領取' : st === 'got' ? '已領 1 點' : '累計 ' + t[0] + ' 分可領 1 點') + '"' + (st === 'lit' ? '' : ' tabindex="-1"') + '><img src="assets/trk_' + kind + '_' + st + '.png" alt=""></button>'; }).join('');
+    var labs = T.map(function (t) { return '<span class="' + (gt.total >= t[0] ? 'on' : '') + '">' + k(t[0]) + '</span>'; }).join('');
+    var claim = gt.claim, ev = gt.capMax > gt.cap || bonus > 0, full = gt.pts >= gt.cap && !claim && (base >= n);
+    var msg = claim ? '亮了 <b style="color:var(--orange)">' + claim + '</b> 點，點一下領！' : full ? '今天收齊啦，明天再玩！' : gt.next ? '再 <b>' + gt.next.need.toLocaleString() + '</b> 分，點亮下一格！' : gt.pts >= gt.cap ? '今天的上限領滿了，明天再玩！' : '';
+    return '<div class="trk" id="trk"><div class="trk-h"><b>今日遊戲積分</b><span class="sp"></span><span class="tot">今天 <b>' + gt.total.toLocaleString() + '</b> 分</span></div>' +
+      '<div class="trk-row" style="--n:' + n + '">' + nodes + '</div><div class="trk-bar"><i style="width:' + fill.toFixed(1) + '%"></i></div><div class="trk-lab" style="--n:' + n + '">' + labs + '</div>' +
+      (ev ? '<div class="trk-ev' + (evLeft > 0 ? ' lit' : '') + '"><img src="assets/trk_event.png" alt="">' + (bonus ? (evLeft > 0 ? '活動加送 <b>+' + evLeft + '</b> 點' + (gotE ? '（已領 ' + gotE + '）' : '') : '活動已領 <b>' + bonus + '</b> 點') : '今天有加倍活動，分數到了會多送點數') + '</div>' : '') +
+      '<div class="trk-f"><span>' + msg + '</span>' + (claim ? '<button class="btn trk-go" id="tkAll">領取 ' + claim + ' 點' + (evLeft > 0 && claim > evLeft ? '<small>含活動 ' + evLeft + ' 點</small>' : '') + '</button>' : '') + '</div>' +
+      '<details><summary>怎麼集點？</summary>捕魚、飛行每關每天前 ' + c.triesPerLevel + ' 次的分數加起來，到了門檻那一格就會發亮。每格都是 1 點，寶箱也是喔；每天最多 ' + c.gameDailyCap + ' 點' + (c.eventCapMult ? '（加倍活動時上限跟著加倍，多送的放在「活動加送」）' : '') + '。亮著忘了領也沒關係，下次回來會幫你收好。</details></div>';
   }
   function wireTrack(done) {
-    var el = $('trk'); if (!el) return;
-    var claim = function (n, node) {
-      var r = K.claimGame(n); if (!r.ok) return toast(r.msg);
-      if (node) { var p = document.createElement('span'); p.className = 'pop'; p.textContent = '+' + r.pts; node.appendChild(p); }
-      toast('領到 ' + r.pts + ' 點！目前 ' + r.total + ' 點'); setTimeout(function () { done(); hello(); }, node ? 650 : 0);
+    var el = $('trk'); if (!el) return; var busy = false;
+    var claim = function () {
+      if (busy) return; busy = true; el.querySelectorAll('button').forEach(function (b) { b.disabled = true; });      // G74：連點／重試不重複領
+      var r = K.claimGame(0); if (!r.ok) { busy = false; toast(r.msg); return done(); }
+      el.querySelectorAll('.trk-node.lit').forEach(function (b, i) { var p = document.createElement('span'); p.className = 'pop'; p.textContent = '+1'; p.style.animationDelay = (i * 0.06) + 's'; b.appendChild(p); });
+      toast('領到 ' + r.pts + ' 點！'); setTimeout(function () { done(); hello(); }, 700);
     };
-    el.querySelectorAll('.trk-node.lit').forEach(function (b) { b.onclick = function () { var gt = K.gameToday(); claim(b.dataset.tk === 'ev' ? gt.claim : Math.max(1, Math.min(gt.claim, +b.dataset.tk - gt.got)), b); }; });
-    var all = $('tkAll'); if (all) all.onclick = function () { claim(0, null); };
+    el.querySelectorAll('.trk-node.lit').forEach(function (b) { b.onclick = claim; });
+    var all = $('tkAll'); if (all) all.onclick = claim;
   }
   /* D97：每日累計分數換點表（今天走到哪一格會標出來） */
   function tierTable(total) {
@@ -362,7 +369,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
     var tp = plays.filter(function (p) { return K.dayKey(p.t) === today; }).length, sec = plays.reduce(function (s, p) { return s + (p.sec || 0); }, 0), bank = Object.keys(m.scoreBank || {}).reduce(function (s, k) { return s + (m.scoreBank[k] || 0); }, 0);
     var TIER = c.gamePointMode === 'tier', gt = K.gameToday();
     var html = '<div class="stat3"><div><b>' + tp + '</b>今天玩了（次）</div><div><b>' + Math.round(sec / 60) + '</b>累計遊玩（分鐘）</div>' + (TIER ? '<div><b>' + gt.pts + '/' + gt.cap + '</b>今天遊戲點</div>' : '<div><b>' + bank.toLocaleString() + '</b>分數存摺（分）</div>') + '</div>';
-    if (TIER && c.gameClaim === 'tap') html += track(gt).replace('class="trk"', 'class="trk" style="--n:' + ((c.gameTiers || []).length + (gt.capMax > gt.cap || gt.pts > gt.base ? 1 : 0)) + ';margin:0 0 12px;box-shadow:none;border:1px solid #EDE5D6"').replace(/ style="--n:\d+"/, '');
+    if (TIER && c.gameClaim === 'tap') html += track(gt).replace('class="trk"', 'class="trk" style="margin:0 0 12px;box-shadow:none;border:1px solid #EDE5D6"');
     else if (TIER) html += '<div class="card"><b>今天累計 ' + gt.total.toLocaleString() + ' 分 → ' + gt.pts + ' 點</b><span class="muted">' + (gt.next ? '・再 ' + gt.next.need.toLocaleString() + ' 分多 1 點' : '・今天已拿滿') + '</span>' + tierTable(gt.total) + '</div>';
     html += GL.map(function (g) {
       var G0 = K.GAMES[g.id], pr = P[g.id] || {}, mine = plays.filter(function (p) { return p.game === g.id; }), best = {}, lv = Object.keys(G0.levels);
