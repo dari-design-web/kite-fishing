@@ -356,6 +356,22 @@
     rows.sort(function (a, b) { return b.cards - a.cards || a.t - b.t; });
     return lbRank(rows, function (r) { return r.cards; }, n);
   }
+  /* D105（Dari 10/17 17:11）：累積總分排行——捕魚＋飛行所有關卡「算分場次」的分數合計 */
+  function lbSum(m, period) {
+    var mk = monthKey();
+    if (m.plays && m.plays.length) return m.plays.reduce(function (n, p) { return (p.game === 'fish' || p.game === 'fly') && p.counted !== false && (period !== 'month' || monthKey(p.t) === mk) ? n + (p.score || 0) : n; }, 0);
+    var v = (m.lb || {}).__sum; if (!v) return 0; return period === 'month' ? (v[2] === mk ? v[1] || 0 : 0) : v[0] || 0;
+  }
+  function sumBoard(period, n) {
+    var me = (rd(K_MEM) || {}).id, rows = [];
+    allMembers().forEach(function (m) { if (m.status === 'frozen') return; var sc = lbSum(m, period); if (sc > 0) rows.push({ id: m.id, name: lbName(m), hide: !!m.lbHide, score: sc, me: m.id === me }); });
+    rows.sort(function (a, b) { return b.score - a.score; });
+    return lbRank(rows, function (r) { return r.score; }, n);
+  }
+  function fmtScore(v) {      // D105：一萬以上用「萬」到小數一位，一百萬以上用「百萬」，一千萬以上用「千萬」（無條件捨去，不會進位成下一個單位）
+    v = +v || 0; var f = function (u, t) { return (Math.floor(v / u * 10) / 10).toFixed(1) + t; };
+    return v >= 1e7 ? f(1e7, '千萬') : v >= 1e6 ? f(1e6, '百萬') : v >= 1e4 ? f(1e4, '萬') : v.toLocaleString();
+  }
   function lbSync() {      // 排行資料狀態：local＝沒接雲端；old＝雲端還沒更新到 v5（別人的成績拿不到）；ok
     var c = cloudStatus(); if (!c.url) return { st: 'local' };
     var others = allMembers().filter(function (m) { return !m.plays; }); if (!others.length) return { st: 'ok', t: c.lastPull };
@@ -669,7 +685,7 @@
     cloudPull: cloudPull, cloudPush: cloudPush, cloudSync: cloudSync, cloudOp: cloudOp, cloudWipe: cloudWipe, cloudStatus: cloudStatus, onCloud: function (f) { CL.subs.push(f); }, cloudStart: cloudStart, cloudMarkAll: function () { CL.cfgDirty = CL.imgDirty = true; }, liffStart: liffStart, linkLine: linkLine, liffId: liffId,
     member: member, peekMember: function () { return rd(K_MEM); }, saveMember: saveMember, dayKey: dayKey, rid: rid, hmac: hmac, sha256: sha256, utf8: utf8,
     pointsForSpend: pointsForSpend, makeEarnCode: makeEarnCode, claimEarn: claimEarn, storeLog: function () { return lg(K_STORE); }, storeById: storeById,
-    eventMult: eventMult, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore, tierPts: tierPts, nextTier: nextTier, gameToday: gameToday, leaderboard: leaderboard, travelBoard: travelBoard, lbMe: lbMe, setLbMe: setLbMe, lbSync: lbSync, setTravelStat: setTravelStat, claimGame: claimGame, settleGame: settleGame, storeBonusPts: storeBonusPts,
+    eventMult: eventMult, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore, tierPts: tierPts, nextTier: nextTier, gameToday: gameToday, leaderboard: leaderboard, travelBoard: travelBoard, lbMe: lbMe, setLbMe: setLbMe, lbSync: lbSync, sumBoard: sumBoard, fmtScore: fmtScore, setTravelStat: setTravelStat, claimGame: claimGame, settleGame: settleGame, storeBonusPts: storeBonusPts,
     travelGift: travelGift, travelPtsThisMonth: function () { return travelPtsThisMonth(member()); }, myCoupons: myCoupons, couponCheck: couponCheck, couponUse: couponUse, couponIssued: couponIssued, couponImg: couponImg, couponUsedCount: couponUsedCount, couponFaceHTML: couponFaceHTML,
     prizeById: prizeById, stockLeft: stockLeft, makeRedeem: makeRedeem, maxQty: maxQty, perUserLeft: perUserLeft, cancelRedeem: cancelRedeem, deskCheck: deskCheck, deskGive: deskGive, findRedeem: findRedeem, pendingRedeems: pendingRedeems, memberName: memberName, markGiven: markGiven, deskLog: function () { return lg(K_DESK); },
     allMembers: allMembers, importMembers: importMembers, addAdj: addAdj, adjSum: adjSum, gap: gap, list: list, saveList: saveList, backfill: backfill, claimedRefs: claimedRefs, lookupTx: lookupTx, archiveFull: archiveFull, archives: function () { return (rd('kiteArchive1') || []).map(function (a) { return { id: a.id, t: a.t }; }); }, importPreview: importPreview, dataset: dataset, wipeTest: wipeTest, reissueEarn: reissueEarn, voidEarn: voidEarn, peekEarn: peekEarn, earnCheck: earnCheck, onHand: onHand, reservedCount: reservedCount, exportMe: exportMe, expiring: expiring, batches: batches, housekeep: housekeep, storeMult: storeMult, notices: function () { var d = dayKey(); return (cfg().notices || []).filter(function (n) { return n.on && (!n.from || d >= n.from) && (!n.to || d <= n.to); }); }
