@@ -170,6 +170,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
 .tpX{position:absolute;right:8px;top:6px;width:44px;height:44px;border:0;background:none;font-size:20px;color:var(--muted)}
 .topPop .tp{position:relative;max-width:480px;margin:0 auto;background:#fff;border-radius:20px;padding:14px 16px;box-shadow:0 12px 30px rgba(0,0,0,.25);border:2px solid var(--teal);text-align:center}
 .tpH{font-size:12.5px;color:var(--muted);font-weight:700}.tpS{font-weight:800;font-size:15px;margin-top:2px}.tpA{font-size:32px;font-weight:900;color:var(--ink);line-height:1.2}.tpM{font-size:12.5px;color:var(--muted)}.tpP{margin:6px 0 10px}.tpP b{color:var(--orange);font-size:18px}.tpP small{display:block;color:var(--muted);font-size:11.5px}.tpOk{font-size:34px}.topPop .row{gap:8px}
+.lbrow{display:flex;align-items:center;gap:6px;margin:12px 12px 0}.lbrow span{color:#FFE3A3;font-weight:900;font-size:14px;margin-right:2px;white-space:nowrap}.lbrow button{flex:1;min-height:44px;border-radius:14px;border:0;background:#FFF6DE;color:#7A4A00;font:inherit;font-weight:800;font-size:14px}
 .mtabs{display:flex;gap:6px;margin:0 0 12px;overflow-x:auto}.mtabs button{flex:1;white-space:nowrap;border:1px solid #E3D9C8;background:#fff;border-radius:999px;padding:9px 10px;font:inherit;font-size:13.5px;font-weight:800;color:var(--ink);min-height:40px}.mtabs button[aria-pressed=true]{background:var(--teal);border-color:var(--teal);color:#fff}.mtabs i{font-style:normal;background:var(--orange);color:#fff;border-radius:999px;padding:0 6px;margin-left:4px;font-size:11px}
 .usedcp{opacity:.45;filter:grayscale(1)}
 .qty{display:flex;align-items:center;gap:10px;margin:10px 2px}.qty span{font-weight:800;flex:1}.qty button{width:44px;height:44px;border-radius:12px;border:1px solid #E3D9C8;background:#fff;font-size:22px;font-weight:900;color:var(--ink)}.qty button:disabled{opacity:.35}.qty b{min-width:30px;text-align:center;font-size:22px}.qty small{color:var(--muted);font-size:12px}
@@ -220,6 +221,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
 <script src="../shared/vendor/qrcode.js"></script>
 <script src="../shared/vendor/jsQR.js"></script>
 <script src="../shared/kite_core.js"></script>
+<script src="../shared/kite_lb.js"></script>
 <script src="../shared/kite_scan.js"></script>
 <script>
 /* 客戶官方 LINE 系統（示意）v2（工作單 25，D75）。正式版：選單是 LINE 圖文選單（一張圖＋點擊區），點進去的頁面是 LIFF。
@@ -315,11 +317,12 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
       '<div class="lb-title"><small>KITE PARK・GAME LOBBY</small><b>小鳶樂園</b></div></div>' +
       (TIER ? '<div class="lb-player"><img src="' + KITE + '" alt=""><div class="s"><b>' + esc(K.displayName(m)) + '</b><span>我的點數 <b style="display:inline;font-size:14px;color:var(--orange)">' + (m.points || 0) + '</b> 點</span></div><button class="mg" id="toMG">📊 遊戲紀錄</button></div>' + (st0 ? '<div class="st-note">🎁 漏領的 ' + st0 + ' 點，幫你收好囉！</div>' : '') + (c.gameClaim === 'tap' ? track(gt) : '<div class="trk"><div class="trk-h"><b>今天遊戲點 ' + gt.pts + ' / ' + gt.cap + '</b></div>' + tierTable(gt.total) + '</div>') : '<div class="lb-player"><img src="' + KITE + '" alt=""><div class="s"><b>' + esc(K.displayName(m)) + '</b><span>今天還能算分 ' + left + ' 次・每 ' + c.scorePerPoint.toLocaleString() + ' 分換 1 點</span></div><div class="bank">分數存摺<b>' + bank.toLocaleString() + '</b></div></div>') +
       (evs.length ? '<div class="lb-ev">🎉 今天的活動：' + evs.map(function (x) { return esc(x.e.title) + '（' + esc(K.GAMES[x.g.id].name) + ' ×' + x.e.mult + '）'; }).join('、') + '</div>' : '') +
-      '<div class="lb-sec">' + (evs.length ? '今日推薦' : '人氣遊戲') + '</div><div class="lb-grid">' + booth(fg, 0, true) + '</div>' +
+      '<div class="lbrow"><span>🏆 排行榜</span><button type="button" data-lb="fish">捕魚</button><button type="button" data-lb="fly">飛行</button><button type="button" data-lb="travel">旅行</button></div>' + '<div class="lb-sec">' + (evs.length ? '今日推薦' : '人氣遊戲') + '</div><div class="lb-grid">' + booth(fg, 0, true) + '</div>' +
       '<div class="lb-sec">全部遊戲</div><div class="lb-grid">' + GL.filter(function (g) { return g.id !== feat; }).map(function (g, i) { return booth(g, i + 1); }).join('') +
       '</div>' +      // D83：港口朋友已併進港灣蓋章散步（每站住一位朋友）
       '<div class="lb-foot">' + (TIER ? '<p class="muted" style="color:#CFE3EA;font-size:12.5px;margin:0;text-align:center">小鳶去旅行回家，偶爾也會帶點數或優惠券回來喔。</p>' : '<div class="card" style="margin:0"><b>怎麼用遊戲換點數？</b><p class="muted" style="margin:6px 0 0">會算分的遊戲，每關每天前 ' + c.triesPerLevel + ' 次的分數會存進「分數存摺」，滿 ' + c.scorePerPoint.toLocaleString() + ' 分就能在「我的資訊 → 我的遊戲」換 1 點。</p><button class="btn alt full" style="margin-top:10px" id="toMG2">看我的遊戲紀錄</button></div>') + '</div></div>';
     var mg = function () { go('mygames'); }; if ($('toMG')) $('toMG').onclick = mg; if ($('toMG2')) $('toMG2').onclick = mg; wireTrack(R.park);
+    $('sbody').querySelectorAll('[data-lb]').forEach(function (b) { b.onclick = function () { var k = b.dataset.lb; if (!window.KiteLB) return; KiteLB.open(k === 'fish' ? { title: '小鳶捕魚排行榜', game: 'fish', tabs: [['noon', '午後場'], ['dusk', '黃昏場'], ['night', '夜釣場']] } : k === 'fly' ? { title: '飛行冒險排行榜', game: 'fly', tabs: [['1', '第 1 關'], ['2', '第 2 關'], ['3', '第 3 關'], ['4', '第 4 關']] } : { title: '小鳶旅行收藏排行', travel: true }); }; });      // D104
   };
 
   /* D102／G74：今日積分條——十格等距（第 5、10 格是寶箱，仍各 +1），格間照各段門檻比例填；點任一亮格或「領取 N 點」一次領完；活動加送放在下方膠囊 */

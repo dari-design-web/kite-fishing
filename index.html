@@ -129,7 +129,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 
   <div class="panel" id="startPanel">
     <div class="card">
-      <h1>小鳶捕魚</h1>
+      <h1 style="position:relative">小鳶捕魚<span id="lbSlot" style="position:absolute;right:0;top:50%;transform:translateY(-50%)"></span></h1>
       <p id="sessionNote">60 秒內，看你能幫小鳶拿到幾分。</p>
       <div class="pick" id="sessionPick" role="group" aria-label="場次"></div>
       <div class="dexline" id="dexLine"></div>
@@ -179,6 +179,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 </div>
 
 <script src="shared/kite_core.js"></script>
+<script src="shared/kite_lb.js"></script>
 <script>
 /* ===== 暫用配樂（C-70）：用程式即時產生，不用音檔、沒有版權問題。正式配樂來源待 Dari 決定 ===== */
 /* BGM-START｜配樂 v3（C-87，Dari 10/13 09:39：主動加強畫面、配樂、動畫）
@@ -1045,5 +1046,6 @@ reset(); renderStart(); requestAnimationFrame(frame);
   if (!K || !K.gameToday) { e.textContent = '今天會算分的局數加起來就是今日積分，到官方 LINE 小鳶樂園領點數'; return; }
   var g = K.gameToday(), c = K.cfg(); e.innerHTML = '今日積分 <b>' + g.total.toLocaleString() + '</b> 分' + (g.claim ? '・<b style="color:#E2702A">亮了 ' + g.claim + ' 點可以領</b>' : g.next ? '・再 ' + g.next.need.toLocaleString() + ' 分亮下一格' : '・今天的格子都亮了') + '<br><a href="line/index.html?p=park" style="color:inherit;font-weight:800">到小鳶樂園領點 ›</a>　<span style="opacity:.75">每關每天前 ' + c.triesPerLevel + ' 次算分</span>'; }); }
   fill(); document.addEventListener('visibilitychange', fill); setInterval(fill, 4000); })();</script>
+<script>/* D104：捕魚排行榜（三個時段各前 10 名） */ if (window.KiteLB) KiteLB.button(document.getElementById('lbSlot'), function () { var bs = Array.prototype.slice.call(document.querySelectorAll('#sessionPick button')), i = Math.max(0, bs.findIndex(function (b) { return b.getAttribute('aria-pressed') === 'true'; })); return { title: '小鳶捕魚排行榜', game: 'fish', tabs: [['noon', '午後場'], ['dusk', '黃昏場'], ['night', '夜釣場']], tab: i }; });</script>
 </body>
 </html>

@@ -230,6 +230,7 @@ h3{font-size:15px;margin:14px 16px 6px}
 #bgmBtn.gear{min-height:38px;min-width:42px}
 </style>
 <script src="../shared/kite_core.js"></script>
+<script src="../shared/kite_lb.js"></script>
 </head>
 <body>
 <!-- LOADER-START v1（C-103，C-88⑥）：載入超過 0.35 秒才淡入的小鳶等待畫面，載完立刻收起；圖是小鳶揮手暫用圖縮小內嵌，所以複製到別的資料夾也不用改路徑 -->
@@ -250,7 +251,7 @@ h3{font-size:15px;margin:14px 16px 6px}
       <h1>小鳶的小屋<small id="ver"></small></h1>
       <span class="pill" title="明信片"><img src="assets/pc_home_a_v2.jpg" alt="" style="border-radius:3px;height:14px;width:22px;object-fit:cover"><span id="hCards">0/24</span></span>
       <span class="pill" title="便當"><img src="assets/bento_rice.png" alt=""><span id="hBento">0</span></span>
-      <button class="gear" id="bgmBtn" type="button" aria-label="音樂開關">♪</button>
+      <span id="lbSlot"></span><button class="gear" id="bgmBtn" type="button" aria-label="音樂開關">♪</button>
       <button class="gear" id="gearBtn" type="button">測試</button>
     </div>
     <div class="roomwrap">
@@ -795,6 +796,7 @@ function arriveAnim(then) {      // v0.20：回來＝從遠方飛回、落地拿
 }
 
 /* 拆信：信封 → 破封 → 正面 → 翻背 → 收進收藏冊。跳過或關掉也照樣入冊 */
+function pushTravelStat() { try { if (window.KiteCore && KiteCore.setTravelStat) KiteCore.setTravelStat({ cards: ownedCount(), sv: Object.keys(S.souvenirs || {}).length, trips: S.trips || 0 }); } catch (e) {} }      // D104：旅行排行用的收藏數
 function commitTrip() {
   const tr = S.trip; if (!tr || S.state !== 'back') return [];
   const l = LOCS.find((x) => x.id === tr.dest), now = Date.now(), news = [];
@@ -803,7 +805,7 @@ function commitTrip() {
   if (tr.limited) S.limited[tr.limited] = now;
   if (tr.souvenir) S.souvenirs[tr.souvenir] = now;
   if (!tr.walk) { S.trips++; if (!tr.first && CFG.farEvery) { S.farAcc++; if (S.farAcc >= CFG.farEvery) { S.farAcc = 0; S.bento.far++; tr.gotFar = true; } } }      // 第一次也算一次旅行；散步不算
-  S.titles = calcTitles(); S.trip = null; S.state = 'home'; save(); return news;
+  S.titles = calcTitles(); S.trip = null; S.state = 'home'; save(); pushTravelStat(); return news;
 }
 /* D98：便當價格跟著後台（KiteCore）走，不寫死在說明裡 */
 function bentoNote(k, note) { try { const bb = (window.KiteCore ? KiteCore.cfg().bentos || [] : []).find((x) => x.id === k); return bb ? note.replace('港口換禮', '港口換禮 ' + bb.points + ' 點') : note; } catch (e) { return note; } }
@@ -1129,5 +1131,6 @@ function travelBgmSync() { if (travelBgmOn) BGM.play('travel_' + (S.room || 'liv
 })();
 </script>
 <script src="../shared/back_line.js"></script>
+<script>/* D104：旅行排行榜（明信片收藏數） */ if (window.KiteLB) { KiteLB.button(document.getElementById('lbSlot'), { title: '小鳶旅行收藏排行', travel: true }); setTimeout(function () { try { pushTravelStat(); } catch (e) {} }, 1500); }</script>
 </body>
 </html>
