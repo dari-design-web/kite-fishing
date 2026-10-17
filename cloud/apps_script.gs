@@ -56,6 +56,8 @@ function lite_(m) {
 function lb_(m) {
   var mk = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy-MM'), o = {};
   (m.plays || []).forEach(function (p) { if (!p || !p.game || p.game === 'travel' || p.counted === false) return;      // v6：只算「算分場次」 var k = p.game + '|' + p.level, s = +p.score || 0, v = o[k] || [0, 0, mk]; if (s > v[0]) v[0] = s; if (s > v[1] && Utilities.formatDate(new Date(p.t), 'Asia/Taipei', 'yyyy-MM') === mk) v[1] = s; o[k] = v; });
+  var sa = 0, sm = 0; (m.plays || []).forEach(function (p) { if (!p || (p.game !== 'fish' && p.game !== 'fly') || p.counted === false) return; var s = +p.score || 0; sa += s; if (Utilities.formatDate(new Date(p.t), 'Asia/Taipei', 'yyyy-MM') === mk) sm += s; });
+  o.__sum = [sa, sm, mk];      // v7（D105）：累積總分
   return o;
 }
 function doGet(e) {
