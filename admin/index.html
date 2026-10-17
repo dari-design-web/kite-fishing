@@ -62,6 +62,7 @@ svg text{font-family:inherit}
 <div id="root"></div>
 <div class="toast" id="toast"></div>
 <script src="../shared/kite_core.js"></script>
+<script src="analytics.js"></script>
 <script>
 /* 小鳶來港 後台管理 桌面網頁版 v0.2（工作單 24 規格第 4 節；D71、D73、D74）
    帳號 dari／1677。資料先存在這台電腦的瀏覽器（D72），之後接雲端資料庫時改共用資料層即可。
@@ -177,7 +178,7 @@ svg text{font-family:inherit}
   ];
   K.onCloud(function () { var a = document.activeElement; if (a && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) return; if (document.querySelector('#drawer.on, [style*="z-index:200"]')) return; if (sess()) app(); });
   function app() {
-    var s = sess(); if (!s) return login(); var D = data(), al = alerts(D);
+    var s = sess(); if (!s) return login(); if (REDIR[view]) view = REDIR[view]; if (!V[view]) view = 'dash'; var D = data(), al = alerts(D);
     root.innerHTML = '<div class="app"><nav class="side"><div class="brand"><img src="../travel/assets/kite_hello.png" alt="">小鳶來港 後台</div>' + NAV.map(function (g) { return '<div class="grp">' + g[0] + '</div>' + g[1].map(function (n) { return '<button data-v="' + n[0] + '" class="' + (view === n[0] ? 'on' : '') + '">' + n[1] + (n[0] === 'dash' && al.length ? '<span class="badge">' + al.length + '</span>' : '') + '</button>'; }).join(''); }).join('') +
       '<div class="grp">連結</div><button data-href="../portal/">↗ 前台主頁</button></nav>' +
       '<div class="main"><div class="bar"><h1 id="vt"></h1><span class="sp"></span><input id="q" placeholder="搜尋會員編號、兌換碼、QR 編號…" value="' + esc(q) + '"><span class="who">👤 ' + esc(s.u) + '</span><button class="btn alt sm" id="lo">登出</button></div><div class="content" id="c"></div></div></div><div class="drawer" id="drawer"></div>';
@@ -251,7 +252,7 @@ svg text{font-family:inherit}
     var D = data(), m = D.ms.filter(function (x) { return x.id === id; })[0]; if (!m) return;
     var pm = K.peekMember(), me0 = !!pm && pm.id === m.id, cop = !me0 && K.cloudStatus().admin, me = me0 || cop, pl = m.plays || [], g = {};
     pl.forEach(function (p) { var k = p.game + '|' + p.level; (g[k] = g[k] || []).push(p); });
-    drawer('<h2 style="margin:0 0 4px">' + (m.name ? esc(m.name) + ' <span class="muted" style="font-weight:400">' + esc(m.id) + '</span>' : '會員 ' + esc(m.id)) + ' ' + (m.status === 'frozen' ? '<span class="pill r">凍結</span>' : '<span class="pill g">正常</span>') + '</h2><p class="muted" style="margin:0 0 14px">加入 ' + dt(m.created) + '・來過 ' + (m.visits || []).length + ' 天・目前 <b>' + m.points + '</b> 點・30 天內到期 ' + K.expiring(m, 30).due + ' 點' + (me ? '' : '・<span class="pill o">匯入資料（只能看）</span>') + '</p>' + (m.email || m.phone ? '<p class="small" style="margin:-8px 0 14px">📧 ' + esc(m.email || '—') + '　📱 ' + esc(m.phone || '—') + '</p>' : '') +
+    drawer((V.a_member ? '<button class="btn sm" data-am="' + esc(m.id) + '" style="float:right;margin:0 90px 0 0">📊 完整分析</button>' : '') + '<h2 style="margin:0 0 4px">' + (m.name ? esc(m.name) + ' <span class="muted" style="font-weight:400">' + esc(m.id) + '</span>' : '會員 ' + esc(m.id)) + ' ' + (m.status === 'frozen' ? '<span class="pill r">凍結</span>' : '<span class="pill g">正常</span>') + '</h2><p class="muted" style="margin:0 0 14px">加入 ' + dt(m.created) + '・來過 ' + (m.visits || []).length + ' 天・目前 <b>' + m.points + '</b> 點・30 天內到期 ' + K.expiring(m, 30).due + ' 點' + (me ? '' : '・<span class="pill o">匯入資料（只能看）</span>') + '</p>' + (m.email || m.phone ? '<p class="small" style="margin:-8px 0 14px">📧 ' + esc(m.email || '—') + '　📱 ' + esc(m.phone || '—') + '</p>' : '') +
       '<div class="card" style="margin-bottom:12px"><h2>操作</h2><div class="filters"><input id="adj" type="number" placeholder="加減點數（例：10、-5）" style="width:150px"><input id="why" placeholder="原因（必填）" style="width:200px"><button class="btn" id="doadj"' + (me ? '' : ' disabled') + '>調整</button></div>' +
       '<div class="filters"><button class="btn alt" id="frz"' + (me ? '' : ' disabled') + '>' + (m.status === 'frozen' ? '解除凍結' : '凍結帳號') + '</button><button class="btn alt" id="rst"' + (me ? '' : ' disabled') + '>重設今天的遊戲次數</button><input id="tag" placeholder="標籤（例：VIP、測試）" value="' + esc((m.tags || []).join('、')) + '" style="width:200px"><button class="btn alt" id="stag"' + (me ? '' : ' disabled') + '>存標籤</button></div></div>' +
       redeemCard(m) + bentoCard(m) +
@@ -664,6 +665,11 @@ svg text{font-family:inherit}
     wireTable('t_sh', app);
   };
 
+  /* D101：分析中心（admin/analytics.js）掛進來 */
+  var REDIR = {};
+  function goView(v) { view = v; app(); window.scrollTo(0, 0); }
+  (window.__ADM_EXT || []).forEach(function (f) { try { f({ K: K, V: V, data: data, app: function () { app(); }, go: goView, esc: esc, dt: dt, dd: dd, num: num, mins: mins, GN: GN, LN: LN, TL: TL, table: table, wireTable: wireTable, csv: csv, heat: heat, median: median, memberDrawer: memberDrawer, toast: toast,
+    setAnalyticsNav: function (items, redir) { NAV.forEach(function (g) { if (g[0] === '分析') g[1] = items; else g[1] = g[1].filter(function (n) { return !redir[n[0]]; }); }); Object.keys(redir).forEach(function (k) { REDIR[k] = redir[k]; }); } }); } catch (e) { console.error('分析中心載入失敗', e); } });
   app();
   window.__admin = { go: function (v) { view = v; app(); }, member: memberDrawer };
 })();
