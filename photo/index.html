@@ -432,7 +432,9 @@ const weekIdx = Math.floor((Date.now() / 86400000 + 3) / 7) % 8, WEEK = LOCS[wee
 const SEASONS = [['清晨', '#F6C9A6', '#7FB6C9'], ['午後', '#7FC4D6', '#2F7F86'], ['黃昏', '#F2A26B', '#6B4A7A'], ['雨夜', '#3B5168', '#18222E']];
 const SEASON_IMG = ['frame_season_dawn', 'frame_season_noon', 'frame_season_dusk', 'frame_season_rain'];
 let seasonI = (() => { const h = new Date().getHours(); return h < 9 ? 0 : h < 16 ? 1 : h < 19 ? 2 : 3; })();
-const FRAMES = ['碼頭', '港灣四時', '本週主題', '鯨鯊泡泡', '夜市燈籠', '正濱彩色屋', '深澳鐵道', '潮境海洋'];
+/* G-75（10/17）：再加 10 款，參考充氣小鳶簡報元素（暫用，給 Dari 挑） */
+const G75N = ['植絨小鳶探頭', '港口朋友出遊', '小鳶幫你拍', '開便當囉', '港灣護照集章', '郵輪汽笛迎賓', '海洋科學小探險', '港邊放風箏', '海洋郵便', '叁肆行氣球派對'], G75 = G75N.map((n, i) => 'frame_g75_' + String(i + 1).padStart(2, '0'));
+const FRAMES = ['碼頭', '港灣四時', '本週主題', '鯨鯊泡泡', '夜市燈籠', '正濱彩色屋', '深澳鐵道', '潮境海洋'].concat(G75N);
 /* v0.16（C-158）：晚上 7 點到早上 6 點打開，預設相框先換成「夜市燈籠」，第一次進拍照畫面跳一句提示；可以照常按「換相框」換掉（建議） */
 const NIGHT_NOW = (() => { const h = new Date().getHours(); return h >= 19 || h < 6; })();
 /* v0.18（C-173）：早上 6 點到 9 點打開，預設相框換成「港灣四時・清晨」，第一次進拍照畫面跳一句提示（建議） */
@@ -482,13 +484,15 @@ function drawFrame(c) {
     put('frame_pier'); label('基隆・東三東四　' + today());
   } else if (frameI === 1) {      // 港灣四時（G-44 四色，沿用 G-25 配色）
     put(SEASON_IMG[seasonI]); label('港灣四時・' + SEASONS[seasonI][0] + '　' + today());
+  } else if (frameI >= 8) {      // G-75 十款
+    put(G75[frameI - 8]); label('基隆・東三東四　' + today());
   } else if (frameI >= 3) {      // v0.5：5 款暫用相框（程式畫，G-46 交件後換成 ChatGPT 的圖）
     const id = ['frame_shark', 'frame_night', 'frame_color', 'frame_rail', 'frame_tide'][frameI - 3];
     if (G46[id]) put(id); else codeFrame(c, frameI - 3, W, H);
     label('基隆・東三東四　' + today());
   } else {      // 本週主題（G-44 frame_week_base；郵票洞與兩行字由程式放）
     put('frame_week_base');
-    const p = img('pc_' + WEEK[0] + '_a_v2', 'jpg'), [x0, y0, x1, y1] = [805, 1215, 1025, 1395];
+    const p = img('pc_' + WEEK[0] + (WEEK[0] === 'shenao' ? '_a_v4' : '_a_v2'), 'jpg'), [x0, y0, x1, y1] = [805, 1215, 1025, 1395];
     if (p.complete && p.naturalWidth) { const bw = x1 - x0, bh = y1 - y0, r = Math.min(bw / p.naturalWidth, bh / p.naturalHeight), dw = p.naturalWidth * r, dh = p.naturalHeight * r; c.fillStyle = '#FBF4E6'; c.fillRect(x0, y0, bw, bh); c.drawImage(p, x0 + (bw - dw) / 2, y0 + (bh - dh) / 2, dw, dh); }      // v0.3：整張等比放進郵票洞，不裁到小鳶
     c.fillStyle = '#3E2B1D'; c.font = font('900', 34); c.fillText('本週小鳶在' + WEEK[1], 96, 1320);
     c.fillStyle = '#8A7565'; c.font = font('500', 28); c.fillText('一起來' + WEEK[1] + '走走吧　' + today(), 96, 1370);
@@ -690,7 +694,7 @@ $('file').onchange = (e) => { const f = e.target.files && e.target.files[0]; if 
 $('demoBtn').onclick = () => useImage('assets/demo_bg.jpg');
 $('backBtn').onclick = () => { stopCam(); show('home'); };
 /* v0.4：「換相框」改成跳出相框清單直接選（Dari 10/12 19:03） */
-const FRAME_LIST = [[0, null, '碼頭', 'frame_pier'], [1, 0, '清晨', SEASON_IMG[0]], [1, 1, '午後', SEASON_IMG[1]], [1, 2, '黃昏', SEASON_IMG[2]], [1, 3, '雨夜', SEASON_IMG[3]], [2, null, '本週主題', 'frame_week_base'], [3, null, '鯨鯊泡泡', null], [4, null, '夜市燈籠', null], [5, null, '正濱彩色屋', null], [6, null, '深澳鐵道', null], [7, null, '潮境海洋', null]];
+const FRAME_LIST = [[0, null, '碼頭', 'frame_pier'], [1, 0, '清晨', SEASON_IMG[0]], [1, 1, '午後', SEASON_IMG[1]], [1, 2, '黃昏', SEASON_IMG[2]], [1, 3, '雨夜', SEASON_IMG[3]], [2, null, '本週主題', 'frame_week_base'], [3, null, '鯨鯊泡泡', null], [4, null, '夜市燈籠', null], [5, null, '正濱彩色屋', null], [6, null, '深澳鐵道', null], [7, null, '潮境海洋', null]].concat(G75.map((id, i) => [8 + i, null, G75N[i], id]));
 function openFrames() {
   const g = $('fgrid'); g.innerHTML = '';
   for (const [fi, si, nm, id] of FRAME_LIST) {
@@ -730,7 +734,7 @@ function drawSnd() { const b = $('snd'); b.innerHTML = SND_ICON[sndOn ? 'on' : '
 drawSnd(); $('snd').onclick = (e) => { e.stopPropagation(); sndOn = !sndOn; SND_ICON.save(sndOn); bgmSync(); drawSnd(); };
 document.addEventListener('pointerdown', () => { if (sndOn && !BGM.on) bgmSync(); }, { passive: true });
 $('saveBtn').onclick = save; $('shareBtn').onclick = share; $('againBtn').onclick = () => show('shoot');
-['frame_pier', 'frame_week_base'].concat(SEASON_IMG, Object.keys(G46)).forEach((id) => { img(id).onload = () => { if ($('shoot').classList.contains('on')) redrawFrame(); }; });
+['frame_pier', 'frame_week_base'].concat(SEASON_IMG, Object.keys(G46), G75).forEach((id) => { img(id).onload = () => { if ($('shoot').classList.contains('on')) redrawFrame(); }; });
 LOCS.forEach((l) => { img('pc_' + l[0] + '_a_v2', 'jpg').onload = () => { if ($('shoot').classList.contains('on')) redrawFrame(); }; });
 window.__photo = { stks: () => stks, add: (id) => addSticker(STK.find((d) => d.id === id)), capture, setFrame: (i, s) => { frameI = i; if (s !== undefined) seasonI = s; redrawFrame(); }, useImage };
 </script>
