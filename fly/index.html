@@ -171,6 +171,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
     <img class="mapbg" id="mapImg" src="assets/stage_map.jpg" alt="">
     <canvas class="mapfx" id="mapFx" aria-hidden="true"></canvas>
     <h1 class="maptitle" id="mapTitle">小鳶飛行冒險</h1>
+    <span id="lbSlot" style="position:absolute;right:5%;top:2.6%;z-index:5"></span>
     <div id="stageButtons"></div>
     <p class="mapnote ptnote"></p>
   </div>
@@ -234,6 +235,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 </div>
 
 <script src="../shared/kite_core.js"></script>
+<script src="../shared/kite_lb.js"></script>
 <script>
 /* ===== 暫用配樂（C-70）：用程式即時產生，不用音檔、沒有版權問題。正式配樂來源待 Dari 決定 ===== */
 /* BGM-START｜配樂 v3（C-87，Dari 10/13 09:39：主動加強畫面、配樂、動畫）
@@ -2662,5 +2664,6 @@ loadProgress(); reset(); $('mapPanel').classList.toggle('night', NIGHT_MAP); $('
   if (!K || !K.gameToday) { e.textContent = '今天會算分的局數加起來就是今日積分，到官方 LINE 小鳶樂園領點數'; return; }
   var g = K.gameToday(), c = K.cfg(); e.innerHTML = '今日積分 <b>' + g.total.toLocaleString() + '</b> 分' + (g.claim ? '・<b style="color:#E2702A">亮了 ' + g.claim + ' 點可以領</b>' : g.next ? '・再 ' + g.next.need.toLocaleString() + ' 分亮下一格' : '・今天的格子都亮了') + '<br><a href="../line/index.html?p=park" style="color:inherit;font-weight:800">到小鳶樂園領點 ›</a>　<span style="opacity:.75">每關每天前 ' + c.triesPerLevel + ' 次算分</span>'; }); }
   fill(); document.addEventListener('visibilitychange', fill); setInterval(fill, 4000); })();</script>
+<script>/* D104：飛行排行榜（四關各前 10 名） */ if (window.KiteLB) KiteLB.button(document.getElementById('lbSlot'), { title: '飛行冒險排行榜', game: 'fly', tabs: [['1', '第 1 關'], ['2', '第 2 關'], ['3', '第 3 關'], ['4', '第 4 關']] });</script>
 </body>
 </html>
