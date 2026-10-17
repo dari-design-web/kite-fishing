@@ -47,11 +47,13 @@
       { id: 'C06', name: '饗泰多 滿 1,000 折 100', store: '饗泰多', face: '折$100', desc: '內用單筆滿 1,000 元折 100 元（示意）', chance: 0.01, monthQty: 10, validDays: 30, on: true }
     ],
     couponMemberMonth: 2,         // D99：每人每月最多從旅行拿幾張券（防同一人包走）
-    prizes: [
+    prizes: [      // D101（Dari 10/17）：測試用贈品，點數照採購成本各自設（示意）
       { id: 'P01', name: '小鳶貼紙一張', points: 5, stock: 200, on: true, perUser: 1, perUserPer: 'month', desc: '小鳶揮手款防水貼紙，可以貼在水壺或手機殼。' },
       { id: 'P02', name: '鯨鯊鑰匙圈', points: 30, stock: 50, on: true, perUser: 1, perUserPer: 'month', desc: '港口的鯨鯊朋友，壓克力雙面印刷。' },
-      { id: 'P03', name: '小鳶帆布袋', points: 80, stock: 20, on: true, perUser: 1, perUserPer: 'month', desc: '厚帆布托特包，A4 放得下，逛港口剛好。' },
-      { id: 'P04', name: '合作餐飲兌換券', points: 15, stock: 100, on: true, perUser: 1, perUserPer: 'month', desc: '到館內合作餐飲出示兌換券，換一份港邊餐點（和小鳶去旅行的「港邊特製便當」不同）。' }
+      { id: 'P03', name: '小鳶帆布袋', points: 50, stock: 30, on: true, perUser: 1, perUserPer: 'month', desc: '厚帆布托特包，A4 放得下，逛港口剛好。' },
+      { id: 'P04', name: '合作餐飲兌換券', points: 15, stock: 100, on: true, perUser: 1, perUserPer: 'month', desc: '到館內合作餐飲出示兌換券，換一份港邊餐點（和小鳶去旅行的「港邊特製便當」不同）。' },
+      { id: 'P05', name: '小鳶馬克杯', points: 80, stock: 20, on: true, perUser: 1, perUserPer: 'month', desc: '白色陶瓷馬克杯，350ml，小鳶揮手款。' },
+      { id: 'P06', name: '港灣明信片三張組', points: 20, stock: 60, on: true, perUser: 1, perUserPer: 'month', desc: '小鳶去旅行的水彩明信片，基隆港灣三款一組。' }
     ],
     stores: [
       { id: 'S01', name: '東三東四 一樓咖啡', pin: '1111', key: 's01-demo-key', on: true },
@@ -86,7 +88,7 @@
     storeEvents: [ { id: 'se1', title: '開幕週集點加倍', stores: [], from: '', to: '', mult: 2, on: false } ],
     notices: [ { id: 'n1', title: '歡迎來到東三東四', body: '在館內消費集點、玩遊戲存分數，就能換小鳶贈品！', from: '', to: '', pin: true, on: true } ],
     lowStockWarn: 10,
-    site: { name: '東三東四', tel: '', testMode: true },
+    site: { name: '小鳶來港-叁肆行X好食城', tel: '', testMode: true },      // D101：客人看到的名稱（暫定）
     alerts: { burstCount: 5, burstMin: 10, bigAmount: 5000 }
   };
   var GAMES = {
@@ -139,6 +141,8 @@
   function cfg() { var c = rd(K_CFG); var d = clone(DEFAULTS); if (!c) return d; for (var k in c) d[k] = c[k];
     /* D99 舊設定升級：只有舊的一張「示範」券就換成新的專櫃示意券；贈品沒設過每人限換的，補上預設每人每月 1 份 */
     if (c.coupons && c.coupons.length === 1 && /示範/.test(c.coupons[0].name || '')) d.coupons = clone(DEFAULTS.coupons);
+    if (d.site && d.site.name === '東三東四') d.site = Object.assign({}, d.site, { name: DEFAULTS.site.name });      // D101 舊設定升級：館名、測試贈品
+    if (c.prizes && c.prizes.length === 4 && c.prizes[2] && c.prizes[2].id === 'P03' && c.prizes[2].points === 80) d.prizes = clone(DEFAULTS.prizes);
     if (!c.m99) (d.prizes || []).forEach(function (p) { if (p.perUser === undefined) { p.perUser = 1; p.perUserPer = 'month'; } });      // 只升級一次：後台存過（m99）之後，留空＝不限
     return d; }
   /* C-193：規則版本號。每存一次設定＝新版本（預設是 v1）；每筆交易、點數紀錄記下當時的版本，之後改規則不追溯 */
@@ -204,7 +208,7 @@
   function shortCode() { var used = {}; lg(K_STORE).forEach(function (r) { if (r.short) used[r.short] = 1; }); var s; do { s = String(Math.floor(Math.random() * 1e8)).padStart(8, '0'); } while (used[s]); return s; }
   function codeByShort(s) { s = String(s || '').replace(/\D/g, ''); if (s.length !== 8) return null; var x = lg(K_STORE).filter(function (r) { return r.short === s; })[0]; return x ? x.code : null; }
   /* 贈品圖片：後台上傳裁切成 600×600 JPEG，存在 kitePrizeImg1（不跟設定綁在一起，設定讀寫才不會變慢）；沒上傳用預設圖 */
-  var PRIZE_IMG0 = { P01: '../photo/assets/stk_kite_peace.png', P02: '../assets/whaleshark.png', P03: '../travel/assets/kite_pack.png', P04: '../travel/assets/bento_special.png' };
+  var PRIZE_IMG0 = { P01: '../photo/assets/stk_kite_peace.png', P02: '../assets/whaleshark.png', P03: '../assets/prizes/tote.jpg', P04: '../travel/assets/bento_special.png', P05: '../assets/prizes/mug.jpg', P06: '../assets/prizes/postcards.jpg' };
   function prizeImg(pid) { var m = rd('kitePrizeImg1') || {}; return m[pid] || PRIZE_IMG0[pid] || '../travel/assets/kite_hello.png'; }
   function couponUsedCount(cid) { return lg('kiteCouponUsed1').filter(function (u) { return u.cid === cid; }).length; }
   function couponFaceHTML(e, w) { var im = couponImg(e.cid || e.id), es = function (t) { return String(t || '').replace(/[&<>"]/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]; }); };
@@ -463,7 +467,7 @@
      每台裝置：自己的會員資料、店家集點紀錄、服務台發放紀錄、券核銷、庫存調整，有變動就上傳；定時下載全部，讓後台看到所有測試玩家。
      後台改的設定、贈品／券圖片也會發到每台裝置。後台按「清空全部測試資料」→ 雲端換新一輪，每台裝置下次連線就自動清掉本機測試資料。
      正式上線改接正式資料庫時，只換這一段。 */
-  var CLOUD_URL = '';               // Dari 部署 Apps Script 後填入（或在後台「系統 → 雲端同步」貼上，只對那台有效）
+  var CLOUD_URL = 'https://script.google.com/macros/s/AKfycbxza8041FUqyE8Cd-7X5m6eRHChrlqzalEwbyiw9E81yG-_UGZxQjSPNCMNvUTgHwws3w/exec';      // D101：Dari 10/17 部署（測試資料庫）               // Dari 部署 Apps Script 後填入（或在後台「系統 → 雲端同步」貼上，只對那台有效）
   var CLOUD_PLAYER_KEY = 'kite-test-2026';
   var CL = { busy: false, timer: 0, lastPull: 0, lastPush: 0, err: '', subs: [], cfgDirty: false, imgDirty: false };
   function cloudUrl() { try { return localStorage.getItem('kiteCloudUrl') || CLOUD_URL; } catch (e) { return CLOUD_URL; } }
