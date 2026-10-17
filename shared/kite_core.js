@@ -329,22 +329,37 @@
      自己的資料看 plays；別人的資料是雲端給的精簡版（lb：每關 [全部最高, 本月最高, 月份]，tstat：旅行收藏） */
   function lbBest(m, key, period) {
     var mk = monthKey(), g = key.split('|');
-    if (m.plays && m.plays.length) { var b = 0; m.plays.forEach(function (p) { if (p.game === g[0] && String(p.level) === g[1] && (period !== 'month' || monthKey(p.t) === mk)) b = Math.max(b, p.score || 0); }); return b; }
+    if (m.plays && m.plays.length) { var b = 0; m.plays.forEach(function (p) { if (p.game === g[0] && String(p.level) === g[1] && p.counted !== false && (period !== 'month' || monthKey(p.t) === mk)) b = Math.max(b, p.score || 0); }); return b; }
     var v = (m.lb || {})[key]; if (!v) return 0; return period === 'month' ? (v[2] === mk ? v[1] || 0 : 0) : v[0] || 0;
   }
-  function lbName(m) { return m.name ? String(m.name).slice(0, 12) : '會員 ' + String(m.id || '').slice(-4); }
+  /* G76（GPT 建議，Claude 10/17 採用）：排行榜用獨立的公開化名，不用 LINE 名字或會員尾碼；可選不出現在公開名單（仍照算名次，別人看到的名次會跳號） */
+  var LB_A = ['港邊', '雨都', '愛笑', '勇敢', '好奇', '閃亮', '元氣', '微風', '慢慢', '晴天'], LB_B = ['小卷', '鯨鯊', '海龜', '螃蟹', '小鳶', '章魚', '海鷗', '河豚', '海星', '小丑魚'];
+  function lbAutoAlias(id) { var h = 2166136261; String(id || '').split('').forEach(function (c) { h = Math.imul(h ^ c.charCodeAt(0), 16777619); }); h ^= h >>> 15; h = Math.imul(h, 2246822507); h ^= h >>> 13; h = h >>> 0; return LB_A[h % 10] + LB_B[Math.floor(h / 10) % 10] + ' ' + String(10 + Math.floor(h / 100) % 90); }
+  function lbName(m) { return m.lbAlias ? String(m.lbAlias).slice(0, 10) : lbAutoAlias(m.id); }
+  function lbMe() { var m = member(); return { alias: lbName(m), custom: !!m.lbAlias, hide: !!m.lbHide }; }
+  function setLbMe(o) { var m = member(); if (o.alias != null) { var a = String(o.alias).replace(/[\s　]+/g, ' ').trim().slice(0, 10); if (/\d{6,}|@/.test(a)) return { ok: false, msg: '化名裡不要放電話或 email' }; m.lbAlias = a; } if (o.hide != null) m.lbHide = !!o.hide; saveMember(m); return { ok: true }; }
+  function lbRank(rows, val, n) {      // 同分同名次（1、2、2、4）；前 n 名含最後名次的所有同分者；選擇不公開的人照算名次但不列出
+    rows.forEach(function (r, i) { r.rank = i && val(r) === val(rows[i - 1]) ? rows[i - 1].rank : i + 1; });
+    var mine = rows.filter(function (r) { return r.me; })[0] || null;
+    return { top: rows.filter(function (r) { return r.rank <= (n || 10) && (!r.hide || r.me); }), mine: mine, total: rows.length, hidden: rows.some(function (r) { return r.hide && !r.me && r.rank <= (n || 10); }) };
+  }
   function leaderboard(game, level, period, n) {
     var me = (rd(K_MEM) || {}).id, key = game + '|' + level, rows = [];
-    allMembers().forEach(function (m) { if (m.status === 'frozen') return; var sc = lbBest(m, key, period); if (sc > 0) rows.push({ id: m.id, name: lbName(m), score: sc, me: m.id === me }); });
-    rows.sort(function (a, b) { return b.score - a.score; }); rows.forEach(function (r, i) { r.rank = i + 1; });
-    return { top: rows.slice(0, n || 10), mine: rows.filter(function (r) { return r.me; })[0] || null, total: rows.length };
+    allMembers().forEach(function (m) { if (m.status === 'frozen') return; var sc = lbBest(m, key, period); if (sc > 0) rows.push({ id: m.id, name: lbName(m), hide: !!m.lbHide, score: sc, me: m.id === me }); });
+    rows.sort(function (a, b) { return b.score - a.score; });
+    return lbRank(rows, function (r) { return r.score; }, n);
   }
-  function setTravelStat(o) { var m = member(); m.tstat = { cards: o.cards || 0, sv: o.sv || 0, trips: o.trips || 0, t: Date.now() }; saveMember(m); }
-  function travelBoard(n) {
+  function setTravelStat(o) { var m = member(), old = m.tstat || {}; m.tstat = { cards: o.cards || 0, sv: o.sv || 0, trips: o.trips || 0, t: Date.now(), ct: (o.cards || 0) > (old.cards || 0) ? Date.now() : old.ct || old.t || Date.now() }; saveMember(m); }
+  function travelBoard(n) {      // G76：只比收藏到的不同明信片張數，一樣多就並列（同名次內先達成的排前面，只是顯示順序）
     var me = (rd(K_MEM) || {}).id, rows = [];
-    allMembers().forEach(function (m) { var t = m.tstat; if (m.status === 'frozen' || !t || !(t.cards || t.trips)) return; rows.push({ id: m.id, name: lbName(m), cards: t.cards || 0, sv: t.sv || 0, trips: t.trips || 0, t: t.t || 0, me: m.id === me }); });
-    rows.sort(function (a, b) { return b.cards - a.cards || b.sv - a.sv || b.trips - a.trips || a.t - b.t; }); rows.forEach(function (r, i) { r.rank = i + 1; });
-    return { top: rows.slice(0, n || 10), mine: rows.filter(function (r) { return r.me; })[0] || null, total: rows.length };
+    allMembers().forEach(function (m) { var t = m.tstat; if (m.status === 'frozen' || !t || !t.cards) return; rows.push({ id: m.id, name: lbName(m), hide: !!m.lbHide, cards: t.cards || 0, sv: t.sv || 0, trips: t.trips || 0, t: t.ct || t.t || 0, me: m.id === me }); });
+    rows.sort(function (a, b) { return b.cards - a.cards || a.t - b.t; });
+    return lbRank(rows, function (r) { return r.cards; }, n);
+  }
+  function lbSync() {      // 排行資料狀態：local＝沒接雲端；old＝雲端還沒更新到 v5（別人的成績拿不到）；ok
+    var c = cloudStatus(); if (!c.url) return { st: 'local' };
+    var others = allMembers().filter(function (m) { return !m.plays; }); if (!others.length) return { st: 'ok', t: c.lastPull };
+    return { st: others.some(function (m) { return 'lb' in m || 'tstat' in m; }) ? 'ok' : 'old', t: c.lastPull };
   }
   /* ====== D98：小鳶去旅行帶回的伴手禮（點數、券） ====== */
   function monthKey(t) { return dayKey(t).slice(0, 7); }
@@ -654,7 +669,7 @@
     cloudPull: cloudPull, cloudPush: cloudPush, cloudSync: cloudSync, cloudOp: cloudOp, cloudWipe: cloudWipe, cloudStatus: cloudStatus, onCloud: function (f) { CL.subs.push(f); }, cloudStart: cloudStart, cloudMarkAll: function () { CL.cfgDirty = CL.imgDirty = true; }, liffStart: liffStart, linkLine: linkLine, liffId: liffId,
     member: member, peekMember: function () { return rd(K_MEM); }, saveMember: saveMember, dayKey: dayKey, rid: rid, hmac: hmac, sha256: sha256, utf8: utf8,
     pointsForSpend: pointsForSpend, makeEarnCode: makeEarnCode, claimEarn: claimEarn, storeLog: function () { return lg(K_STORE); }, storeById: storeById,
-    eventMult: eventMult, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore, tierPts: tierPts, nextTier: nextTier, gameToday: gameToday, leaderboard: leaderboard, travelBoard: travelBoard, setTravelStat: setTravelStat, claimGame: claimGame, settleGame: settleGame, storeBonusPts: storeBonusPts,
+    eventMult: eventMult, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore, tierPts: tierPts, nextTier: nextTier, gameToday: gameToday, leaderboard: leaderboard, travelBoard: travelBoard, lbMe: lbMe, setLbMe: setLbMe, lbSync: lbSync, setTravelStat: setTravelStat, claimGame: claimGame, settleGame: settleGame, storeBonusPts: storeBonusPts,
     travelGift: travelGift, travelPtsThisMonth: function () { return travelPtsThisMonth(member()); }, myCoupons: myCoupons, couponCheck: couponCheck, couponUse: couponUse, couponIssued: couponIssued, couponImg: couponImg, couponUsedCount: couponUsedCount, couponFaceHTML: couponFaceHTML,
     prizeById: prizeById, stockLeft: stockLeft, makeRedeem: makeRedeem, maxQty: maxQty, perUserLeft: perUserLeft, cancelRedeem: cancelRedeem, deskCheck: deskCheck, deskGive: deskGive, findRedeem: findRedeem, pendingRedeems: pendingRedeems, memberName: memberName, markGiven: markGiven, deskLog: function () { return lg(K_DESK); },
     allMembers: allMembers, importMembers: importMembers, addAdj: addAdj, adjSum: adjSum, gap: gap, list: list, saveList: saveList, backfill: backfill, claimedRefs: claimedRefs, lookupTx: lookupTx, archiveFull: archiveFull, archives: function () { return (rd('kiteArchive1') || []).map(function (a) { return { id: a.id, t: a.t }; }); }, importPreview: importPreview, dataset: dataset, wipeTest: wipeTest, reissueEarn: reissueEarn, voidEarn: voidEarn, peekEarn: peekEarn, earnCheck: earnCheck, onHand: onHand, reservedCount: reservedCount, exportMe: exportMe, expiring: expiring, batches: batches, housekeep: housekeep, storeMult: storeMult, notices: function () { var d = dayKey(); return (cfg().notices || []).filter(function (n) { return n.on && (!n.from || d >= n.from) && (!n.to || d <= n.to); }); }
