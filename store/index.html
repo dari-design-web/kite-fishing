@@ -28,6 +28,7 @@
 
 /* UX 走查（10/17）：可以點的地方至少 44px、字至少 12px */
 header a,.top a{display:inline-flex;align-items:center;min-height:44px}
+.kmodal{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}.kmodal .box{background:#fff;width:100%;max-width:520px;border-radius:20px 20px 0 0;padding:18px 16px calc(16px + env(safe-area-inset-bottom,0px))}.kmodal h3{margin:0 0 6px;font-size:17px}.kmodal p{margin:0 0 14px;color:#444}.kmodal .row .btn{flex:1}
 </style>
 </head>
 <body>
@@ -44,6 +45,8 @@ header a,.top a{display:inline-flex;align-items:center;min-height:44px}
 (function () {
   var $ = function (id) { return document.getElementById(id); }, app = $('app'), K = KiteCore;
   var mode = new URLSearchParams(location.search).get('m') || '', SK = 'kiteStoreSession1', scanner = null, timer = 0;
+  /* G78：店家工作機不用瀏覽器原生 confirm（LINE／平板內建瀏覽器和測試工具會卡住），改用頁內確認框 */
+  function ask2(title, body, ok, cancel) { return new Promise(function (res) { var m = document.createElement('div'); m.className = 'kmodal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.innerHTML = '<div class="box"><h3>' + esc(title) + '</h3><p>' + esc(body) + '</p><div class="row"><button type="button" class="btn alt" data-x="0">' + esc(cancel || '先不要') + '</button><button type="button" class="btn warn" data-x="1">' + esc(ok) + '</button></div></div>'; document.body.appendChild(m); m.querySelectorAll('[data-x]').forEach(function (b) { b.onclick = function () { m.remove(); res(b.dataset.x === '1'); }; }); m.onclick = function (e) { if (e.target === m) { m.remove(); res(false); } }; var f = m.querySelector('[data-x="1"]'); if (f) f.focus(); }); }
   function toast(t) { var e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(function () { e.style.display = 'none'; }, 2200); }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function net() { var n = $('net'); n.textContent = navigator.onLine ? '有網路' : '離線中：照樣可以出集點 QR'; n.classList.toggle('off', !navigator.onLine); }
@@ -77,7 +80,7 @@ header a,.top a{display:inline-flex;align-items:center;min-height:44px}
       '<div class="card"><h2>這台最近發出的</h2><ul class="list" id="recent"></ul><p class="note" id="sync"></p></div>' +
       '<button class="btn alt full" id="out">登出</button>';
     app.querySelectorAll('.pad button').forEach(function (b) { b.onclick = function () { var k = b.dataset.k; if (k === 'C') amount = ''; else if (k === '⌫') amount = amount.slice(0, -1); else if (amount.length < 6) amount = (amount + k).replace(/^0+/, ''); showAmt(); }; });
-    $('mk').onclick = function () { var a = +amount; if (!a) return; var big = (K.cfg().alerts || {}).bigAmount || 5000; if (a >= big && !confirm('金額 NT$ ' + a.toLocaleString() + ' 比較大（超過 ' + big.toLocaleString() + ' 元），確定沒有多按一個 0 嗎？')) return; var r = K.makeEarnCode(s.id, a); storeQR(s, a, r); };      // UX 走查：大金額多確認一次
+    $('mk').onclick = function () { var a = +amount; if (!a) return; var big = (K.cfg().alerts || {}).bigAmount || 5000; var go = function () { var r = K.makeEarnCode(s.id, a); storeQR(s, a, r); }; if (a >= big) ask2('金額比較大', '金額 NT$ ' + a.toLocaleString() + '（' + big.toLocaleString() + ' 元以上），確定沒有多按一個 0 嗎？', '確定出碼', '回去改').then(function (ok) { if (ok) go(); }); else go(); };      // UX 走查：大金額多確認一次
     wireMode();
     $('out').onclick = function () { setSess(null); storeLogin(); };
     renderRecent(s);
@@ -116,8 +119,8 @@ header a,.top a{display:inline-flex;align-items:center;min-height:44px}
     KiteScan.drawQR($('qr'), r.code, Math.min(260, innerWidth - 90));
     $('cp').onclick = function () { (navigator.clipboard ? navigator.clipboard.writeText(r.code) : Promise.reject()).then(function () { toast('已複製代碼'); }, function () { prompt('長按複製代碼', r.code); }); };
     $('nx').onclick = storeHome;
-    $('re').onclick = function () { if (!confirm('重新出碼後，舊 QR 和舊領取連結將失效；金額維持 ' + a.toLocaleString() + ' 元。')) return; var x = K.reissueEarn(r.nonce); if (!x.ok) return toast(x.msg); toast('已重新出碼，還能重出 ' + x.left + ' 次'); storeQR(s, a, x); };
-    $('vd').onclick = function () { if (!confirm('作廢這筆？客人掃了也不會入點。')) return; K.voidEarn(r.nonce); toast('已作廢'); storeHome(); };
+    $('re').onclick = function () { ask2('重新出碼', '重新出碼後，舊 QR 和舊領取連結將失效；金額維持 ' + a.toLocaleString() + ' 元。', '重新出碼').then(function (ok) { if (!ok) return; var x = K.reissueEarn(r.nonce); if (!x.ok) return toast(x.msg); toast('已重新出碼，還能重出 ' + x.left + ' 次'); storeQR(s, a, x); }); };
+    $('vd').onclick = function () { ask2('作廢這筆', '作廢後客人掃了也不會入點。', '作廢').then(function (ok) { if (!ok) return; K.voidEarn(r.nonce); toast('已作廢'); storeHome(); }); };
     var tick = function () { var left = Math.max(0, end - Date.now()), m = Math.floor(left / 60000), sec = Math.floor(left / 1000) % 60; $('cd').textContent = m + ' 分 ' + String(sec).padStart(2, '0') + ' 秒'; if (!left) { clearInterval(timer); $('qr').style.opacity = .2; $('cd').textContent = '已逾時，請按「重新出碼」'; } };
     /* D103（Dari 10/17）：客人一領走，這台馬上換成「已領取」（有雲端時每 4 秒對一次） */
     var poll = 0, done = function () { var who = K.claimedRefs()[r.nonce]; if (!who || !$('qr')) return false; clearInterval(timer); var e = null; K.allMembers().some(function (m) { return (m.ledger || []).some(function (x) { if (x.ref === r.nonce && x.type === 'store') { e = x; return true; } }); });
