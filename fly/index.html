@@ -172,7 +172,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
     <canvas class="mapfx" id="mapFx" aria-hidden="true"></canvas>
     <h1 class="maptitle" id="mapTitle">小鳶飛行冒險</h1>
     <div id="stageButtons"></div>
-    <p class="mapnote">原型 v0.43：暫用圖、不發點數。測試期間四關都開放</p>
+    <p class="mapnote ptnote"></p>
   </div>
 
   <div class="panel" id="startPanel" hidden>
@@ -198,7 +198,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
       </div>
       <button class="btn" id="startBtn">開始</button>
       <button class="btn quiet" id="mapBtn">回關卡地圖</button>
-      <p class="note">原型 v0.43：暫用圖、不發點數</p>
+      <p class="note ptnote"></p>
     </div>
   </div>
 
@@ -1134,7 +1134,7 @@ function menuHit(f, how) {
 }
 function updateMarket(dt) {
   if (!NM()) return;
-  if (!menu && t > 3) startMenu(0);
+  /* D103（Dari 10/17）：點菜單拿掉——遮畫面又沒什麼用 */
   if (menu && menu.pop > 0) menu.pop -= dt;
   if (beatDemo) { beatDemo.t += dt; const k = Math.floor(beatDemo.t / BEAT.demoStep); if (k !== beatDemo.k && k < beatDemo.pat.length) { beatDemo.k = k; beep(beatDemo.pat[k] === 'L' ? 523 : 659, 0.12, 'triangle', 0.05); } if (k >= beatDemo.pat.length) beatDemo = null; }
 }
@@ -2497,7 +2497,7 @@ function renderMap() {
     line.textContent = s.locked ? s.time + '　製作中' : !open ? s.time + '　過了第 ' + (s.id - 1) + ' 關就開放' : s.time + '　' + [0, 1, 2].map((k) => (st[k] ? '★' : '☆')).join('') + (st.length === 3 && st.every(Boolean) ? ' 👑' : '') + (best ? '　最佳 ' + (best.score !== undefined ? best.score + ' 分' : best.pct + '%') : '');
     btn.append(title, line); btn.disabled = !open; if (!open) btn.classList.add('locked');
     if (open && s.id === nextId) { btn.classList.add('next'); const go = document.createElement('i'); go.className = 'go'; go.textContent = progress.stars[s.id] && progress.stars[s.id][0] ? '再挑戰' : '出發'; btn.append(go); }
-    btn.onclick = () => { stageNo = s.id; $('stageTitle').textContent = '第 ' + s.id + ' 關　' + s.name; $('stageIntro').textContent = s.time + '。' + s.intro; const nm = s.theme === 'market'; $('howDodge').textContent = nm ? '攤位照節拍噴熱氣：兩邊的燈先閃一次給你看，燈亮的那一邊就要噴。上方菜單照順序淨化，三道都完成回禮加倍。雨棚打不掉，油煙會擋住視線' : '漂流木打不掉；看到紅色區域就整隻離開'; $('howBarrelK').textContent = nm ? '爆米香' : '油桶'; $('howBarrel').textContent = nm ? '打爆會「碰！」一聲炸開，炸掉旁邊的妖怪，自己別靠太近' : '打爆會炸掉旁邊的垃圾，自己別靠太近'; $('howFriendT').textContent = nm ? '打破包住牠們的塑膠袋。黑輪補體力、石花凍送護盾、小卷米粉派小卷幫忙、大腸圈繞著你轉' : '清掉纏住牠們的垃圾。小卷會來幫忙，海龜送你護盾'; $('howUltK').textContent = nm ? '擲筊' : '鯨鯊'; $('howUlt').textContent = nm ? '右下角集滿後按一下，擲筊祈福，全畫面淨化；擲出的結果再送回禮' : '右下角集滿後按一下，全畫面大掃除'; if (s.how) { $('howDodge').textContent = s.how.dodge; $('howBarrelK').textContent = s.how.barrelK; $('howBarrel').textContent = s.how.barrel; $('howFriendT').textContent = s.how.friend; $('howUltK').textContent = s.how.ultK; $('howUlt').textContent = s.how.ult; } reset(); mode = 'start'; show('startPanel'); };
+    btn.onclick = () => { stageNo = s.id; $('stageTitle').textContent = '第 ' + s.id + ' 關　' + s.name; $('stageIntro').textContent = s.time + '。' + s.intro; const nm = s.theme === 'market'; $('howDodge').textContent = nm ? '攤位照節拍噴熱氣：兩邊的燈先閃一次給你看，燈亮的那一邊就要噴。雨棚打不掉，油煙會擋住視線' : '漂流木打不掉；看到紅色區域就整隻離開'; $('howBarrelK').textContent = nm ? '爆米香' : '油桶'; $('howBarrel').textContent = nm ? '打爆會「碰！」一聲炸開，炸掉旁邊的妖怪，自己別靠太近' : '打爆會炸掉旁邊的垃圾，自己別靠太近'; $('howFriendT').textContent = nm ? '打破包住牠們的塑膠袋。黑輪補體力、石花凍送護盾、小卷米粉派小卷幫忙、大腸圈繞著你轉' : '清掉纏住牠們的垃圾。小卷會來幫忙，海龜送你護盾'; $('howUltK').textContent = nm ? '擲筊' : '鯨鯊'; $('howUlt').textContent = nm ? '右下角集滿後按一下，擲筊祈福，全畫面淨化；擲出的結果再送回禮' : '右下角集滿後按一下，全畫面大掃除'; if (s.how) { $('howDodge').textContent = s.how.dodge; $('howBarrelK').textContent = s.how.barrelK; $('howBarrel').textContent = s.how.barrel; $('howFriendT').textContent = s.how.friend; $('howUltK').textContent = s.how.ultK; $('howUlt').textContent = s.how.ult; } reset(); mode = 'start'; show('startPanel'); };
     box.append(btn);
   });
 }
@@ -2657,5 +2657,10 @@ loadProgress(); reset(); $('mapPanel').classList.toggle('night', NIGHT_MAP); $('
 
 
 <script src="../shared/back_line.js"></script>
+<script>/* D103（Dari 10/17）：遊戲畫面下方改成今天的積分狀況（原本寫「不發點數」已經過時） */
+(function () { function fill() { var K = window.KiteCore; document.querySelectorAll('.ptnote').forEach(function (e) {
+  if (!K || !K.gameToday) { e.textContent = '每關每天前 3 次的分數會加進今日積分，到官方 LINE 小鳶樂園領點數'; return; }
+  var g = K.gameToday(), c = K.cfg(); e.innerHTML = '今日積分 <b>' + g.total.toLocaleString() + '</b> 分' + (g.claim ? '・<b style="color:#E2702A">亮了 ' + g.claim + ' 點可以領</b>' : g.next ? '・再 ' + g.next.need.toLocaleString() + ' 分亮下一格' : '・今天的格子都亮了') + '<br><a href="../line/index.html?p=park" style="color:inherit;font-weight:800">到小鳶樂園領點 ›</a>　<span style="opacity:.75">每關每天前 ' + c.triesPerLevel + ' 次算分</span>'; }); }
+  fill(); document.addEventListener('visibilitychange', fill); setInterval(fill, 4000); })();</script>
 </body>
 </html>
