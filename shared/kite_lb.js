@@ -4,7 +4,7 @@
    KiteLB.button(parent, opts, label)                           → 放一顆小 🏆 按鈕 */
 (function (G) {
   'use strict';
-  var K = G.KiteCore, css = false, st = { tab: 0, period: 'month' };
+  var K = G.KiteCore, css = false, st = { tab: 0, period: 'month' }, BASE = (function () { var sc = document.currentScript; return sc && sc.src ? sc.src.replace(/kite_lb\.js.*$/, '') : 'shared/'; })();
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function addCss() {
     if (css) return; css = true; var s = document.createElement('style');
@@ -18,17 +18,22 @@
       '.klb .rk{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:900;background:#F1ECE2;color:#6B7F86}.klb .r1{background:#FFD45C;color:#7A4A00}.klb .r2{background:#DDE3E6;color:#4A5A60}.klb .r3{background:#F0B98A;color:#6E3A12}' +
       '.klb .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}.klb .nm small{display:block;font-weight:400;color:#6B7F86;font-size:12px}.klb .sc{font-weight:900;font-variant-numeric:tabular-nums;color:#E2702A}' +
       '.klb-me{margin-top:10px;padding:10px 12px;border-radius:14px;background:#F6F1E6;font-size:14px}.klb-empty{padding:24px 6px;text-align:center;color:#6B7F86}.klb-note{margin:10px 2px 0;font-size:12px;color:#6B7F86;line-height:1.5}' +
+      '.klb .rk img{width:34px;height:34px}.klb .rk.ri{background:none}.klb-btn img{width:26px;height:26px}' +
+      '.klb-alias{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:10px;padding:10px 12px;border-radius:14px;border:1px dashed #E3D9C8;font-size:14px}.klb-alias b{color:#2F7F86}.klb-alias button{min-height:40px;border-radius:10px;border:1px solid #E3D9C8;background:#fff;font:inherit;font-size:14px;font-weight:700;padding:0 12px;color:#24343A}.klb-alias label{display:flex;align-items:center;gap:6px;min-height:40px}.klb-alias input[type=checkbox]{width:22px;height:22px}.klb-alias input[type=text]{flex:1;min-width:120px;min-height:40px;border:1px solid #E3D9C8;border-radius:10px;padding:0 10px;font:inherit}' +
+      '.klb-sync{margin:0 2px 8px;font-size:13px;color:#8A5310;background:#FFF6DE;border-radius:10px;padding:7px 10px}' +
       '.klb-btn{display:inline-flex;align-items:center;gap:4px;min-height:44px;min-width:44px;padding:0 12px;border-radius:14px;border:1px solid rgba(0,0,0,.08);background:#FFF6DE;color:#7A4A00;font:inherit;font-weight:800;font-size:14px;box-shadow:0 2px 0 rgba(0,0,0,.08)}';
     document.head.appendChild(s);
   }
-  function row(r, sub, val) { return '<li class="' + (r.me ? 'me' : '') + '"><span class="rk ' + (r.rank <= 3 ? 'r' + r.rank : '') + '">' + r.rank + '</span><span class="nm">' + esc(r.name) + (r.me ? '（你）' : '') + (sub ? '<small>' + sub + '</small>' : '') + '</span><span class="sc">' + val + '</span></li>'; }
+  function row(r, sub, val) { return '<li class="' + (r.me ? 'me' : '') + '"><span class="rk ' + (r.rank <= 3 ? 'r' + r.rank + ' ri' : '') + '">' + (r.rank <= 3 ? '<img src="' + BASE + 'assets/rank_' + r.rank + '.png" alt="第 ' + r.rank + ' 名">' : r.rank) + '</span><span class="nm">' + esc(r.name) + (r.me ? '（你' + (r.hide ? '・不公開' : '') + '）' : '') + (sub ? '<small>' + sub + '</small>' : '') + '</span><span class="sc">' + val + '</span></li>'; }
   function render(box, o) {
-    var h = '<div class="klb-h"><b>🏆 ' + esc(o.title || '排行榜') + '</b><button class="klb-x" type="button" aria-label="關閉">✕</button></div>', R;
+    var h = '<div class="klb-h"><b>🏆 ' + esc(o.title || '排行榜') + '</b><button class="klb-x" type="button" aria-label="關閉">✕</button></div>', R, sy = K.lbSync ? K.lbSync() : { st: 'ok' };
+    if (sy.st === 'local') h += '<div class="klb-sync">目前只有這支手機的成績，跨裝置排行尚未開通。</div>';
+    else if (sy.st === 'old') h += '<div class="klb-sync">雲端排行資料還在更新中，目前只看得到部分玩家，名次可能不完整。</div>';
     if (o.travel) {
       R = K.travelBoard(10);
       h += R.top.length ? '<ol>' + R.top.map(function (r) { return row(r, '紀念品 ' + r.sv + '・旅行 ' + r.trips + ' 次', r.cards + ' 張'); }).join('') + '</ol>' : '<div class="klb-empty">還沒有人上榜，帶小鳶去旅行收集明信片吧！</div>';
       h += R.mine && R.mine.rank > 10 ? '<div class="klb-me">你目前第 <b>' + R.mine.rank + '</b> 名・明信片 ' + R.mine.cards + ' 張</div>' : '';
-      h += '<p class="klb-note">依收集到的明信片張數排名（常設 24 張）；一樣多時比紀念品，再比旅行次數，再比誰先達到。</p>';
+      h += '<p class="klb-note">比收集到的不同明信片張數（常設 24 張），重複的不加分；一樣多就同名次，同名次裡先達到的排前面。不比旅行次數。</p>';
     } else {
       var tab = o.tabs[Math.min(st.tab, o.tabs.length - 1)];
       h += '<div class="klb-tabs">' + o.tabs.map(function (t, i) { return '<button type="button" data-t="' + i + '" aria-pressed="' + (t === tab) + '">' + esc(t[1]) + '</button>'; }).join('') + '</div>';
@@ -36,15 +41,25 @@
       R = K.leaderboard(o.game, tab[0], st.period, 10);
       h += R.top.length ? '<ol>' + R.top.map(function (r) { return row(r, '', r.score.toLocaleString() + ' 分'); }).join('') + '</ol>' : '<div class="klb-empty">' + (st.period === 'month' ? '這個月' : '') + '還沒有人上榜，快來搶第一名！</div>';
       h += R.mine ? (R.mine.rank > 10 ? '<div class="klb-me">你目前第 <b>' + R.mine.rank + '</b> 名・最高 ' + R.mine.score.toLocaleString() + ' 分</div>' : '') : '<div class="klb-me">你在「' + esc(tab[1]) + '」還沒有成績</div>';
-      h += '<p class="klb-note">每位會員取' + (st.period === 'month' ? '這個月' : '') + '這一關的最高分。名字是會員的顯示名稱，可以在官方 LINE「我的資訊」修改。</p>';
+      h += '<p class="klb-note">每位會員取' + (st.period === 'month' ? '這個月' : '') + '這一關「算分場次」裡的最高一局，用遊戲原始分數排名（點數加倍活動不影響名次）。同分同名次。</p>';
     }
+    if (R && R.hidden) h += '<p class="klb-note">有參賽者選擇不公開，公開名單的名次可能跳號。</p>';
+    var me = K.lbMe ? K.lbMe() : null;
+    if (me) h += st.edit ? '<div class="klb-alias"><input type="text" maxlength="10" value="' + esc(me.alias) + '" aria-label="排行榜化名"><button type="button" data-a="save">存</button><button type="button" data-a="cancel">取消</button>' + (st.err ? '<span style="color:#C0392B;width:100%">' + esc(st.err) + '</span>' : '') + '</div>'
+      : '<div class="klb-alias"><span>你在排行榜上的名字：<b>' + esc(me.alias) + '</b></span><button type="button" data-a="edit">改名</button><label><input type="checkbox" data-a="hide"' + (me.hide ? ' checked' : '') + '>不出現在公開名單</label></div>';
+    if (me) h += '<p class="klb-note">排行榜只顯示化名，不會出現 LINE 名字、頭像或會員編號。選「不公開」後別人看不到你，你自己還是看得到名次。</p>';
     box.innerHTML = h;
+    box.querySelectorAll('[data-a]').forEach(function (b) {
+      var a = b.dataset.a;
+      if (a === 'hide') b.onchange = function () { K.setLbMe({ hide: b.checked }); if (K.cloudPush) K.cloudPush(); render(box, o); };
+      else b.onclick = function () { if (a === 'edit') st.edit = true; else if (a === 'cancel') { st.edit = false; st.err = ''; } else { var v = box.querySelector('.klb-alias input[type=text]').value, res = K.setLbMe({ alias: v }); if (!res.ok) { st.err = res.msg; render(box, o); return; } st.edit = false; st.err = ''; if (K.cloudPush) K.cloudPush(); } render(box, o); };
+    });
     box.querySelector('.klb-x').onclick = close;
     box.querySelectorAll('[data-t]').forEach(function (b) { b.onclick = function () { st.tab = +b.dataset.t; render(box, o); }; });
     box.querySelectorAll('[data-p]').forEach(function (b) { b.onclick = function () { st.period = b.dataset.p; render(box, o); }; });
   }
   var mask = null;
-  function close() { if (mask) { mask.remove(); mask = null; } }
+  function close() { st.edit = false; if (mask) { mask.remove(); mask = null; } }
   function open(o) {
     if (!K) return; addCss(); close(); if (o.tab != null) st.tab = o.tab;
     mask = document.createElement('div'); mask.className = 'klb-mask'; mask.innerHTML = '<div class="klb" role="dialog" aria-label="排行榜"></div>';
@@ -52,6 +67,6 @@
     document.body.appendChild(mask); var box = mask.firstChild; render(box, o);
     if (K.cloudStatus && K.cloudStatus().url && K.cloudPull) K.cloudPull(true).then(function () { if (mask && mask.firstChild === box) render(box, o); });      // 打開時跟雲端對一次，拿最新名次
   }
-  function button(parent, o, label) { addCss(); var b = document.createElement('button'); b.type = 'button'; b.className = 'klb-btn'; b.innerHTML = '🏆' + (label ? '<span>' + esc(label) + '</span>' : ''); b.setAttribute('aria-label', '排行榜'); b.onclick = function (e) { e.stopPropagation(); open(typeof o === 'function' ? o() : o); }; parent.appendChild(b); return b; }
+  function button(parent, o, label) { addCss(); var b = document.createElement('button'); b.type = 'button'; b.className = 'klb-btn'; b.innerHTML = '<img src="' + BASE + 'assets/rank_btn.png" alt="">' + (label ? '<span>' + esc(label) + '</span>' : ''); b.setAttribute('aria-label', '排行榜'); b.onclick = function (e) { e.stopPropagation(); open(typeof o === 'function' ? o() : o); }; parent.appendChild(b); return b; }
   G.KiteLB = { open: open, close: close, button: button };
 })(window);

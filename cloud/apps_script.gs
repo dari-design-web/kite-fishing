@@ -51,11 +51,11 @@ function lite_(m) {
   return { id: m.id, name: m.name || '', status: m.status, lite: true, created: m.created, visits: (m.visits || []).slice(-1), points: m.points, nonces: m.nonces || [], redeems: m.redeems || [],
     coupons: (m.coupons || []).map(function (x) { return { id: x.id, cid: x.cid, t: x.t, status: x.status }; }),
     ledger: (m.ledger || []).filter(function (e) { return e.ref && (e.type === 'store' || e.type === 'backfill'); }).map(function (e) { return { type: e.type, ref: e.ref, t: e.t, pts: e.pts }; }),
-    lb: lb_(m), tstat: m.tstat || null };      // D104：排行榜只給每關最高分和旅行收藏數，不給遊玩明細
+    lb: lb_(m), tstat: m.tstat || null, lbAlias: m.lbAlias || '', lbHide: !!m.lbHide };      // v6（G76）：排行榜公開化名與「不公開」      // D104：排行榜只給每關最高分和旅行收藏數，不給遊玩明細
 }
 function lb_(m) {
   var mk = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy-MM'), o = {};
-  (m.plays || []).forEach(function (p) { if (!p || !p.game || p.game === 'travel') return; var k = p.game + '|' + p.level, s = +p.score || 0, v = o[k] || [0, 0, mk]; if (s > v[0]) v[0] = s; if (s > v[1] && Utilities.formatDate(new Date(p.t), 'Asia/Taipei', 'yyyy-MM') === mk) v[1] = s; o[k] = v; });
+  (m.plays || []).forEach(function (p) { if (!p || !p.game || p.game === 'travel' || p.counted === false) return;      // v6：只算「算分場次」 var k = p.game + '|' + p.level, s = +p.score || 0, v = o[k] || [0, 0, mk]; if (s > v[0]) v[0] = s; if (s > v[1] && Utilities.formatDate(new Date(p.t), 'Asia/Taipei', 'yyyy-MM') === mk) v[1] = s; o[k] = v; });
   return o;
 }
 function doGet(e) {
