@@ -476,7 +476,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
       '<button class="btn warn full" id="rd"' + (can ? '' : ' disabled') + '>' + (l <= 0 ? '已換完' : blk ? esc(blk) : can ? '用 <span id="qc">' + p.points + '</span> 點兌換' : '點數還差 ' + (p.points - m.points) + ' 點') + '</button></div>';
     var q = 1, setQ = function (v) { q = Math.max(1, Math.min(mq, v)); $('qn').textContent = q; $('qc').textContent = p.points * q; $('qm').disabled = q <= 1; $('qp').disabled = q >= mq; };      // D103：不限量或可換多份的贈品可以選數量
     if ($('qm')) { $('qm').onclick = function () { setQ(q - 1); }; $('qp').onclick = function () { setQ(q + 1); }; setQ(1); }
-    $('rd').onclick = function () { var dl = hd ? t2(Date.now() + hd * 86400000) : ''; ask2('確認兌換', '使用 <b>' + p.points * q + ' 點</b>，保留 ' + q + ' 份「' + esc(p.name) + '」。' + (dl ? '<br>請於 <b>' + dl + '</b> 前到服務台領取。' : '') + '<br><span class="muted">還沒領之前可以取消，點數會退回。</span>', '確認扣點並保留').then(function (ok) { if (!ok) return; var r = K.makeRedeem(p.id, q); if (!r.ok) return toast(r.msg); go('ticket', K.member().redeems[0].id); hello(); }); };
+    $('rd').onclick = function () { var dl = hd ? t2(Date.now() + hd * 86400000) : ''; ask2('確認兌換', '使用 <b>' + p.points * q + ' 點</b>，保留 ' + q + ' 份「' + esc(p.name) + '」。' + (dl ? '<br>請於 <b>' + dl + '</b> 前到服務台領取。' : '') + '<br><span class="muted">還沒領之前可以取消；逾期沒領也會自動退回。退回的點數維持原本的到期日。</span>', '確認扣點並保留').then(function (ok) { if (!ok) return; var r = K.makeRedeem(p.id, q); if (!r.ok) return toast(r.msg); go('ticket', K.member().redeems[0].id); hello(); }); };
   };
   R.ticket = function (id) {
     var r = K.member().redeems.filter(function (x) { return x.id === id; })[0]; if (!r) return back();
