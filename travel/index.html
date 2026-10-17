@@ -561,7 +561,7 @@ function renderHome() {
   /* v0.29（C-170）：早上 6 點到 9 點小鳶在家，說早晨的話（台詞是建議） */
   else if (S.firstDone && st === 'home' && hh >= 6 && hh < 9) { $('chip').textContent = '早安！小鳶剛起床'; b.style.backgroundImage = 'url(assets/kite_home.png)'; $('say').textContent = ['早安～我剛起床，羽毛還翹翹的！', '早上的港口好安靜，漁船都出海了嗎？', '早餐吃飽飽，今天要去哪裡玩呢？'][Math.floor(Math.random() * 3)]; main.textContent = '打包出門'; main.onclick = () => go('pack'); }
   else if (st === 'home') { $('chip').textContent = '小鳶在家，還沒出發'; b.style.backgroundImage = 'url(assets/kite_home.png)'; $('say').textContent = sayOne('home'); main.textContent = '打包出門'; main.onclick = () => go('pack'); }
-  else if (st === 'away') { b.style.display = 'none'; note.hidden = false; note.innerHTML = ''; note.appendChild(document.createTextNode('「' + (S.trip.say || sayOne('away')) + '」　— 小鳶')); note.insertAdjacentHTML('beforeend', '<span class="trip" id="tripBar"></span>'); tripBar(); $('chip').textContent = '小鳶正在旅行，大約 ' + fmtTime(S.trip.end) + ' 回來；信會等你，不會過期'; $('say').textContent = ''; main.textContent = '大約 ' + fmtTime(S.trip.end) + ' 回來'; main.onclick = () => toast('小鳶還在路上，晚點再來看看'); }
+  else if (st === 'away') { b.style.display = 'none'; note.hidden = false; note.innerHTML = ''; note.appendChild(document.createTextNode('「' + (S.trip.say || sayOne('away')) + '」　— 小鳶')); note.insertAdjacentHTML('beforeend', '<span class="trip" id="tripBar"></span>'); tripBar(); $('chip').textContent = '小鳶正在旅行，大約 ' + fmtTime(S.trip.end) + ' 回來；信會留在小屋等你拆'; $('say').textContent = ''; main.textContent = '大約 ' + fmtTime(S.trip.end) + ' 回來'; main.onclick = () => toast('小鳶還在路上，晚點再來看看'); }
   else { $('chip').textContent = '小鳶回來了！帶了一封信'; b.style.backgroundImage = 'url(assets/kite_back.png)'; env.hidden = false; $('say').textContent = sayOne('back'); main.textContent = '拆信'; main.onclick = openLetter; env.onclick = openLetter; }
   setRoom(S.room);
   PET.reset($('say').textContent);
@@ -751,7 +751,7 @@ function renderPack() {
   const il = $('itemList'); il.innerHTML = '';
   for (const k of ['camera', 'telescope', 'umbrella']) {
     const it = CFG.items[k], has = hasItem(k), on = pk.items.includes(k), btn = document.createElement('button'); btn.className = 'opt'; btn.type = 'button'; btn.setAttribute('aria-pressed', String(on)); btn.disabled = !has || itemUsedToday(k) || pk.bento === 'walk';
-    btn.innerHTML = itemIcon(k) + '<span class="tx">' + it.name + '<small>' + (!has ? '還沒有：' + it.how : itemUsedToday(k) ? '今天帶過了，明天再帶（每天一次）' : it.note + '・每天一次') + '</small></span>';
+    btn.innerHTML = itemIcon(k) + '<span class="tx">' + it.name + '<small>' + (!has ? '還沒有：' + it.how : itemUsedToday(k) ? '今天帶過了，明天再帶（每天一次）' : it.note + '・每件每天帶 1 次') + '</small></span>';
     btn.onclick = () => { let add = false; if (on) pk.items = pk.items.filter((x) => x !== k); else if (pk.items.length < 2) { pk.items.push(k); add = true; } else toast('道具最多帶兩件'); renderPack(); if (add) packSay('slot' + pk.items.length, PACK_SAY[k]); };
     il.appendChild(btn);
   }
@@ -901,7 +901,7 @@ function renderAlbum() {
       $('passCard').onclick = () => { const m = $('modal'); m.innerHTML = '<img src="assets/pc_passport.jpg" alt="港灣探險護照紀念明信片" style="width:min(360px,90vw);border-radius:8px;border:6px solid #FFFDF8;box-shadow:0 10px 30px rgba(0,0,0,.4)"><p style="color:#FFF4E2;font-size:14px;margin:12px 0 0">港灣探險護照・集滿紀念</p><div class="row" style="width:min(340px,86vw);margin-top:14px"><button class="btn gold" id="mc">回收藏冊</button></div>'; m.classList.add('on'); $('mc').onclick = () => m.classList.remove('on'); }; }
     else body.innerHTML = '<p class="pad muted">在東三東四港邊走一圈，6 個點掃 QR 蓋章，集滿就拿到「港灣探險護照」紀念明信片和小鳶的雨傘。</p><div class="pad"><a class="btn ghost" href="../stamp/" style="text-decoration:none;text-align:center">去港灣蓋章散步</a></div>';
   }
-  else body.innerHTML = '<p class="pad muted">合照館拍的照片只存在這支手機，換手機就沒有；收進收藏冊之後再做。</p>';
+  else body.innerHTML = '<p class="pad muted">合照館的照片請先下載到手機保存；收進收藏冊的功能之後再做。</p>';
 }
 function showCardModal(l, i, lim) {
   const m = $('modal'); m.innerHTML = cardHTML(l, i, { lim }) + '<div class="row" style="width:min(340px,86vw);margin-top:14px"><button class="btn ghost" id="mf" style="color:#fff;border-color:#fff">看背面</button><button class="btn gold" id="mc">回收藏冊</button></div>'; m.classList.add('on');

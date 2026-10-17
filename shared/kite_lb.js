@@ -28,7 +28,7 @@
   function row(r, sub, val) { return '<li class="' + (r.me ? 'me' : '') + '"><span class="rk ' + (r.rank <= 3 ? 'r' + r.rank + ' ri' : '') + '">' + (r.rank <= 3 ? '<img src="' + BASE + 'assets/rank_' + r.rank + '.png" alt="第 ' + r.rank + ' 名">' : r.rank) + '</span><span class="nm">' + esc(r.name) + (r.me ? '（你' + (r.hide ? '・不公開' : '') + '）' : '') + (sub ? '<small>' + sub + '</small>' : '') + '</span><span class="sc">' + val + '</span></li>'; }
   function render(box, o) {
     var h = '<div class="klb-h"><b>🏆 ' + esc(o.title || '排行榜') + '</b><button class="klb-x" type="button" aria-label="關閉">✕</button></div>', R, sy = K.lbSync ? K.lbSync() : { st: 'ok' };
-    if (sy.st === 'local') h += '<div class="klb-sync">目前只有這支手機的成績，跨裝置排行尚未開通。</div>';
+    if (sy.st === 'local') h += '<div class="klb-sync">目前只讀到這支手機的成績，還沒取得完整的雲端排行。</div>';
     else if (sy.st === 'old') h += '<div class="klb-sync">雲端排行資料還在更新中，目前只看得到部分玩家，名次可能不完整。</div>';
     if (o.sum) {
       h += '<div class="klb-per"><button type="button" data-p="month" aria-pressed="' + (st.period === 'month') + '">本月</button><button type="button" data-p="all" aria-pressed="' + (st.period === 'all') + '">全部</button></div>';

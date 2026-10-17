@@ -87,7 +87,7 @@
       travel: { on: true, maint: false }, photo: { on: true, maint: false }, stamp: { on: true, maint: false }
     },
     storeEvents: [ { id: 'se1', title: '開幕週集點加倍', stores: [], from: '', to: '', mult: 2, on: false } ],
-    notices: [ { id: 'n1', title: '歡迎來到東三東四', body: '在館內消費集點、玩遊戲點亮積分格領點數，就能換小鳶贈品！', from: '', to: '', pin: true, on: true } ],
+    notices: [ { id: 'n1', title: '歡迎來到東三東四', body: '在館內消費或玩遊戲都能集點，到「港口換禮」看看能換什麼！', from: '', to: '', pin: true, on: true } ],
     lowStockWarn: 10,
     site: { name: '小鳶來港-叁肆行X好食城', tel: '', testMode: true },      // D101：客人看到的名稱（暫定）
     alerts: { burstCount: 5, burstMin: 10, bigAmount: 5000 }
@@ -238,7 +238,7 @@
   function earnCheck(code) {
     var p = parse(code); if (!p || p[1] !== 'E' || p.length !== 8) return { ok: false, msg: '這不是小鳶來港的集點 QR' };
     var c = cfg(), s = storeById(p[2]); if (!s || s.on === false) return { ok: false, msg: '找不到這個店家' };
-    if (hmac(s.key, p.slice(0, 7).join('|')) !== p[7]) return { ok: false, msg: 'QR 驗證失敗（可能被改過）' };
+    if (hmac(s.key, p.slice(0, 7).join('|')) !== p[7]) return { ok: false, msg: '無法驗證這個 QR，請重新掃一次，或請對方重新出示' };
     var t = parseInt(p[5], 36); if (Date.now() - t > c.qrExpireMin * 60000) return { ok: false, msg: '這個 QR 已過期，請店員重新出碼' };
     var sl = lg(K_STORE); if (sl.some(function (r) { return (r.voided || []).indexOf(p[6]) >= 0; })) return { ok: false, msg: 'QR 已更新，請掃新的' }; if (sl.some(function (r) { return r.nonce === p[6] && r.void; })) return { ok: false, msg: '這張 QR 已被店家作廢' }; if (sl.some(function (r) { return r.nonce === p[6] && r.recovered; })) return { ok: false, msg: '這筆已經由服務台補登入帳了' };
     var m = member(); if (m.status === 'frozen') return { ok: false, msg: '這個會員帳號暫停使用，請洽服務台' }; if (m.nonces.indexOf(p[6]) >= 0) return { ok: false, msg: '這張 QR 已經集過點了' };
@@ -248,7 +248,7 @@
   function claimEarn(code) {
     var p = parse(code); if (!p || p[1] !== 'E' || p.length !== 8) return { ok: false, msg: '這不是小鳶來港的集點 QR' };
     var c = cfg(), s = storeById(p[2]); if (!s || s.on === false) return { ok: false, msg: '找不到這個店家' };
-    if (hmac(s.key, p.slice(0, 7).join('|')) !== p[7]) return { ok: false, msg: 'QR 驗證失敗（可能被改過）' };
+    if (hmac(s.key, p.slice(0, 7).join('|')) !== p[7]) return { ok: false, msg: '無法驗證這個 QR，請重新掃一次，或請對方重新出示' };
     var t = parseInt(p[5], 36); if (Date.now() - t > c.qrExpireMin * 60000) return { ok: false, msg: '這個 QR 已過期，請店員重新出碼' };
     var sl = lg(K_STORE); if (sl.some(function (r) { return (r.voided || []).indexOf(p[6]) >= 0; })) return { ok: false, msg: 'QR 已更新，請掃新的' }; if (sl.some(function (r) { return r.nonce === p[6] && r.void; })) return { ok: false, msg: '這張 QR 已被店家作廢' }; if (sl.some(function (r) { return r.nonce === p[6] && r.recovered; })) return { ok: false, msg: '這筆已經由服務台補登入帳了' };
     var m = member(); if (m.status === 'frozen') return { ok: false, msg: '這個會員帳號暫停使用，請洽服務台' }; if (m.nonces.indexOf(p[6]) >= 0) return { ok: false, msg: '這張 QR 已經集過點了' };
@@ -304,8 +304,8 @@
   /* D102：小鳶樂園點亮的格子點一下入帳（n＝要領幾點，不給就全部領）；點數記在今天分數最多的遊戲名下，報表才分得出來 */
   function topGame(m, d) { var by = {}; (m.plays || []).forEach(function (p) { if (p.counted && dayKey(p.t) === d) by[p.game] = (by[p.game] || 0) + (p.raw || 0); }); return Object.keys(by).sort(function (a, b) { return by[b] - by[a]; })[0] || 'fish'; }
   function claimGame(n) {
-    var m = member(); if (m.status === 'frozen') return { ok: false, msg: '帳號凍結中，請洽服務台' };
-    settleGame(m); var g = gameToday(m), d = dayKey(); if (g.claim <= 0) { saveMember(m); return { ok: false, msg: '還沒有可以領的點數，再玩一局吧' }; }
+    var m = member(); if (m.status === 'frozen') return { ok: false, msg: '會員帳號目前暫停使用，請到一樓服務台詢問' };
+    settleGame(m); var g = gameToday(m), d = dayKey(); if (g.claim <= 0) { saveMember(m); return { ok: false, msg: '目前沒有可領的點數，看看今天的進度再玩一局吧' }; }
     var k = Math.max(1, Math.min(n || g.claim, g.claim));
     addLedger(m, { type: 'game', pts: k, game: topGame(m, d), day: d, note: '小鳶樂園領取（今日累計 ' + g.total + ' 分）' }); saveMember(m);
     return { ok: true, pts: k, left: g.claim - k, got: g.got + k, total: m.points };
@@ -404,7 +404,7 @@
   function myCoupons() { var m = member(), ch = false, used = {}; lg('kiteCouponUsed1').forEach(function (u) { used[u.id] = u.t; }); (m.coupons || []).forEach(function (x) { if (x.status === 'ok' && used[x.id]) { x.status = 'used'; x.usedT = used[x.id]; ch = true; } else if (x.status === 'ok' && Date.now() > x.exp) { x.status = 'expired'; ch = true; } }); /* UX 走查：店家在別台工作機核銷，雲端同步回來就變「已使用」 */ if (ch) saveMember(m); return m.coupons || []; }
   function couponCheck(code) {
     var p = parse(code), c = cfg(); if (!p || p[1] !== 'C' || p.length !== 7) return { ok: false, msg: '這不是券的 QR' };
-    if (hmac(c.redeemKey, p.slice(0, 6).join('|')) !== p[6]) return { ok: false, msg: 'QR 驗證失敗（可能被改過）' };
+    if (hmac(c.redeemKey, p.slice(0, 6).join('|')) !== p[6]) return { ok: false, msg: '無法驗證這個 QR，請重新掃一次，或請對方重新出示' };
     var cp = (c.coupons || []).filter(function (x) { return x.id === p[3]; })[0], exp = parseInt(p[4], 36);
     var used = lg('kiteCouponUsed1').filter(function (u) { return u.id === p[5]; })[0]; if (used) return { ok: false, msg: '這張券已於 ' + new Date(used.t).toLocaleString('zh-TW', { hour12: false }) + ' 使用過' };
     if (Date.now() > exp) return { ok: false, msg: '這張券已過期（' + new Date(exp).toLocaleDateString('zh-TW') + '）' };
@@ -461,7 +461,7 @@
   }
   function deskCheck(code) {
     var p = parse(code), c = cfg(); if (!p || p[1] !== 'R' || p.length !== 8) return { ok: false, msg: '這不是兌換 QR' };
-    if (hmac(c.redeemKey, p.slice(0, 7).join('|')) !== p[7]) return { ok: false, msg: 'QR 驗證失敗（可能被改過）' };
+    if (hmac(c.redeemKey, p.slice(0, 7).join('|')) !== p[7]) return { ok: false, msg: '無法驗證這個 QR，請重新掃一次，或請對方重新出示' };
     var pr = prizeById(p[3]); if (!pr) return { ok: false, msg: '找不到這個贈品' };
     var log = lg(K_DESK); var got = log.filter(function (r) { return r.rcode === p[6]; })[0]; if (got) return { ok: false, msg: '此單已於 ' + new Date(got.t).toLocaleString('zh-TW', { hour12: false }) + ' 完成領取，請勿再次發放' };
     var lm = rd(K_MEM), lr = lm && lm.id === p[2] && (lm.redeems || []).filter(function (x) { return x.id === p[6]; })[0];      // D82：同一台裝置能看到客人那邊時，已取消／逾期的單不能再發
