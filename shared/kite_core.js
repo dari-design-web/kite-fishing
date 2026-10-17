@@ -87,7 +87,7 @@
       travel: { on: true, maint: false }, photo: { on: true, maint: false }, stamp: { on: true, maint: false }
     },
     storeEvents: [ { id: 'se1', title: '開幕週集點加倍', stores: [], from: '', to: '', mult: 2, on: false } ],
-    notices: [ { id: 'n1', title: '歡迎來到東三東四', body: '在館內消費集點、玩遊戲存分數，就能換小鳶贈品！', from: '', to: '', pin: true, on: true } ],
+    notices: [ { id: 'n1', title: '歡迎來到東三東四', body: '在館內消費集點、玩遊戲點亮積分格領點數，就能換小鳶贈品！', from: '', to: '', pin: true, on: true } ],
     lowStockWarn: 10,
     site: { name: '小鳶來港-叁肆行X好食城', tel: '', testMode: true },      // D101：客人看到的名稱（暫定）
     alerts: { burstCount: 5, burstMin: 10, bigAmount: 5000 }
@@ -145,7 +145,8 @@
     if (d.site && d.site.name === '東三東四') d.site = Object.assign({}, d.site, { name: DEFAULTS.site.name });      // D101 舊設定升級：館名、測試贈品
     if (c.prizes && c.prizes.length === 4 && c.prizes[2] && c.prizes[2].id === 'P03' && c.prizes[2].points === 80) d.prizes = clone(DEFAULTS.prizes);
     if (!c.m99) (d.prizes || []).forEach(function (p) { if (p.perUser === undefined) { p.perUser = 1; p.perUserPer = 'month'; } });      // 只升級一次：後台存過（m99）之後，留空＝不限
-    if (!c.m103) d.redeemPerDay = 0;      // D103 舊設定升級一次：取消每天 3 次的限制
+    if (!c.m103) d.redeemPerDay = 0;
+    (d.notices || []).forEach(function (n) { if (/玩遊戲存分數/.test(n.body || '')) n.body = n.body.replace('玩遊戲存分數', '玩遊戲點亮積分格領點數'); });      // D103 舊設定升級一次：取消每天 3 次的限制
     return d; }
   /* C-193：規則版本號。每存一次設定＝新版本（預設是 v1）；每筆交易、點數紀錄記下當時的版本，之後改規則不追溯 */
   function ruleVer() { return cfg().ruleVer || 1; }
@@ -233,6 +234,17 @@
   function voidEarn(nonce) { var log = rd(K_STORE) || [], x = log.filter(function (r) { return r.nonce === nonce; })[0]; if (!x) return false; x.void = true; wr(K_STORE, log); audit('店家作廢集點 QR ' + nonce); return true; }
   function parse(code) { var p = String(code || '').trim().split('|'); return p[0] === 'KITE1' ? p : null; }
   function peekEarn(code) { var p = parse(code); if (!p || p[1] !== 'E' || p.length !== 8) return null; var s = storeById(p[2]); return s ? { store: s.name, amount: +p[3], pts: +p[4], t: parseInt(p[5], 36) } : null; }
+  /* UX 走查：掃到就先檢查（過期、已被領、作廢），不要等按領取才說不行；不入帳 */
+  function earnCheck(code) {
+    var p = parse(code); if (!p || p[1] !== 'E' || p.length !== 8) return { ok: false, msg: '這不是小鳶來港的集點 QR' };
+    var c = cfg(), s = storeById(p[2]); if (!s || s.on === false) return { ok: false, msg: '找不到這個店家' };
+    if (hmac(s.key, p.slice(0, 7).join('|')) !== p[7]) return { ok: false, msg: 'QR 驗證失敗（可能被改過）' };
+    var t = parseInt(p[5], 36); if (Date.now() - t > c.qrExpireMin * 60000) return { ok: false, msg: '這個 QR 已過期，請店員重新出碼' };
+    var sl = lg(K_STORE); if (sl.some(function (r) { return (r.voided || []).indexOf(p[6]) >= 0; })) return { ok: false, msg: 'QR 已更新，請掃新的' }; if (sl.some(function (r) { return r.nonce === p[6] && r.void; })) return { ok: false, msg: '這張 QR 已被店家作廢' }; if (sl.some(function (r) { return r.nonce === p[6] && r.recovered; })) return { ok: false, msg: '這筆已經由服務台補登入帳了' };
+    var m = member(); if (m.status === 'frozen') return { ok: false, msg: '這個會員帳號暫停使用，請洽服務台' }; if (m.nonces.indexOf(p[6]) >= 0) return { ok: false, msg: '這張 QR 已經集過點了' };
+    if (allMembers().some(function (o) { return o.id !== m.id && ((o.nonces || []).indexOf(p[6]) >= 0 || (o.ledger || []).some(function (e) { return e.ref === p[6] && (e.type === 'store' || e.type === 'backfill'); })); })) return { ok: false, msg: '這張 QR 已經被別的帳號集過點了，請洽店員' };      // D100：跨手機防重複（看雲端）
+    return { ok: true };
+  }
   function claimEarn(code) {
     var p = parse(code); if (!p || p[1] !== 'E' || p.length !== 8) return { ok: false, msg: '這不是小鳶來港的集點 QR' };
     var c = cfg(), s = storeById(p[2]); if (!s || s.on === false) return { ok: false, msg: '找不到這個店家' };
@@ -345,9 +357,9 @@
     if (Date.now() > exp) return { ok: false, msg: '這張券已過期（' + new Date(exp).toLocaleDateString('zh-TW') + '）' };
     return { ok: true, member: p[2], id: p[5], cid: p[3], name: cp ? cp.name : p[3], desc: cp ? cp.desc : '', store: cp ? cp.store : '', face: cp ? cp.face || '' : '', exp: exp };
   }
-  function couponUse(code, who) {
+  function couponUse(code, who, store) {
     var r = couponCheck(code); if (!r.ok) return r;
-    var u = rd('kiteCouponUsed1') || []; u.unshift({ id: r.id, cid: r.cid, member: r.member, t: Date.now(), who: who || '' }); wr('kiteCouponUsed1', u.slice(0, 2000));
+    var u = rd('kiteCouponUsed1') || []; u.unshift({ id: r.id, cid: r.cid, member: r.member, t: Date.now(), who: who || '', store: store || '' }); wr('kiteCouponUsed1', u.slice(0, 2000));
     var lm = rd(K_MEM); if (lm && lm.id === r.member) { (lm.coupons || []).forEach(function (x) { if (x.id === r.id) { x.status = 'used'; x.usedT = Date.now(); } }); wr(K_MEM, lm); }
     audit('核銷券 ' + r.id + '（' + r.name + '）會員 ' + r.member); return r;
   }
@@ -623,6 +635,6 @@
     eventMult: eventMult, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore, tierPts: tierPts, nextTier: nextTier, gameToday: gameToday, claimGame: claimGame, settleGame: settleGame, storeBonusPts: storeBonusPts,
     travelGift: travelGift, travelPtsThisMonth: function () { return travelPtsThisMonth(member()); }, myCoupons: myCoupons, couponCheck: couponCheck, couponUse: couponUse, couponIssued: couponIssued, couponImg: couponImg, couponUsedCount: couponUsedCount, couponFaceHTML: couponFaceHTML,
     prizeById: prizeById, stockLeft: stockLeft, makeRedeem: makeRedeem, maxQty: maxQty, perUserLeft: perUserLeft, cancelRedeem: cancelRedeem, deskCheck: deskCheck, deskGive: deskGive, findRedeem: findRedeem, pendingRedeems: pendingRedeems, memberName: memberName, markGiven: markGiven, deskLog: function () { return lg(K_DESK); },
-    allMembers: allMembers, importMembers: importMembers, addAdj: addAdj, adjSum: adjSum, gap: gap, list: list, saveList: saveList, backfill: backfill, claimedRefs: claimedRefs, lookupTx: lookupTx, archiveFull: archiveFull, archives: function () { return (rd('kiteArchive1') || []).map(function (a) { return { id: a.id, t: a.t }; }); }, importPreview: importPreview, dataset: dataset, wipeTest: wipeTest, reissueEarn: reissueEarn, voidEarn: voidEarn, peekEarn: peekEarn, onHand: onHand, reservedCount: reservedCount, exportMe: exportMe, expiring: expiring, batches: batches, housekeep: housekeep, storeMult: storeMult, notices: function () { var d = dayKey(); return (cfg().notices || []).filter(function (n) { return n.on && (!n.from || d >= n.from) && (!n.to || d <= n.to); }); }
+    allMembers: allMembers, importMembers: importMembers, addAdj: addAdj, adjSum: adjSum, gap: gap, list: list, saveList: saveList, backfill: backfill, claimedRefs: claimedRefs, lookupTx: lookupTx, archiveFull: archiveFull, archives: function () { return (rd('kiteArchive1') || []).map(function (a) { return { id: a.id, t: a.t }; }); }, importPreview: importPreview, dataset: dataset, wipeTest: wipeTest, reissueEarn: reissueEarn, voidEarn: voidEarn, peekEarn: peekEarn, earnCheck: earnCheck, onHand: onHand, reservedCount: reservedCount, exportMe: exportMe, expiring: expiring, batches: batches, housekeep: housekeep, storeMult: storeMult, notices: function () { var d = dayKey(); return (cfg().notices || []).filter(function (n) { return n.on && (!n.from || d >= n.from) && (!n.to || d <= n.to); }); }
   };
 })(window);

@@ -1042,7 +1042,7 @@ reset(); renderStart(); requestAnimationFrame(frame);
 <script src="shared/back_line.js"></script>
 <script>/* D103（Dari 10/17）：遊戲畫面下方改成今天的積分狀況（原本寫「不發點數」已經過時） */
 (function () { function fill() { var K = window.KiteCore; document.querySelectorAll('.ptnote').forEach(function (e) {
-  if (!K || !K.gameToday) { e.textContent = '每關每天前 3 次的分數會加進今日積分，到官方 LINE 小鳶樂園領點數'; return; }
+  if (!K || !K.gameToday) { e.textContent = '今天會算分的局數加起來就是今日積分，到官方 LINE 小鳶樂園領點數'; return; }
   var g = K.gameToday(), c = K.cfg(); e.innerHTML = '今日積分 <b>' + g.total.toLocaleString() + '</b> 分' + (g.claim ? '・<b style="color:#E2702A">亮了 ' + g.claim + ' 點可以領</b>' : g.next ? '・再 ' + g.next.need.toLocaleString() + ' 分亮下一格' : '・今天的格子都亮了') + '<br><a href="line/index.html?p=park" style="color:inherit;font-weight:800">到小鳶樂園領點 ›</a>　<span style="opacity:.75">每關每天前 ' + c.triesPerLevel + ' 次算分</span>'; }); }
   fill(); document.addEventListener('visibilitychange', fill); setInterval(fill, 4000); })();</script>
 </body>
