@@ -13,7 +13,8 @@
        階梯是 [累計總分門檻, 點數]；機器人實測一天上限約 44,000 分（捕魚 3 場約 33,000＋飛行 4 關約 10,600），所以 10 點要 30,000 分（數字待 Claude×ChatGPT 定案） */
     gamePointMode: 'tier',        // 'tier'＝每日累計階梯（D97）；'bank'＝舊的分數存摺（每 scorePerPoint 分換 1 點）
     gameTiers: [[1200, 1], [3000, 2], [4500, 3], [6000, 4], [8000, 5], [10000, 6], [13000, 7], [17000, 8], [22000, 9], [30000, 10]],
-    gameDailyCap: 10,             // 每天遊戲最多拿幾點（基礎點＋活動加送點合計）
+    gameDailyCap: 10,
+    gameClaim: 'tap',             // D102（Dari 10/17）：'tap'＝分數到了那一格會發亮，玩家在小鳶樂園點一下才入帳（沒領的隔天自動補入）；'auto'＝自動入帳             // 每天遊戲最多拿幾點（基礎點＋活動加送點合計）
     eventCapMult: true,           // D99（Dari 10/17）：活動時每日上限跟著倍數放大（兩倍活動＝當天最多 20 點）；後台可改
     scorePerPoint: 1000,          // 舊制（bank）：遊戲分數多少分換 1 點
     gameScorePerPoint: {},        // 個別遊戲覆寫，例如 { fish: 500 }
@@ -251,8 +252,8 @@
   /* D97／D98：每日累計總分階梯 */
   function tierPts(total) { var p = 0; (cfg().gameTiers || []).forEach(function (r) { if (total >= r[0] && r[1] > p) p = r[1]; }); return p; }
   function nextTier(total) { var t = (cfg().gameTiers || []).filter(function (r) { return r[0] > total; }).sort(function (a, b) { return a[0] - b[0]; })[0]; return t ? { need: t[0] - total, at: t[0], pts: t[1] } : null; }
-  function gameToday(m) {      // 今天算分的局：總分、基礎點、活動加送點、已入帳的點
-    m = m || member(); var d = dayKey(), c = cfg(), total = 0, base = 0, bonusF = 0, maxM = 1;
+  function gameToday(m, day) {      // 今天算分的局：總分、基礎點、活動加送點、已入帳的點
+    m = m || member(); var d = day || dayKey(), c = cfg(), total = 0, base = 0, bonusF = 0, maxM = 1;
     /* G-73：活動只加送「活動時段內新增的基礎點」×(倍數−1)，不回頭翻倍活動前已拿的點；照時間順序一局一局累計 */
     (m.plays || []).filter(function (p) { return p.counted && dayKey(p.t) === d; }).sort(function (a, b) { return a.t - b.t; }).forEach(function (p) {
       var raw = p.raw != null ? p.raw : Math.round((p.bank || 0) / (p.mult || 1)), mu = p.mult || 1, nb;
@@ -261,9 +262,9 @@
     var cap = Math.round((c.gameDailyCap || 0) * (c.eventCapMult ? maxM : 1)), bonus = Math.floor(bonusF + 1e-9), pts = Math.min(cap, base + bonus);
     var got = (m.ledger || []).filter(function (e) { return e.type === 'game' && e.day === d; }).reduce(function (n, e) { return n + e.pts; }, 0);
     var nx = pts >= cap ? null : nextTier(total);
-    var dd = new Date(), tm = 1; (c.events || []).forEach(function (e) { if (e.on && (e.days || []).indexOf(dd.getDay()) >= 0 && (!e.dateFrom || d >= e.dateFrom) && (!e.dateTo || d <= e.dateTo) && e.mult > tm) tm = e.mult; });
+    var dd = new Date(d + 'T12:00:00'), tm = 1; (c.events || []).forEach(function (e) { if (e.on && (e.days || []).indexOf(dd.getDay()) >= 0 && (!e.dateFrom || d >= e.dateFrom) && (!e.dateTo || d <= e.dateTo) && e.mult > tm) tm = e.mult; });
     var capMax = c.eventCapMult ? Math.max(cap, Math.round((c.gameDailyCap || 0) * tm)) : cap;      // D99：今天有加倍活動時，上限最多可到幾點（給畫面提示）
-    return { total: total, base: base, bonus: bonus, pts: pts, got: got, cap: cap, capMax: capMax, next: nx };
+    return { total: total, base: base, bonus: bonus, pts: pts, got: got, cap: cap, capMax: capMax, next: nx, claim: Math.max(0, pts - got) };
   }
   function triesLeft(game, level) { var c = cfg(), m = member(), k = dayKey() + '|' + game + '|' + level, n = c.gameTries[game] != null ? c.gameTries[game] : c.triesPerLevel; return Math.max(0, n - ((m.tries || {})[k] || 0)); }
   function reportPlay(o) {      // o = { game, level, score, sec }
@@ -275,10 +276,28 @@
     m.plays.unshift({ t: Date.now(), game: o.game, level: String(o.level), score: o.score || 0, capped: !!capped, sec: Math.round(o.sec || 0), counted: counted, mult: ev.mult, raw: counted ? sc : 0, bank: tier ? 0 : add }); m.plays = m.plays.slice(0, 800);
     if (!tier) { m.scoreBank[o.game] = (m.scoreBank[o.game] || 0) + add; saveMember(m); return { counted: counted, add: add, mult: ev.mult, event: ev.title, bank: m.scoreBank[o.game], left: triesLeft(o.game, o.level) }; }
     /* D97：階梯制——把今天累計的點數補到應得的數字（只增不減，當天上限內） */
-    var g = gameToday(m), gain = Math.max(0, g.pts - g.got);
-    if (gain > 0) addLedger(m, { type: 'game', pts: gain, game: o.game, day: dayKey(), note: '今日累計 ' + g.total + ' 分' });
+    var tap = cfg().gameClaim === 'tap', g = gameToday(m), gain = Math.max(0, g.pts - g.got), lit = 0;
+    if (tap) { m.litT = m.litT || {}; lit = Math.max(0, g.pts - (m.litT[dayKey()] || 0)); m.litT = {}; m.litT[dayKey()] = g.pts; gain = 0; }      // D102：點亮制，這局只是點亮格子，到小鳶樂園點一下才入帳
+    else if (gain > 0) addLedger(m, { type: 'game', pts: gain, game: o.game, day: dayKey(), note: '今日累計 ' + g.total + ' 分' });
     saveMember(m);
-    return { tier: true, counted: counted, add: counted ? sc : 0, mult: ev.mult, event: ev.title, today: g.total, pts: g.pts, gain: gain, cap: g.cap, next: g.next, total: m.points, left: triesLeft(o.game, o.level) };
+    return { tier: true, tap: tap, counted: counted, add: counted ? sc : 0, mult: ev.mult, event: ev.title, today: g.total, pts: g.pts, gain: gain, lit: lit, claim: tap ? Math.max(0, g.pts - g.got) : 0, cap: g.cap, next: g.next, total: m.points, left: triesLeft(o.game, o.level) };
+  }
+  /* D102：小鳶樂園點亮的格子點一下入帳（n＝要領幾點，不給就全部領）；點數記在今天分數最多的遊戲名下，報表才分得出來 */
+  function topGame(m, d) { var by = {}; (m.plays || []).forEach(function (p) { if (p.counted && dayKey(p.t) === d) by[p.game] = (by[p.game] || 0) + (p.raw || 0); }); return Object.keys(by).sort(function (a, b) { return by[b] - by[a]; })[0] || 'fish'; }
+  function claimGame(n) {
+    var m = member(); if (m.status === 'frozen') return { ok: false, msg: '帳號凍結中，請洽服務台' };
+    settleGame(m); var g = gameToday(m), d = dayKey(); if (g.claim <= 0) { saveMember(m); return { ok: false, msg: '還沒有可以領的點數，再玩一局吧' }; }
+    var k = Math.max(1, Math.min(n || g.claim, g.claim));
+    addLedger(m, { type: 'game', pts: k, game: topGame(m, d), day: d, note: '小鳶樂園領取（今日累計 ' + g.total + ' 分）' }); saveMember(m);
+    return { ok: true, pts: k, left: g.claim - k, got: g.got + k, total: m.points };
+  }
+  /* 前幾天點亮了卻沒來領的，自動補進帳（不讓客人因為忘記點而吃虧）；只看最近 14 天 */
+  function settleGame(m0) {
+    var m = m0 || member(), d0 = dayKey(), lim = dayKey(Date.now() - 14 * 86400000), days = {}, n = 0;
+    if (cfg().gameClaim !== 'tap' || m.status === 'frozen') return 0;
+    (m.plays || []).forEach(function (p) { var d = dayKey(p.t); if (p.counted && d < d0 && d >= lim) days[d] = 1; });
+    Object.keys(days).sort().forEach(function (d) { var g = gameToday(m, d); if (g.claim > 0) { addLedger(m, { type: 'game', pts: g.claim, game: topGame(m, d), day: d, note: d + ' 點亮未領，自動入帳' }); n += g.claim; } });
+    if (n && !m0) saveMember(m); return n;
   }
   function perPoint(game) { var c = cfg(); return c.gameScorePerPoint[game] || c.scorePerPoint; }
   function convertScore(game) {      // 分數存摺換點：每滿 perPoint 分換 1 點，零頭留著
@@ -587,7 +606,7 @@
     cloudPull: cloudPull, cloudPush: cloudPush, cloudSync: cloudSync, cloudOp: cloudOp, cloudWipe: cloudWipe, cloudStatus: cloudStatus, onCloud: function (f) { CL.subs.push(f); }, cloudStart: cloudStart, cloudMarkAll: function () { CL.cfgDirty = CL.imgDirty = true; }, liffStart: liffStart, linkLine: linkLine, liffId: liffId,
     member: member, peekMember: function () { return rd(K_MEM); }, saveMember: saveMember, dayKey: dayKey, rid: rid, hmac: hmac, sha256: sha256, utf8: utf8,
     pointsForSpend: pointsForSpend, makeEarnCode: makeEarnCode, claimEarn: claimEarn, storeLog: function () { return lg(K_STORE); }, storeById: storeById,
-    eventMult: eventMult, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore, tierPts: tierPts, nextTier: nextTier, gameToday: gameToday, storeBonusPts: storeBonusPts,
+    eventMult: eventMult, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore, tierPts: tierPts, nextTier: nextTier, gameToday: gameToday, claimGame: claimGame, settleGame: settleGame, storeBonusPts: storeBonusPts,
     travelGift: travelGift, travelPtsThisMonth: function () { return travelPtsThisMonth(member()); }, myCoupons: myCoupons, couponCheck: couponCheck, couponUse: couponUse, couponIssued: couponIssued, couponImg: couponImg, couponUsedCount: couponUsedCount, couponFaceHTML: couponFaceHTML,
     prizeById: prizeById, stockLeft: stockLeft, makeRedeem: makeRedeem, cancelRedeem: cancelRedeem, deskCheck: deskCheck, deskGive: deskGive, findRedeem: findRedeem, pendingRedeems: pendingRedeems, memberName: memberName, markGiven: markGiven, deskLog: function () { return lg(K_DESK); },
     allMembers: allMembers, importMembers: importMembers, addAdj: addAdj, adjSum: adjSum, gap: gap, list: list, saveList: saveList, backfill: backfill, claimedRefs: claimedRefs, lookupTx: lookupTx, archiveFull: archiveFull, archives: function () { return (rd('kiteArchive1') || []).map(function (a) { return { id: a.id, t: a.t }; }); }, importPreview: importPreview, dataset: dataset, wipeTest: wipeTest, reissueEarn: reissueEarn, voidEarn: voidEarn, peekEarn: peekEarn, onHand: onHand, reservedCount: reservedCount, exportMe: exportMe, expiring: expiring, batches: batches, housekeep: housekeep, storeMult: storeMult, notices: function () { var d = dayKey(); return (cfg().notices || []).filter(function (n) { return n.on && (!n.from || d >= n.from) && (!n.to || d <= n.to); }); }
