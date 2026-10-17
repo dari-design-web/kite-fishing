@@ -401,7 +401,7 @@
     var all = rd('kiteCouponIssued1') || {}, mk = monthKey(); all[mk] = all[mk] || {}; all[mk][cp.id] = (all[mk][cp.id] || 0) + 1; wr('kiteCouponIssued1', all);
     return o;
   }
-  function myCoupons() { var m = member(), ch = false; (m.coupons || []).forEach(function (x) { if (x.status === 'ok' && Date.now() > x.exp) { x.status = 'expired'; ch = true; } }); if (ch) saveMember(m); return m.coupons || []; }
+  function myCoupons() { var m = member(), ch = false, used = {}; lg('kiteCouponUsed1').forEach(function (u) { used[u.id] = u.t; }); (m.coupons || []).forEach(function (x) { if (x.status === 'ok' && used[x.id]) { x.status = 'used'; x.usedT = used[x.id]; ch = true; } else if (x.status === 'ok' && Date.now() > x.exp) { x.status = 'expired'; ch = true; } }); /* UX 走查：店家在別台工作機核銷，雲端同步回來就變「已使用」 */ if (ch) saveMember(m); return m.coupons || []; }
   function couponCheck(code) {
     var p = parse(code), c = cfg(); if (!p || p[1] !== 'C' || p.length !== 7) return { ok: false, msg: '這不是券的 QR' };
     if (hmac(c.redeemKey, p.slice(0, 6).join('|')) !== p[6]) return { ok: false, msg: 'QR 驗證失敗（可能被改過）' };

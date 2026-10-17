@@ -554,6 +554,11 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
     $('sbody').innerHTML = '<div class="card" style="text-align:center"><div class="muted">' + (x.status === 'ok' ? '請在結帳時把這個 QR 給店員掃' : x.status === 'used' ? '這張券已經用過了' : '這張券已經過期') + '</div><div style="margin:8px 0 4px">' + K.couponFaceHTML(x, 180) + '</div><h2 style="font-size:20px;margin:6px 0">' + esc(x.name) + '</h2>' + (x.store ? '<div class="muted">適用專櫃：<b>' + esc(x.store) + '</b></div>' : '') + (x.status === 'ok' ? '<div class="qrBox" id="cq"></div>' : '<div style="font-size:48px;margin:6px 0">' + (x.status === 'used' ? '✅' : '⌛') + '</div>') + '<p style="margin:8px 0 0">券號 <b style="font-size:22px;letter-spacing:3px">' + x.id.slice(0, 3) + ' ' + x.id.slice(3) + '</b></p><p class="muted">' + (x.desc ? esc(x.desc) + '<br>' : '') + '有效到 ' + t2(x.exp) + '</p></div><button class="btn alt full" id="bk">看我的兌換</button>';
     if ($('cq')) KiteScan.drawQR($('cq'), x.code, Math.min(240, innerWidth - 100));
     $('bk').onclick = function () { go('mine', 'coupon'); };
+    clearInterval(window.__cpWatch);      // UX 走查：出示 QR 時每 4 秒跟雲端對一次，店員一核銷就換成「已使用」，QR 不會一直留著
+    if (x.status === 'ok' && K.cloudStatus().url) window.__cpWatch = setInterval(function () {
+      var t = stack[stack.length - 1]; if (!t || t[0] !== 'coupon' || t[1] !== id || !$('sheet').classList.contains('on')) return clearInterval(window.__cpWatch);
+      K.cloudPull(true).then(function () { var y = K.myCoupons().filter(function (q) { return q.id === id; })[0]; if (y && y.status !== 'ok') { clearInterval(window.__cpWatch); R.coupon(id); toast('這張券已經核銷完成 ✅'); } });
+    }, 4000);
   };
   /* C-207：我的兌換也列出便當（虛擬商品，直接進便當盒，不用到服務台） */
   function mineBento() {
