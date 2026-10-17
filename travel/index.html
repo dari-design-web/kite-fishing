@@ -168,6 +168,19 @@ h3{font-size:15px;margin:14px 16px 6px}
 .pc .backside .stampbox{position:absolute;right:12px;top:10px;width:46px;height:54px;border:2px dashed #D9C9B2;border-radius:4px;background:url(assets/kite_home.png) center/90% no-repeat}
 .pc .backside .to{position:absolute;left:16px;bottom:12px;right:16px;border-top:1.5px solid #E2D6C6;padding-top:6px;font-size:12px;color:var(--muted)}
 .slideup{animation:slideup .7s ease-out}
+/* D103：路上撿到的點數、券的翻出動畫 */
+.gift{position:relative;width:min(320px,84vw);margin:0 auto;padding:26px 16px 20px;border-radius:22px;background:#FFFDF8;color:#2B3A40;text-align:center;box-shadow:0 14px 34px rgba(0,0,0,.35);animation:giftin .8s cubic-bezier(.2,1.4,.4,1) both;overflow:hidden}
+.gift b{display:block;font-size:22px;margin-top:8px}.gift small{display:block;font-size:13px;color:#6B7F86;margin-top:6px;line-height:1.5}
+.gift.gpts img,.gift .coinf{width:110px;height:110px;display:block;margin:0 auto;font-size:90px;line-height:110px;animation:coinspin 1.2s ease-out .2s both}
+.gift.gpts b{font-size:54px;color:#E2702A;display:inline-block;margin-right:4px}.gift.gpts span{font-size:20px;font-weight:800}
+.gift .gface{display:flex;justify-content:center;animation:cpflip .9s ease-out .15s both;transform-origin:center}
+.gift .burst{position:absolute;inset:-40%;background:conic-gradient(from 0deg,rgba(255,206,84,.0),rgba(255,206,84,.35),rgba(255,206,84,0) 20%,rgba(255,206,84,.35) 30%,rgba(255,206,84,0) 40%,rgba(255,206,84,.35) 55%,rgba(255,206,84,0) 65%,rgba(255,206,84,.35) 80%,rgba(255,206,84,0));animation:burst 8s linear infinite;z-index:-1}
+.gift>*:not(.burst){position:relative}
+@keyframes giftin{from{transform:translateY(80px) scale(.6);opacity:0}}
+@keyframes coinspin{from{transform:rotateY(720deg) scale(.3)}}
+@keyframes cpflip{from{transform:rotateX(90deg) scale(.6);opacity:0}}
+@keyframes burst{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.gift,.gift *{animation:none!important}}
 @keyframes slideup{from{transform:translateY(60px);opacity:0}}
 .letter .cap{color:#fff;text-align:center;margin:14px 0 10px;font-size:16px;font-weight:700}
 .letter .row{width:min(340px,86vw)}
@@ -360,7 +373,7 @@ const LOOK = {   // [A, B, C]：[檔名, 札記]
   zhengbin: [['pc_zhengbin_a_v2.jpg', '我戴上畫家帽，把彩色屋畫下來。水裡那一排也想畫，可是它一直晃。'], ['pc_zhengbin_b_v2.jpg'], ['pc_zhengbin_c_v2.jpg', '我抱著一顆橘色浮球比了一下。嗯……還是我比較圓。']],
   heping:   [['pc_heping_a_v2.jpg', '戴著探險帽、拿著小地圖，一層一層數海浪磨出來的石頭。'], ['pc_heping_b_v2.jpg', '戴好泳鏡、套上泳圈，準備好了！……結果還是只敢把腳伸進去。'], ['pc_heping_c_v2.jpg', '海邊長了好多石頭香菇。我也戴一頂蘑菇帽站在旁邊，假裝是其中一朵。']],
   badouzi:  [['pc_badouzi_a_v2.jpg', '戴上小站帽，乖乖站在黃線後面等車。月台旁邊就是海，等車的時候可以看浪。'], ['pc_badouzi_b_v2.jpg'], ['pc_badouzi_c_v2.jpg', '鐵軌一直延伸到很遠。我坐在旁邊的步道上，畫了一張小地圖。']],
-  shenao:   [['pc_shenao_a_v3.jpg', '坐進紅色的螃蟹車，我從車裡揮揮翅膀，它好像也在笑。'], ['pc_shenao_b_v3.jpg', '一塊一塊方方的石頭，像海邊排好的豆腐。我站在乾乾的那一塊，離浪花遠一點。'], ['pc_shenao_c_v2.jpg', '拿起望遠鏡看岬角上的石頭。它換了新的樣子，大家都在猜像什麼。']],
+  shenao:   [['pc_shenao_a_v2.jpg', '坐進紅色的螃蟹車，我從車裡揮揮翅膀，它好像也在笑。'], ['pc_shenao_b_v3.jpg', '一塊一塊方方的石頭，像海邊排好的豆腐。我站在乾乾的那一塊，離浪花遠一點。'], ['pc_shenao_c_v2.jpg', '拿起望遠鏡看岬角上的石頭。它換了新的樣子，大家都在猜像什麼。']],
   chaojing: [['pc_chaojing_a_v2.jpg', '退潮了，我蹲在石頭邊慢慢看，石頭縫裡藏著好多小秘密。'], ['pc_chaojing_b_v3.jpg', '小水窪裡有一位很害羞的朋友。我趴在旁邊不出聲，我們互看了好久。'], ['pc_chaojing_c_v2.jpg', '戴著草帽坐在草地上，風好大，羽毛都翹起來了，可是好舒服。']],
   jiufen:   [['pc_jiufen_a_v2.jpg', '房子一層一層疊在山上。我一階一階往上走，燈籠亮起來的時候好溫暖。'], ['pc_jiufen_b_v2.jpg'], ['pc_jiufen_c_v2.jpg', '走到一半坐下來休息，背包放旁邊，回頭就看到海。']]
 };
@@ -386,6 +399,7 @@ const SAYS = {
 const KEY = 'kiteTravel1';
 const $ = (id) => document.getElementById(id);
 const today = () => new Date().toISOString().slice(0, 10);
+const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const HOUR = CFG.fast ? 10000 : 3600000;
 function fresh() { return { v: 1, firstDone: false, trips: 0, farAcc: 0, state: 'home', trip: null, cards: {}, limited: {}, souvenirs: {}, stamps: 0, bento: { far: 0, squid: 0, hair: 0, special: 0 }, riceDay: '', testItems: {}, seen: {}, titles: {}, room: 'living' }; }
 let S = fresh();
@@ -399,6 +413,7 @@ function flyCleared(id) { const p = readJSON('kiteFlyProgress1'); return !!(p &&
 function flyAnyCleared() { const p = readJSON('kiteFlyProgress1'); return !!(p && p.stars && Object.values(p.stars).some((s) => s && s[0])); }
 function dexCount() { const d = readJSON('kiteFishingDex2'); return d ? Object.keys(d).filter((k) => d[k]).length : 0; }
 function stampsDone() { const p = readJSON('kiteStamp1'); return !!(p && p.complete); }
+function itemUsedToday(k) { return !S.testItems[k] && (S.itemDay || {})[k] === today(); }      // D103（Dari 10/17）：道具每天只能帶一次，不然一直帶太簡單
 function hasItem(k) { if (S.testItems[k]) return true; if (k === 'camera') return flyAnyCleared(); if (k === 'telescope') return dexCount() >= 3; if (k === 'umbrella') return stampsDone(); return false; }
 function locOpen(l) {
   if (!l.unlock || l.unlock === 'special') return true;
@@ -728,8 +743,8 @@ function renderPack() {
   }
   const il = $('itemList'); il.innerHTML = '';
   for (const k of ['camera', 'telescope', 'umbrella']) {
-    const it = CFG.items[k], has = hasItem(k), on = pk.items.includes(k), btn = document.createElement('button'); btn.className = 'opt'; btn.type = 'button'; btn.setAttribute('aria-pressed', String(on)); btn.disabled = !has || pk.bento === 'walk';
-    btn.innerHTML = itemIcon(k) + '<span class="tx">' + it.name + '<small>' + (has ? it.note : '還沒有：' + it.how) + '</small></span>';
+    const it = CFG.items[k], has = hasItem(k), on = pk.items.includes(k), btn = document.createElement('button'); btn.className = 'opt'; btn.type = 'button'; btn.setAttribute('aria-pressed', String(on)); btn.disabled = !has || itemUsedToday(k) || pk.bento === 'walk';
+    btn.innerHTML = itemIcon(k) + '<span class="tx">' + it.name + '<small>' + (!has ? '還沒有：' + it.how : itemUsedToday(k) ? '今天帶過了，明天再帶（每天一次）' : it.note + '・每天一次') + '</small></span>';
     btn.onclick = () => { let add = false; if (on) pk.items = pk.items.filter((x) => x !== k); else if (pk.items.length < 2) { pk.items.push(k); add = true; } else toast('道具最多帶兩件'); renderPack(); if (add) packSay('slot' + pk.items.length, PACK_SAY[k]); };
     il.appendChild(btn);
   }
@@ -756,6 +771,7 @@ function depart() {
   const r = rollTrip(k, pk.items, pk.pick || '');
   if (k === 'rice') S.riceDay = today(); else if (k !== 'walk') S.bento[k]--;      // 按「出發」才扣便當
   if (pk.pick) S.stamps -= CFG.stampsToPick;
+  S.itemDay = S.itemDay || {}; pk.items.forEach((x) => { S.itemDay[x] = today(); });
   S.trip = Object.assign(r, { bento: k, items: pk.items.slice(), start: Date.now(), end: Date.now() + CFG.bentos[k].hours * HOUR, walk: k === 'walk', say: sayOne('away') });
   S.state = 'away'; pk = { bento: '', items: [], pick: '' }; save(); departAnim();
 }
@@ -815,15 +831,27 @@ function openLetter() {
   L.innerHTML = '<button class="skip" id="skipL">略過 ››</button><div class="env" id="envL"><img class="closed" src="assets/letter_env.png" alt=""><img class="opened" src="assets/letter_open.png" alt=""><img class="seal" src="assets/letter_seal.png" alt=""></div><p class="tapme" id="tapme">點一下打開信封</p>';
   document.body.appendChild(L);
   const queue = tr.got.map((i) => ({ i })).concat(tr.limited ? [{ lim: LIMITED.find((x) => x.id === tr.limited) }] : []);
+  /* D103（Dari 10/17）：點數、券也跟明信片一樣一張一張翻出來，有動畫 */
+  if (tr.gift && tr.gift.pts) queue.push({ gpts: tr.gift.pts }); if (tr.gift && tr.gift.coupon) queue.push({ gcp: tr.gift.coupon });
   /* v0.30（C-177）：信的最後多一句「這是小鳶寄給你的第 N 封信」，第 5、10、20、30 封加一句特別的話（只記封數 S.letters；文字是建議） */
   const nL = (S.letters || 0) + 1, LM = { 5: '已經第 5 封了，謝謝你一直幫我準備便當！', 10: '第 10 封！你的收藏冊越來越厚了～', 20: '第 20 封！我們一起去過好多地方喔！', 30: '第 30 封！你是小鳶最好的旅伴！' };
-  const extras = ['💌 這是小鳶寄給你的第 ' + nL + ' 封信' + (LM[nL] ? '——' + LM[nL] : '')]; if (tr.stamps) extras.push('重複的明信片換成 ' + tr.stamps + ' 枚小鳶郵票'); if (tr.souvenir) extras.push('還帶回了紀念品：' + l.souvenir); if (tr.friend) extras.push('在' + l.name + '遇到了 ' + tr.friend + '！'); if (tr.gift && tr.gift.pts) extras.push('🪙 小鳶在路上撿到 ' + tr.gift.pts + ' 點，已經存進官方 LINE 的點數了！'); if (tr.gift && tr.gift.coupon) extras.push('🎟️ 小鳶帶回一張「' + tr.gift.coupon.name + '」，放在官方 LINE「我的兌換 → 我的券」'); const pl = palLine(); if (pl) extras.push(pl);
+  const extras = ['💌 這是小鳶寄給你的第 ' + nL + ' 封信' + (LM[nL] ? '——' + LM[nL] : '')]; if (tr.stamps) extras.push('重複的明信片換成 ' + tr.stamps + ' 枚小鳶郵票'); if (tr.souvenir) extras.push('還帶回了紀念品：' + l.souvenir); if (tr.friend) extras.push('在' + l.name + '遇到了 ' + tr.friend + '！'); const pl = palLine(); if (pl) extras.push(pl);
   const finish = () => { S.letters = nL; const news = commitTrip(); L.remove(); if (S.titles && Object.keys(S.titles).length) {} go('home'); toast(news.length ? '收進收藏冊了！' : '小鳶回來了'); };
   $('skipL').onclick = finish;
   let step = 0;
   const showCard = () => {
     const q = queue[step];
     if (!q) { L.innerHTML = '<div class="cap">' + (tr.walk ? '小鳶散步回來了' : '這趟去了' + l.name) + '</div><p class="extra">' + (extras.join('<br>') || '下次再出門看看吧！') + (tr.gotFar !== undefined ? '' : '') + '</p><div class="row" style="margin-top:14px"><button class="btn gold" id="doneL">收進收藏冊</button></div>'; $('doneL').onclick = finish; return; }
+    if (q.gpts || q.gcp) {
+      const last = step + 1 >= queue.length;
+      L.innerHTML = '<button class="skip" id="skipL2">略過 ››</button><div class="cap">' + (q.gpts ? '小鳶在路上撿到點數！' : '小鳶帶回一張券！') + '</div>' +
+        (q.gpts ? '<div class="gift gpts"><div class="burst"></div><img src="assets/coin_big.png" alt="" onerror="this.outerHTML=\'<span class=coinf>🪙</span>\'"><b id="gnum">+0</b><span>點</span><small>已經存進官方 LINE 的點數</small></div>'
+          : '<div class="gift gcp"><div class="burst"></div><div class="gface">' + (window.KiteCore && KiteCore.couponFaceHTML ? KiteCore.couponFaceHTML(q.gcp, 150) : '') + '</div><b>' + esc(q.gcp.name) + '</b><small>放在官方 LINE「我的兌換 → 我的折價券」，結帳時出示 QR</small></div>') +
+        '<div class="row" style="margin-top:14px"><button class="btn gold" id="nextL">' + (last ? '好' : '下一個') + '</button></div>';
+      $('skipL2').onclick = finish; $('nextL').onclick = () => { step++; showCard(); };
+      if (q.gpts) { let n = 0; const tgt = q.gpts, t0 = performance.now(); const tick = (t) => { n = Math.min(tgt, Math.round((t - t0) / 600 * tgt)); const e = $('gnum'); if (!e) return; e.textContent = '+' + n; if (n < tgt) requestAnimationFrame(tick); }; setTimeout(() => requestAnimationFrame(tick), 450); }
+      return;
+    }
     L.innerHTML = '<button class="skip" id="skipL2">略過 ››</button><div class="cap">' + (q.lim ? '本週限定！' : (queue.length > 1 ? '第 ' + (step + 1) + ' 張・' : '') + l.name) + '</div>' + cardHTML(l, q.i || 0, { anim: true, friend: step === 0 ? tr.friend : '', lim: q.lim }) + '<div class="row" style="margin-top:14px"><button class="btn ghost" id="flipL" style="color:#fff;border-color:#fff">看背面</button><button class="btn gold" id="nextL">' + (step + 1 < queue.length ? '下一張' : '好') + '</button></div>';
     $('skipL2').onclick = finish; $('flipL').onclick = () => { const p = $('pc'); p.classList.toggle('flip'); $('flipL').textContent = p.classList.contains('flip') ? '看正面' : '看背面'; };
     $('nextL').onclick = () => { step++; showCard(); };
