@@ -654,7 +654,7 @@ function cover(c, im, iw, ih, mirror) {      // 合成時照預覽：完整畫�
 function kiteSay() {
   let st = read('kitePhoto1') || { n: 0 }; st.n = (st.n || 0) + 1; try { localStorage.setItem('kitePhoto1', JSON.stringify(st)); } catch (e) {}
   const ids = stks.map((o) => o.d.id).join(' '), pals = /pal_f|shark|whale/.test(ids);
-  const L = pals ? ['我的好朋友也一起入鏡了！', '大家擠在一起，好熱鬧喔！'] : stks.length ? ['我站這裡可以嗎？嘿嘿！', '這張我笑得最好看！', '貼紙放得好可愛！'] : ['下次放我進去一起拍嘛～', '風景好漂亮！要不要加個貼紙？'];
+  const L = pals ? ['我的好朋友也一起入鏡了！', '大家擠在一起，好熱鬧喔！'] : stks.length ? ['我站這裡可以嗎？嘿嘿！', '這張我笑得最好看！', '貼紙放得好可愛！'] : ['風景好漂亮！要不要加個貼紙？', '下次帶港口朋友貼紙一起拍嘛～'];
   /* v0.17（C-163）：第 5、10、20、30、50 張是里程碑，小鳶說特別的話、對話框變金色（句子是建議） */
   const MS = { 5: '5 張了！越拍越好看！', 10: '10 張！小鳶的相簿越來越厚，好開心！', 20: '20 張！你是合照小達人耶！', 30: '30 張！我們拍了好多回憶喔！', 50: '50 張！謝謝你一直陪小鳶拍照，最喜歡你了！' };
   $('kiteSayT').innerHTML = '<b>第 ' + st.n + ' 張合照！' + (MS[st.n] ? ' 🏅' : '') + '</b>' + (MS[st.n] || L[Math.floor(Math.random() * L.length)]);
