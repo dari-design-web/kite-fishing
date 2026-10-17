@@ -423,6 +423,7 @@ function locOpen(l) {
   return false;
 }
 function openHow(l) { return l.unlock === 'fly4' ? '飛行冒險第 4 關過關，或旅行滿 ' + CFG.autoOpenTrips + ' 次' : l.unlock === 'dex3' ? '捕魚圖鑑集滿 3 種，或旅行滿 ' + CFG.autoOpenTrips + ' 次' : l.unlock === 'special' ? '要帶港邊特製便當' : ''; }
+function bentoPriceLine() { try { const B = (window.KiteCore && KiteCore.cfg().bentos) || []; const nm = { far: '遠行', squid: '小卷', hair: '白帶魚', special: '港邊特製' }; return B.filter((b) => b.on !== false && nm[b.id]).map((b) => nm[b.id] + ' ' + b.points + ' 點').join('・'); } catch (e) { return ''; } }      // UX 走查：價格跟港口換禮同一份設定
 function riceLeft() { return S.riceDay === today() ? 0 : 1; }
 function bentoCount(k) { return k === 'walk' ? Infinity : k === 'rice' ? riceLeft() : S.bento[k] || 0; }
 function weekLoc() { const w = Math.floor((Date.now() / 86400000 + 3) / 7); return LOCS[w % LOCS.length]; }      // 每週一換一個主題地點
@@ -546,7 +547,7 @@ function renderHome() {
   if (S.state === 'back' && S.trip && S.arrivedFor !== S.trip.end && !document.querySelector('.depart')) { S.arrivedFor = S.trip.end; save(); arriveAnim(); }      // v0.20：每趟旅行回來只播一次
   $('ver').textContent = 'v' + CFG.version + (CFG.fast ? '・快速' : '') + (CFG.look ? '' : '・舊圖');
   const st = S.state, b = $('bird'), note = $('note'), env = $('envIcon'), main = $('mainBtn');
-  note.hidden = true; env.hidden = true; b.style.display = 'block'; b.className = 'bird'; $('quickBack').hidden = st !== 'away';
+  note.hidden = true; env.hidden = true; b.style.display = 'block'; b.className = 'bird'; $('quickBack').hidden = st !== 'away' || !CFG.dev;      // UX 走查：測試捷徑只在 ?dev=1 顯示
   if (!S.firstDone && st === 'home') { $('chip').textContent = '第一次見面！先帶小鳶在附近走走吧'; b.style.backgroundImage = 'url(assets/kite_wave.png)'; $('say').textContent = '你好！我是小鳶。'; main.textContent = '第一次，先在附近走走吧（3 分鐘）'; main.onclick = startFirst; }
   /* v0.27（C-150）：晚上 7 點到早上 6 點，小屋變成夜晚（房間暗一點、燈亮起來），小鳶在家時說晚上的話 */
   const hh = new Date().getHours(), night = hh >= 19 || hh < 6; $('room').classList.toggle('night', night);
@@ -573,7 +574,7 @@ function renderHome() {
   $('albumBtn').onclick = () => go('album'); $('shelfBtn').onclick = () => go('shelf');
   $('infoBtn').onclick = showTrips;
   $('quickBack').onclick = () => { if (S.trip) { S.trip.end = Date.now(); tick(); renderHome(); } };
-  $('gearBtn').onclick = openDev;
+  $('gearBtn').onclick = openDev; if (!CFG.dev) $('gearBtn').hidden = true;
   if (!S.seen.intro) showIntro();
 }
 /* ====== 小鳶的屋內生活（v0.7）：走動、展翅、跳、看明信片、看紀念品、打瞌睡、唱歌、流汗；點牠會有反應 ====== */
@@ -738,7 +739,7 @@ function renderPack() {
   /* v0.26（C-146）：小卷、白帶魚便當都沒有時，直接給一個「去港邊抓魚」的入口（抓到就能做便當） */
   if (bentoCount('far') + bentoCount('squid') + bentoCount('hair') + bentoCount('special') <= 0) {      // D80：便當到官方 LINE 港口換禮用點數換
     const a = document.createElement('a'); a.className = 'getfish'; a.href = '../line/index.html?p=shop&tab=bento';
-    a.innerHTML = '🍱 想帶小鳶去更遠的地方？<b>到港口換禮換便當 ›</b><small>遠行 10 點・小卷 15 點・白帶魚 20 點・港邊特製 25 點</small>';
+    a.innerHTML = '🍱 想帶小鳶去更遠的地方？<b>到港口換禮換便當 ›</b><small>' + bentoPriceLine() + '</small>';
     bl.appendChild(a);
   }
   const il = $('itemList'); il.innerHTML = '';
