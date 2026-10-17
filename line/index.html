@@ -310,7 +310,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
     var booth = function (g, i, big) {
       var G0 = K.GAMES[g.id], gc = (c.games || {})[g.id] || {}; if (gc.on === false) return '';
       var lv = Object.keys(G0.levels), ev = K.eventMult(g.id), l = lv.reduce(function (a, x) { return a + K.triesLeft(g.id, x); }, 0), pr = P[g.id] || {};
-      var chip = gc.maint ? '<span class="chip gr">🔧 維護中</span>' : ev.mult > 1 ? '<span class="chip o">' + esc(ev.title) + ' ×' + ev.mult + '</span>' : lv.length ? '<span class="chip">今天可算分 ' + l + ' 次</span>' : '<span class="chip">不計分・隨時玩</span>';
+      var chip = gc.maint ? '<span class="chip gr">🔧 維護中</span>' : ev.mult > 1 ? '<span class="chip o">' + esc(ev.title) + ' ×' + ev.mult + '</span>' : lv.length ? (l > 0 ? '<span class="chip">今天還能算分 ' + l + ' 次</span>' : '<span class="chip">今天算分用完・仍可玩</span>') : '<span class="chip">不計分・隨時玩</span>';
       var bar = pr.max ? '<span class="bar"><i style="width:' + Math.round(100 * pr.n / pr.max) + '%"></i></span><span class="pg">' + esc(pr.label) + '</span>' : '';
       var inner = '<img class="ic" src="' + g.icon + '" alt="" style="animation-delay:' + (i * .35) + 's" onerror="this.src=\'../hub/btn/btn_' + g.id + '.png\'">' + (big ? '<span class="tx">' : '') + chip + '<b>' + esc(G0.name) + '</b><span class="tip">' + esc(g.tip) + '</span>' + bar + (big ? '</span>' : '');
       return gc.maint ? '<div class="booth off' + (big ? ' feat' : '') + '" style="animation-delay:' + (i * .06) + 's">' + inner + '</div>' : '<a class="booth' + (big ? ' feat' : '') + '" data-g="' + g.id + '" href="' + gameLink(g) + '" style="animation-delay:' + (i * .06) + 's">' + inner + '</a>';
