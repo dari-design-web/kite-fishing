@@ -656,7 +656,7 @@ function kiteSay() {
   const ids = stks.map((o) => o.d.id).join(' '), pals = /pal_f|shark|whale/.test(ids);
   const L = pals ? ['我的好朋友也一起入鏡了！', '大家擠在一起，好熱鬧喔！'] : stks.length ? ['我站這裡可以嗎？嘿嘿！', '這張我笑得最好看！', '貼紙放得好可愛！'] : ['下次放我進去一起拍嘛～', '風景好漂亮！要不要加個貼紙？'];
   /* v0.17（C-163）：第 5、10、20、30、50 張是里程碑，小鳶說特別的話、對話框變金色（句子是建議） */
-  const MS = { 5: '5 張了！你是合照小達人！', 10: '10 張！小鳶的相簿越來越厚，好開心！', 20: '20 張！你一定是港口最會拍照的人！', 30: '30 張！我們拍了好多回憶喔！', 50: '50 張！謝謝你一直陪小鳶拍照，最喜歡你了！' };
+  const MS = { 5: '5 張了！越拍越好看！', 10: '10 張！小鳶的相簿越來越厚，好開心！', 20: '20 張！你是合照小達人耶！', 30: '30 張！我們拍了好多回憶喔！', 50: '50 張！謝謝你一直陪小鳶拍照，最喜歡你了！' };
   $('kiteSayT').innerHTML = '<b>第 ' + st.n + ' 張合照！' + (MS[st.n] ? ' 🏅' : '') + '</b>' + (MS[st.n] || L[Math.floor(Math.random() * L.length)]);
   $('kiteSay').classList.toggle('ms', !!MS[st.n]);
   $('kiteSay').hidden = false;
@@ -676,12 +676,12 @@ function capture() {
 }
 let lastBlob = null;
 function fname() { const d = new Date(); return '小鳶合照_' + d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0') + '_' + String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0') + '.jpg'; }
-function save() { if (!lastBlob) return; const a = document.createElement('a'); a.href = URL.createObjectURL(lastBlob); a.download = fname(); document.body.appendChild(a); a.click(); a.remove(); toast('已存到手機（下載資料夾或相簿）'); }
+function save() { if (!lastBlob) return; const a = document.createElement('a'); a.href = URL.createObjectURL(lastBlob); a.download = fname(); document.body.appendChild(a); a.click(); a.remove(); toast('已送出下載，請到下載項目或相簿確認照片'); }
 async function share() {
   if (!lastBlob) return;
   const f = new File([lastBlob], fname(), { type: 'image/jpeg' });
   if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: '小鳶合照館' }); } catch (e) {} }
-  else { save(); toast('這個瀏覽器不能直接分享，已先存到手機，再從相簿分享到 LINE'); }
+  else { save(); toast('這個瀏覽器不能直接分享，已送出下載；請從下載項目或相簿分享到 LINE'); }
 }
 
 /* ---- 按鈕 ---- */

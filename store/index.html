@@ -46,7 +46,7 @@ header a,.top a{display:inline-flex;align-items:center;min-height:44px}
   var mode = new URLSearchParams(location.search).get('m') || '', SK = 'kiteStoreSession1', scanner = null, timer = 0;
   function toast(t) { var e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(function () { e.style.display = 'none'; }, 2200); }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  function net() { var n = $('net'); n.textContent = navigator.onLine ? '有網路' : '離線中（照樣可以集點）'; n.classList.toggle('off', !navigator.onLine); }
+  function net() { var n = $('net'); n.textContent = navigator.onLine ? '有網路' : '離線中：照樣可以出集點 QR'; n.classList.toggle('off', !navigator.onLine); }
   addEventListener('online', net); addEventListener('offline', net); net();
   function sess() { try { return JSON.parse(sessionStorage.getItem(SK) || 'null'); } catch (e) { return null; } }
   function setSess(o) { try { sessionStorage.setItem(SK, JSON.stringify(o)); } catch (e) {} }
@@ -96,7 +96,7 @@ header a,.top a{display:inline-flex;align-items:center;min-height:44px}
       '<div class="card"><h2>本店今天核銷的券</h2><ul class="list" id="cpRecent"></ul></div><button class="btn alt full" id="out">登出</button>';
     wireMode(); $('out').onclick = function () { setSess(null); storeLogin(); };
     var chk = function (code) { if (String(code || '').indexOf('KITE1|C|') !== 0) { var kind = /^KITE1\|E\|/.test(code) ? '這是集點 QR，集點請切回「消費集點」。' : /^KITE1\|R\|/.test(code) ? '這是贈品兌換單，請客人到服務台領取。' : '讀不到折價券資料，請客人重新打開「我的折價券」出示 QR。'; $('res').innerHTML = '<div class="card res bad"><h2>⚠️ 這不是折價券</h2><p style="margin:0">' + kind + '</p><button class="btn alt full" id="again" style="margin-top:10px">繼續掃</button></div>'; $('again').onclick = function () { $('res').innerHTML = ''; if (scanner) scanner.reset(); }; return; }
-      checkCoupon(code); var r = K.couponCheck(code); if (r.ok && r.store && s.name.indexOf(r.store) < 0) { var c0 = $('res').querySelector('.card'); if (c0) c0.insertAdjacentHTML('afterbegin', '<div style="background:#FCE8D9;color:#B4531A;border-radius:10px;padding:6px 10px;margin-bottom:8px;font-weight:700;font-size:13px">⚠️ 這張券適用「' + esc(r.store) + '」，請確認是不是本店的券</div>'); } };
+      checkCoupon(code); var r = K.couponCheck(code); if (r.ok && r.store && s.name.indexOf(r.store) < 0) { var c0 = $('res').querySelector('.card'); if (c0) c0.insertAdjacentHTML('afterbegin', '<div style="background:#FCE8D9;color:#B4531A;border-radius:10px;padding:6px 10px;margin-bottom:8px;font-weight:700;font-size:13px">⚠️ 這張券適用「' + esc(r.store) + '」，目前登入「' + esc(s.name) + '」，請先核對店家</div>'); } };
     scanner = new KiteScan.Scanner($('scan'), function (code) { if ($('res').innerHTML) return; chk(code); }, function (m) { $('smsg').textContent = m; }); scanner.start();
     $('cpGo').onclick = function () { chk($('cpMan').value.trim()); };
     cpRecent();
@@ -106,7 +106,7 @@ header a,.top a{display:inline-flex;align-items:center;min-height:44px}
     var tl = log.filter(function (x) { return K.dayKey(x.t) === today; }), sum = tl.reduce(function (a, x) { return a + x.amount; }, 0), pts = 0;
     var gave = {}; K.allMembers().forEach(function (m) { (m.ledger || []).forEach(function (e) { if (e.type === 'store' && e.ref) gave[e.ref] = e.pts; }); });      // UX 走查：顯示客人實際入帳的點數（每天上限會讓實得少於預計）
     $('recent').innerHTML = log.slice(0, 6).map(function (x) { var real = gave[x.nonce]; return '<li><span class="grow"><b>NT$ ' + x.amount.toLocaleString() + '・' + (real != null ? real + ' 點' + (real < x.pts ? '<small style="font-weight:400;color:var(--muted)">（預計 ' + x.pts + '，客人已達每天上限）</small>' : '') : '預計 ' + x.pts + ' 點') + '</b><span class="muted">' + t2(x.t) + '・編號 ' + x.nonce + (x.reissue ? '・重出 ' + x.reissue + ' 次' : '') + '</span></span>' + (x.void ? '<span class="pill r">作廢</span>' : cl[x.nonce] ? '<span class="pill g">已領取</span>' : '<span class="pill">未領</span>') + '</li>'; }).join('') || '<li class="muted">還沒有</li>';
-    tl.forEach(function (x) { if (gave[x.nonce] != null) pts += gave[x.nonce]; }); $('sync').textContent = '今天 ' + tl.length + ' 筆、消費 NT$ ' + sum.toLocaleString() + '、客人實際領走 ' + pts + ' 點。' + (K.cloudStatus().url ? (K.cloudStatus().err ? '雲端：' + K.cloudStatus().err + '（資料先存在這台，連上後自動補傳）' : '已同步到雲端。') : '上傳雲端：待接（原型先存在這台）。');
+    tl.forEach(function (x) { if (gave[x.nonce] != null) pts += gave[x.nonce]; }); $('sync').textContent = '今天 ' + tl.length + ' 筆、消費 NT$ ' + sum.toLocaleString() + '、客人實際領走 ' + pts + ' 點。' + (K.cloudStatus().url ? (K.cloudStatus().err ? '雲端：' + K.cloudStatus().err + '（資料先存在這台，連線後會再嘗試同步）' : '已同步到雲端。') : '尚未連接測試雲端；目前只有這台的資料。');
   }
   function storeQR(s, a, r) {
     stopAll(); var c = K.cfg(), end = Date.now() + c.qrExpireMin * 60000;
@@ -168,7 +168,7 @@ header a,.top a{display:inline-flex;align-items:center;min-height:44px}
   /* D84：用 6 碼兌換碼查。查到就走同一個核對畫面；查不到說清楚原因 */
   function byShort(v, again) {
     v = String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); var box = $('res');
-    if (v.length !== 6) return toast('兌換碼是 6 碼英文和數字');
+    if (v.length !== 6) return toast('請輸入兌換單上的 6 碼兌換碼（英文字母或數字）');
     var h = K.findRedeem(v), msg = '';
     if (!h && !again && K.cloudStatus().url) { toast('到雲端查詢中…'); return K.cloudPull(true).then(function () { byShort(v, 1); }); }      // D100：客人剛換的單，先跟雲端對一次
     if (!h) msg = K.cloudStatus().url ? '雲端查不到兌換碼 ' + v + '。請確認客人唸的碼，或請客人打開手機讓兌換單同步後再試，也可以直接掃客人手機上的 QR。' : '這台查不到兌換碼 ' + v + '。原型的兌換單存在客人自己的手機（D72），請改掃客人手機上的 QR。';
@@ -181,7 +181,7 @@ header a,.top a{display:inline-flex;align-items:center;min-height:44px}
   /* D98：小鳶旅行帶回的券（KITE1|C|…）——核對後按「確認使用」核銷，同一張不能用兩次 */
   function checkCoupon(code) {
     var r = K.couponCheck(code), box = $('res');
-    box.innerHTML = r.ok ? '<div class="card res"><div class="muted">這是客人的優惠券</div><div style="display:flex;gap:12px;align-items:center;margin:6px 0">' + K.couponFaceHTML(r, 72) + '<div><h2 style="margin:0">' + esc(r.name) + '</h2>' + (r.store ? '<div class="muted">適用專櫃：<b>' + esc(r.store) + '</b>（請確認是本櫃的券）</div>' : '') + '</div></div><p style="margin:0">' + esc(r.desc || '') + '</p><p class="muted" style="margin:4px 0 10px">券號 ' + r.id + '・會員 ' + esc(r.member) + '・有效到 ' + t2(r.exp) + '</p><div class="row"><button class="btn alt" id="again">返回掃碼</button><button class="btn warn" id="use">確認使用</button></div></div>'
+    box.innerHTML = r.ok ? '<div class="card res"><div class="muted">這是客人的折價券</div><div style="display:flex;gap:12px;align-items:center;margin:6px 0">' + K.couponFaceHTML(r, 72) + '<div><h2 style="margin:0">' + esc(r.name) + '</h2>' + (r.store ? '<div class="muted">適用專櫃：<b>' + esc(r.store) + '</b>（請確認是本櫃的券）</div>' : '') + '</div></div><p style="margin:0">' + esc(r.desc || '') + '</p><p class="muted" style="margin:4px 0 10px">券號 ' + r.id + '・會員 ' + esc(r.member) + '・有效到 ' + t2(r.exp) + '</p><div class="row"><button class="btn alt" id="again">返回掃碼</button><button class="btn warn" id="use">確認使用</button></div></div>'
       : '<div class="card res bad"><h2>⚠️ 不能使用</h2><p style="margin:0">' + esc(r.msg) + '</p><button class="btn alt full" id="again" style="margin-top:10px">繼續掃</button></div>';
     box.scrollIntoView({ behavior: 'smooth', block: 'start' });
     $('again').onclick = function () { box.innerHTML = ''; if (scanner) scanner.reset(); };
