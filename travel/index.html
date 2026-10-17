@@ -84,7 +84,7 @@ header h1{font-size:20px;margin:0;flex:1}
 #home{flex-direction:column;overflow:hidden;padding:0;background:linear-gradient(#5A3F2A,#3E2B1D)}
 .hud{display:flex;align-items:center;gap:6px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 8px;color:#FFF4E2}
 .hud h1{font-size:17px;margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.04em}
-.hud h1 small{font-size:11px;font-weight:400;opacity:.7;margin-left:6px;letter-spacing:0}
+.hud h1 small{font-size:12px;font-weight:400;opacity:.7;margin-left:6px;letter-spacing:0}
 .pill{display:inline-flex;align-items:center;gap:4px;background:rgba(255,248,236,.14);border:1px solid rgba(255,248,236,.25);border-radius:999px;padding:3px 9px 3px 4px;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .pill img{width:20px;height:20px;object-fit:contain}
 .gear{white-space:nowrap;flex:none;display:inline-flex;align-items:center;justify-content:center;min-height:28px;border:1px solid rgba(255,248,236,.35);background:rgba(255,248,236,.1);color:#FFF4E2;border-radius:999px;font:inherit;font-size:12px;padding:4px 10px}
@@ -103,7 +103,7 @@ header h1{font-size:20px;margin:0;flex:1}
 .ibtn{display:flex;flex-direction:column;align-items:center;gap:1px;border:0;border-radius:14px;padding:6px 4px 5px;background:#FFF7EA;color:var(--ink);font:inherit;font-size:13px;font-weight:700;box-shadow:0 3px 0 #C9A57E}
 .ibtn:active{transform:translateY(2px);box-shadow:0 1px 0 #C9A57E}
 .ibtn img{width:32px;height:32px;object-fit:contain}
-.ibtn small{font-size:11px;font-weight:400;color:var(--muted)}
+.ibtn small{font-size:12px;font-weight:400;color:var(--muted)}
 .quickback{position:absolute;right:10px;bottom:10px;z-index:150;border:0;border-radius:999px;background:#2B3A40;color:#fff;font:inherit;font-size:12px;padding:6px 12px;box-shadow:0 2px 6px rgba(0,0,0,.3)}
 .devsheet{position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(30,40,44,.55);z-index:45;display:flex;align-items:flex-end}
 .devsheet .dev{margin:0;width:100%;background:var(--paper);border:0;border-radius:18px 18px 0 0;padding:14px 14px calc(16px + env(safe-area-inset-bottom,0px));max-height:70%;overflow:auto}
@@ -227,7 +227,12 @@ h3{font-size:15px;margin:14px 16px 6px}
 .toast{position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#2B3A40;color:#fff;border-radius:999px;padding:8px 16px;font-size:14px;z-index:50;display:none;white-space:nowrap}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 /* C-124：短螢幕按鈕至少約 36～40 點高，手指好按 */
-#bgmBtn.gear{min-height:38px;min-width:42px}
+#bgmBtn.gear{min-height:44px;min-width:44px}
+
+/* UX 走查（10/17）：可以點的地方至少 44px、字至少 12px */
+[hidden]{display:none!important}
+#wallHit{min-height:44px}
+
 </style>
 <script src="../shared/kite_core.js"></script>
 <script src="../shared/kite_lb.js"></script>

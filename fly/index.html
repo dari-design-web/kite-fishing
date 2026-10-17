@@ -121,7 +121,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 @keyframes stin{from{transform:translateY(14px) scale(.9);opacity:0}}
 .stage.next{border-color:#FFD36B;animation:stin .45s cubic-bezier(.2,1.4,.5,1) both,nextglow 1.8s ease-in-out .6s infinite}
 @keyframes nextglow{50%{box-shadow:0 3px 0 rgba(8,20,32,.45),0 0 0 4px rgba(255,211,107,.55),0 0 18px rgba(255,211,107,.6)}}
-.stage .go{position:absolute;left:-14px;top:-12px;padding:2px 8px;border-radius:999px;background:#C9473A;color:#fff;font-size:11px;font-weight:700;border:2px solid #FFF4E2;animation:gobob 1s ease-in-out 2}      /* C-91：跳兩下就停 */
+.stage .go{position:absolute;left:-14px;top:-12px;padding:2px 8px;border-radius:999px;background:#C9473A;color:#fff;font-size:12px;font-weight:700;border:2px solid #FFF4E2;animation:gobob 1s ease-in-out 2}      /* C-91：跳兩下就停 */
 @keyframes gobob{50%{transform:translateY(-4px) rotate(-4deg)}}
 @media (prefers-reduced-motion:reduce){.stage,.stage.next,.stage .go{animation:none}}
 .stage.locked span{color:#C9D4DC}
@@ -139,6 +139,11 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .pick button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
 #hearts{font-family:var(--body);font-size:15px;letter-spacing:1px;color:var(--coral);padding:4px 10px}
 @media (prefers-reduced-motion:reduce){.ult.ready .ring{animation:none}}
+
+/* UX 走查（10/17）：可以點的地方至少 44px、字至少 12px */
+#menuSnd{width:44px!important;height:44px!important}
+.ptnote a,.mapnote a{display:inline-block;padding:14px 4px;margin:-14px -4px}
+.mapnote{font-size:12px}
 </style>
 
 </head>
