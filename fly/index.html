@@ -609,6 +609,7 @@ function buildScript() {
   add(12, 'log', 180); add(16, 'log', 90); side(18, true, 3); gate(22, 250); add(26.5, 'log', 250); side(29, false, 3); add(32.5, 'chaser', 20); gate(34.5, 110);
   side(37, true, 3); add(39, 'sprayer', 70); gate(42, 180); add(45, 'chaser', 340); side(47, false, 3); add(49, 'log', 180); gate(53, 280); side(55.5, true, 3); add(58, 'chaser', 20); add(60.5, 'sprayer', 290); gate(62, 90); side(64, false, 3); gate(66, 200);
   add(CONFIG.boss.at, 'boss', 180);
+  add(24, 'dive', 0, { fromLeft: true }); add(30, 'split', 180); add(39.5, 'dive', 0, { fromLeft: false }); add(52, 'split', 110); add(59, 'dive', 0, { fromLeft: true, n: 4 });      // D109／G79：小怪新軌跡（弧線俯衝、編隊分流）
   if (ST().theme === 'market') {
     const order = ['rice', 'jelly', 'ring', 'oden'];      // 被包住的小吃朋友依序出現：小卷米粉、石花凍、大腸圈、基隆黑輪
     E.filter((e) => e.type === 'net' || e.type === 'tangle').sort((a, b) => a.t - b.t).forEach((e, i) => { e.friend = order[i % 4]; e.give = ''; });
@@ -660,6 +661,15 @@ function spawn(e) {
   if (e.type === 'smoke') { addSmoke(e.fromLeft); return; }
   if (e.type === 'warn') { banner(NM() ? '收攤前的妖怪潮來了！' : PM() ? '漁港怪獸潮來了！' : RM() ? '山海怪獸潮來了！' : '垃圾潮來了！'); jingle([330, 330, 262], 150); return; }
   if (e.type === 'log') { mk('log', e.x, -20, { noCount: true, w: 116 }); return; }
+  if (e.type === 'dive') {      // D109／G79 C1 弧線俯衝：從上方角落進場，先畫出虛線弧（0.7 秒），弧線在出現時就鎖定、之後不追人
+    const L = e.fromLeft, x0 = L ? -18 : W + 18, tx = Math.max(60, Math.min(W - 60, kite.x)), ty = Math.max(240, Math.min(470, kite.y - 90)), x2 = L ? W + 70 : -70, y2 = Math.min(H + 40, ty + 230);
+    for (let i = 0; i < (e.n || 3); i++) mk(e.foe || 'bottle', x0, 70, { arc: { p0: [x0, 70], p1: [2 * tx - (x0 + x2) / 2, 2 * ty - (70 + y2) / 2], p2: [x2, y2], t: -0.7 - i * 0.28, dur: 2.4 }, vy: 0, noCount: true });
+    beep(760, 0.08, 'square', 0.03); return;
+  }
+  if (e.type === 'split') {      // D109／G79 C4 編隊分流：一整列往下，到中段先停一下亮出左右箭頭，再兩股往兩邊散開
+    for (let i = 0; i < (e.n || 6); i++) mk(e.foe || 'bottle', e.x, -20 - i * 34, { split: { y: 230 + (i % 2) * 6, dir: i % 2 ? 1 : -1 }, vy: 95 * SPD(), noCount: true });
+    return;
+  }
   if (e.type === 'gate') { const g = 62, lw = Math.max(0, e.x - g), rw = Math.max(0, W - e.x - g); if (lw > 20) mk('log', lw / 2, -20, { noCount: true, w: lw }); if (rw > 20) mk('log', W - rw / 2, -20, { noCount: true, w: rw }); if (!toldGate) { toldGate = true; guide = { x: e.x, y: -20, half: g, vy: T.log.speed[0] * SPD() }; say('從缺口穿過去', e.x, 170, '#BFF0D0'); } return; }
   if (e.type === 'side' && RM()) { addRush(e.n + 2); return; }      // 第 4 關：側邊橫衝改成鐵軌上的刺蝟列車
   if (e.type === 'side') { warns.push({ y: Math.max(150, Math.min(590, kite.y)), fromLeft: e.fromLeft, n: e.n, t: LV().warn }); beep(880, 0.08, 'square', 0.04); return; }
@@ -830,6 +840,8 @@ function update(dt) {
       else { f.hoverT = (f.hoverT || 0) + dt; if (f.hoverT > d.stay) { f.leave = true; say(NM() ? '香腸小火龍飛走了' : PM() ? '蝠鱝飛走了' : RM() ? '礦坑怪飛走了' : '漏油桶漂走了', f.x, f.y + 34, '#FFD0C4'); } f.shootAcc = (f.shootAcc || 0) + dt; if (f.shootAcc >= d.shootEvery && !f.leave) { f.shootAcc = 0; const dx = kite.x - f.x, dy = kite.y - f.y, m = Math.hypot(dx, dy) || 1; mk(NM() || PM() || RM() ? 'fire' : 'drop', f.x, f.y + 14, { noCount: true, aimed: true, vx: dx / m * d.shotSpeed, vy: dy / m * d.shotSpeed }); beep(260, 0.1, 'square', 0.03, -80); } }
       continue;
     }
+    if (f.arc) { const A = f.arc; A.t += dt; if (A.t >= 0) { const u = Math.min(1, A.t / A.dur), a = 1 - u; f.x = a * a * A.p0[0] + 2 * a * u * A.p1[0] + u * u * A.p2[0]; f.y = a * a * A.p0[1] + 2 * a * u * A.p1[1] + u * u * A.p2[1]; } continue; }
+    if (f.split && !f.split.go && f.y >= f.split.y) { f.split.t = (f.split.t || 0) + dt; f.y += f.vy * 0.2 * dt; if (f.split.t > 0.6) { f.split.go = true; f.vx = f.split.dir * 115 * SPD(); } continue; }
     f.y += f.vy * dt; f.x += f.vx * dt;
     if (f.ringHint && f.y > 90) { f.ringHint = false; f.hintT = 3.2; banner(NM() ? '瞄準中間的爆米香，一次炸掉一圈' : '瞄準中間的油桶，一次炸掉一圈'); }
     if (f.hintT > 0) f.hintT -= dt;
@@ -1311,6 +1323,15 @@ function drawTaotieZones() {      // 油雨範圍：先畫紅區，下雨時換�
   const on = f.atkT >= C.rainWarn && f.atkT < C.rainWarn + C.rainOn;
   if (on) { ctx.strokeStyle = 'rgba(255,84,62,' + (0.75 + 0.25 * Math.sin(clock * 14)) + ')'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(f.x, f.y, R0, 0, 6.2832); ctx.stroke(); }      // 噴發期：紅色實線邊界一明一暗
   else { ctx.strokeStyle = 'rgba(255,170,90,.9)'; ctx.lineWidth = 2.5; ctx.setLineDash([9, 7]); ctx.beginPath(); ctx.arc(f.x, f.y, R0, 0, 6.2832); ctx.stroke(); ctx.setLineDash([]); }
+}
+function drawMinionTells() {      // 弧線俯衝的虛線弧、編隊分流的左右箭頭
+  ctx.save(); ctx.strokeStyle = 'rgba(255,170,90,.85)'; ctx.lineWidth = 2.5; ctx.setLineDash([8, 7]);
+  const done = {};
+  for (const f of foes) {
+    if (f.arc && f.arc.t < 0 && !done[f.arc.p0 + '']) { done[f.arc.p0 + ''] = 1; const A = f.arc; ctx.beginPath(); ctx.moveTo(A.p0[0], A.p0[1]); ctx.quadraticCurveTo(A.p1[0], A.p1[1], A.p2[0], A.p2[1]); ctx.stroke(); }
+    if (f.split && !f.split.go && f.split.t > 0) { const d = f.split.dir, x = f.x + d * (f.r + 10), y = f.y; ctx.setLineDash([]); ctx.fillStyle = 'rgba(255,170,90,.95)'; ctx.beginPath(); ctx.moveTo(x + d * 14, y); ctx.lineTo(x, y - 8); ctx.lineTo(x, y + 8); ctx.closePath(); ctx.fill(); ctx.setLineDash([8, 7]); }
+  }
+  ctx.restore();
 }
 function drawCorridor(f) {      // 穿街留巷陣：預告期兩側紅區＋綠色走廊；燈籠落下時保留走廊邊線
   const D = CONFIG.corridor, l = f.gx - D.gapHalf, r = f.gx + D.gapHalf, warn = f.atkT < D.warn;
@@ -2495,7 +2516,7 @@ function draw() {
   for (const c of friends) drawFriend(c);
   for (const p of picks) drawPick(p);
   for (const f of foes) drawFoe(f);
-  drawClouds(); drawTaotieZones(); drawVents(); drawMarketUI(); if (PM()) { drawBoats(); drawEscort(); drawAgenorZones(); } if (RM()) { drawSmokeClouds(); for (const f of foes) drawRailFoeState(f); drawTunnelDark(); drawRushes(); drawMascots(); drawJianjiZones(); } drawBossFx();
+  drawClouds(); drawMinionTells(); drawTaotieZones(); drawVents(); drawMarketUI(); if (PM()) { drawBoats(); drawEscort(); drawAgenorZones(); } if (RM()) { drawSmokeClouds(); for (const f of foes) drawRailFoeState(f); drawTunnelDark(); drawRushes(); drawMascots(); drawJianjiZones(); } drawBossFx();
   for (const r of rings) { ctx.strokeStyle = 'rgba(' + r.color + ',' + Math.max(0, r.life) + ')'; ctx.lineWidth = r.zap ? 3 : 5; ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, 6.2832); ctx.stroke(); if (!r.zap) { ctx.fillStyle = 'rgba(' + r.color + ',' + Math.max(0, r.life) * 0.18 + ')'; ctx.fill(); } }
   for (const w of warns) {      // 側邊橫衝的警示：一條虛線加邊緣的驚嘆號
     const a = 0.5 + 0.5 * Math.sin(clock * 22), band = T.can.r + CONFIG.kite.r; hazard(0, w.y - band, W, band * 2);      // 紅帶的寬度 = 鐵罐半徑 + 小鳶半徑
