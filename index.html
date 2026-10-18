@@ -435,11 +435,11 @@ const CONFIG = {
     xiangyu:   { st: 's3', name: '褐籃子魚', kg: 1.0, speed: [50, 70],   r: 16, depth: [300, 520], sprite: 'f_s3_xiangyu',   sw: 46, sh: 21, color: '#B0966E', fin: '#7A6244', shape: 'tall', spots: '#E8D9B0', fact: '和平島附近的人叫牠「象魚」，鰭上有刺，遠遠看就好。' },
     lobster:   { st: 's3', name: '龍蝦',     kg: 4.0, speed: [30, 44],   r: 22, depth: [470, 505], sprite: 'f_s3_lobster',   sw: 72, sh: 36, shape: 'lobster', rare: true, fact: '和平島外側較深的水下也有龍蝦。只觀察，不採集，把海裡的朋友留在家。' },
     flying:    { st: 's4', name: '尖頭細身飛魚', kg: 0.6, speed: [70, 96], r: 13, depth: [235, 320], sprite: 'f_s4_flying', sw: 44, sh: 18, color: '#C2D8EA', fin: '#6C93B8', shape: 'flying', jump: true, fact: '飛魚會在漂浮物附近產卵，初夏常聚集在基隆嶼附近海域。' },
-    baimao:    { st: 's4', name: '低鰭舵魚', kg: 0.9, speed: [60, 84],   r: 15, depth: [280, 470], sprite: 'f_s4_baimao',    sw: 42, sh: 28, color: '#A3ADB2', fin: '#6E787E', shape: 'tall', fact: '低鰭舵魚在地叫「白毛」，基隆嶼的礁邊也看得到。' },
-    juwei:     { st: 's4', name: '鋸尾鯛',   kg: 1.0, speed: [70, 92],   r: 15, depth: [300, 500], sprite: 'f_s4_juwei',     sw: 42, sh: 30, color: '#5E6F8E', fin: '#F0CF4C', shape: 'tall', fact: '鋸尾鯛是暖水季節會來到島礁邊的魚。' },
-    yingge:    { st: 's4', name: '藍點鸚哥魚', kg: 1.3, speed: [80, 104], r: 16, depth: [330, 540], sprite: 'f_s4_yingge',   sw: 48, sh: 28, color: '#62C2AA', fin: '#3E8FA8', spots: '#2E6FD0', fact: '鸚哥魚的牙齒像鳥嘴，會啃礁石上的藻類。' },
-    shuangdai: { st: 's4', name: '雙帶鰺',   kg: 1.6, speed: [120, 150], r: 17, depth: [360, 540], sprite: 'f_s4_shuangdai', sw: 56, sh: 26, color: '#DCE7EE', fin: '#8AA6B8', stripe: 'blue2', fact: '雙帶鰺身上有兩條藍色縱帶，也會來到島礁附近。' },
-    sailfish:  { st: 's4', name: '雨傘旗魚', kg: 6.0, speed: [185, 215], r: 24, depth: [460, 580], sprite: 'f_s4_sailfish',  sw: 96, sh: 46, color: '#4F6F9E', fin: '#3A5A8E', shape: 'sail', rare: true, fact: '雨傘旗魚高高的背鰭，張開時像一把傘。' }
+    baimao:    { st: 's4', name: '低鰭舵魚', kg: 0.9, speed: [60, 84],   r: 15, depth: [280, 470], sprite: 'f_s4_baimao',    sw: 44, sh: 21, color: '#A3ADB2', fin: '#6E787E', shape: 'tall', fact: '低鰭舵魚在地叫「白毛」，基隆嶼的礁邊也看得到。' },
+    juwei:     { st: 's4', name: '鋸尾鯛',   kg: 1.0, speed: [70, 92],   r: 15, depth: [300, 500], sprite: 'f_s4_juwei',     sw: 44, sh: 23, color: '#5E6F8E', fin: '#F0CF4C', shape: 'tall', fact: '鋸尾鯛是暖水季節會來到島礁邊的魚。' },
+    yingge:    { st: 's4', name: '藍點鸚哥魚', kg: 1.3, speed: [80, 104], r: 16, depth: [330, 540], sprite: 'f_s4_yingge',   sw: 48, sh: 25, color: '#62C2AA', fin: '#3E8FA8', spots: '#2E6FD0', fact: '鸚哥魚的牙齒像鳥嘴，會啃礁石上的藻類。' },
+    shuangdai: { st: 's4', name: '雙帶鰺',   kg: 1.6, speed: [120, 150], r: 17, depth: [360, 540], sprite: 'f_s4_shuangdai', sw: 56, sh: 25, color: '#DCE7EE', fin: '#8AA6B8', stripe: 'blue2', fact: '雙帶鰺身上有兩條藍色縱帶，也會來到島礁附近。' },
+    sailfish:  { st: 's4', name: '雨傘旗魚', kg: 6.0, speed: [185, 215], r: 24, depth: [460, 580], sprite: 'f_s4_sailfish',  sw: 96, sh: 40, color: '#4F6F9E', fin: '#3A5A8E', shape: 'sail', rare: true, fact: '雨傘旗魚高高的背鰭，張開時像一把傘。' }
   },
   trash: { name: '漂流垃圾', speed: [18, 30], r: 14, depth: [240, 440] },
   // 各時段：每隔幾秒出現一個（小卷一次來一群）、各類型的機率權重、速度倍率
@@ -505,7 +505,8 @@ const CONFIG = {
 const STAGE_ART = { bg_s2_noon: 'bg_s2_noon.jpg', bg_s2_dusk: 'bg_s2_dusk.jpg', bg_s2_night: 'bg_s2_night.jpg', bg_s3_noon: 'bg_s3_noon.jpg', bg_s3_dusk: 'bg_s3_dusk.jpg', bg_s3_night: 'bg_s3_night.jpg', bg_s4_noon: 'bg_s4_noon.jpg', bg_s4_dusk: 'bg_s4_dusk.jpg', bg_s4_night: 'bg_s4_night.jpg',
   s2_lampboat: 's2_lampboat.png', s3_reef_front: 's3_reef_front.png', s3_urchin: 's3_urchin.png', s3_hermit: 's3_hermit.png', s3_mark: 's3_mark.png', s4_splash: 's4_splash.png',
   f_s2_huashen: 'f_s2_huashen.png', f_s2_jialie: 'f_s2_jialie.png', f_s2_mahi: 'f_s2_mahi.png', f_s2_zhengjian: 'f_s2_zhengjian.png', f_s2_zhenshen: 'f_s2_zhenshen.png',
-  f_s3_doubang: 'f_s3_doubang.png', f_s3_douzai: 'f_s3_douzai.png', f_s3_lobster: 'f_s3_lobster.png', f_s3_suodi: 'f_s3_suodi.png', f_s3_xiangyu: 'f_s3_xiangyu.png' };      // D119：G84 第一批（第 4 關的魚還沒交）
+  f_s3_doubang: 'f_s3_doubang.png', f_s3_douzai: 'f_s3_douzai.png', f_s3_lobster: 'f_s3_lobster.png', f_s3_suodi: 'f_s3_suodi.png', f_s3_xiangyu: 'f_s3_xiangyu.png',
+  f_s4_flying: 'f_s4_flying.png', f_s4_flying_jump: 'f_s4_flying_jump.png', f_s4_baimao: 'f_s4_baimao.png', f_s4_juwei: 'f_s4_juwei.png', f_s4_yingge: 'f_s4_yingge.png', f_s4_shuangdai: 'f_s4_shuangdai.png', f_s4_sailfish: 'f_s4_sailfish.png' };      // D119：G84 全部
 const ASSET_FILES = { bg_dusk: 'bg_dusk_v2.jpg', bg_night: 'bg_night_v2.jpg', kite_glide: 'kite_glide_v2.png', kite_dive: 'kite_dive_v2.png', fish_small: 'fish_small_v2.png', fish_mid: 'fish_mid_v2.png', fish_big: 'fish_big_v2.png', trash: 'trash.png', whaleshark: 'whaleshark.png', bg: 'bg_v2.jpg', fish_squid: 'fish_squid_v2.png', fish_hairtail: 'fish_hairtail_v2.png', fish_amber: 'fish_amber_v2.png' };      // v0.10：ChatGPT G-42 新底圖、漁獲與小鳶（鍵不變，只換檔名）
 
 const $ = (id) => document.getElementById(id);
@@ -1048,7 +1049,7 @@ const PLACE = {
 };
 function drawFish(type, ph, air) {
   const d = CONFIG.fish[type];
-  if (air && sprite(d.sprite + '_jump', d.sw * 1.2, d.sh * 1.6)) return;
+  if (air && sprite(d.sprite + '_jump', d.sw * 1.15, d.sh * 1.15)) return;
   if (sprite(d.sprite, d.sw, d.sh)) return;
   ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
   (PLACE[type] || PLACE[d.shape] || PLACE.basic)(d, ph || 0, air);
