@@ -93,7 +93,7 @@
     alerts: { burstCount: 5, burstMin: 10, bigAmount: 5000 }
   };
   var GAMES = {
-    fish: { name: '小鳶捕魚', levels: { keelung: '基隆港' }, legacy: { noon: '午後場（舊）', dusk: '黃昏場（舊）', night: '夜釣場（舊）' } },      // D118：改成關卡，時段在局內輪替
+    fish: { name: '小鳶捕魚', levels: { keelung: '基隆港', s2: '八斗子', s3: '和平島', s4: '基隆嶼' }, legacy: { noon: '午後場（舊）', dusk: '黃昏場（舊）', night: '夜釣場（舊）' } },      // D118：改成關卡，時段在局內輪替
     fly: { name: '飛行冒險', levels: { '1': '第 1 關', '2': '第 2 關', '3': '第 3 關', '4': '第 4 關' } },
     travel: { name: '小鳶去旅行', levels: {} },
     photo: { name: '小鳶合照館', levels: {} },
