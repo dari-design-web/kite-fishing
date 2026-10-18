@@ -97,7 +97,9 @@
     fly: { name: '飛行冒險', levels: { '1': '第 1 關', '2': '第 2 關', '3': '第 3 關', '4': '第 4 關' } },
     travel: { name: '小鳶去旅行', levels: {} },
     photo: { name: '小鳶合照館', levels: {} },
-    stamp: { name: '港灣蓋章散步', levels: {} }
+    stamp: { name: '港灣蓋章散步', levels: {} },
+    merge: { name: '小鳶合成港', levels: {} },      // D119：放進遊戲大廳，不計分
+    stack: { name: '小鳶疊貨櫃', levels: {} }
   };
 
   function rd(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
