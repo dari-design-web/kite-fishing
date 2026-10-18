@@ -441,7 +441,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.43',
+  version: '0.44',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -482,7 +482,8 @@ const CONFIG = {
   ring: { time: 8, radius: 40, spin: 4.2, damage: 1, cooldown: 0.25 },   // 大腸圈：持續秒數、繞多遠、轉多快、每次打多少、同一隻多久才能再打
   jiao: { y: 300 },                                  // 擲筊：筊落下的位置
   taotie: { every: 4.2, order: ['lamps', 'rain', 'devour'], names: { lamps: '百燈伏魔陣！', rain: '油雨傾盆・熱浪修羅！', devour: '饕餮暴食・萬味歸一！', corridor: '百燈交映・穿街留巷陣！' }, pools: [['lamps', 'rain', 'devour'], ['lamps', 'rain', 'devour', 'corridor'], ['lamps', 'rain', 'devour', 'corridor', 'corridor']], tags: { lamps: 'aim', rain: 'zone', devour: 'pull', corridor: 'lane' }, dropEvery: 1.6, lampVolleys: 3, lampSpeed: 150, rainWarn: 1.1, rainOn: 2.4, rainR: 145, rainY: 200, suckWarn: 0.8, suckOn: 3, suckR: 300, suckSpeed: 190, heal: 4, pullR: 420, pull: 120 },   // 饕餮夜市鬼王：出招間隔與三招的數值
-  bossStage: { at: [0.65, 0.3], pace: [1, 0.86, 0.72] },      // D109／G79：魔王剩 65%、30% 血量時換招式池、出招間隔逐段變快（血量不動）
+  bossStage: { at: [0.65, 0.3], pace: [1, 0.85, 0.7] },
+  rage: { at: [0.5, 0.25], speed: [1, 1.25, 1.5], every: [0, 1.4, 0.9], spread: [0, 3, 5], gap: 0.26, shot: [0, 150, 170], ringEvery: 3, ringN: 12, ringSpeed: 120, more: [0, 1, 2] },      // D112：魔王剩一半血、剩四分之一血時暴走——出招再加快（speed）、平常也會連射子彈（every 秒一波、spread 顆；第二段每 3 波換一圈 ringN 顆），招式裡的子彈數也變多（more）      // D109／G79：魔王剩 65%、30% 血量時換招式池、出招間隔逐段變快（血量不動）
   corridor: { warn: 1.1, gapHalf: 58, rows: 3, rowGap: 0.5, speed: 230, step: 30 },      // 饕餮新招「百燈交映・穿街留巷陣」：預告前鎖定走廊，左右燈籠整排落下，只有走廊安全
   cross: { warn: 1.0, on: 0.55, gap: 0.35, half: 24 },
   grid: { warn: 1.1, rowGap: 0.55, rows: [300, 410, 520], cell: 60, half: 26, every: 3 },      // 巨岩怪新招「礦脈棋盤・落石開徑」：三排落石，每排留一格缺口，缺口一排最多偏一格；整條路在預告時就畫出來      // 阿根納新招「鏽蝕鋼索・交錯封港」：先直、再橫兩條鋼索依序落下（位置在預告前就鎖定）
@@ -510,7 +511,7 @@ const STAGES = [
     types: { butt: { name: '碳香炭烤蚺' }, tire: { name: '青苔索具寄居怪', sway: 26 }, sprayer: { name: '柴油黑煙蝠鱝' }, battery: { name: '破網骨刺海妖', zapR: 70 }, oil: { name: '藤壺鏽甲螺', hp: 6 }, drop: { name: '藤壺殼' }, net: { name: '被廢網纏住的朋友', rescue: 'friend' }, tangle: { name: '被廢網纏住的朋友', rescue: 'friend' }, log: { name: '繫船纜繩' },
       boss: { name: '殘鋼龍骨・阿根納骨骸巨獸', short: '阿根納', r: 56 }, fire: { name: '機油彈', hp: 1, r: 8, speed: [0, 0], score: 0 } } },
   { id: 4, name: '深澳鐵道自行車', time: '黃昏', theme: 'rail', speed: 1.25, bossHp: 1.35, starClean: 88, intro: '從八斗子火車站出發，穿過光隧道，到深澳站。鐵軌是危險線：看軌道，抓空檔跨過去。三位吉祥物被綁在路邊，打斷就能救出。', clean: '深澳的黃昏恢復平靜了！', stars: ['過關', '乾淨度 88% 以上', '被打到不超過 1 次'],
-    how: { dodge: '鐵軌亮紅先避開，等空檔再跨過去。牆上亮光時才看得到光影母；寄居蟹躲殼、尖嘯獸大叫時打不動，等牠停下再打；煤煙擋住就移到旁邊打', barrelK: '油桶', barrel: '打爆會炸掉旁邊的怪獸，自己別靠太近', friend: '吉祥物被纜繩、藤蔓、廢鐵軌綁住，打斷就救出：豆腐君護盾加臭豆腐、象鼻君噴水、山野君補給', ultK: '紅蟹車', ult: '右下角集滿後按一下，紅蟹鐵道車沿著鐵軌衝上來，全畫面大掃除' },
+    how: { dodge: '鐵軌亮紅＝刺蝟列車，打不掉只能閃。怪獸身上灰盾＝現在打不動，綠圈＝現在打；光影母要等牆上亮光；煤煙擋住就移到旁邊打', barrelK: '油桶', barrel: '打爆會炸掉旁邊的怪獸，自己別靠太近', friend: '吉祥物被纜繩、藤蔓、廢鐵軌綁住，打斷就救出：豆腐君護盾加臭豆腐、象鼻君噴水、山野君補給', ultK: '紅蟹車', ult: '右下角集滿後按一下，紅蟹鐵道車沿著鐵軌衝上來，全畫面大掃除' },
     types: { can: { name: '鐵軌刺蝟' }, butt: { name: '鐵軌刺蝟', snake: 0 }, bag: { name: '隧道光影母' }, sprayer: { name: '煤煙礦坑怪' }, goo: { name: '煤渣團' }, chaser: { name: '追人的煤渣團' }, tire: { name: '豆腐岩寄居蟹', hp: 8 }, battery: { name: '海蝕尖嘯獸', zapR: 80 }, log: { name: '廢棄枕木' },
       boss: { name: '不沉煤艦・建基巨岩怪', short: '巨岩怪', r: 58 }, fire: { name: '煤灰彈', hp: 1, r: 8, speed: [0, 0], score: 0 } } }
 ];
@@ -806,6 +807,7 @@ function update(dt) {
     if (RM()) { railFoeUpdate(f, dt); railFoeState(f, dt); }
     if (f.blasted !== undefined) f.blasted -= dt;
     if (f.type === 'boss') {
+      if (!f.enter && f.dying === undefined && cine <= 0 && !f.leaving && !(t - f.born > BTIME())) { rageCheck(f); bossBarrage(f, dt); }
       if (f.enter) { f.y += 60 * dt; if (f.y >= 130) f.enter = false; }
       else if (f.dying !== undefined || cine > 0) { if (f.dying !== undefined) f.atk = ''; }
       else if (f.phased && !(t - f.born > BTIME()) && updatePhased(f, dt)) { }
@@ -821,7 +823,7 @@ function update(dt) {
       }
       else {
         const B = CONFIG.boss; f.x += ((W / 2 + Math.sin((t - f.born) * 1.1) * 120) - f.x) * Math.min(1, 4 * dt);
-        const bd = dt * LVF('bossRate'); if (!ult) f.slamAcc = (f.slamAcc || 0) + bd; if (f.slamAcc >= B.slamEvery && !ult) { f.slamAcc = 0; f.slam = 'warn'; f.slamT = 0; f.slamX = kite.x; beep(300, 0.12, 'square', 0.05); banner('廢物重壓・雙拍落錨！'); say('一、二，壓！離開紅區', kite.x, 232, '#FFD0C4'); }      // 鯨鯊大招期間不開始衝撞，提示也不會和大招結算疊在一起
+        const bd = dt * LVF('bossRate') * rageK(f); if (!ult) f.slamAcc = (f.slamAcc || 0) + bd; if (f.slamAcc >= B.slamEvery && !ult) { f.slamAcc = 0; f.slam = 'warn'; f.slamT = 0; f.slamX = kite.x; beep(300, 0.12, 'square', 0.05); banner('廢物重壓・雙拍落錨！'); say('一、二，壓！離開紅區', kite.x, 232, '#FFD0C4'); }      // 鯨鯊大招期間不開始衝撞，提示也不會和大招結算疊在一起
         f.sideAcc = (f.sideAcc || 0) + bd; if (f.sideAcc >= B.sideEvery) { f.sideAcc = 0; warns.push({ y: Math.max(150, Math.min(590, kite.y)), fromLeft: rnd() < 0.5, n: 3, t: LV().warn }); }
         f.dropAcc += bd; if (f.dropAcc >= B.dropEvery) { f.dropAcc = 0; const ty = rnd() < 0.55 ? 'bottle' : rnd() < 0.5 ? 'can' : 'goo'; const o = mk(ty, f.x, f.y + 30); o.vx = Math.max(-70, Math.min(70, (kite.x - f.x) * 0.45)); }      // 朝小鳶的方向丟
         f.ringAcc += bd; if (f.ringAcc >= B.ringEvery) { f.ringAcc = 0; say('甩！', f.x, f.y + 66, '#FFD0C4'); for (let i = 0; i < 9; i++) { const a = 0.35 + i / 8 * 2.44; const o = mk('can', f.x, f.y + 20); o.vx = Math.cos(a) * 120; o.vy = Math.sin(a) * 120; } }      // 甩出一圈鐵罐
@@ -856,14 +858,16 @@ function update(dt) {
   for (const s of shots) for (const f of foes) {
     if (s.dead || f.hp <= 0 || f.hidden || f.ghost) continue;
     if (T[f.type].solid) { if (Math.abs(s.x - f.x) < f.w / 2 + 3 && Math.abs(s.y - f.y) < 14) { s.dead = true; part('drop', s.x, s.y, { size: 2, fade: 5, color: '#D9B48A' }); } continue; }      // 漂流木：羽毛打到就沒了，木頭不受影響
-    if (Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { s.dead = true; if (f === boss && f.phased) { if (!bossShot(f, s)) s.dead = false; continue; } if (RM() && railBlocks(f)) { clank(s.x, s.y); if (!stats.toldBlock) { stats.toldBlock = true; say(f.type === 'tire' ? '躲在殼裡打不動，等牠探頭' : f.type === 'battery' ? '大叫時羽毛會被彈開，等牠停' : '縮成球時彈開羽毛，等牠張開', f.x, f.y - 34, '#DCE6EC'); } continue; } const x2 = f === boss && f.atk === 'devour' && f.mouth >= 1; f.hp -= x2 ? 2 : 1; if (x2 && !stats.toldX2) { stats.toldX2 = true; say('打嘴巴 傷害 ×2', f.x, f.y + 84, '#FFE08A'); } f.hitT = 0.08; part('star', s.x, s.y, { size: 3, fade: 4, color: s.ink ? '#C9B6F2' : '#fff' }); }
+    if (RM() && f.rail && f.noCount && (f.type === 'can' || f.type === 'butt')) continue;      // D112：刺蝟列車是鐵軌危險，不是目標，羽毛直接穿過（不再出現「打了沒反應」）
+    if (f.bar) { if (f.hp > 0 && Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { f.hp = 0; part('star', s.x, s.y, { size: 3, fade: 4, color: '#fff' }); } continue; }      // D112：暴走連射的子彈一碰就散，羽毛繼續往前飛（不然子彈會變成魔王的盾）
+    if (Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { s.dead = true; if (f === boss && f.phased) { if (!bossShot(f, s)) s.dead = false; continue; } if (RM() && railBlocks(f)) { clank(s.x, s.y); if (!stats.toldBlock) { stats.toldBlock = true; say(f.type === 'tire' ? '灰盾＝躲殼打不動，等綠圈' : f.type === 'battery' ? '灰盾＝大叫打不動，等綠圈' : '灰盾＝縮成球打不動，等綠圈', f.x, f.y - 34, '#DCE6EC'); } continue; } const x2 = f === boss && f.atk === 'devour' && f.mouth >= 1; f.hp -= x2 ? 2 : 1; if (x2 && !stats.toldX2) { stats.toldX2 = true; say('打嘴巴 傷害 ×2', f.x, f.y + 84, '#FFE08A'); } f.hitT = 0.08; part('star', s.x, s.y, { size: 3, fade: 4, color: s.ink ? '#C9B6F2' : '#fff' }); }
   }
   shots = shots.filter((s) => !s.dead && s.y > -20 && s.x > -20 && s.x < W + 20);
   updateRing(dt); bossFinalCheck(real);
   for (const f of foes.slice()) { if (f.hitT > 0) f.hitT -= dt; if (f.hp <= 0 && (f.blasted === undefined || f.blasted <= 0)) clearFoe(f, f.blasted !== undefined ? 'blast' : ''); }
   // 撞到小鳶、漂出畫面
   for (const f of foes.slice()) {
-    if (foes.indexOf(f) < 0 || f.hidden || f.ghost) continue;
+    if (foes.indexOf(f) < 0 || ((f.hidden || f.ghost) && !f.gone)) continue;      // D112：藏起來的魔王（第 1 關裂成小團時）時間到要能真的離場，不然會卡住
     const dT = T[f.type], touch = dT.solid ? Math.hypot(Math.max(Math.abs(kite.x - f.x) - f.w / 2, 0), Math.max(Math.abs(kite.y - f.y) - 11, 0)) < K.r : Math.hypot(f.x - kite.x, f.y - kite.y) < f.r + K.r;
     const out = f.cross ? (f.vx > 0 ? f.x > W + 40 : f.x < -40) : (f.y > H + f.r + 10 || f.x < -60 || f.x > W + 60 || (f.aimed && f.y < -30));
     if (kite.hearts > 0 && f.hp > 0 && touch) {
@@ -1251,16 +1255,45 @@ function bossStage(f) { const r = f.hp / (f.maxHp || 1), A = CONFIG.bossStage.at
 function bossPace(f) { return CONFIG.bossStage.pace[f.stage || 0]; }
 function bossStageCheck(f, label) {      // 只往前推進，不因補血退回；換段時停一下給玩家看
   const s = bossStage(f); if (s <= (f.stage || 0)) return false;
-  f.stage = s; f.atkAcc = -0.8; banner(s === 1 ? label + '生氣了！出招變快' : label + '暴走了！'); flash = Math.max(flash, 0.25); beep(220, 0.4, 'sawtooth', 0.05, 120); return true;
+  f.stage = s; f.atkAcc = -0.8; if (f.rageT !== t) banner(s === 1 ? label + '生氣了！出招變快' : label + '暴走了！'); flash = Math.max(flash, 0.25); beep(220, 0.4, 'sawtooth', 0.05, 120); return true;
 }
 function pickAtk(f, C) {
   const pool = C.pools[f.stage || 0], last = f.lastAtk, lastTag = last && C.tags[last];
   let cand = pool.filter((a) => a !== last && C.tags[a] !== lastTag); if (!cand.length) cand = pool.filter((a) => a !== last); if (!cand.length) cand = pool;
   const a = cand[Math.floor(rnd() * cand.length)]; f.lastAtk = a; return a;
 }
+/* D112：魔王後半血暴走。血量比例：分階段魔王用各血池合計（第 1 關裂成小團後直接算第二段） */
+function rageRatio(f) {
+  if (!f.phased) return f.hp / (f.maxHp || 1);
+  if (!RM() && f.phase === 3) return 0.1;
+  let s = 0, m = 0; for (const k in f.pools) { s += Math.max(0, f.pools[k]); m += Math.max(0, (f.poolMax || {})[k] || 0); }
+  return m ? s / m : 1;
+}
+function rageK(f) { return CONFIG.rage.speed[(f && f.rage) || 0]; }
+function rageMore(f) { return CONFIG.rage.more[(f && f.rage) || 0]; }
+function rageCheck(f) {      // 只往前推進
+  const A = CONFIG.rage.at, r = rageRatio(f), lv = r < A[1] ? 2 : r < A[0] ? 1 : 0;
+  if (lv <= (f.rage || 0)) return;
+  f.rage = lv; f.rageT = t; f.barAcc = -0.6; f.barN = 0; const name = (ST().types && ST().types.boss && ST().types.boss.short) || '大垃圾團';
+  banner(lv === 1 ? name + '剩一半血！出招變快、子彈變多' : name + '快撐不住了！全力暴走'); flash = Math.max(flash, 0.3); shake = Math.max(shake, 0.25); beep(160, 0.5, 'sawtooth', 0.06, 200);
+  if (!stats.toldRage) { stats.toldRage = true; say('子彈打得掉，邊閃邊射！', W / 2, 330, '#FFE08A', true); }
+}
+function bossBarrage(f, dt) {      // 暴走後平常也連射：扇形對準小鳶；第二段每幾波換成一整圈（留縫可鑽）。精準走位的招式期間停射
+  const lv = f.rage || 0, R = CONFIG.rage; if (!lv || ult || f.hidden || f.slam) return;
+  if (f.atk === 'corridor' || f.atk === 'cross' || f.atk === 'grid' || f.grid || (f.atk === 'ram' && f.ramS !== 'stun')) return;
+  f.barAcc = (f.barAcc || 0) + dt * LVF('bossRate'); if (f.barAcc < R.every[lv]) return; f.barAcc = 0; f.barN = (f.barN || 0) + 1;
+  const ty = NM() || PM() || RM() ? 'fire' : 'drop', ox = f.x, oy = f.y + (f.r || 50) * 0.6;
+  if (lv === 2 && f.barN % R.ringEvery === 0) {
+    const off = rnd() * 6.28; for (let i = 0; i < R.ringN; i++) { const a = off + i / R.ringN * 6.2832; if (Math.sin(a) < -0.2) continue; mk(ty, ox + Math.cos(a) * 30, oy + Math.sin(a) * 30, { noCount: true, aimed: true, bar: true, vx: Math.cos(a) * R.ringSpeed * SPD(), vy: Math.sin(a) * R.ringSpeed * SPD() }); }
+    beep(240, 0.18, 'square', 0.04, -120); return;
+  }
+  const aim = Math.atan2(kite.y - oy, kite.x - ox), n = R.spread[lv], sp = R.shot[lv] * SPD();
+  for (let i = 0; i < n; i++) { const a = aim + (i - (n - 1) / 2) * R.gap; mk(ty, ox + Math.cos(a) * 24, oy + Math.sin(a) * 24, { noCount: true, aimed: true, bar: true, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp }); }
+  beep(300, 0.08, 'square', 0.03, -100);
+}
 /* 饕餮夜市鬼王：百燈伏魔陣、油雨傾盆・熱浪修羅、饕餮暴食・萬味歸一，生氣後多一招百燈交映・穿街留巷陣 */
 function updateTaotie(f, dt) {
-  const C = CONFIG.taotie, bd = dt * LVF('bossRate'), K = CONFIG.kite;
+  const C = CONFIG.taotie, bd = dt * LVF('bossRate') * rageK(f), K = CONFIG.kite;
   if (ult) return;      // 擲筊期間鬼王停住
   f.mouth = f.mouth || 0; f.dropAcc = f.dropAcc || 0;
   if (!f.atk) {
@@ -1284,12 +1317,12 @@ function updateTaotie(f, dt) {
     return;
   }
   if (f.atk === 'lamps') {      // 一波一波的燈籠扇形射向小鳶，打得掉
-    if (f.vol < C.lampVolleys && f.atkT >= 0.35 + f.vol * 0.5) {
+    if (f.vol < C.lampVolleys + rageMore(f) && f.atkT >= 0.35 + f.vol * 0.5) {
       const aim = Math.atan2(kite.y - f.y, kite.x - f.x), sp = C.lampSpeed * SPD();
-      for (let i = 0; i < 5; i++) { const ang = aim + (i - 2) * 0.24 + (f.vol % 2 ? 0.12 : 0); mk('lamp', f.x + Math.cos(ang) * 40, f.y + Math.sin(ang) * 40, { noCount: true, aimed: true, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp }); }
+      const nL = 5 + 2 * rageMore(f); for (let i = 0; i < nL; i++) { const ang = aim + (i - (nL - 1) / 2) * 0.24 + (f.vol % 2 ? 0.12 : 0); mk('lamp', f.x + Math.cos(ang) * 40, f.y + Math.sin(ang) * 40, { noCount: true, aimed: true, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp }); }
       f.vol++; beep(620, 0.1, 'triangle', 0.04, -200);
     }
-    if (f.atkT > 0.35 + C.lampVolleys * 0.5 + 0.4) f.atk = '';
+    if (f.atkT > 0.35 + (C.lampVolleys + rageMore(f)) * 0.5 + 0.4) f.atk = '';
   } else if (f.atk === 'rain') {      // 鬼王往下壓，身邊一圈下油雨
     if (f.atkT < C.rainWarn) { f.y += (C.rainY - f.y) * Math.min(1, 3 * dt); f.x += (Math.max(110, Math.min(W - 110, kite.x)) - f.x) * Math.min(1, 1.5 * dt); }
     else if (f.atkT < C.rainWarn + C.rainOn) {
@@ -1661,7 +1694,7 @@ function drawEscort() {
 }
 /* 阿根納巨獸的三招 */
 function updateAgenor(f, dt) {
-  const C = CONFIG.agenor, bd = dt * LVF('bossRate'), K = CONFIG.kite;
+  const C = CONFIG.agenor, bd = dt * LVF('bossRate') * rageK(f), K = CONFIG.kite;
   if (ult) return;
   f.dropAcc = f.dropAcc || 0;
   if (!f.atk) {
@@ -1687,14 +1720,14 @@ function updateAgenor(f, dt) {
     return;
   }
   if (f.atk === 'rocks') {      // 船廠危樑・水泥落石雨：兩波，每波一塊對準小鳶、其餘隨機，先出紅圈再落下
-    if (f.wave < 2 && f.atkT >= f.wave * C.rockWarn) { for (let i = 0; i < C.rockN; i++) f.rocks.push(i === 0 && escort ? { x: escort.x, y: escort.y - 6, t: 0, boat: true } : { x: i === 1 ? kite.x : R(40, W - 40), y: i === 1 ? kite.y : R(220, 480), t: 0 }); f.wave++; }
+    if (f.wave < 2 && f.atkT >= f.wave * C.rockWarn) { for (let i = 0; i < C.rockN + 2 * rageMore(f); i++) f.rocks.push(i === 0 && escort ? { x: escort.x, y: escort.y - 6, t: 0, boat: true } : { x: i === 1 ? kite.x : R(40, W - 40), y: i === 1 ? kite.y : R(220, 480), t: 0 }); f.wave++; }
     for (const k of f.rocks) { k.t += dt; if (k.t >= C.rockWarn && !k.hit) { k.hit = true; shake = Math.max(shake, 0.2); for (let i = 0; i < 6; i++) part('drop', k.x, k.y, { vx: rand(-80, 80), vy: rand(-80, 40), size: rand(2, 4), color: '#A9A39A', fade: 2 }); beep(90, 0.2, 'sawtooth', 0.05, -30); const inK = Math.hypot(kite.x - k.x, kite.y - k.y) < C.rockR + K.r * 0.5; if (k.boat) { if (inK) { say('替小船擋下落石！', k.x, k.y - 40, '#BFF0D0'); burst(k.x, k.y, 10, '#FFE08A'); stats.blocks = (stats.blocks || 0) + 1; } else escortHurt('水泥落石'); } else if (inK) hurt('水泥落石'); } }
     f.rocks = f.rocks.filter((k) => k.t < C.rockWarn + 0.35);
     if (f.atkT > C.rockWarn * 2 + 0.5) f.atk = '';
   } else if (f.atk === 'cables') {      // 鏽蝕鋼索・全港大絞殺：兩條鋼索從上往下掃，只有缺口可以穿過
-    for (let i = 0; i < 2; i++) if (f.cables.length === i && f.atkT >= i * C.cableGap) f.cables.push({ y: f.y + 60, gx: R(80, W - 80), t: 0 });
+    const nC = 2 + rageMore(f); for (let i = 0; i < nC; i++) if (f.cables.length === i && f.atkT >= i * C.cableGap * (rageMore(f) ? 0.8 : 1)) f.cables.push({ y: f.y + 60, gx: R(80, W - 80), t: 0 });
     for (const c of f.cables) { c.t += dt; if (c.t >= C.cableWarn) { c.y += C.cableSpeed * SPD() * dt; if (Math.abs(kite.y - c.y) < 6 + K.r * 0.6 && Math.abs(kite.x - c.gx) > C.cableHalf - K.r * 0.5) hurt('鏽蝕鋼索'); } }
-    if (f.cables.length === 2 && f.cables.every((c) => c.y > H + 20)) f.atk = '';
+    if (f.cables.length === 2 + rageMore(f) && f.cables.every((c) => c.y > H + 20)) f.atk = '';
   } else if (f.atk === 'ram') {      // 柴油怒濤・阿根納最後撞擊：先標出紅區，整隻衝到底再退回
     f.ramT += dt;
     if (f.ramS === 'warn') { if (escort) f.ramX += (escort.x - f.ramX) * Math.min(1, 2 * dt); f.x += (f.ramX - f.x) * Math.min(1, 6 * dt); if (f.ramT >= (escort ? ESC.ramWarn : C.ramWarn)) { if (escort && (f.ramHp - f.hp) >= ESC.stunHit) { f.ramS = 'stun'; f.stunT = ESC.stunTime; banner('阿根納暈倒了！趁現在打'); say('暈倒了！', f.x, f.y + 70, '#FFE08A', true); beep(880, 0.15, 'triangle', 0.06, 300); stats.stuns = (stats.stuns || 0) + 1; } else { f.ramS = 'down'; f.x = f.ramX; beep(120, 0.4, 'sawtooth', 0.06, -60); } } }
@@ -1874,7 +1907,7 @@ function jianjiKey(f) {      // G-35 B 的四態（同畫布、同中心）：�
 }
 /* 巨岩怪的三招 */
 function updateJianji(f, dt) {
-  const C = CONFIG.jianji, bd = dt * LVF('bossRate'), K = CONFIG.kite;
+  const C = CONFIG.jianji, bd = dt * LVF('bossRate') * rageK(f), K = CONFIG.kite;
   if (ult) return;
   f.dropAcc = f.dropAcc || 0;
   if (!f.atk) {
@@ -2014,11 +2047,11 @@ function updatePhased(f, dt) {
   return RM() ? updateJianji2(f, dt) : updateBlob2(f, dt);
 }
 function updateBlob2(f, dt) {
-  const bd = dt * LVF('bossRate');
+  const bd = dt * LVF('bossRate') * rageK(f);
   if (f.phase === 1) return false;
   if (f.phase === 2) {      // 吸附：兩側飛來的垃圾被吸向它，吸到就補血
     f.x += (W / 2 + Math.sin((t - f.born) * 0.8) * 70 - f.x) * Math.min(1, 3 * dt); f.y += (150 - f.y) * Math.min(1, 3 * dt);
-    f.suckAcc -= bd; if (f.suckAcc <= 0) { f.suckAcc = BFX().suckEvery; const fromLeft = rnd() < 0.5; for (let i = 0; i < 3; i++) mk(rnd() < 0.5 ? 'bottle' : 'can', fromLeft ? -16 : W + 16, 230 + i * 70 + R(-15, 15), { noCount: true, suck: true, vx: 0, vy: 0 }); if (!f.toldSuck) { f.toldSuck = true; say('垃圾要被吸過去了，先打掉！', W / 2, 300, '#FFD0C4'); } }
+    f.suckAcc -= bd / rageK(f); if (f.suckAcc <= 0) { f.suckAcc = BFX().suckEvery; const fromLeft = rnd() < 0.5; for (let i = 0; i < 3; i++) mk(rnd() < 0.5 ? 'bottle' : 'can', fromLeft ? -16 : W + 16, 230 + i * 70 + R(-15, 15), { noCount: true, suck: true, vx: 0, vy: 0 }); if (!f.toldSuck) { f.toldSuck = true; say('垃圾要被吸過去了，先打掉！', W / 2, 300, '#FFD0C4'); } }
     for (const o of foes.slice()) if (o.suck) { const dx = f.x - o.x, dy = f.y - o.y, m = Math.hypot(dx, dy) || 1, sp = BFX().suckSpeed * SPD(); o.x += dx / m * sp * dt; o.y += dy / m * sp * dt; o.x0 = o.x; if (m < f.r * 0.7) { foes.splice(foes.indexOf(o), 1); const heal = Math.round(f.poolMax.core * BFX().heal); f.pools.core = Math.min(f.poolMax.core, f.pools.core + heal); syncHp(f); say('吸到垃圾 +' + heal, f.x, f.y + 70, '#FFB0A0'); beep(220, 0.2, 'sine', 0.05, -80); } }
     f.dropAcc += bd; if (f.dropAcc >= 2.2) { f.dropAcc = 0; const o = mk(rnd() < 0.5 ? 'bottle' : 'can', f.x, f.y + 30); o.vx = Math.max(-60, Math.min(60, (kite.x - f.x) * 0.4)); }
     return true;
@@ -2036,7 +2069,7 @@ function updateBlob2(f, dt) {
   return true;
 }
 function updateJianji2(f, dt) {
-  const C = CONFIG.jianji, B = BFX(), bd = dt * LVF('bossRate'), K = CONFIG.kite;
+  const C = CONFIG.jianji, B = BFX(), bd = dt * LVF('bossRate') * rageK(f), K = CONFIG.kite;
   const homeX = f.phase === 2 ? RAIL_X() : W / 2 + Math.sin((t - f.born) * 0.7) * (f.phase === 3 ? 50 : 70);
   f.x += (homeX - f.x) * Math.min(1, 3 * dt); f.y += (130 - f.y) * Math.min(1, 3 * dt);
   f.stars = f.stars || []; f.beams = f.beams || []; f.lanes = f.lanes || [];
@@ -2093,18 +2126,43 @@ function railFoeState(f, dt) {
   else if (f.type === 'tire' && !f.chg) f.shell = (f.age % 2.9) < 1.5;      // 寄居蟹：躲殼 1.5 秒（打不動）→ 探頭 1.4 秒
   else if (f.type === 'tire') f.shell = false;
   else if (f.type === 'battery') f.loud = f.zapAcc < 0.7 && f.age > 1;      // 尖嘯獸：叫的時候把羽毛彈開
-  else if ((f.type === 'can' || f.type === 'butt') && f.rail) f.open = !f.noCount && (f.age % 2.0) >= 1.2;      // 刺蝟：滾成球 1.2 秒（羽毛被彈開）→ 張開 0.8 秒；鐵軌上衝下來的刺蝟列車一直是球
+  else if ((f.type === 'can' || f.type === 'butt') && f.rail) f.open = !f.noCount && (f.age % 2.1) >= 1.0;      // 刺蝟：滾成球 1.0 秒（羽毛被彈開）→ 張開 1.1 秒（D112 拉長，比較抓得到）；鐵軌亮紅後衝下來的刺蝟列車一直是球、只能閃
 }
 function railBlocks(f) { return (f.type === 'tire' && f.shell) || (f.type === 'battery' && f.loud) || ((f.type === 'can' || f.type === 'butt') && f.rail && !f.open); }
 function smokeBlocks(s) {      // 煤煙礦坑怪噴出的煤煙雲擋住正下方的羽毛，兩側留有缺口
   for (const f of foes) if (f.type === 'sprayer' && f.y > 0) { const cx = f.x + Math.sin(t * 1.3 + f.ph) * 18; if (Math.abs(s.x - cx) < 20 && s.y > f.y + 14 && s.y < f.y + 120) return true; }
   return false;
 }
+/* D112：第 4 關「打得動／打不動」統一記號——灰色盾牌＝現在打不動；綠色準星圈＝現在打得到；紅色危險圈＋紅軌＝刺蝟列車，只能閃 */
+function railMark(f) {
+  if (f.ghost || f.y < -20) return;
+  const hedge = (f.type === 'can' || f.type === 'butt') && f.rail, train = hedge && f.noCount;
+  const canOpen = (hedge && !train) || f.type === 'tire' || f.type === 'battery';
+  if (!train && !canOpen) return;
+  ctx.save(); ctx.translate(f.x, f.y); const r = f.r + 7;
+  if (train) {
+    ctx.globalAlpha = 0.9; ctx.strokeStyle = '#E8463A'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.2832); ctx.stroke();
+  } else if (railBlocks(f)) {      // 盾牌：灰圈＋右上角小盾
+    ctx.strokeStyle = 'rgba(214,224,232,.95)'; ctx.lineWidth = 3; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.2832); ctx.stroke(); ctx.setLineDash([]);
+    ctx.translate(r * 0.72, -r * 0.72); ctx.lineWidth = 1.6; poly([0, -9, 8, -6, 7, 3, 0, 9, -7, 3, -8, -6], '#9AA6B0', '#10293D');
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-3, -3); ctx.lineTo(3, 3); ctx.moveTo(3, -3); ctx.lineTo(-3, 3); ctx.stroke();
+  } else {      // 準星：綠圈脈動＋四個刻度
+    const k = calm ? 0 : Math.sin(clock * 10) * 2; ctx.strokeStyle = '#6BF09A'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, r + k, 0, 6.2832); ctx.stroke();
+    ctx.lineWidth = 2.5; for (let i = 0; i < 4; i++) { const a = i * 1.5708 + 0.785; ctx.beginPath(); ctx.moveTo(Math.cos(a) * (r + 3 + k), Math.sin(a) * (r + 3 + k)); ctx.lineTo(Math.cos(a) * (r + 9 + k), Math.sin(a) * (r + 9 + k)); ctx.stroke(); }
+  }
+  ctx.restore();
+}
+function drawTrainLane() {      // 刺蝟列車還在畫面上時，整條鐵軌保持淡紅色，看得出這是危險線
+  const tr = foes.filter((f) => f.rail && f.noCount && (f.type === 'can' || f.type === 'butt') && f.y > -40 && f.y < H + 40); if (!tr.length) return;
+  const top = Math.max(0, Math.min.apply(null, tr.map((f) => f.y)) - 30), bot = Math.min(H, Math.max.apply(null, tr.map((f) => f.y)) + 30), x = RAIL_X(), hw = railHalf() + CONFIG.kite.r;
+  ctx.save(); ctx.globalAlpha = 0.55; hazard(x - hw, top, hw * 2, bot - top); ctx.restore();
+}
 function drawSmokeClouds() {
   for (const f of foes) if (f.type === 'sprayer' && f.y > 0 && img.fx_coal_smoke) { const cx = f.x + Math.sin(t * 1.3 + f.ph) * 18; ctx.save(); ctx.translate(cx, f.y + 14 + 55); sprite('fx_coal_smoke', 44, 110); ctx.restore(); }      // 煤煙：直長半透明的圖
   if (!img.fx_coal_smoke) for (const f of foes) if (f.type === 'sprayer' && f.y > 0) { const cx = f.x + Math.sin(t * 1.3 + f.ph) * 18; ctx.save(); ctx.globalAlpha = 0.78; for (const p of [[0, 40, 22, 30], [-8, 72, 20, 26], [8, 100, 18, 22]]) { const g = ctx.createRadialGradient(cx + p[0], f.y + p[1], 2, cx + p[0], f.y + p[1], p[2]); g.addColorStop(0, 'rgba(30,26,30,.95)'); g.addColorStop(1, 'rgba(30,26,30,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(cx + p[0], f.y + p[1], p[2], p[3], 0, 0, 6.2832); ctx.fill(); } ctx.restore(); }
 }
 function drawRailFoeState(f) {      // 狀態提示畫在怪獸上面（B 組正式圖交付前的佔位）
+  railMark(f);
   if (f.type === 'tire' && f.shell && !img.r_crab_shell) { ctx.save(); ctx.translate(f.x, f.y); rrect(-22, -20, 44, 38, 5, 'rgba(201,183,154,.96)', PAL.line, 2); ctx.strokeStyle = '#9E8B6E'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-22, -2); ctx.lineTo(22, -2); ctx.moveTo(0, -20); ctx.lineTo(0, 18); ctx.stroke(); ctx.restore(); }
   if (f.type === 'battery' && f.loud) { ctx.save(); ctx.strokeStyle = 'rgba(190,230,255,.9)'; ctx.lineWidth = 2; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(f.x, f.y, 24 + i * 9 + (clock * 40) % 9, 0.3, 2.84); ctx.stroke(); } ctx.restore(); }
 }
@@ -2515,6 +2573,7 @@ function draw() {
   drawBackground();
   for (const c of friends) drawFriend(c);
   for (const p of picks) drawPick(p);
+  if (RM()) drawTrainLane();
   for (const f of foes) drawFoe(f);
   drawClouds(); drawMinionTells(); drawTaotieZones(); drawVents(); drawMarketUI(); if (PM()) { drawBoats(); drawEscort(); drawAgenorZones(); } if (RM()) { drawSmokeClouds(); for (const f of foes) drawRailFoeState(f); drawTunnelDark(); drawRushes(); drawMascots(); drawJianjiZones(); } drawBossFx();
   for (const r of rings) { ctx.strokeStyle = 'rgba(' + r.color + ',' + Math.max(0, r.life) + ')'; ctx.lineWidth = r.zap ? 3 : 5; ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, 6.2832); ctx.stroke(); if (!r.zap) { ctx.fillStyle = 'rgba(' + r.color + ',' + Math.max(0, r.life) * 0.18 + ')'; ctx.fill(); } }
