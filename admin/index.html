@@ -56,6 +56,7 @@ a{color:var(--teal)}
 .days label{display:inline-flex;gap:2px;align-items:center;margin-right:6px}
 svg text{font-family:inherit}
 @media (max-width:820px){.app{grid-template-columns:1fr}.side{position:sticky;z-index:6;height:auto;display:flex;gap:4px;overflow-x:auto;padding:8px}.side .grp,.side .brand{display:none}.side button{width:auto;flex:0 0 auto;white-space:nowrap}.bar{position:static;flex-wrap:wrap}.bar input{width:100%}.form{grid-template-columns:1fr}.form .hint{grid-column:1}.content{padding:12px}.g4{grid-template-columns:1fr 1fr}}      /* 手機能開、不特別設計（D73） */
+.kmodal{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}.kmodal .box{background:#fff;width:100%;max-width:460px;border-radius:16px;padding:18px 16px;max-height:80vh;overflow:auto}.kmodal p{margin:0 0 14px;color:#333;line-height:1.55}.kmodal .row{display:flex;gap:8px}.kmodal .row .btn{flex:1}
 </style>
 </head>
 <body>
@@ -73,6 +74,10 @@ svg text{font-family:inherit}
   var $ = function (id) { return document.getElementById(id); };
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function toast(t) { var e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(function () { e.style.display = 'none'; }, 2200); }
+  /* 後台不用瀏覽器原生 confirm／prompt（LINE、平板內建瀏覽器與測試工具會卡住），改成頁內框；行為不變 */
+  function kDlg(msg, input, def) { return new Promise(function (res) { var m = document.createElement('div'); m.className = 'kmodal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.innerHTML = '<div class="box"><p style="white-space:pre-line">' + esc(msg) + '</p>' + (input ? '<input id="kIn" autocomplete="off" style="width:100%;margin:0 0 12px;padding:10px;border:1px solid #ccc;border-radius:10px;font-size:16px">' : '') + '<div class="row"><button type="button" class="btn alt" data-x="0">取消</button><button type="button" class="btn" data-x="1">確定</button></div></div>'; document.body.appendChild(m); var ip = m.querySelector('#kIn'); if (ip) { ip.value = def == null ? '' : def; ip.focus(); ip.onkeydown = function (e) { if (e.key === 'Enter') m.querySelector('[data-x="1"]').click(); }; } m.querySelectorAll('[data-x]').forEach(function (b) { b.onclick = function () { var ok = b.dataset.x === '1', v = ip ? ip.value : true; m.remove(); res(input ? (ok ? v : null) : ok); }; }); }); }
+  function kAsk(msg) { return kDlg(msg, false); }
+  function kPrompt(msg, def) { return kDlg(msg, true, def); }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function dt(t) { if (!t) return ''; var d = new Date(t); return d.getFullYear() + '/' + pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
   function dd(t) { var d = new Date(t); return pad(d.getMonth() + 1) + '/' + pad(d.getDate()); }
@@ -336,8 +341,8 @@ svg text{font-family:inherit}
       var old = K.cfg(), ch = Object.keys(x).filter(function (k) { return typeof x[k] !== 'object' && x[k] !== old[k]; }).map(function (k) { var L = { spendPerPoint: '每點所需消費（元）', minSpend: '最低消費（元）', maxStorePointsPerDay: '每天消費點數上限', qrExpireMin: 'QR 效期（分）', reissueMax: '重新出碼上限', scorePerPoint: '遊戲幾分＝1 點', gameDailyCap: '遊戲每日上限（點）', gameClaim: '遊戲點入帳方式', gamePointMode: '遊戲換點方式', eventCapMult: '活動時上限加倍', triesPerLevel: '每關每天算分次數', pointsExpireMonths: '點數期限（月）', pointsExpireDays: '點數期限（天）', redeemHoldDays: '兌換單保留（天）', redeemPerDay: '每天兌換上限', redeemExpireMin: '兌換 QR 提醒（分）', lowStockWarn: '低庫存提醒', expireMode: '到期方式', notice: '公告文字', deskPlace: '領取地點', deskHours: '服務台領取時間' }; return (L[k] || k) + '：' + old[k] + ' → ' + x[k]; });
       if (JSON.stringify(x.gameTiers) !== JSON.stringify(old.gameTiers)) ch.push('遊戲階梯：' + x.gameTiers.map(function (r) { return r[0] + '=' + r[1]; }).join(' '));
       if (!ch.length) return toast('沒有改動');
-      if (!confirm('確定要改這些規則？（立刻生效；已發出的點數與兌換單不追溯）\n\n' + ch.join('\n'))) return;
-      K.saveCfg(x, '點數規則：' + ch.join('；')); toast('已儲存'); app();
+      kAsk('確定要改這些規則？（立刻生效；已發出的點數與兌換單不追溯）\n\n' + ch.join('\n')).then(function (ok) { if (!ok) return;
+      K.saveCfg(x, '點數規則：' + ch.join('；')); toast('已儲存'); app(); });
     };
   };
   /* ---------- 遊戲 ---------- */
@@ -449,13 +454,13 @@ svg text{font-family:inherit}
     var x = K.cfg();
     $('sv').onclick = function () { x.prizes = readP(); K.saveCfg(x, '贈品設定'); toast('已儲存'); app(); };
     $('add').onclick = function () { x.prizes = readP(); x.prizes.push({ id: 'P' + K.rid(3), name: '新贈品', points: 10, stock: 10, on: false, perUser: 1, perUserPer: 'month' }); K.saveCfg(x, '新增贈品'); app(); };
-    c.querySelectorAll('[data-del]').forEach(function (b) { b.onclick = function () { if (!confirm('刪除這個贈品？已兌換紀錄會保留。')) return; x.prizes = readP(); x.prizes.splice(+b.dataset.del, 1); K.saveCfg(x, '刪除贈品'); app(); }; });
+    c.querySelectorAll('[data-del]').forEach(function (b) { b.onclick = function () { kAsk('刪除這個贈品？已兌換紀錄會保留。').then(function (ok) { if (!ok) return; x.prizes = readP(); x.prizes.splice(+b.dataset.del, 1); K.saveCfg(x, '刪除贈品'); app(); }); }; });
     c.querySelectorAll('[data-mv]').forEach(function (b) { b.onclick = function () { var a = b.dataset.mv.split(':'), i = +a[0]; x.prizes = readP(); var it = x.prizes.splice(i, 1)[0], j = a[1] === 'top' ? 0 : Math.max(0, Math.min(x.prizes.length, i + +a[1])); x.prizes.splice(j, 0, it); K.saveCfg(x, '贈品順序：' + it.name + (a[1] === 'top' ? ' 置頂' : ' 移到第 ' + (j + 1))); toast('已調整順序（客人商城照這個順序）'); app(); }; });
     c.querySelectorAll('[data-dup]').forEach(function (b) { b.onclick = function () { x.prizes = readP(); var o = JSON.parse(JSON.stringify(x.prizes[+b.dataset.dup])); o.id = 'P' + K.rid(3); o.name = o.name + '（複製）'; o.on = false; x.prizes.splice(+b.dataset.dup + 1, 0, o); K.saveCfg(x, '複製贈品 ' + o.name); toast('已複製，先是下架狀態，改好再勾上架'); app(); }; });
-    c.querySelectorAll('[data-mg]').forEach(function (b) { b.onclick = function () { var why = prompt('手動標記已領（客人 QR 壞掉、手機沒電時用）。\n請先核對客人身分與兌換碼 ' + b.dataset.mg + '。\n原因（會記在操作紀錄）：', '客人 QR 無法顯示，已核對兌換碼'); if (why === null) return; if (!why.trim()) return toast('沒有填原因，沒有標記'); var r = K.markGiven(b.dataset.mg, (K.cfg().admin || {}).user || '後台', why.trim()); if (!r.ok) return toast(r.msg); toast('已標記已領，扣庫存 1'); app(); }; });
+    c.querySelectorAll('[data-mg]').forEach(function (b) { b.onclick = function () { kPrompt('手動標記已領（客人 QR 壞掉、手機沒電時用）。\n請先核對客人身分與兌換碼 ' + b.dataset.mg + '。\n原因（會記在操作紀錄）：', '客人 QR 無法顯示，已核對兌換碼').then(function (why) { if (why === null) return; if (!why.trim()) return toast('沒有填原因，沒有標記'); var r = K.markGiven(b.dataset.mg, (K.cfg().admin || {}).user || '後台', why.trim()); if (!r.ok) return toast(r.msg); toast('已標記已領，扣庫存 1'); app(); }); }; });
     c.querySelectorAll('[data-img]').forEach(function (b) { b.onclick = function () { cropper(b.dataset.img, function () { app(); }); }; });
-    c.querySelectorAll('[data-rs]').forEach(function (b) { b.onclick = function () { var n = Math.round(+prompt('補貨數量？', '10')); if (!n) return; x.prizes = readP(); var p = x.prizes[+b.dataset.rs]; p.stock += n; K.saveCfg(x, '補貨：' + p.name + ' +' + n); toast('已補貨'); app(); }; });
-    c.querySelectorAll('[data-cx]').forEach(function (b) { b.onclick = function () { if (!confirm('取消這張兌換單並退點？')) return; K.cancelRedeem(b.dataset.cx); K.audit('後台取消兌換單 ' + b.dataset.cx); app(); }; });
+    c.querySelectorAll('[data-rs]').forEach(function (b) { b.onclick = function () { kPrompt('補貨數量？', '10').then(function (v) { var n = Math.round(+v); if (!n) return; x.prizes = readP(); var p = x.prizes[+b.dataset.rs]; p.stock += n; K.saveCfg(x, '補貨：' + p.name + ' +' + n); toast('已補貨'); app(); }); }; });
+    c.querySelectorAll('[data-cx]').forEach(function (b) { b.onclick = function () { kAsk('取消這張兌換單並退點？').then(function (ok) { if (!ok) return; K.cancelRedeem(b.dataset.cx); K.audit('後台取消兌換單 ' + b.dataset.cx); app(); }); }; });
     $('ps').onchange = function () { V.prize.sel = this.value; app(); }; $('sf').onchange = function () { V.prize.st = this.value; app(); };
     $('exL').onclick = function () { csv('兌換名單_' + sel, listCols(give), listRows(rs, D.desk, sel)); };
   };
@@ -473,8 +478,8 @@ svg text{font-family:inherit}
     var x = K.cfg();
     $('sv').onclick = function () { x.stores = readS(); K.saveCfg(x, '店家設定'); toast('已儲存'); app(); };
     $('add').onclick = function () { x.stores = readS(); x.stores.push({ id: 'S' + K.rid(3), name: '新店家', pin: String(Math.floor(1000 + Math.random() * 9000)), key: K.rid(16).toLowerCase(), on: false }); K.saveCfg(x, '新增店家'); app(); };
-    c.querySelectorAll('[data-del]').forEach(function (b) { b.onclick = function () { if (!confirm('刪除這個店家？')) return; x.stores = readS(); x.stores.splice(+b.dataset.del, 1); K.saveCfg(x, '刪除店家'); app(); }; });
-    c.querySelectorAll('[data-key]').forEach(function (b) { b.onclick = function () { if (!confirm('重新產生防偽金鑰？這家店還沒被掃的 QR 會失效。')) return; x.stores = readS(); var s = x.stores[+b.dataset.key]; s.key = K.rid(16).toLowerCase(); K.saveCfg(x, '重新產生店家金鑰：' + s.name); app(); }; });
+    c.querySelectorAll('[data-del]').forEach(function (b) { b.onclick = function () { kAsk('刪除這個店家？').then(function (ok) { if (!ok) return; x.stores = readS(); x.stores.splice(+b.dataset.del, 1); K.saveCfg(x, '刪除店家'); app(); }); }; });
+    c.querySelectorAll('[data-key]').forEach(function (b) { b.onclick = function () { kAsk('重新產生防偽金鑰？這家店還沒被掃的 QR 會失效。').then(function (ok) { if (!ok) return; x.stores = readS(); var s = x.stores[+b.dataset.key]; s.key = K.rid(16).toLowerCase(); K.saveCfg(x, '重新產生店家金鑰：' + s.name); app(); }); }; });
     $('mon').onchange = function () { V.stores.mon = this.value; app(); };
     $('exR').onclick = function () { csv('店家對帳_' + mon, [{ k: 'id', t: '代碼' }, { k: 'name', t: '店家' }, { k: 'n', t: 'QR筆數' }, { k: 'amt', t: '消費金額' }, { k: 'pts', t: '發出點數' }, { k: 'cl', t: '已被掃' }, { k: 'unc', t: '沒被掃' }], rec); };
     wireTable('t_rec', app); wireTable('t_tx', app);
@@ -489,7 +494,7 @@ svg text{font-family:inherit}
     $('go').onclick = function () { V.desk.f = { from: $('ff').value, to: $('ft').value, staff: $('fs').value }; app(); };
     $('ex').onclick = function () { csv('服務台發放', cols, rows); };
     var x = K.cfg(); $('sv').onclick = function () { x.deskPin = $('dp').value.trim() || x.deskPin; K.saveCfg(x, '服務台密碼'); toast('已儲存'); };
-    $('rk').onclick = function () { if (!confirm('重新產生兌換金鑰？客人手上還沒領的兌換 QR 會失效。')) return; x.redeemKey = K.rid(16).toLowerCase(); K.saveCfg(x, '重新產生兌換金鑰'); app(); };
+    $('rk').onclick = function () { kAsk('重新產生兌換金鑰？客人手上還沒領的兌換 QR 會失效。').then(function (ok) { if (!ok) return; x.redeemKey = K.rid(16).toLowerCase(); K.saveCfg(x, '重新產生兌換金鑰'); app(); }); };
     wireTable('t_desk', app);
   };
   /* ---------- 報表 ---------- */
@@ -607,14 +612,14 @@ svg text{font-family:inherit}
     function dl(name, text) { var b = new Blob([text], { type: 'application/json' }), u = URL.createObjectURL(b), l = document.createElement('a'); l.href = u; l.download = name; document.body.appendChild(l); l.click(); l.remove(); setTimeout(function () { URL.revokeObjectURL(u); }, 1000); }
     $('exA').onclick = function () { dl('kite_all_' + K.dayKey() + '.json', JSON.stringify({ cfg: K.cfg(), members: K.allMembers(), store: K.storeLog(), desk: K.deskLog(), audit: K.auditLog() }, null, 1)); K.audit('匯出全部資料'); };
     $('exM').onclick = function () { dl('kite_member_' + K.member().id + '.json', K.exportMe()); };
-    $('doI').onclick = function () { var list; try { var j = JSON.parse($('imp').value); list = Array.isArray(j) ? j : j.members ? j.members : [j]; list = list.filter(function (m) { return m && m.id && m.ledger; }); if (!list.length) throw 0; } catch (e) { return toast('格式不對'); } var pv = K.importPreview(list); if (!confirm('匯入預覽：新增 ' + pv.add + ' 位、相同略過 ' + pv.same + ' 位、內容不同（衝突）' + pv.conflict + ' 位。\n衝突的不會覆寫，會隔離到「匯入衝突」待處理（不入帳、不加總餘額、不依暱稱合併）。確定匯入？')) return; K.importMembers(list.filter(function (m, i) { return pv.items[i].st !== 'same'; })); toast('已匯入'); app(); };
-    $('wipe').onclick = function () { var D2 = data(); var s = prompt('會清除這台電腦的：會員 ' + D2.ms.length + ' 位（含匯入）、點數紀錄 ' + D2.led.length + ' 筆、店家 QR ' + D2.tx.length + ' 筆、服務台發放 ' + D2.desk.length + ' 筆。設定與操作紀錄保留。\n建議先按「匯出全部」備份。\n確定請輸入「清除」兩個字：'); if (s !== '清除') return toast('沒有清除'); var d = K.wipeTest(); if (!d) return toast('封存已滿 3 份，請先匯出並整理封存後再清除；這次沒有清除任何資料'); toast('已清除，新資料集 ' + d.id); app(); };
+    $('doI').onclick = function () { var list; try { var j = JSON.parse($('imp').value); list = Array.isArray(j) ? j : j.members ? j.members : [j]; list = list.filter(function (m) { return m && m.id && m.ledger; }); if (!list.length) throw 0; } catch (e) { return toast('格式不對'); } var pv = K.importPreview(list); kAsk('匯入預覽：新增 ' + pv.add + ' 位、相同略過 ' + pv.same + ' 位、內容不同（衝突）' + pv.conflict + ' 位。\n衝突的不會覆寫，會隔離到「匯入衝突」待處理（不入帳、不加總餘額、不依暱稱合併）。確定匯入？').then(function (ok) { if (!ok) return; K.importMembers(list.filter(function (m, i) { return pv.items[i].st !== 'same'; })); toast('已匯入'); app(); }); };
+    $('wipe').onclick = function () { var D2 = data(); kPrompt('會清除這台電腦的：會員 ' + D2.ms.length + ' 位（含匯入）、點數紀錄 ' + D2.led.length + ' 筆、店家 QR ' + D2.tx.length + ' 筆、服務台發放 ' + D2.desk.length + ' 筆。設定與操作紀錄保留。\n建議先按「匯出全部」備份。\n確定請輸入「清除」兩個字：').then(function (s) { if (s !== '清除') return toast('沒有清除'); var d = K.wipeTest(); if (!d) return toast('封存已滿 3 份，請先匯出並整理封存後再清除；這次沒有清除任何資料'); toast('已清除，新資料集 ' + d.id); app(); }); };
     c.querySelectorAll('[data-cfx]').forEach(function (b) { b.onclick = function () { var l = K.list('kiteImportConflicts1'); l.forEach(function (x) { if (x.id === b.dataset.cfx) { x.status = 'closed'; x.closedT = Date.now(); } }); K.saveList('kiteImportConflicts1', l); K.audit('關閉匯入衝突 ' + b.dataset.cfx + '（保留原本）'); app(); }; });
-    $('reset').onclick = function () { if (!confirm('把所有設定還原成預設？')) return; K.resetCfg(); toast('已還原'); app(); };
+    $('reset').onclick = function () { kAsk('把所有設定還原成預設？').then(function (ok) { if (!ok) return; K.resetCfg(); toast('已還原'); app(); }); };
     $('cSave').onclick = function () { var u = $('cu').value.trim(), k = $('ck').value.trim(); if (u && !/^https:\/\/script\.google(usercontent)?\.com\/.+\/exec$|^http:\/\/localhost/.test(u)) return toast('網址應該是 https://script.google.com/macros/s/……/exec'); if (u) localStorage.setItem('kiteCloudUrl', u); else localStorage.removeItem('kiteCloudUrl'); if (k) localStorage.setItem('kiteCloudAdminKey', k); else localStorage.removeItem('kiteCloudAdminKey'); K.audit('雲端同步設定已更新'); toast('已儲存，連線中…'); K.cloudStart(); K.cloudSync().then(function () { app(); }); };
     $('cNow').onclick = function () { toast('同步中…'); K.cloudSync().then(function () { var s2 = K.cloudStatus(); toast(s2.err || '已同步'); app(); }); };
     $('cCfg').onclick = function () { K.saveCfg(K.cfg(), '發布設定到所有裝置'); K.cloudMarkAll(); K.cloudPush().then(function (r) { toast(r && r.ok ? '已發布' : '發布失敗：' + (K.cloudStatus().err || '請檢查後台金鑰')); app(); }); };
-    $('cWipe').onclick = function () { var s2 = prompt('會清空雲端上所有測試玩家的會員、點數、集點、兌換、券紀錄，每台手機下次連線也會自動清掉本機測試資料。後台設定與圖片保留。\n\n確定要清空，請輸入「清空」兩個字：'); if (s2 !== '清空') return; K.cloudWipe().then(function (r) { if (!r || !r.ok) return toast('清空失敗：' + (r && r.msg || '連不上')); K.audit('清空全部雲端測試資料（第 ' + r.epoch + ' 輪開始）'); toast('已清空，第 ' + r.epoch + ' 輪測試開始'); K.cloudPull(true).then(function () { app(); }); }); };
+    $('cWipe').onclick = function () { kPrompt('會清空雲端上所有測試玩家的會員、點數、集點、兌換、券紀錄，每台手機下次連線也會自動清掉本機測試資料。後台設定與圖片保留。\n\n確定要清空，請輸入「清空」兩個字：').then(function (s2) { if (s2 !== '清空') return; K.cloudWipe().then(function (r) { if (!r || !r.ok) return toast('清空失敗：' + (r && r.msg || '連不上')); K.audit('清空全部雲端測試資料（第 ' + r.epoch + ' 輪開始）'); toast('已清空，第 ' + r.epoch + ' 輪測試開始'); K.cloudPull(true).then(function () { app(); }); }); }); };
   };
 
   /* ---------- 補登／交易恢復（D54：兩種都限當天；工作單 24 v3 第四節 C） ---------- */
