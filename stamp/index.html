@@ -482,7 +482,7 @@ const OBS = { 1: '找一樣黃色的東西，指給對方看～', 2: '你看到�
 const SECRET = { title: '傳說中的小鳶知己', color: '#C9473A', hint: '六個章蓋滿，再把三款小遊戲都玩到一定程度，藏起來的第 7 個章就會出現' };
 /* v0.12：祕密章條件（Dari 10/13 16:58：遊戲都玩到一定程度＋六章蓋滿）。「一定程度」的門檻是建議：捕魚三個場次都玩過、飛行過兩關、去旅行收到三張明信片 */
 const SECRET_NEED = [
-  { k: 'fish', name: '捕魚三個場次都玩過', need: 3, get: () => { const p = readJ('kiteFishingProg1') || {}; return Object.keys(p.played || {}).length; } },
+  { k: 'fish', name: '捕魚玩三局', need: 3, get: () => { const p = readJ('kiteFishingProg1') || {}; return Object.values(p.played || {}).reduce((a, b) => a + b, 0); } },      // D118：場次改成局內輪替
   { k: 'fly', name: '飛行冒險過兩關', need: 2, get: () => { const f = readJ('kiteFlyProgress1'); let c = 0; if (f && f.stars) Object.keys(f.stars).forEach((x) => { if ((f.stars[x] || [])[0]) c++; }); return c; } },
   { k: 'travel', name: '小鳶去旅行收到三張明信片', need: 3, get: () => { const t = readJ('kiteTravel1'); return t && t.cards ? Object.keys(t.cards).length : 0; } }
 ];
