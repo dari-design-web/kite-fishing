@@ -84,7 +84,7 @@ svg text{font-family:inherit}
   function mins(s) { s = s || 0; return s >= 3600 ? (s / 3600).toFixed(1) + ' 小時' : Math.round(s / 60) + ' 分鐘'; }
   function num(n) { return (n || 0).toLocaleString(); }
   function GN(g) { return K.GAMES[g] ? K.GAMES[g].name : g; }
-  function LN(g, l) { return (K.GAMES[g] && K.GAMES[g].levels[l]) || l; }
+  function LN(g, l) { var G = K.GAMES[g]; return (G && (G.levels[l] || (G.legacy && G.legacy[l]))) || l; }
   var TYPE = { store: '店家集點', backfill: '補登入點', game: '遊戲換點', travel: '旅行帶回', redeem: '兌換', refund: '退點', adjust: '手動調整', expire: '到期' };
   function TL(r) { return r.type === 'redeem' && r.virtual ? '兌換便當' : (TYPE[r.type] || r.type); }      // C-205：便當（虛擬商品）和實體贈品分開標
 
