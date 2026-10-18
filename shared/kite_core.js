@@ -335,9 +335,24 @@
   /* G76（GPT 建議，Claude 10/17 採用）：排行榜用獨立的公開化名，不用 LINE 名字或會員尾碼；可選不出現在公開名單（仍照算名次，別人看到的名次會跳號） */
   var LB_A = ['港邊', '雨都', '愛笑', '勇敢', '好奇', '閃亮', '元氣', '微風', '慢慢', '晴天'], LB_B = ['小卷', '鯨鯊', '海龜', '螃蟹', '小鳶', '章魚', '海鷗', '河豚', '海星', '小丑魚'];
   function lbAutoAlias(id) { var h = 2166136261; String(id || '').split('').forEach(function (c) { h = Math.imul(h ^ c.charCodeAt(0), 16777619); }); h ^= h >>> 15; h = Math.imul(h, 2246822507); h ^= h >>> 13; h = h >>> 0; return LB_A[h % 10] + LB_B[Math.floor(h / 10) % 10] + ' ' + String(10 + Math.floor(h / 100) % 90); }
-  function lbName(m) { return m.lbAlias ? String(m.lbAlias).slice(0, 10) : lbAutoAlias(m.id); }
+  /* D112（Dari 10/18）：排行榜化名擋不雅字詞與冒充官方。先把空白、符號、全形去掉再比對，避免「幹 你」「f.u.c.k」這種繞法；
+     顯示時也再檢查一次，所以之後清單加字，舊的名字會自動換回系統化名。不告訴使用者是哪個字被擋。清單要加減直接改這兩行 */
+  var BAD_WORDS = ['幹你', '幹您', '幹林', '干你', '干您', '干林', '操你', '操妳', '操他', '操她', '操機', '肏', '靠北', '靠杯', '靠邀', '靠夭', '靠腰', '機掰', '雞掰', '機歪', '雞歪', '機八', '雞八', '機巴', '雞巴', '屌', '屄', '婊', '賤人', '賤貨', '妓女', '智障', '白癡', '白痴', '低能', '腦殘', '弱智', '去死', '死全家', '王八', '畜生', '畜牲', '廢物', '人渣', '媽的', '他媽', '你媽', '尼瑪', '娘的', '三小', '尛', '洨', '懶叫', '卵叫', '屁眼', '陰莖', '陰道', '陽具', '做愛', '性交', '強姦', '強暴', '淫', '色情', '裸體', '奶頭', '雞雞', '支那', '黑鬼', '大麻', '安非他命', '幹', 'fuck', 'fuk', 'fck', 'shit', 'bitch', 'cunt', 'dick', 'pussy', 'asshole', 'nigger', 'nigga', 'fag', 'porn', 'sex', 'rape', 'wtf', 'stfu', 'motherf'],
+      OFFICIAL_WORDS = ['官方', '客服', '管理員', '管理者', '系統', '叁肆行', '東三東四', '小鳶本人', 'admin', 'staff'];
+  function nameKey(s) {
+    s = String(s || '').normalize ? String(s || '').normalize('NFKC') : String(s || '');
+    s = s.toLowerCase().replace(/[0-9@$!|]/g, function (c) { return { '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '@': 'a', '$': 's', '!': 'i', '|': 'i' }[c] || c; });
+    return s.replace(/[^a-z㐀-鿿豈-﫿]/g, '');
+  }
+  function nameBad(a) {      // 回傳 ''＝可以；否則是要給使用者看的提示
+    var k = nameKey(a).replace(/能幹|幹勁|骨幹|樹幹|幹部|才幹|主幹|幹練|苦幹|實幹/g, ''); if (!k) return '';
+    for (var i = 0; i < BAD_WORDS.length; i++) if (k.indexOf(nameKey(BAD_WORDS[i])) >= 0) return '名字裡有不適合的字詞，換一個吧';
+    for (var j = 0; j < OFFICIAL_WORDS.length; j++) if (k.indexOf(nameKey(OFFICIAL_WORDS[j])) >= 0) return '不能用看起來像官方的名字，換一個吧';
+    return '';
+  }
+  function lbName(m) { return m.lbAlias && !nameBad(m.lbAlias) ? String(m.lbAlias).slice(0, 10) : lbAutoAlias(m.id); }
   function lbMe() { var m = member(); return { alias: lbName(m), custom: !!m.lbAlias, hide: !!m.lbHide }; }
-  function setLbMe(o) { var m = member(); if (o.alias != null) { var a = String(o.alias).replace(/[\s　]+/g, ' ').trim().slice(0, 10); if (/\d{6,}|@/.test(a)) return { ok: false, msg: '化名裡不要放電話或 email' }; m.lbAlias = a; } if (o.hide != null) m.lbHide = !!o.hide; saveMember(m); return { ok: true }; }
+  function setLbMe(o) { var m = member(); if (o.alias != null) { var a = String(o.alias).replace(/[\s　]+/g, ' ').trim().slice(0, 10); if (/\d{6,}|@/.test(a)) return { ok: false, msg: '化名裡不要放電話或 email' }; var bad = nameBad(a); if (bad) return { ok: false, msg: bad }; m.lbAlias = a; } if (o.hide != null) m.lbHide = !!o.hide; saveMember(m); return { ok: true }; }
   function lbRank(rows, val, n) {      // 同分同名次（1、2、2、4）；前 n 名含最後名次的所有同分者；選擇不公開的人照算名次但不列出
     rows.forEach(function (r, i) { r.rank = i && val(r) === val(rows[i - 1]) ? rows[i - 1].rank : i + 1; });
     var mine = rows.filter(function (r) { return r.me; })[0] || null;
@@ -681,7 +696,7 @@
   if (typeof document !== 'undefined' && typeof fetch !== 'undefined') setTimeout(function () { cloudStart(); }, 50);
 
   G.KiteCore = {
-    DEFAULTS: DEFAULTS, GAMES: GAMES, cfg: cfg, saveCfg: saveCfg, ruleVer: ruleVer, ruleHistory: ruleHistory, setProfile: setProfile, displayName: displayName, bentoState: bentoState, redeemBento: redeemBento, redeemBlock: redeemBlock, codeByShort: codeByShort, couponUsedLog: function () { return lg('kiteCouponUsed1'); }, shortByCode: shortByCode, prizeImg: prizeImg, hasPrizeImg: hasPrizeImg, setPrizeImg: setPrizeImg, resetCfg: resetCfg, audit: audit, auditLog: function () { return rd(K_AUDIT) || []; },
+    DEFAULTS: DEFAULTS, GAMES: GAMES, cfg: cfg, saveCfg: saveCfg, ruleVer: ruleVer, ruleHistory: ruleHistory, setProfile: setProfile, displayName: displayName, nameBad: nameBad, bentoState: bentoState, redeemBento: redeemBento, redeemBlock: redeemBlock, codeByShort: codeByShort, couponUsedLog: function () { return lg('kiteCouponUsed1'); }, shortByCode: shortByCode, prizeImg: prizeImg, hasPrizeImg: hasPrizeImg, setPrizeImg: setPrizeImg, resetCfg: resetCfg, audit: audit, auditLog: function () { return rd(K_AUDIT) || []; },
     cloudPull: cloudPull, cloudPush: cloudPush, cloudSync: cloudSync, cloudOp: cloudOp, cloudWipe: cloudWipe, cloudStatus: cloudStatus, onCloud: function (f) { CL.subs.push(f); }, cloudStart: cloudStart, cloudMarkAll: function () { CL.cfgDirty = CL.imgDirty = true; }, liffStart: liffStart, linkLine: linkLine, liffId: liffId,
     member: member, peekMember: function () { return rd(K_MEM); }, saveMember: saveMember, dayKey: dayKey, rid: rid, hmac: hmac, sha256: sha256, utf8: utf8,
     pointsForSpend: pointsForSpend, makeEarnCode: makeEarnCode, claimEarn: claimEarn, storeLog: function () { return lg(K_STORE); }, storeById: storeById,
