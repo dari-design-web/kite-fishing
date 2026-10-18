@@ -424,16 +424,16 @@ const CONFIG = {
     bream:    { name: '赤鯮',   kg: 3.0, speed: [140, 180], r: 22, depth: [430, 590], sprite: 'fish_big',      sw: 64, sh: 40, color: '#F08C5A', fin: '#C65B32', fact: '背部偏紅、腹部較淡，身側有黃色斑，常棲息在較深的砂泥底海域。' },
     amber:    { name: '紅魽',   kg: 5.0, speed: [185, 215], r: 24, depth: [470, 585], sprite: 'fish_amber',    sw: 84, sh: 44, rare: true, fact: '紅魽也叫「紅甘」，體側常有一條黃色縱帶，是基隆在地漁獲之一。' },
     /* D119（G83 設計、G84 美術）：第 2～4 關的新魚。sprite 是 G84 的檔名，圖還沒交時用程式畫的佔位圖（shape／stripe 決定樣子）。小知識是 G83_02 查證稿的改寫 */
-    huashen:   { st: 's2', name: '花身雞魚', kg: 0.4, speed: [44, 62],   r: 13, depth: [240, 360], sprite: 'f_s2_huashen',   sw: 38, sh: 22, color: '#EDE6C9', fin: '#A3925E', stripe: 'h', fact: '花身雞魚（花身仔）喜歡成群活動，是八斗子沿近海的漁獲之一。' },
-    zhenshen:  { st: 's2', name: '真鰺',     kg: 0.6, speed: [60, 84],   r: 13, depth: [250, 400], sprite: 'f_s2_zhenshen',  sw: 40, sh: 22, color: '#CFE0E6', fin: '#7EA0B0', stripe: 'line', fact: '真鰺也是東北海域重要的鯖鰺類漁獲。' },
-    jialie:    { st: 's2', name: '嘉鱲',     kg: 1.0, speed: [74, 98],   r: 16, depth: [300, 470], sprite: 'f_s2_jialie',    sw: 44, sh: 32, color: '#F2A6A0', fin: '#D46A6A', shape: 'tall', spots: '#8FC7E8', fact: '嘉鱲身體偏紅，會在砂泥底附近活動。' },
-    zhengjian: { st: 's2', name: '正鰹',     kg: 1.6, speed: [118, 148], r: 17, depth: [330, 520], sprite: 'f_s2_zhengjian', sw: 54, sh: 30, color: '#7088AA', fin: '#3E5678', stripe: 'belly', fact: '正鰹是游得很快的洄游魚。' },
-    mahi:      { st: 's2', name: '鬼頭刀',   kg: 4.5, speed: [175, 205], r: 24, depth: [440, 580], sprite: 'f_s2_mahi',      sw: 86, sh: 40, color: '#A7CF5C', fin: '#3E9AA8', shape: 'mahi', rare: true, fact: '鬼頭刀是大洋洄游魚，身上閃著黃綠色的光。' },
-    doubang:   { st: 's3', name: '條紋豆娘魚', kg: 0.4, speed: [40, 58], r: 13, depth: [250, 560], sprite: 'f_s3_doubang',   sw: 34, sh: 26, color: '#F3EEC4', fin: '#C9C08A', shape: 'tall', stripe: 'v', fact: '條紋豆娘魚身上有幾條深色直條紋，常在礁岩邊活動。' },
-    suodi:     { st: 's3', name: '梭地豆娘魚', kg: 0.5, speed: [44, 62], r: 13, depth: [250, 560], sprite: 'f_s3_suodi',     sw: 34, sh: 26, color: '#93ABBE', fin: '#5E7890', shape: 'tall', fact: '潮池和礁岸邊，也住著豆娘魚朋友。' },
-    douzai:    { st: 's3', name: '豆仔魚',   kg: 0.3, speed: [52, 70],   r: 10, depth: [240, 420], sprite: 'f_s3_douzai',    sw: 30, sh: 14, color: '#CDD6DA', fin: '#8A9AA2', school: [3, 4], fact: '豆仔魚常成群穿梭在潮池和水道之間。' },
-    xiangyu:   { st: 's3', name: '褐籃子魚', kg: 1.0, speed: [50, 70],   r: 16, depth: [300, 560], sprite: 'f_s3_xiangyu',   sw: 44, sh: 30, color: '#B0966E', fin: '#7A6244', shape: 'tall', spots: '#E8D9B0', fact: '和平島附近的人叫牠「象魚」，鰭上有刺，遠遠看就好。' },
-    lobster:   { st: 's3', name: '龍蝦',     kg: 4.0, speed: [30, 44],   r: 22, depth: [470, 580], sprite: 'f_s3_lobster',   sw: 70, sh: 38, shape: 'lobster', rare: true, fact: '和平島外側較深的水下也有龍蝦。只觀察，不採集，把海裡的朋友留在家。' },
+    huashen:   { st: 's2', name: '花身雞魚', kg: 0.4, speed: [44, 62],   r: 13, depth: [240, 360], sprite: 'f_s2_huashen',   sw: 40, sh: 21, color: '#EDE6C9', fin: '#A3925E', stripe: 'h', fact: '花身雞魚（花身仔）喜歡成群活動，是八斗子沿近海的漁獲之一。' },
+    zhenshen:  { st: 's2', name: '真鰺',     kg: 0.6, speed: [60, 84],   r: 13, depth: [250, 400], sprite: 'f_s2_zhenshen',  sw: 42, sh: 23, color: '#CFE0E6', fin: '#7EA0B0', stripe: 'line', fact: '真鰺也是東北海域重要的鯖鰺類漁獲。' },
+    jialie:    { st: 's2', name: '嘉鱲',     kg: 1.0, speed: [74, 98],   r: 16, depth: [300, 470], sprite: 'f_s2_jialie',    sw: 46, sh: 24, color: '#F2A6A0', fin: '#D46A6A', shape: 'tall', spots: '#8FC7E8', fact: '嘉鱲身體偏紅，會在砂泥底附近活動。' },
+    zhengjian: { st: 's2', name: '正鰹',     kg: 1.6, speed: [118, 148], r: 17, depth: [330, 520], sprite: 'f_s2_zhengjian', sw: 54, sh: 26, color: '#7088AA', fin: '#3E5678', stripe: 'belly', fact: '正鰹是游得很快的洄游魚。' },
+    mahi:      { st: 's2', name: '鬼頭刀',   kg: 4.5, speed: [175, 205], r: 24, depth: [440, 580], sprite: 'f_s2_mahi',      sw: 86, sh: 39, color: '#A7CF5C', fin: '#3E9AA8', shape: 'mahi', rare: true, fact: '鬼頭刀是大洋洄游魚，身上閃著黃綠色的光。' },
+    doubang:   { st: 's3', name: '條紋豆娘魚', kg: 0.4, speed: [40, 58], r: 13, depth: [250, 520], sprite: 'f_s3_doubang',   sw: 40, sh: 19, color: '#F3EEC4', fin: '#C9C08A', shape: 'tall', stripe: 'v', fact: '條紋豆娘魚身上有幾條深色直條紋，常在礁岩邊活動。' },
+    suodi:     { st: 's3', name: '梭地豆娘魚', kg: 0.5, speed: [44, 62], r: 13, depth: [250, 520], sprite: 'f_s3_suodi',     sw: 40, sh: 20, color: '#93ABBE', fin: '#5E7890', shape: 'tall', fact: '潮池和礁岸邊，也住著豆娘魚朋友。' },
+    douzai:    { st: 's3', name: '豆仔魚',   kg: 0.3, speed: [52, 70],   r: 10, depth: [240, 420], sprite: 'f_s3_douzai',    sw: 32, sh: 14, color: '#CDD6DA', fin: '#8A9AA2', school: [3, 4], fact: '豆仔魚常成群穿梭在潮池和水道之間。' },
+    xiangyu:   { st: 's3', name: '褐籃子魚', kg: 1.0, speed: [50, 70],   r: 16, depth: [300, 520], sprite: 'f_s3_xiangyu',   sw: 46, sh: 21, color: '#B0966E', fin: '#7A6244', shape: 'tall', spots: '#E8D9B0', fact: '和平島附近的人叫牠「象魚」，鰭上有刺，遠遠看就好。' },
+    lobster:   { st: 's3', name: '龍蝦',     kg: 4.0, speed: [30, 44],   r: 22, depth: [470, 505], sprite: 'f_s3_lobster',   sw: 72, sh: 36, shape: 'lobster', rare: true, fact: '和平島外側較深的水下也有龍蝦。只觀察，不採集，把海裡的朋友留在家。' },
     flying:    { st: 's4', name: '尖頭細身飛魚', kg: 0.6, speed: [70, 96], r: 13, depth: [235, 320], sprite: 'f_s4_flying', sw: 44, sh: 18, color: '#C2D8EA', fin: '#6C93B8', shape: 'flying', jump: true, fact: '飛魚會在漂浮物附近產卵，初夏常聚集在基隆嶼附近海域。' },
     baimao:    { st: 's4', name: '低鰭舵魚', kg: 0.9, speed: [60, 84],   r: 15, depth: [280, 470], sprite: 'f_s4_baimao',    sw: 42, sh: 28, color: '#A3ADB2', fin: '#6E787E', shape: 'tall', fact: '低鰭舵魚在地叫「白毛」，基隆嶼的礁邊也看得到。' },
     juwei:     { st: 's4', name: '鋸尾鯛',   kg: 1.0, speed: [70, 92],   r: 15, depth: [300, 500], sprite: 'f_s4_juwei',     sw: 42, sh: 30, color: '#5E6F8E', fin: '#F0CF4C', shape: 'tall', fact: '鋸尾鯛是暖水季節會來到島礁邊的魚。' },
@@ -502,7 +502,10 @@ const CONFIG = {
 /* 素材：assets/ 裡的同名檔案。拿掉其中一行，那一項就會退回程式畫的佔位圖（全部朝右、透明背景） */
 /* D119：第 2～4 關的 G84 圖交了以後，在 STAGE_ART 加檔名（放 assets/stages/），沒列的就用程式畫的佔位圖。
    鍵名：bg_s2_noon／bg_s2_dusk／bg_s2_night…、s2_lampboat、s3_reef_front、s3_urchin、s3_hermit、s3_mark、s4_splash，魚用 CONFIG.fish 的 sprite 名（f_s2_huashen…、f_s4_flying_jump） */
-const STAGE_ART = {};
+const STAGE_ART = { bg_s2_noon: 'bg_s2_noon.jpg', bg_s2_dusk: 'bg_s2_dusk.jpg', bg_s2_night: 'bg_s2_night.jpg', bg_s3_noon: 'bg_s3_noon.jpg', bg_s3_dusk: 'bg_s3_dusk.jpg', bg_s3_night: 'bg_s3_night.jpg', bg_s4_noon: 'bg_s4_noon.jpg', bg_s4_dusk: 'bg_s4_dusk.jpg', bg_s4_night: 'bg_s4_night.jpg',
+  s2_lampboat: 's2_lampboat.png', s3_reef_front: 's3_reef_front.png', s3_urchin: 's3_urchin.png', s3_hermit: 's3_hermit.png', s3_mark: 's3_mark.png', s4_splash: 's4_splash.png',
+  f_s2_huashen: 'f_s2_huashen.png', f_s2_jialie: 'f_s2_jialie.png', f_s2_mahi: 'f_s2_mahi.png', f_s2_zhengjian: 'f_s2_zhengjian.png', f_s2_zhenshen: 'f_s2_zhenshen.png',
+  f_s3_doubang: 'f_s3_doubang.png', f_s3_douzai: 'f_s3_douzai.png', f_s3_lobster: 'f_s3_lobster.png', f_s3_suodi: 'f_s3_suodi.png', f_s3_xiangyu: 'f_s3_xiangyu.png' };      // D119：G84 第一批（第 4 關的魚還沒交）
 const ASSET_FILES = { bg_dusk: 'bg_dusk_v2.jpg', bg_night: 'bg_night_v2.jpg', kite_glide: 'kite_glide_v2.png', kite_dive: 'kite_dive_v2.png', fish_small: 'fish_small_v2.png', fish_mid: 'fish_mid_v2.png', fish_big: 'fish_big_v2.png', trash: 'trash.png', whaleshark: 'whaleshark.png', bg: 'bg_v2.jpg', fish_squid: 'fish_squid_v2.png', fish_hairtail: 'fish_hairtail_v2.png', fish_amber: 'fish_amber_v2.png' };      // v0.10：ChatGPT G-42 新底圖、漁獲與小鳶（鍵不變，只換檔名）
 
 const $ = (id) => document.getElementById(id);
@@ -516,7 +519,7 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const calm = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 const img = {};
 if (window.USE_ASSETS !== false) for (const k in STAGE_ART) ASSET_FILES[k] = 'stages/' + STAGE_ART[k];
-if (window.USE_ASSETS !== false) for (const k in ASSET_FILES) { const im = new Image(); im.onload = () => { img[k] = im; }; im.src = 'assets/' + ASSET_FILES[k]; }
+if (window.USE_ASSETS !== false) for (const k in ASSET_FILES) { const im = new Image(); im.onload = () => { img[k] = im; if (k === 's3_reef_front') reefMaskFrom(im); }; im.src = 'assets/' + ASSET_FILES[k]; }
 
 const PTS = (v) => Math.round(v * 100);      // v0.11（D44）：畫面只顯示分數，內部仍用原本的重量數值計算，1 公斤 = 100 分
 let mode = 'start', t = 0, last = 0, clock = 0, spawnAcc = 0, kg = 0, soundOn = (() => { try { return localStorage.getItem('kiteBgm') !== '0'; } catch (e) { return true; } })(), ac = null;
@@ -664,7 +667,11 @@ function lampSlow(o) {      // 第 2 關：燈圈裡的魚速度乘 slow（只�
   if (!lamp) return 1; const L = LVL().lamp, d = Math.hypot(o.x - lamp.x, o.y - L.y); if (d >= L.r) return 1;
   o.lit = true; return L.slow + (1 - L.slow) * Math.max(0, (d - L.r * 0.7) / (L.r * 0.3));
 }
-function inReef(o) { for (const rf of LVL().reefs || []) { const dx = (o.x - rf.x) / (rf.rx + o.r * 0.9), dy = (o.y - rf.y) / (rf.ry + o.r * 0.6); if (dx * dx + dy * dy < 1) return true; } return false; }
+let reefMask = null;      // D119：G84 礁影圖的不透明區（90×160 格），魚躲在不透明處就點不到
+function reefMaskFrom(im) { try { const c = document.createElement('canvas'); c.width = 90; c.height = 160; const x = c.getContext('2d'); x.drawImage(im, 0, 0, 90, 160); const d = x.getImageData(0, 0, 90, 160).data, m = new Uint8Array(90 * 160); for (let i = 0; i < m.length; i++) m[i] = d[i * 4 + 3] > 110 ? 1 : 0; reefMask = m;
+  const st = CONFIG.stages.find((q) => q.id === 's3'); st.reefs = [{ x: 46, y: 430, rx: 56, ry: 80 }, { x: 318, y: 440, rx: 46, ry: 76 }, { x: 160, y: 515, rx: 34, ry: 20 }]; } catch (e) {} }
+function maskAt(x, y) { if (x < 0 || x >= W || y < 0 || y >= H) return 0; return reefMask[Math.floor(y / 4) * 90 + Math.floor(x / 4)]; }
+function inReef(o) { if (reefMask) return !!(maskAt(o.x, o.y) || maskAt(o.x + o.r * 0.9, o.y) || maskAt(o.x - o.r * 0.9, o.y) || maskAt(o.x, o.y - o.r * 0.5) || maskAt(o.x, o.y + o.r * 0.5)); for (const rf of LVL().reefs || []) { const dx = (o.x - rf.x) / (rf.rx + o.r * 0.9), dy = (o.y - rf.y) / (rf.ry + o.r * 0.6); if (dx * dx + dy * dy < 1) return true; } return false; }
 function stageUpdate(dt) {
   const R0 = RULE();
   for (const o of things) o.lit = false;
@@ -905,8 +912,8 @@ function drawStage(front) {      // D119：第 2～4 關畫在魚前／魚後的
       ctx.restore();
     }
     // 景觀：海膽、寄居蟹（不能點）
-    ctx.save(); ctx.translate(300, 358); if (!sprite('s3_urchin', 26, 26)) { ctx.strokeStyle = '#2A1E33'; ctx.lineWidth = 1.5; for (let i = 0; i < 12; i++) { const a = i / 12 * 6.2832; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * 13, Math.sin(a) * 13 * 0.8); ctx.stroke(); } ell(0, 0, 7, 6, '#3A2A4A'); } ctx.restore();
-    const hx = 120 + Math.abs(((clock * 5) % 200) - 100); ctx.save(); ctx.translate(hx, 512); if (Math.floor(clock * 5 / 100) % 2) ctx.scale(-1, 1); if (!sprite('s3_hermit', 24, 24)) { ell(0, 0, 9, 8, '#E3B07A', PAL.line); ctx.strokeStyle = PAL.line; ctx.beginPath(); ctx.arc(0, 0, 4, 0, 4.5); ctx.stroke(); ctx.fillStyle = '#E8674A'; ell(9, 4, 4, 3, '#E8674A'); } ctx.restore();
+    ctx.save(); ctx.translate(344, 346); if (!sprite('s3_urchin', 26, 26)) { ctx.strokeStyle = '#2A1E33'; ctx.lineWidth = 1.5; for (let i = 0; i < 12; i++) { const a = i / 12 * 6.2832; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * 13, Math.sin(a) * 13 * 0.8); ctx.stroke(); } ell(0, 0, 7, 6, '#3A2A4A'); } ctx.restore();
+    const hx = 120 + Math.abs(((clock * 5) % 200) - 100); ctx.save(); ctx.translate(hx, 504); if (Math.floor(clock * 5 / 100) % 2) ctx.scale(-1, 1); if (!sprite('s3_hermit', 24, 24)) { ell(0, 0, 9, 8, '#E3B07A', PAL.line); ctx.strokeStyle = PAL.line; ctx.beginPath(); ctx.arc(0, 0, 4, 0, 4.5); ctx.stroke(); ctx.fillStyle = '#E8674A'; ell(9, 4, 4, 3, '#E8674A'); } ctx.restore();
   }
   if (R0 === 'jump' && !front) {
     const J = LVL().jump;
