@@ -66,6 +66,7 @@ svg text{font-family:inherit}
 <script src="../shared/kite_core.js"></script>
 <script src="analytics.js"></script>
 <script src="campaigns.js"></script>
+<script src="demo.js"></script>
 <script>
 /* 小鳶來港 後台管理 桌面網頁版 v0.2（工作單 24 規格第 4 節；D71、D73、D74）
    帳號 dari／1677。資料先存在這台電腦的瀏覽器（D72），之後接雲端資料庫時改共用資料層即可。
@@ -102,11 +103,12 @@ svg text{font-family:inherit}
   }
 
   /* ====== 資料整理 ====== */
+  var DEMO = function () { try { return sessionStorage.getItem('kiteAdmDemo') === '1' && window.__ADM_DEMO; } catch (e) { return false; } };      // G95-R09：示範模式只在這個分頁、只在記憶體
   function data() {
-    var ms = K.allMembers(), plays = [], led = [], red = [];
+    var dm = DEMO() ? window.__ADM_DEMO(K) : null, ms = dm ? dm.ms : K.allMembers(), plays = [], led = [], red = [];
     ms.forEach(function (m) { (m.plays || []).forEach(function (p) { plays.push(Object.assign({ mid: m.id }, p)); }); (m.ledger || []).forEach(function (e) { led.push(Object.assign({ mid: m.id }, e)); }); (m.redeems || []).forEach(function (r) { red.push(Object.assign({ mid: m.id }, r)); }); });
     led.sort(function (a, b) { return b.t - a.t; }); plays.sort(function (a, b) { return b.t - a.t; });
-    return { ms: ms, plays: plays, led: led, red: red, desk: K.deskLog(), tx: K.storeLog(), cfg: K.cfg() };
+    return { ms: ms, plays: plays, led: led, red: red, desk: dm ? dm.desk : K.deskLog(), tx: dm ? [] : K.storeLog(), cfg: K.cfg(), demo: !!dm };
   }
   function alerts(D) {
     var a = [], c = D.cfg, al = c.alerts || {};
@@ -194,7 +196,7 @@ svg text{font-family:inherit}
     $('lo').onclick = function () { localStorage.removeItem(SK); login(); };
     $('q').onkeydown = function (e) { if (e.key === 'Enter') search(this.value.trim()); };
     var title = ''; NAV.forEach(function (g) { g[1].forEach(function (n) { if (n[0] === view) title = n[1].replace(/^\S+\s/, ''); }); }); $('vt').textContent = title;
-    var c = $('c'), ds = K.dataset(), imp = ds.imports || [], li = imp[imp.length - 1]; var cs = K.cloudStatus(); c.innerHTML = cs.url ? '<div class="test"' + (cs.err ? ' style="background:#FBE3DE"' : '') + '><b>資料範圍：雲端測試資料庫（Google 試算表）＋這台</b>・會員 ' + D.ms.length + ' 位・' + (cs.lastPull ? '最後同步 ' + dt(cs.lastPull) : '同步中…') + (cs.err ? '・<b>' + esc(cs.err) + '</b>' : '') + '・每 15 秒自動更新。上線前到「系統」按「清空全部測試資料」。' + (cs.admin ? '' : '<br><b>還沒輸入後台金鑰：只看得到精簡資料（沒有點數明細、遊戲紀錄），請到「系統 → 雲端同步」輸入。</b>') + '</div>' : '<div class="test"><b>資料範圍：本裝置＋已匯入的測試資料</b>（還沒接雲端，D72）・資料集 ' + ds.id + '・來源：這台' + (imp.length ? '＋匯入 ' + imp.length + ' 次、最後匯入 ' + dt(li.t) : '') + '・會員 ' + D.ms.length + ' 位。到「系統 → 雲端同步」貼上網址就能收到所有測試玩家的資料。</div>';
+    var c = $('c'), ds = K.dataset(), imp = ds.imports || [], li = imp[imp.length - 1]; var cs = K.cloudStatus(); if (DEMO()) { c.innerHTML = '<div class="test" style="background:#EDE7FB;border-color:#B9A8EE;color:#3B2A7A;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><b>🧪 示範模式</b><span>現在看到的會員、點數、遊戲、兌換都是固定的假資料（40 位、30 天），只存在這個分頁，不會寫進真的資料或雲端。行銷活動、規則等設定照常是真的設定。</span><span style="flex:1"></span><button class="btn sm" id="demoOff">離開示範模式</button></div>'; setTimeout(function () { var b = $('demoOff'); if (b) b.onclick = function () { try { sessionStorage.removeItem('kiteAdmDemo'); } catch (e) {} toast('已回到真實資料'); app(); }; }, 0); } else c.innerHTML = cs.url ? '<div class="test"' + (cs.err ? ' style="background:#FBE3DE"' : '') + '><b>資料範圍：雲端測試資料庫（Google 試算表）＋這台</b>・會員 ' + D.ms.length + ' 位・' + (cs.lastPull ? '最後同步 ' + dt(cs.lastPull) : '同步中…') + (cs.err ? '・<b>' + esc(cs.err) + '</b>' : '') + '・每 15 秒自動更新。上線前到「系統」按「清空全部測試資料」。' + (cs.admin ? '' : '<br><b>還沒輸入後台金鑰：只看得到精簡資料（沒有點數明細、遊戲紀錄），請到「系統 → 雲端同步」輸入。</b>') + '</div>' : '<div class="test"><b>資料範圍：本裝置＋已匯入的測試資料</b>（還沒接雲端，D72）・資料集 ' + ds.id + '・來源：這台' + (imp.length ? '＋匯入 ' + imp.length + ' 次、最後匯入 ' + dt(li.t) : '') + '・會員 ' + D.ms.length + ' 位。到「系統 → 雲端同步」貼上網址就能收到所有測試玩家的資料。</div>';
     V[view](c, D, al);
   }
   function search(s) {
@@ -600,6 +602,7 @@ svg text{font-family:inherit}
   V.system = function (c, D) {
     var g = D.cfg, a = K.auditLog();
     var cs = K.cloudStatus();
+    c.innerHTML += '<div class="card" style="margin-bottom:14px"><h2>🧪 示範模式<span class="sp"></span><button class="btn ' + (D.demo ? 'alt' : '') + '" id="demoTg">' + (D.demo ? '離開示範模式' : '開啟示範模式') + '</button></h2><p class="small muted" style="margin:0">想看分析圖表長什麼樣子、教新同事操作時用：開啟後所有頁面改用固定的假資料（40 位會員、30 天的遊戲、集點、兌換），只在這個瀏覽器分頁、只放在記憶體，<b>不會寫進真的會員資料、不會上傳雲端</b>；關掉分頁或按離開就回到真實資料。</p></div>';
     c.innerHTML += '<div class="card" style="margin-bottom:14px"><h2>☁️ 雲端同步（測試期：Google 試算表）<span class="sp"></span>' + (cs.url ? (cs.err ? '<span class="pill r">' + esc(cs.err) + '</span>' : '<span class="pill g">已連線</span>') : '<span class="pill gr">未設定</span>') + '</h2>' +
       '<p class="small muted" style="margin-top:0">接上後：客人手機、店家、服務台的集點、兌換、核銷都會傳到雲端，後台每 15 秒更新；後台改的設定、贈品與券圖片也會發到每台裝置。設定步驟見 G 槽 Claude產出／雲端測試資料庫_設定步驟_v4.md。</p>' +
       '<div class="form" style="grid-template-columns:140px 1fr"><label>Apps Script 網址</label><input id="cu" value="' + esc(localStorage.getItem('kiteCloudUrl') || '') + '" placeholder="' + esc(cs.url && !localStorage.getItem('kiteCloudUrl') ? '（網站內建）' + cs.url : 'https://script.google.com/macros/s/……/exec') + '"><label>後台金鑰</label><input id="ck" type="password" value="' + esc(localStorage.getItem('kiteCloudAdminKey') || '') + '" placeholder="和 Apps Script 裡 ADMIN_KEY 同一串"></div>' +
@@ -620,6 +623,7 @@ svg text{font-family:inherit}
     $('wipe').onclick = function () { var D2 = data(); kPrompt('會清除這台電腦的：會員 ' + D2.ms.length + ' 位（含匯入）、點數紀錄 ' + D2.led.length + ' 筆、店家 QR ' + D2.tx.length + ' 筆、服務台發放 ' + D2.desk.length + ' 筆。設定與操作紀錄保留。\n建議先按「匯出全部」備份。\n確定請輸入「清除」兩個字：').then(function (s) { if (s !== '清除') return toast('沒有清除'); var d = K.wipeTest(); if (!d) return toast('封存已滿 3 份，請先匯出並整理封存後再清除；這次沒有清除任何資料'); toast('已清除，新資料集 ' + d.id); app(); }); };
     c.querySelectorAll('[data-cfx]').forEach(function (b) { b.onclick = function () { var l = K.list('kiteImportConflicts1'); l.forEach(function (x) { if (x.id === b.dataset.cfx) { x.status = 'closed'; x.closedT = Date.now(); } }); K.saveList('kiteImportConflicts1', l); K.audit('關閉匯入衝突 ' + b.dataset.cfx + '（保留原本）'); app(); }; });
     $('reset').onclick = function () { kAsk('把所有設定還原成預設？').then(function (ok) { if (!ok) return; K.resetCfg(); toast('已還原'); app(); }); };
+    $('demoTg').onclick = function () { try { if (D.demo) sessionStorage.removeItem('kiteAdmDemo'); else sessionStorage.setItem('kiteAdmDemo', '1'); } catch (e) {} toast(D.demo ? '已回到真實資料' : '已開啟示範模式（假資料）'); goView(D.demo ? 'system' : 'a_overview'); };
     $('cSave').onclick = function () { var u = $('cu').value.trim(), k = $('ck').value.trim(); if (u && !/^https:\/\/script\.google(usercontent)?\.com\/.+\/exec$|^http:\/\/localhost/.test(u)) return toast('網址應該是 https://script.google.com/macros/s/……/exec'); if (u) localStorage.setItem('kiteCloudUrl', u); else localStorage.removeItem('kiteCloudUrl'); if (k) localStorage.setItem('kiteCloudAdminKey', k); else localStorage.removeItem('kiteCloudAdminKey'); K.audit('雲端同步設定已更新'); toast('已儲存，連線中…'); K.cloudStart(); K.cloudSync().then(function () { app(); }); };
     $('cNow').onclick = function () { toast('同步中…'); K.cloudSync().then(function () { var s2 = K.cloudStatus(); toast(s2.err || '已同步'); app(); }); };
     $('cCfg').onclick = function () { K.saveCfg(K.cfg(), '發布設定到所有裝置'); K.cloudMarkAll(); K.cloudPush().then(function (r) { toast(r && r.ok ? '已發布' : '發布失敗：' + (K.cloudStatus().err || '請檢查後台金鑰')); app(); }); };
