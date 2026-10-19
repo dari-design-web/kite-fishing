@@ -83,8 +83,8 @@ svg text{font-family:inherit}
   function dd(t) { var d = new Date(t); return pad(d.getMonth() + 1) + '/' + pad(d.getDate()); }
   function mins(s) { s = s || 0; return s >= 3600 ? (s / 3600).toFixed(1) + ' 小時' : Math.round(s / 60) + ' 分鐘'; }
   function num(n) { return (n || 0).toLocaleString(); }
-  function GN(g) { return K.GAMES[g] ? K.GAMES[g].name : g; }
-  function LN(g, l) { var G = K.GAMES[g]; return (G && (G.levels[l] || (G.legacy && G.legacy[l]))) || l; }
+  function GN(g) { return K.GAMES[g] ? K.GAMES[g].name + (g === 'merge' || g === 'stack' ? '（不算分）' : '') : g; }
+  function LN(g, l) { var G = K.GAMES[g]; if (l === 'all' && G && !Object.keys(G.levels).length) return '排行榜用'; return (G && (G.levels[l] || (G.legacy && G.legacy[l]))) || l; }      // D127：合成港、疊貨櫃的成績只給排行榜用，不算分
   var TYPE = { store: '店家集點', backfill: '補登入點', game: '遊戲換點', travel: '旅行帶回', redeem: '兌換', refund: '退點', adjust: '手動調整', expire: '到期' };
   function TL(r) { return r.type === 'redeem' && r.virtual ? '兌換便當' : (TYPE[r.type] || r.type); }      // C-205：便當（虛擬商品）和實體贈品分開標
 
