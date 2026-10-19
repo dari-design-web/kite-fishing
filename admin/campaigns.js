@@ -187,6 +187,7 @@
       const ov = same.filter((x) => { const [a, b] = span(x); const o1 = !(t && a && a > t) && !(f && b && b < f); if (!o1) return false; if (type === 'game') return (x.e.game === e.game || x.e.game === 'all' || e.game === 'all') && x.e.days.some((d) => e.days.indexOf(d) >= 0) && !(x.e.to < e.from || x.e.from > e.to); return !(x.e.stores.length && e.stores.length && !x.e.stores.some((s) => e.stores.indexOf(s) >= 0)); });
       if (ov.length) L.push(['w', '跟「' + ov.map((x) => x.e.title).join('」「') + '」時間重疊：' + (type === 'bonus' ? '同一筆只取加最多的一條' : '同時段只取倍數最高的一個')]);
       if (type === 'game') L.push(['i', '每人每天遊戲最多 ' + num(c2.gameDailyCap || 0) + ' 點' + (c2.eventCapMult ? '，活動時上限跟著乘 ' + e.mult + ' 倍（' + num(Math.round((c2.gameDailyCap || 0) * e.mult)) + ' 點）' : '（活動時上限不變）') + '。']);
+      const est = estimate(A.data(), type, e); if (est) L.push(['i', est]);
       if (!L.some((x) => x[0] === 'e')) L.unshift(['ok', '可以上線']);
       return L;
     }
@@ -214,6 +215,24 @@
     render();
   }
 
+
+  /* G94-B06：依過去 4 週推估活動會多發幾點（只供參考，不是上限；遊戲還會被每日上限擋住） */
+  function estimate(D, type, e) {
+    const now = Date.now(), from = now - 28 * DAY, td = today(), [f, t] = type === 'game' ? [e.dateFrom, e.dateTo] : [e.from, e.to];
+    const days = f && t && t >= f ? Math.round((new Date(t + 'T12:00:00') - new Date(f + 'T12:00:00')) / DAY) + 1 : 7, per = days === 7 && !(f && t) ? '每週' : '整個活動（' + days + ' 天）';
+    if (type === 'game') {
+      const gs = e.game === 'all' ? ['fish', 'fly'] : [e.game], P = D.plays.filter((p) => p.t >= from && gs.indexOf(p.game) >= 0 && !p.lbOnly && p.counted !== false);
+      if (!P.length) return '過去 4 週沒有這個遊戲的資料，還無法推估會多發幾點。';
+      const inW = P.filter((p) => inWin(Object.assign({}, e, { dateFrom: '', dateTo: '' }), p.t)), share = inW.length / P.length;
+      const gp = D.led.filter((x) => x.type === 'game' && x.t >= from && (e.game === 'all' || x.game === e.game)).reduce((n, x) => n + (x.pts || 0), 0);
+      const extra = Math.round(gp * share * (e.mult - 1) / 28 * days), ppl = Object.keys(inW.reduce((o, p) => (o[p.mid] = 1, o), {})).length;
+      return '推估（依過去 4 週）：' + per + '約多發 ' + num(extra) + ' 點，約 ' + Math.round(ppl / 28 * Math.min(days, 28)) + ' 人會碰到活動時段。只是參考，實際還會被每日上限擋住。';
+    }
+    const sids = e.stores && e.stores.length ? e.stores : null, S = D.led.filter((x) => (x.type === 'store' || x.type === 'backfill') && x.t >= from && (!sids || sids.indexOf(x.store) >= 0));
+    if (!S.length) return '過去 4 週這些店家沒有集點資料，還無法推估。';
+    if (type === 'store') { const pts = S.reduce((n, x) => n + (x.pts || 0), 0); return '推估（依過去 4 週）：' + per + '約多發 ' + num(Math.round(pts * (e.mult - 1) / 28 * days)) + ' 點（約 ' + num(Math.round(S.length / 28 * days)) + ' 筆消費）。只是參考。'; }
+    const q = S.filter((x) => (x.amount || 0) >= e.minAmount).length; return '推估（依過去 4 週）：' + per + '約 ' + num(Math.round(q / 28 * days)) + ' 筆會達門檻（目前 ' + Math.round(q / S.length * 100) + '% 的單），多發約 ' + num(Math.round(q / 28 * days) * e.add) + ' 點。只是參考。';
+  }
   /* ---------- 成效抽屜 ---------- */
   function fxDrawer(D, it) {
     const ui = window.__ADM_UI, ef = effect(D, it), cfg = D.cfg, days = []; for (let k = 0; k < ef.nd; k++) days.push(addD(ef.from, k));
