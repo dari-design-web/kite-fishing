@@ -81,10 +81,11 @@ function kiteWings(f) {
   ctx.save(); ctx.rotate(-f); poly([-6, -6, -44, -18 + 10 * f, -40, 0, -9, 4], '#6E4529', C.ink, 2); ctx.restore();
   ctx.save(); ctx.rotate(f); poly([6, -6, 44, -18 + 10 * f, 40, 0, 9, 4], '#6E4529', C.ink, 2); ctx.restore();
 }
-/* 小鳶正面展翅、兩腳往下抓東西（不用嘴叼）；有 G86 的 kite 圖就用圖 */
+/* 小鳶正面展翅、兩腳往下抓東西（不用嘴叼）；有 G86 的 kite 圖就用圖。KITE_FOOT＝腳尖在圖裡的高度比例（G86：kite_hold 腳尖約在 148/256，kite_carry 在最下緣） */
+const KITE_FOOT = { kite_hold: 0.6, kite_carry: 0.98 };
 function drawKiteCarry(x, y, s, flap, key) {
   const im = ready(key);
-  if (im) { const bob = Math.sin(flap * 0.5) * 2, sz = 76 * s; ctx.drawImage(im, x - sz / 2, y - sz * 0.92 + bob, sz, sz); return; }
+  if (im) { const bob = Math.sin(flap * 0.5) * 2, sz = 84 * s, foot = KITE_FOOT[key] || 0.95; ctx.drawImage(im, x - sz / 2, y - sz * foot + bob, sz, sz); return; }
   ctx.save(); ctx.translate(x, y - 27 * s); ctx.scale(s, s); const f = Math.sin(flap || 0) * 0.3;
   poly([-5, 8, -11, 20, 0, 15, 11, 20, 5, 8], C.kite, C.ink, 2);
   kiteWings(f);
@@ -302,7 +303,11 @@ function shade(hex, k) { const n = parseInt(hex.slice(1), 16), f = (v) => clamp(
 /* 貨櫃：有 G86 的圖用九宮格拉長（兩端門框不變形）；沒有就畫有門框、角件、波浪鐵皮的貨櫃 */
 function crate(x, y, w, c, gold) {
   const h = BH - 2, im = ready(gold ? 'box_gold' : 'box_' + c);
-  if (im) { const s = h / im.naturalHeight, e = 48 * s, sw = 48; if (w <= e * 2 + 2) { ctx.drawImage(im, x, y, w, h); } else { ctx.drawImage(im, 0, 0, sw, im.naturalHeight, x, y, e, h); ctx.drawImage(im, sw, 0, im.naturalWidth - sw * 2, im.naturalHeight, x + e, y, w - e * 2, h); ctx.drawImage(im, im.naturalWidth - sw, 0, sw, im.naturalHeight, x + w - e, y, e, h); } return; }
+  if (im) {      // G86 貨櫃圖：左右各留 12px 透明邊，兩端 48px 門框不拉伸，中間鐵皮拉長
+    const P = 12, sw = 48, ih = im.naturalHeight, iw = im.naturalWidth - P * 2, e = Math.min(w / 2, sw * h / ih);
+    ctx.drawImage(im, P, 0, sw, ih, x, y, e, h); ctx.drawImage(im, im.naturalWidth - P - sw, 0, sw, ih, x + w - e, y, e, h);
+    if (w > e * 2) ctx.drawImage(im, P + sw, 0, iw - sw * 2, ih, x + e - 0.5, y, w - e * 2 + 1, h);
+    return; }
   const base = gold ? '#F2C14E' : BOXC[c];
   const gr = ctx.createLinearGradient(0, y, 0, y + h); gr.addColorStop(0, shade(base, 1.12)); gr.addColorStop(1, shade(base, 0.86));
   rrect(x, y, w, h, 3, gr, C.ink, 2);
