@@ -548,7 +548,7 @@ const EASY2 = /[?&]easy2=1/.test(location.search), E2 = () => EASY2 && level ===
 if (EASY2) CONFIG.levels.easy.bossHp = 0.8;
 const SPD = () => LVF('speed') * (ST().speed || 1), BHP = () => LVF('bossHp') * (ST().bossHp || 1), BTIME = () => (PHASED() ? CONFIG.bossFx.time : CONFIG.boss.leaveAfter) * LVF('bossTime') * (ST().bossHp || 1);      // 速度、大垃圾團血量與停留時間 = 難度倍率 × 關卡倍率
 const ASSET_FILES = { trash: 'trash.png', fish_small: 'fish_small.png', fish_squid: 'fish_squid.png', whaleshark: 'whaleshark.png', shark_top: 'whaleshark_top.png', night_bag: 'night_bag.png', night_temple: 'night_temple.png', jiao_flat: 'jiao_flat.png', jiao_convex: 'jiao_convex.png', lantern: 'lantern.png',
-  kite_a: 'kite_top_a.png', kite_b: 'kite_top_b.png', feather: 'feather.png', turtle: 'turtle_top.png',
+  kite_a: 'kite_top_a.png', kite_b: 'kite_top_b.png', kite_fly: 'kite_top_fly.png', feather: 'feather.png', turtle: 'turtle_top.png',
   can: 'foe_can.png', bag: 'foe_bag.png', butt: 'foe_butt.png', foam: 'foe_foam.png', barrel: 'foe_barrel.png', tire: 'foe_tire.png', oil: 'foe_oil.png', goo: 'foe_goo.png',
   battery: 'foe_battery.png', sprayer: 'foe_sprayer.png', log: 'foe_log.png', net: 'foe_net.png', tangle: 'foe_tangle.png', boss: 'foe_boss.png',
   ui_menu_card: 'ui_menu_card.png', ui_beat_lamp: 'ui_beat_lamp.png', p_escort: 'p_escort.png', p_boss_stun: 'p_boss_stun.png',      // G-35 B（v0.25 起接上）
@@ -2581,7 +2581,8 @@ function drawKite() {
   if (k.shield) { ctx.fillStyle = 'rgba(191,227,240,.28)'; ctx.strokeStyle = 'rgba(232,246,251,.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 36 + Math.sin(clock * 5) * 1.5, 0, 6.2832); ctx.fill(); ctx.stroke(); ctx.lineWidth = 1.6; }
   if (!(k.safe > 0 && Math.floor(clock * 14) % 2)) {
     const beat = Math.floor(clock * (k.galeT > 0 ? 12 : 7)) % 2;      // 兩張拍翅圖輪流；兩張的畫布與錨點相同，所以畫在同一個 64×54 的框裡
-    if (img.kite_a && img.kite_b) sprite(beat ? 'kite_b' : 'kite_a', 64, 54); else {
+    if (img.kite_fly) { const sh = img.kite_fly, n = 4, fw = sh.naturalWidth / n, fi = Math.floor(clock * (k.galeT > 0 ? 16 : 9)) % n; ctx.drawImage(sh, fi * fw, 0, fw, sh.naturalHeight, -32, -27, 64, 54); }      // D121：G87 重新設計的小鳶（俯視、4 格拍翅，每格 256×216）
+    else if (img.kite_a && img.kite_b) sprite(beat ? 'kite_b' : 'kite_a', 64, 54); else {
     const flap = 1 - 0.12 * (0.5 + 0.5 * Math.sin(clock * (k.galeT > 0 ? 18 : 10)));
     poly([-4, 14, -9, 27, 0, 22, 9, 27, 4, 14], PAL.wing, PAL.line);                                        // 微微分叉的尾羽
     for (const s of [-1, 1]) { ctx.save(); ctx.scale(s * flap, 1); poly([4, -8, 20, -13, 32, -4, 30, 4, 24, 1, 20, 7, 14, 3, 9, 9, 4, 6], PAL.wing, PAL.line); ctx.restore(); }
