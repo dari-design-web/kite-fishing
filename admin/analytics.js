@@ -432,6 +432,15 @@
       q(4, '點數與贈品運轉健康嗎？本週要處理什麼？', '本期發出 <b>' + num(M.gain) + '</b> 點、淨用 <b>' + num(M.spent) + '</b> 點；待領兌換單 <b>' + M.wait + '</b> 張' + (exp30 ? '；未來 30 天內有 ' + num(exp30) + ' 點會到期' : '') + (low.length ? '；庫存 5 個以下：' + low.map((p) => esc(p.name)).join('、') : '') + '。', [M.wait ? '服務台留意 ' + M.wait + ' 張待領單的領取期限' : '', low.length ? '補貨或暫停低庫存贈品' : '', exp30 ? '可以發公告提醒點數快到期' : ''].filter(Boolean).join('；'), '') +
       q(5, '哪個活動、店家、遊戲值得下週繼續？', [topS && topS.v ? '集點消費最多的店家：<b>' + esc(topS.n) + '</b>（NT$ ' + num(topS.v) + '）' : '', topG && topG.v ? '最多人玩的遊戲：<b>' + esc(topG.n) + '</b>（' + topG.v + ' 人）' : '', camp ? '觀察到差異最明顯的活動：<b>' + esc(camp.it.e.title) + '</b>（' + esc(camp.ef.liftL) + ' ' + (camp.ef.lift >= 0 ? '▲' : '▼') + Math.abs(Math.round(camp.ef.lift * 100)) + '%）' : '活動資料還不足，暫不比較'].filter(Boolean).join('；') + '。', camp && camp.ef.lift > 0 ? '「' + esc(camp.it.e.title) + '」可以考慮下週續辦。' : '', '活動差異是觀察值，不代表一定是活動造成的；店家金額只含有集點的消費。');
   }
+
+  /* G94-A26／G95-R12：營運報告保存快照——保存當下的整份報告（數字、圖、五問），之後重開不會變成最新數字；只存在這台電腦，最多 12 份 */
+  const snaps = () => { try { return JSON.parse(localStorage.getItem('kiteReportSnaps1') || '[]'); } catch (e) { return []; } };
+  function snapList() {
+    const a = snaps();
+    A.drawer('<h2 style="margin:0 0 6px">📂 已保存的營運報告</h2><p class="small muted" style="margin:0 0 12px">保存的是按下保存那一刻的報告，數字不會跟著資料變動；只存在這台電腦的瀏覽器，最多 12 份。</p>' + (a.length ? '<div class="scroll"><table class="tbl"><tr><th>期間</th><th>保存時間</th><th></th></tr>' + a.map((x, i) => '<tr><td><b>' + x.from + ' ～ ' + x.to + '</b>' + (x.demo ? ' <span class="pill gr">示範資料</span>' : '') + '</td><td>' + dt(x.t) + '</td><td><button class="btn alt sm" data-sv="' + i + '">打開</button> <button class="btn alt sm" data-sd="' + i + '">刪除</button></td></tr>').join('') + '</table></div>' : '<p class="muted">還沒有保存過報告。在營運報告頁按「💾 保存這份報告」。</p>'));
+    document.querySelectorAll('[data-sv]').forEach((b) => { b.onclick = () => { const x = snaps()[+b.dataset.sv]; A.drawer('<div class="noprint" style="margin-bottom:10px"><button class="btn alt sm" id="svBack">← 回列表</button> <button class="btn sm" id="svPrint">🖨️ 列印這份</button></div><div class="test" style="margin-bottom:10px">這是 <b>' + dt(x.t) + '</b> 保存的報告快照（期間 ' + x.from + '～' + x.to + '），數字是當時的，不是現在的。' + (x.demo ? '當時是示範資料。' : '') + '</div><div class="rep" style="padding:16px 18px">' + x.html + '</div>'); $('svBack').onclick = snapList; $('svPrint').onclick = () => { const w = window.open('', '_blank'); if (!w) return; w.document.write('<html><head><meta charset="utf-8"><title>營運報告 ' + x.from + '～' + x.to + '</title><style>body{font-family:system-ui,sans-serif;padding:20px}table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #ddd;padding:4px 6px;text-align:left}</style></head><body>' + x.html + '</body></html>'); w.document.close(); w.print(); }; }; });
+    document.querySelectorAll('[data-sd]').forEach((b) => { b.onclick = () => { if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = '確定刪除？'; return; } const a2 = snaps(); a2.splice(+b.dataset.sd, 1); try { localStorage.setItem('kiteReportSnaps1', JSON.stringify(a2)); } catch (e) {} snapList(); A.app(); }; });
+  }
   V.a_report = function (c, D) {
     const rg = range(D), M = build(D, rg.from, rg.to), Pm = build(D, rg.pFrom, rg.pTo), site = (D.cfg.site || {}).name || '';
     const r2 = (cur, prev) => { if (A.R.noPrev === 'none') return '前期無資料'; if (!prev) return cur ? '上期 0' : '—'; if (prev < 10) return (cur >= prev ? '+' : '−') + num(Math.abs(cur - prev)); const r = Math.round((cur - prev) / prev * 100); return (r > 0 ? '+' : '') + r + '%'; };
@@ -441,7 +450,7 @@
     const gameT = Object.keys(K.GAMES).map((g) => { const a = M.P.filter((p) => p.game === g); return [GN(g), a.length, uniq(a.map((p) => p.mid)).length, a.length ? Math.round(sum(a, (p) => p.score || 0) / a.length) : 0, Math.round(sum(a, (p) => p.sec || 0) / 60)]; }).filter((r) => r[1]);
     const topM = memberRows(D, M).sort((a, b) => b.score - a.score).slice(0, 10);
     const T = (head, rows, numCols) => '<table><tr>' + head.map((h, i) => '<th' + (numCols.indexOf(i) >= 0 ? ' class="n"' : '') + '>' + h + '</th>').join('') + '</tr>' + (rows.length ? rows.map((r) => '<tr>' + r.map((v, i) => '<td' + (numCols.indexOf(i) >= 0 ? ' class="n"' : '') + '>' + (typeof v === 'number' ? num(v) : v) + '</td>').join('') + '</tr>').join('') : '<tr><td colspan="' + head.length + '" style="color:' + C.muted + '">沒有資料</td></tr>') + '</table>';
-    c.innerHTML += rangeBar(D, rg) + '<div class="noprint" style="display:flex;gap:8px;margin-bottom:12px"><button class="btn" id="rpPrint">🖨️ 列印／存成 PDF</button><button class="btn alt" id="rpCsv">匯出摘要 CSV</button><span class="small muted" style="align-self:center">列印時會自動隱藏選單與按鈕；要細節表格請到「明細匯出」</span></div>' +
+    c.innerHTML += rangeBar(D, rg) + '<div class="noprint" style="display:flex;gap:8px;margin-bottom:12px"><button class="btn" id="rpPrint">🖨️ 列印／存成 PDF</button><button class="btn alt" id="rpCsv">匯出摘要 CSV</button><button class="btn alt" id="rpSnap">💾 保存這份報告</button><button class="btn alt" id="rpSnaps">📂 已保存的報告（' + snaps().length + '）</button><span class="small muted" style="align-self:center">列印時會自動隱藏選單與按鈕；要細節表格請到「明細匯出」</span></div>' +
       '<div class="rep"><h1>營運報告</h1><div class="sub">' + esc(site) + '・期間 ' + rg.from + ' ～ ' + rg.to + '（' + rg.days.length + ' 天）・與前一段同長度期間（' + rg.pFrom + ' ～ ' + rg.pTo + '）比較・產生時間 ' + dt(Date.now()) + '</div>' +
       fiveQ(D, rg, M) +
       '<h3>一、摘要數字</h3>' + T(['項目', '本期', '上期', '變化'], kp.map((k) => [k[0], k[1], A.R.noPrev === 'none' ? '—' : k[2], r2(k[1], k[2])]), [1, 2, 3]) +
@@ -454,6 +463,9 @@
       '<h3>七、最活躍的會員（前 10）</h3>' + T(['會員', '來訪天數', '獲得', '用掉', '局數', '消費金額'], topM.map((r) => [esc(r.name || r.id) + ' <span style="color:' + C.muted + '">' + esc(r.id) + '</span>', r.vis, r.earned, r.spent, r.plays, r.amount]), [1, 2, 3, 4, 5]) +
       '<p style="font-size:12px;color:' + C.muted + ';margin-top:18px">資料來源：雲端測試資料庫（各裝置同步）。「活躍會員」＝期間內有集點、遊戲、兌換或來訪。「領取率」＝已領 ÷（兌換單 − 取消 − 逾期退點）。</p></div>';
     wireRange(c);
+    $('rpSnap').onclick = () => { const el = document.querySelector('.rep'); if (!el) return; const a = snaps(); a.unshift({ t: Date.now(), from: rg.from, to: rg.to, demo: !!D.demo, html: el.innerHTML }); while (a.length > 12) a.pop();
+      try { localStorage.setItem('kiteReportSnaps1', JSON.stringify(a)); K.audit('保存營運報告 ' + rg.from + '～' + rg.to); A.toast('已保存：' + rg.from + '～' + rg.to + '（之後打開數字不會變）'); A.app(); } catch (e) { A.toast('保存失敗：瀏覽器空間不夠，請先刪掉幾份舊的'); } };
+    $('rpSnaps').onclick = () => snapList();
     $('rpPrint').onclick = () => { K.audit('列印營運報告 ' + rg.from + '～' + rg.to); window.print(); };
     $('rpCsv').onclick = () => A.csv('營運報告摘要_' + rg.from + '_' + rg.to, [{ k: 0, t: '項目' }, { k: 1, t: '本期' }, { k: 2, t: '上期' }, { k: 3, t: '變化' }], kp.map((k) => ({ 0: k[0], 1: k[1], 2: k[2], 3: r2(k[1], k[2]) })));
   };
