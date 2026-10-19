@@ -330,7 +330,10 @@ function crate(x, y, w, c, gold) {
   ctx.fillStyle = 'rgba(16,41,61,.55)'; for (const cx of [x + 2, x + w - 6]) for (const cy of [y + 2, y + h - 6]) ctx.fillRect(cx, cy, 4, 4);
   if (gold && w > 30) { ctx.fillStyle = 'rgba(255,255,255,' + (0.35 + 0.25 * Math.sin(clock * 6)) + ')'; ctx.fillRect(x + 4, y + 3, w - 8, 3); text('★', x + w / 2, y + h / 2, 14, '#FFF4C2', 'center', 900); }
 }
-let stackBG = null;
+let stackBG = null, stackFade = null;
+function fadeTop(im, px) {      // D121：碼頭底圖上緣 px 淡出成透明，和上方天空自然接起來（G86 說明接縫非逐像素無縫）
+  const c = document.createElement('canvas'); c.width = W * DPR; c.height = H * DPR; const x = c.getContext('2d'); x.setTransform(DPR, 0, 0, DPR, 0, 0);
+  x.drawImage(im, 0, 0, W, H); x.globalCompositeOperation = 'destination-out'; const g = x.createLinearGradient(0, 0, 0, px); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, W, px); return c; }
 function buildStackBG() {      // 東岸貨櫃碼頭（傍晚）：海、碼頭、遠山、紅色起重機
   const c = document.createElement('canvas'); c.width = W * DPR; c.height = H * DPR; const x = c.getContext('2d'); x.setTransform(DPR, 0, 0, DPR, 0, 0);
   const sk = x.createLinearGradient(0, 0, 0, H); sk.addColorStop(0, '#79B9D3'); sk.addColorStop(0.62, '#F6C99A'); sk.addColorStop(1, '#F2A877'); x.fillStyle = sk; x.fillRect(0, 0, W, H);
@@ -418,17 +421,21 @@ function makeStack() {
     // 天空：越高越接近夜晚
     const top = [lerp(0x79, 0x16, k), lerp(0xB9, 0x22, k), lerp(0xD3, 0x4E, k)], bot = [lerp(0xA8, 0x3A, k), lerp(0xD6, 0x4A, k), lerp(0xE6, 0x80, k)];
     const gr = ctx.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, 'rgb(' + top.map(Math.round) + ')'); gr.addColorStop(1, 'rgb(' + bot.map(Math.round) + ')'); ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H);
-    const sky = ready('bg_stack_sky'); if (sky) { ctx.globalAlpha = 1 - k * 0.3; ctx.drawImage(sky, 0, par - H * 2 + H, W, H); ctx.drawImage(sky, 0, par - H * 2, W, H); ctx.globalAlpha = 1; }
+    const sky = ready('bg_stack_sky'); if (sky) { ctx.globalAlpha = 1 - k * 0.3; ctx.drawImage(sky, 0, par - H * 2 + H, W, H); ctx.drawImage(sky, 0, par - H * 2, W, H); const sh = sky.naturalHeight; ctx.drawImage(sky, 0, sh * 0.96, sky.naturalWidth, sh * 0.04, 0, par - 1, W, 90); ctx.globalAlpha = 1; }      // D121：天空最下緣往下延伸，讓碼頭圖上緣淡入時接得起來
     if (k > 0.35) for (let i = 0; i < 40; i++) { const sy = ((i * 53 + par * 0.3) % H + H) % H; ell((i * 97) % W, sy, 1.3, 1.3, 'rgba(255,255,255,' + clamp((k - 0.35) * 1.6, 0, 0.9) * (0.5 + 0.5 * Math.sin(tt * 2 + i)) + ')'); }
     /* D121（Dari「疊貨櫃後面的山、雲、風都要有元素設計圖」）：G87 的分層元素——遠山 far_mtn、雲 cloud_0~2、海鷗 gull（4 格拍翅）、風 wind_0~2；有圖就用圖，沒圖用原本程式畫的 */
-    { const fm = ready('far_mtn'); if (fm) { const fy = Y0 - 150 + g.cam * 0.3; ctx.drawImage(fm, 0, fy, W, W * fm.naturalHeight / fm.naturalWidth); } }
     for (let i = 0; i < 5; i++) { const cim = ready('cloud_' + (i % 3)), cy = (Y0 - 640 - i * 150) + par, cx = ((i * 130 + tt * (6 + i * 2)) % (W + 160)) - 80; if (cim && cy > -80 && cy < H + 40) { const cw = 120 + (i % 3) * 30; ctx.globalAlpha = 1 - k * 0.35; ctx.drawImage(cim, cx - cw / 2, cy - cw * 0.25, cw, cw * cim.naturalHeight / cim.naturalWidth); ctx.globalAlpha = 1; continue; }
       if (cy > -40 && cy < H + 40) { ctx.fillStyle = 'rgba(255,255,255,' + (0.75 - k * 0.4) + ')'; ell(cx, cy, 42, 13, ctx.fillStyle); ell(cx + 22, cy - 7, 24, 11, ctx.fillStyle); } }
-    { const iy = Y0 - 560 + par; if (iy > -60 && iy < H) { ctx.fillStyle = 'rgba(78,110,124,.9)'; poly([200, iy + 18, 236, iy - 6, 262, iy - 18, 290, iy - 2, 318, iy + 18], ctx.fillStyle); ctx.fillStyle = '#fff'; ctx.fillRect(259, iy - 34, 5, 16); ctx.fillStyle = C.ink; ctx.fillRect(259, iy - 30, 5, 3); ctx.fillRect(259, iy - 24, 5, 3); } }
+    if (!sky) { const iy = Y0 - 560 + par; if (iy > -60 && iy < H) { ctx.fillStyle = 'rgba(78,110,124,.9)'; poly([200, iy + 18, 236, iy - 6, 262, iy - 18, 290, iy - 2, 318, iy + 18], ctx.fillStyle); ctx.fillStyle = '#fff'; ctx.fillRect(259, iy - 34, 5, 16); ctx.fillStyle = C.ink; ctx.fillRect(259, iy - 30, 5, 3); ctx.fillRect(259, iy - 24, 5, 3); } }
     // 碼頭底圖（往上疊時以 0.55 倍速度往下退）
     { const gl = ready('gull'); if (gl) for (let i = 0; i < 2; i++) { const gy = Y0 - 300 - i * 420 + par * 0.8, gx = ((tt * (34 + i * 10) + i * 170) % (W + 120)) - 60, n = 4, fw = gl.naturalWidth / n, fi = Math.floor(tt * 8 + i) % n; if (gy > -40 && gy < H) ctx.drawImage(gl, fi * fw, 0, fw, gl.naturalHeight, gx - 18, gy - 12, 36, 36 * gl.naturalHeight / fw); } }
     const baseIm = ready('bg_stack_base'); ctx.save(); ctx.translate(0, par);
-    if (baseIm) ctx.drawImage(baseIm, 0, 0, W, H); else { stackBG = stackBG || buildStackBG(); ctx.drawImage(stackBG, 0, 0, W, H); }
+    if (baseIm) { stackFade = stackFade || fadeTop(baseIm, 80); ctx.drawImage(stackFade, 0, 0, W, H);
+      const fm = ready('far_mtn'); if (fm) {      // D121：G87 遠山疊在碼頭底圖的山稜上，再把前景（建築、碼頭、兩側起重機）蓋回來
+        const fh = W * fm.naturalHeight / fm.naturalWidth, by = H * 0.842; ctx.globalAlpha = 0.95; ctx.drawImage(fm, 0, by - fh + 6, W, fh); ctx.globalAlpha = 1;
+        const sx = baseIm.naturalWidth / W, sy = baseIm.naturalHeight / H, cut = (x, y, w, h) => ctx.drawImage(baseIm, x * sx, y * sy, w * sx, h * sy, x, y, w, h);
+        cut(0, by, W, H - by); cut(0, H * 0.78, 60, by - H * 0.78); cut(W - 30, H * 0.78, 30, by - H * 0.78); } }
+    else { stackBG = stackBG || buildStackBG(); ctx.drawImage(stackBG, 0, 0, W, H); }
     ctx.restore();
     ctx.save(); if (g.shake > 0 && !RM) ctx.translate(rnd(-1, 1) * g.shake * 14, rnd(-1, 1) * g.shake * 8); ctx.translate(0, g.cam);
     drawShip(g.ship ? g.ship.x : 70, Y0 + BH + 44, g.ship ? 6 : Math.min(6, Math.floor(((hgt - 1) % ST.shipEvery) * 0.6)));
