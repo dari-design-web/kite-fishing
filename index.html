@@ -536,7 +536,7 @@ const STAGE_ART = { bg_s2_noon: 'bg_s2_noon.jpg', bg_s2_dusk: 'bg_s2_dusk.jpg', 
   f_s2_huashen: 'f_s2_huashen.png', f_s2_jialie: 'f_s2_jialie.png', f_s2_mahi: 'f_s2_mahi.png', f_s2_zhengjian: 'f_s2_zhengjian.png', f_s2_zhenshen: 'f_s2_zhenshen.png',
   f_s3_doubang: 'f_s3_doubang.png', f_s3_douzai: 'f_s3_douzai.png', f_s3_lobster: 'f_s3_lobster.png', f_s3_suodi: 'f_s3_suodi.png', f_s3_xiangyu: 'f_s3_xiangyu.png',
   f_s4_flying: 'f_s4_flying.png', f_s4_flying_jump: 'f_s4_flying_jump.png', f_s4_baimao: 'f_s4_baimao.png', f_s4_juwei: 'f_s4_juwei.png', f_s4_yingge: 'f_s4_yingge.png', f_s4_shuangdai: 'f_s4_shuangdai.png', f_s4_sailfish: 'f_s4_sailfish.png' };      // D119：G84 全部
-const ASSET_FILES = { bg_dusk: 'bg_dusk_v2.jpg', bg_night: 'bg_night_v2.jpg', kite_glide: 'kite_glide_v2.png', kite_dive: 'kite_dive_v2.png', fish_small: 'fish_small_v2.png', fish_mid: 'fish_mid_v2.png', fish_big: 'fish_big_v2.png', trash: 'trash.png', whaleshark: 'whaleshark.png', bg: 'bg_v2.jpg', fish_squid: 'fish_squid_v2.png', fish_hairtail: 'fish_hairtail_v2.png', fish_amber: 'fish_amber_v2.png' };      // v0.10：ChatGPT G-42 新底圖、漁獲與小鳶（鍵不變，只換檔名）
+const ASSET_FILES = { bg_dusk: 'bg_dusk_v2.jpg', bg_night: 'bg_night_v2.jpg', kite_glide: 'kite_glide_v2.png', kite_glide_fly: 'kite_glide_fly.png', kite_dive: 'kite_dive_v2.png', fish_small: 'fish_small_v2.png', fish_mid: 'fish_mid_v2.png', fish_big: 'fish_big_v2.png', trash: 'trash.png', whaleshark: 'whaleshark.png', bg: 'bg_v2.jpg', fish_squid: 'fish_squid_v2.png', fish_hairtail: 'fish_hairtail_v2.png', fish_amber: 'fish_amber_v2.png' };      // v0.10：ChatGPT G-42 新底圖、漁獲與小鳶（鍵不變，只換檔名）
 
 const $ = (id) => document.getElementById(id);
 const stage = $('stage'), cv = $('world'), ctx = cv.getContext('2d');
@@ -1110,7 +1110,10 @@ function drawKite() {
   if (diving) { const a = Math.atan2(k.ty - k.y, k.tx - k.x); ctx.rotate(a); if (Math.cos(a) < 0) ctx.scale(1, -1); }
   else { if (k.state === 'stun') ctx.rotate(Math.sin(clock * 30) * 0.16); ctx.scale(k.state === 'rise' ? (k.x < W / 2 ? 1 : -1) : k.face, 1); }
   const key = diving ? 'kite_dive' : 'kite_glide';
-  if (img[key]) { ctx.save(); if (diving) ctx.rotate(-CONFIG.diveSpriteAngle * Math.PI / 180); sprite(key, 60, 50); ctx.restore(); }
+  if (!diving && img.kite_glide_fly) {      // D121：G87 拍翅序列（橫排 4 格）輪播
+    const sh = img.kite_glide_fly, n = 4, fw = sh.naturalWidth / n, fi = Math.floor(clock * 8) % n; ctx.drawImage(sh, fi * fw, 0, fw, sh.naturalHeight, -30, -25, 60, 50);      // 每格 240×200，跟 kite_glide 同比例
+  } else if (img[key]) { ctx.save(); if (diving) ctx.rotate(-CONFIG.diveSpriteAngle * Math.PI / 180); else { const ph = Math.sin(clock * 7); ctx.translate(0, -ph * 2); ctx.scale(1 + ph * 0.05, 1 - ph * 0.06); }      // D121：還沒有拍翅序列時，滑翔用上下起伏＋伸縮模擬拍翅
+    sprite(key, 60, 50); ctx.restore(); }
   else {
     poly([-16, 2, -34, -5, -27, 3, -34, 11, -16, 9], PAL.wing, PAL.line);
     ell(0, 3, 18, 14, PAL.body, PAL.line); ell(5, 8, 11, 8, PAL.cream);
