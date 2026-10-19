@@ -237,6 +237,24 @@
       '<p class="small" style="margin:8px 0 0;color:' + (ok ? '#1E8A4C' : '#C8442F') + '">' + (ok ? '✓ 帳本加總 ' + num(ledNow) + ' 點＝全部會員目前餘額 ' + num(now) + ' 點，對得起來。' : '⚠ 帳本加總 ' + num(ledNow) + ' 點，但會員目前餘額合計 ' + num(now) + ' 點，差 ' + num(diff) + ' 點（可能有舊資料沒有帳本明細，或匯入時只帶了餘額）。') + '</p>',
       { hint: '「發出／用掉」是這段期間的流量；「期初／期末」是當下的存量，兩者不要混在一起看。期末餘額由帳本推算；若期間包含今天，就是截至現在。' });
   }
+
+  /* G94-C03：有先後順序的路徑——同一批新會員、加入後 30 天內，依時間先後一步一步走 */
+  function seqFunnel(D, rg) {
+    const WIN = 30 * DAY, coh = D.ms.filter((m) => m.created && K.dayKey(m.created) >= rg.from && K.dayKey(m.created) <= rg.to);
+    if (!coh.length) return card('🛤️ 新會員路徑（有先後順序）', '<p class="muted small">這段期間沒有新會員。</p>');
+    const done = {}; D.desk.forEach((g) => { done[g.rcode] = g.t; });
+    const g = { j: 0, g1: 0, s1: 0, r1: 0, p1: 0, d1: 0, dr: 0, dp: 0 };
+    coh.forEach((m) => { const end = m.created + WIN; g.j++;
+      const fg = Math.min(Infinity, ...(m.plays || []).filter((p) => p.t >= m.created && p.t < end).map((p) => p.t));
+      const st = (m.ledger || []).filter((e) => (e.type === 'store' || e.type === 'backfill') && e.t >= m.created && e.t < end).map((e) => e.t), rd = (m.redeems || []).filter((r) => r.t >= m.created && r.t < end && r.status !== 'cancel');
+      if (fg < Infinity) { g.g1++; const s1 = Math.min(Infinity, ...st.filter((t) => t > fg)); if (s1 < Infinity) { g.s1++; const r1 = rd.filter((r) => r.t > s1).sort((a, b) => a.t - b.t)[0]; if (r1) { g.r1++; if (done[r1.id] || r1.status === 'done') g.p1++; } } }
+      const s0 = Math.min(Infinity, ...st); if (s0 < Infinity && !(fg < s0)) { g.d1++; const r0 = rd.filter((r) => r.t > s0).sort((a, b) => a.t - b.t)[0]; if (r0) { g.dr++; if (done[r0.id] || r0.status === 'done') g.dp++; } } });
+    const row = (lab, v, prev, col) => '<div class="ab-row"><span class="ab-l">' + lab + '</span><span class="ab-t" style="height:16px"><i style="width:' + Math.max(2, v / g.j * 100).toFixed(1) + '%;background:' + col + '"></i></span><span class="ab-v">' + num(v) + ' 人 <small>' + (prev != null ? '佔上一步 ' + pct(v, prev) : '') + '</small></span></div>';
+    const young = coh.filter((m) => Date.now() - m.created < WIN).length;
+    return card('🛤️ 新會員路徑（有先後順序）', '<div class="agrid2" style="margin:0"><div><div class="small" style="font-weight:700;margin-bottom:6px">遊戲帶路：加入 → 玩遊戲 → 之後到店集點 → 之後兌換 → 領到</div><div class="ab">' + row('加入', g.j, null, SER[0]) + row('　→ 玩遊戲', g.g1, g.j, SER[1]) + row('　→ 之後到店集點', g.s1, g.g1, SER[2]) + row('　→ 之後兌換', g.r1, g.s1, SER[3]) + row('　→ 領到贈品', g.p1, g.r1, SER[4]) + '</div></div>' +
+      '<div><div class="small" style="font-weight:700;margin-bottom:6px">直接消費：加入 → 先到店集點 → 之後兌換 → 領到</div><div class="ab">' + row('加入', g.j, null, SER[0]) + row('　→ 先到店集點', g.d1, g.j, SER[2]) + row('　→ 之後兌換', g.dr, g.d1, SER[3]) + row('　→ 領到贈品', g.dp, g.dr, SER[4]) + '</div></div></div>',
+      { hint: '只看這段期間加入的 ' + g.j + ' 位新會員、各自加入後 30 天內的行為，每一步都要發生在上一步之後。兩條路都正常，沒先玩遊戲直接消費的人算在右邊。' + (young ? young + ' 位加入還不滿 30 天，數字之後還會增加。' : '') });
+  }
   /* ====== 2. 點數分析 ====== */
   V.a_points = function (c, D) {
     const rg = range(D), M = build(D, rg.from, rg.to), Pm = build(D, rg.pFrom, rg.pTo);
@@ -359,7 +377,7 @@
       '<div class="akpis">' + Object.keys(SN).map((k) => '<div class="akpi" data-seg="' + k + '" style="cursor:pointer;' + (seg === k ? 'border-color:#2F7F86;box-shadow:0 0 0 2px rgba(47,127,134,.2)' : '') + '"><div class="l">' + SN[k] + '</div><div class="v">' + rows.filter(S[k]).length + '</div><div class="s">點一下只看這群</div></div>').join('') + kpi('活躍會員', num(M.active.length), M.active.length, Pm.active.length, '全部會員 ' + D.ms.length + ' 位') + '</div>' +
       card('會員列表（點會員看他的完整分析）', '<div class="filters noprint" style="margin-bottom:8px"><input id="amQ" placeholder="搜尋會員編號或名稱" value="' + esc(V.a_member.q || '') + '" style="width:240px"><button class="btn alt" id="amGo">搜尋</button>' + (seg ? '<button class="btn alt" id="amSeg">清除篩選：' + SN[seg] + '</button>' : '') + '<span class="sp"></span><button class="btn alt sm" id="exAm">匯出 CSV</button></div>' + tbl('a_mb_all', memberCols(D).concat([{ k: 'created', t: '加入', f: (r) => r.created ? dt(r.created).slice(0, 10) : '' }, { k: 'status', t: '狀態' }]), list), { hint: '數字都是' + rg.label + '的期間內；「目前點數」是現在的餘額' }) +
       '<div class="agrid2">' + card('每天活躍會員', line([{ name: '有活動的會員', avg: 1, color: C.aqua, vals: rg.days.map((d) => dayActive(D, M, d)) }, { name: '新會員', color: C.violet, vals: daily(rg, M.newM, (m) => m.created) }], rg.days.map(md))) +
-      card('會員來訪天數分布（期間內）', cols([1, 2, 3, 4, 5].map((n, i) => rows.filter((r) => i < 4 ? r.vis === n : r.vis >= n).length), ['1 天', '2 天', '3 天', '4 天', '5 天以上'], { unit: ' 人', color: C.aqua }), { hint: '回訪越多越好' }) + '</div>' + retention(D, rg) + funnel(D, rg);
+      card('會員來訪天數分布（期間內）', cols([1, 2, 3, 4, 5].map((n, i) => rows.filter((r) => i < 4 ? r.vis === n : r.vis >= n).length), ['1 天', '2 天', '3 天', '4 天', '5 天以上'], { unit: ' 人', color: C.aqua }), { hint: '回訪越多越好' }) + '</div>' + retention(D, rg) + funnel(D, rg) + seqFunnel(D, rg);
     wireRange(c); wire(['a_mb_all']);
     $('amGo').onclick = () => { V.a_member.q = $('amQ').value.trim(); A.app(); }; $('amQ').onkeydown = (e) => { if (e.key === 'Enter') $('amGo').onclick(); };
     if ($('amSeg')) $('amSeg').onclick = () => { V.a_member.seg = ''; A.app(); };
