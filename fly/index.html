@@ -517,7 +517,7 @@ const STAGES = [
     types: { butt: { name: '碳香炭烤蚺' }, tire: { name: '青苔索具寄居怪', sway: 26 }, sprayer: { name: '柴油黑煙蝠鱝' }, battery: { name: '破網骨刺海妖', zapR: 70 }, oil: { name: '藤壺鏽甲螺', hp: 6 }, drop: { name: '藤壺殼' }, net: { name: '被廢網纏住的朋友', rescue: 'friend' }, tangle: { name: '被廢網纏住的朋友', rescue: 'friend' }, log: { name: '繫船纜繩' },
       boss: { name: '殘鋼龍骨・阿根納骨骸巨獸', short: '阿根納', r: 56 }, fire: { name: '機油彈', hp: 1, r: 8, speed: [0, 0], score: 0 } } },
   { id: 4, name: '深澳鐵道自行車', time: '黃昏', theme: 'rail', speed: 1.25, bossHp: 1.35, starClean: 88, intro: '從八斗子火車站出發，穿過光隧道，到深澳站。鐵軌是危險線：看軌道，抓空檔跨過去。三位吉祥物被綁在路邊，打斷就能救出。', clean: '深澳的黃昏恢復平靜了！', stars: ['過關', '乾淨度 88% 以上', '被打到不超過 1 次'],
-    how: { dodge: '鐵軌亮紅＝刺蝟列車，打不掉只能閃。怪獸身上灰盾＝現在打不動，綠圈＝現在打；光影母要等牆上亮光；煤煙擋住就移到旁邊打', barrelK: '油桶', barrel: '打爆會炸掉旁邊的怪獸，自己別靠太近', friend: '吉祥物被纜繩、藤蔓、廢鐵軌綁住，打斷就救出：豆腐君護盾加臭豆腐、象鼻君噴水、山野君補給', ultK: '紅蟹車', ult: '右下角集滿後按一下，紅蟹鐵道車沿著鐵軌衝上來，全畫面大掃除' },
+    how: { dodge: '鐵軌亮紅＝刺蝟列車，打不掉只能閃。怪獸身上灰盾＝現在打不動，綠圈＝現在打；光影母要等牆上亮光；煤煙擋住就移到旁邊打', barrelK: '油桶', barrel: '打爆會炸掉旁邊的怪獸，自己別靠太近', friend: '吉祥物被纜繩、藤蔓、廢鐵軌綁住，打斷就救出：豆腐君護盾加臭豆腐、象鼻君噴水、山野君補給', ultK: '鐵道車', ult: '右下角集滿後按一下，鐵道車沿著鐵軌衝上來，全畫面大掃除' },
     types: { can: { name: '鐵軌刺蝟' }, butt: { name: '鐵軌刺蝟', snake: 0 }, bag: { name: '隧道光影母' }, sprayer: { name: '煤煙礦坑怪' }, goo: { name: '煤渣團' }, chaser: { name: '追人的煤渣團' }, tire: { name: '豆腐岩寄居蟹', hp: 8 }, battery: { name: '海蝕尖嘯獸', zapR: 80 }, log: { name: '廢棄枕木' },
       boss: { name: '不沉煤艦・建基巨岩怪', short: '巨岩怪', r: 58 }, fire: { name: '煤灰彈', hp: 1, r: 8, speed: [0, 0], score: 0 } } },
   /* D119（G83_03 設計、G84 美術）：第 5～8 關。每關只多一個地形判斷；魔王都是垃圾聚成的怪，岩石、燈塔、動物不是壞人。spr 是 G84 的圖，還沒交時用程式畫的佔位圖 */
@@ -548,7 +548,7 @@ const EASY2 = /[?&]easy2=1/.test(location.search), E2 = () => EASY2 && level ===
 if (EASY2) CONFIG.levels.easy.bossHp = 0.8;
 const SPD = () => LVF('speed') * (ST().speed || 1), BHP = () => LVF('bossHp') * (ST().bossHp || 1), BTIME = () => (PHASED() ? CONFIG.bossFx.time : CONFIG.boss.leaveAfter) * LVF('bossTime') * (ST().bossHp || 1);      // 速度、大垃圾團血量與停留時間 = 難度倍率 × 關卡倍率
 const ASSET_FILES = { trash: 'trash.png', fish_small: 'fish_small.png', fish_squid: 'fish_squid.png', whaleshark: 'whaleshark.png', shark_top: 'whaleshark_top.png', night_bag: 'night_bag.png', night_temple: 'night_temple.png', jiao_flat: 'jiao_flat.png', jiao_convex: 'jiao_convex.png', lantern: 'lantern.png',
-  kite_a: 'kite_top_a.png', kite_b: 'kite_top_b.png', kite_fly: 'kite_top_fly.png', feather: 'feather.png', turtle: 'turtle_top.png', fx_wind_route: 'fx_wind_route.png', lamp_garbage_cover: 'lamp_garbage_cover.png', squid_top: 'squid_top.png', dolphin_top: 'dolphin_top.png', squid_king: 'squid_king.png', fx_boss_boom: 'fx_boss_boom.png', dragon_black_head: 'dragon_black_head.png', dragon_black_body: 'dragon_black_body.png', dragon_blue_head: 'dragon_blue_head.png', dragon_blue_body: 'dragon_blue_body.png', ult_squidking: 'ult_squidking.png', ult_dragons: 'ult_dragons.png', ult_squid: 'ult_squid.png', ult_dolphin: 'ult_dolphin.png', ult_turtle: 'ult_turtle.png',      // G88（D122 新圖，沒有圖時用程式畫的）
+  kite_a: 'kite_top_a.png', kite_b: 'kite_top_b.png', kite_fly: 'kite_top_fly.png', feather: 'feather.png', turtle: 'turtle_top.png', fx_wind_route: 'fx_wind_route.png', lamp_garbage_cover: 'lamp_garbage_cover.png', squid_top: 'squid_top.png', dolphin_top: 'dolphin_top.png', squid_king: 'squid_king.png', fx_rock_0: 'fx_rock_0.png', fx_rock_1: 'fx_rock_1.png', fx_rock_2: 'fx_rock_2.png', fx_boss_boom: 'fx_boss_boom.png', dragon_black_head: 'dragon_black_head.png', dragon_black_body: 'dragon_black_body.png', dragon_blue_head: 'dragon_blue_head.png', dragon_blue_body: 'dragon_blue_body.png', ult_squidking: 'ult_squidking.png', ult_dragons: 'ult_dragons.png', ult_squid: 'ult_squid.png', ult_dolphin: 'ult_dolphin.png', ult_turtle: 'ult_turtle.png',      // G88（D122 新圖，沒有圖時用程式畫的）
   can: 'foe_can.png', bag: 'foe_bag.png', butt: 'foe_butt.png', foam: 'foe_foam.png', barrel: 'foe_barrel.png', tire: 'foe_tire.png', oil: 'foe_oil.png', goo: 'foe_goo.png',
   battery: 'foe_battery.png', sprayer: 'foe_sprayer.png', log: 'foe_log.png', net: 'foe_net.png', tangle: 'foe_tangle.png', boss: 'foe_boss.png',
   ui_menu_card: 'ui_menu_card.png', ui_beat_lamp: 'ui_beat_lamp.png', p_escort: 'p_escort.png', p_boss_stun: 'p_boss_stun.png',      // G-35 B（v0.25 起接上）
@@ -1172,7 +1172,7 @@ function update(dt) {
       const p = Math.min(1, (u.t - 0.5) / 1.7), e = p * p * (3 - 2 * p);
       const ox = u.sx, oy = u.sy; if (RM()) { u.sx = W / 2; u.sy = H + 80 - e * (H + 260); } else { u.sx = -170 + e * (W + 340); u.sy = 480 - e * 250 - Math.sin(p * Math.PI) * 50; } if (u.sx - ox > 0.5) u.hd = Math.atan2(u.sy - oy, u.sx - ox);   /* hd：鯨鯊前進的方向 */ u.waveY = H + 60 - e * (H + 200);
       if (p < 0.7) shake = Math.max(shake, 0.12);
-      for (const f of foes.slice()) if (f.y > u.waveY) { if (T[f.type].solid) { foes.splice(foes.indexOf(f), 1); bubbles(f.x, f.y, 6); guide = null; continue; } if (f.type === 'minib') { if (!f.ultHit) { f.ultHit = true; f.hp -= Math.ceil(f.maxHp * 0.5); f.hitT = 0.1; } continue; } if (f.type === 'boss') { if (f.hidden) continue; if (!u.hitBoss) { u.hitBoss = true; if (f.phased) bossDamage(f, CONFIG.ult.bossDamage, null); else f.hp -= CONFIG.ult.bossDamage; burst(f.x, f.y, 20, '#FFE08A', 160); say(RM() ? '紅蟹車撞散了一大塊！' : PM() ? '光刃撕開了一大塊！' : '鯨鯊撞散了一大塊！', f.x, f.y + 74, '#FFE08A'); } } else clearFoe(f, 'ult'); }
+      for (const f of foes.slice()) if (f.y > u.waveY) { if (T[f.type].solid) { foes.splice(foes.indexOf(f), 1); bubbles(f.x, f.y, 6); guide = null; continue; } if (f.type === 'minib') { if (!f.ultHit) { f.ultHit = true; f.hp -= Math.ceil(f.maxHp * 0.5); f.hitT = 0.1; } continue; } if (f.type === 'boss') { if (f.hidden) continue; if (!u.hitBoss) { u.hitBoss = true; if (f.phased) bossDamage(f, CONFIG.ult.bossDamage, null); else f.hp -= CONFIG.ult.bossDamage; burst(f.x, f.y, 20, '#FFE08A', 160); say(RM() ? '鐵道車撞散了一大塊！' : PM() ? '光刃撕開了一大塊！' : '鯨鯊撞散了一大塊！', f.x, f.y + 74, '#FFE08A'); } } else clearFoe(f, 'ult'); }
       u.ringAcc += real; if (u.ringAcc > 0.22 && p < 1) { u.ringAcc = 0; rings.push({ x: u.sx, y: u.sy, r: 20, max: 150, life: 1, color: '255,236,160' }); }
       if (!calm && p < 1) for (let i = 0; i < 3; i++) { part('star', u.sx - rand(40, 150), u.sy + rand(-40, 40), { vx: rand(-60, -10), vy: rand(-20, 30), size: rand(3, 8), color: Math.random() < 0.4 ? '#FFFFFF' : '#FFE08A', fade: 1.4 }); part('bubble', rand(0, W), u.waveY + rand(0, 40), { vy: rand(-90, -40), size: rand(2, 5), fade: 1.1 }); }
       if (p >= 1 && !u.chimed) { u.chimed = true; jingle([784, 988, 1175, 1568], 70); }
@@ -1267,7 +1267,7 @@ function drawMarket() {
    妖怪、朋友與魔王都是程式畫的佔位圖，等 ChatGPT 的正式圖；筊與燈籠用 ChatGPT 的素材（暫用） ====== */
 const NM = () => ST().theme === 'market';
 const ULT2 = { wind: ['squid', '小卷王', '🦑'], coast: ['dolphin', '海豚群', '🐬'], netbay: ['turtle', '海龜', '🐢'], beam: ['dragons', '雙龍破', '🐉'] };      // D122：第 5～7 關各自的朋友大招（第 8 關仍是鯨鯊）
-const ULTN = () => (NM() ? '擲筊' : ST().theme === 'rail' ? '紅蟹車' : ST().theme === 'pier' ? '鏡海' : ULT2[ST().theme] ? ULT2[ST().theme][1] : '鯨鯊');
+const ULTN = () => (NM() ? '擲筊' : ST().theme === 'rail' ? '鐵道車' : ST().theme === 'pier' ? '鏡海' : ULT2[ST().theme] ? ULT2[ST().theme][1] : '鯨鯊');
 const FRIEND_NAME = { rice: '小卷米粉', jelly: '石花凍', ring: '大腸圈', oden: '基隆黑輪' };
 const JIAO = { holy: ['聖杯', '神明答應了！再送一層護盾', [0, 1]], laugh: ['笑筊', '神明笑了！羽毛變強', [0, 0]], yin: ['陰筊', '再擲一次！祈福力留下一半', [1, 1]] };      // 0 平面朝上、1 凸面朝上
 let jiaoForce = '';
@@ -2017,8 +2017,8 @@ function drawAgenorZones() {
     return;
   }
   if (f.atk === 'rocks') for (const k of f.rocks) {
-    if (k.t < C.rockWarn) { ctx.save(); ctx.beginPath(); ctx.arc(k.x, k.y, C.rockR, 0, 6.2832); ctx.clip(); hazard(k.x - C.rockR, k.y - C.rockR, C.rockR * 2, C.rockR * 2); ctx.restore(); ctx.strokeStyle = 'rgba(255,84,62,.9)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(k.x, k.y, C.rockR * (1 - k.t / C.rockWarn * 0.3), 0, 6.2832); ctx.stroke(); const s = 1 - k.t / C.rockWarn; rrect(k.x - 12, k.y - 12 - s * 120, 24, 20, 3, '#B9B2A8', PAL.line, 1.5); }
-    else { ctx.globalAlpha = Math.max(0, 1 - (k.t - C.rockWarn) / 0.35); rrect(k.x - 14, k.y - 10, 28, 20, 3, '#B9B2A8', PAL.line, 1.5); ctx.globalAlpha = 1; }
+    if (k.t < C.rockWarn) { ctx.save(); ctx.beginPath(); ctx.arc(k.x, k.y, C.rockR, 0, 6.2832); ctx.clip(); hazard(k.x - C.rockR, k.y - C.rockR, C.rockR * 2, C.rockR * 2); ctx.restore(); ctx.strokeStyle = 'rgba(255,84,62,.9)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(k.x, k.y, C.rockR * (1 - k.t / C.rockWarn * 0.3), 0, 6.2832); ctx.stroke(); const s = 1 - k.t / C.rockWarn; if (s < 0.6) drawRock(k.x, k.y - s * 160, 26 + (1 - s) * 6, k.x | 0, 1); }
+    else { const u = (k.t - C.rockWarn) / 0.35; drawRock(k.x, k.y, 32, k.x | 0, Math.max(0, 1 - u), u); }
   }
   if (f.atk === 'cables') for (const c of f.cables) {
     const y = c.y, gl = c.gx - C.cableHalf, gr = c.gx + C.cableHalf;
@@ -2206,7 +2206,7 @@ function updateJianji(f, dt) {
 }
 function drawJianjiZones() {
   const f = boss; if (!f || f.type !== 'boss' || !RM() || !f.atk) return; const C = CONFIG.jianji;
-  if (f.grid) { const G = CONFIG.grid; f.grid.rows.forEach((r, i) => { const at = G.warn + i * G.rowGap; if (f.grid.t < at) { hazard(0, r.y - G.half, r.gx - G.cell / 2, G.half * 2); hazard(r.gx + G.cell / 2, r.y - G.half, W - r.gx - G.cell / 2, G.half * 2); ctx.fillStyle = 'rgba(191,240,208,.45)'; ctx.fillRect(r.gx - G.cell / 2, r.y - G.half, G.cell, G.half * 2); } else if (f.grid.t < at + 0.35) { ctx.globalAlpha = 1 - (f.grid.t - at) / 0.35; for (let x = 0; x < W; x += G.cell) if (Math.abs(x + G.cell / 2 - r.gx) > 1) rrect(x + 8, r.y - 14, G.cell - 16, 28, 4, '#8C7F73', PAL.line, 1.5); ctx.globalAlpha = 1; } }); ctx.strokeStyle = 'rgba(127,211,160,.9)'; ctx.lineWidth = 3; ctx.setLineDash([8, 6]); ctx.beginPath(); f.grid.rows.forEach((r, i) => { if (i) ctx.lineTo(r.gx, r.y); else ctx.moveTo(r.gx, r.y); }); ctx.stroke(); ctx.setLineDash([]); }
+  if (f.grid) { const G = CONFIG.grid; f.grid.rows.forEach((r, i) => { const at = G.warn + i * G.rowGap; if (f.grid.t < at) { hazard(0, r.y - G.half, r.gx - G.cell / 2, G.half * 2); hazard(r.gx + G.cell / 2, r.y - G.half, W - r.gx - G.cell / 2, G.half * 2); ctx.fillStyle = 'rgba(191,240,208,.45)'; ctx.fillRect(r.gx - G.cell / 2, r.y - G.half, G.cell, G.half * 2); } else if (f.grid.t < at + 0.35) { ctx.globalAlpha = 1 - (f.grid.t - at) / 0.35; const ga = ctx.globalAlpha; ctx.globalAlpha = 1; for (let x = 0; x < W; x += G.cell) if (Math.abs(x + G.cell / 2 - r.gx) > 1) drawRock(x + G.cell / 2, r.y, G.cell - 12, x + i * 7, ga, (f.grid.t - at) / 0.35); ctx.globalAlpha = 1; } }); ctx.strokeStyle = 'rgba(127,211,160,.9)'; ctx.lineWidth = 3; ctx.setLineDash([8, 6]); ctx.beginPath(); f.grid.rows.forEach((r, i) => { if (i) ctx.lineTo(r.gx, r.y); else ctx.moveTo(r.gx, r.y); }); ctx.stroke(); ctx.setLineDash([]); }
   if (f.atk === 'storm') { const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, 'rgba(80,60,160,.25)'); g.addColorStop(1, 'rgba(80,60,160,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     for (const s of f.stars) { if (s.t < C.starWarn) { ctx.save(); ctx.beginPath(); ctx.arc(s.x, s.y, C.starR, 0, 6.2832); ctx.clip(); hazard(s.x - C.starR, s.y - C.starR, C.starR * 2, C.starR * 2); ctx.restore(); const p = s.t / C.starWarn; ctx.strokeStyle = 'rgba(' + s.c + ',.95)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(s.x - 60 * (1 - p), s.y - 220 * (1 - p)); ctx.lineTo(s.x - 60 * (1 - p) + 8, s.y - 220 * (1 - p) + 28); ctx.stroke(); } } }
   if (f.atk === 'sweep') for (const b of f.beams) { if (b.t < C.sweepWarn) { hazard(0, b.y - C.beamHalf, W, C.beamHalf * 2); continue; } if (img.r_beam) { ctx.save(); ctx.translate(b.x, b.y); if (!b.fromLeft) ctx.scale(-1, 1); sprite('r_beam', C.beamLen, C.beamHalf * 2); ctx.restore(); continue; } rrect(b.x - C.beamLen / 2, b.y - C.beamHalf + 4, C.beamLen, C.beamHalf * 2 - 8, 3, '#7A6A5E', PAL.line, 2); ctx.strokeStyle = '#6E8A58'; ctx.lineWidth = 2; ctx.beginPath(); for (let x = b.x - C.beamLen / 2 + 10; x < b.x + C.beamLen / 2; x += 30) { ctx.moveTo(x, b.y - 6); ctx.lineTo(x + 14, b.y + 6); } ctx.stroke(); }
@@ -2854,6 +2854,22 @@ function drawCut() {
   ctx.restore();
 }
 
+/* ---- D126：落石（阿根納、巨岩怪）。有 G92 的 fx_rock_0..2 就用圖，沒有就畫不規則岩塊；u＝落地後經過比例（碎裂飛散） ---- */
+function drawRock(x, y, sz, seed, a, u) {
+  if (a <= 0) return; u = u || 0; ctx.save(); ctx.globalAlpha = a; ctx.translate(x, y);
+  if (u > 0) { ctx.fillStyle = 'rgba(200,190,175,' + 0.5 * (1 - u) + ')'; ctx.beginPath(); ctx.ellipse(0, 4, sz * (0.7 + u), sz * (0.35 + u * 0.4), 0, 0, 6.2832); ctx.fill(); }
+  const im = img['fx_rock_' + (Math.abs(seed) % 3)];
+  if (im) { ctx.rotate((seed % 7) * 0.4); const k = sz * 1.3; ctx.drawImage(im, -k / 2, -k / 2, k, k); ctx.restore(); return; }
+  ctx.rotate((seed % 7) * 0.4); const n = 8, rr = []; for (let i = 0; i < n; i++) rr.push(sz * (0.42 + 0.14 * Math.abs(Math.sin(seed * 1.7 + i * 2.3))));
+  ctx.fillStyle = 'rgba(16,41,61,.25)'; ctx.beginPath(); for (let i = 0; i < n; i++) { const an = i / n * 6.2832; ctx.lineTo(Math.cos(an) * rr[i] + 3, Math.sin(an) * rr[i] + 4); } ctx.closePath(); ctx.fill();
+  const g = ctx.createLinearGradient(-sz / 2, -sz / 2, sz / 2, sz / 2); g.addColorStop(0, '#C9BFB0'); g.addColorStop(0.55, '#948A7C'); g.addColorStop(1, '#6A6156');
+  ctx.beginPath(); for (let i = 0; i < n; i++) { const an = i / n * 6.2832; ctx.lineTo(Math.cos(an) * rr[i], Math.sin(an) * rr[i]); } ctx.closePath(); ctx.fillStyle = g; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = PAL.line; ctx.stroke();
+  ctx.strokeStyle = 'rgba(60,52,44,.6)'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(-rr[3] * 0.4, -rr[3] * 0.2); ctx.lineTo(rr[0] * 0.1, rr[0] * 0.15); ctx.lineTo(rr[1] * 0.35, -rr[1] * 0.3); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.ellipse(-sz * 0.15, -sz * 0.18, sz * 0.14, sz * 0.07, -0.5, 0, 6.2832); ctx.fill();
+  if (u > 0) { ctx.fillStyle = '#8C8274'; for (let i = 0; i < 6; i++) { const an = i * 1.05 + seed, d = sz * (0.4 + u * 1.1); ctx.beginPath(); ctx.arc(Math.cos(an) * d, Math.sin(an) * d, 3 - u * 2, 0, 6.2832); ctx.fill(); } }
+  ctx.restore();
+}
+
 /* ---- D125：魔王倒下時碰碰碰連環爆炸＋震動 ---- */
 let booms = [];
 function bossBoom(x, y) { booms = []; for (let i = 0; i < 7; i++) booms.push({ t: -i * 0.2, x: x + (i === 6 ? 0 : rand(-60, 60)), y: y + (i === 6 ? 0 : rand(-46, 46)), big: i === 6, done: false }); }
@@ -3078,7 +3094,7 @@ function frame(now) {
 
 /* ====== 流程與操作 ====== */
 function show(id) { for (const p of ['mapPanel', 'startPanel', 'pausePanel', 'resultPanel']) $(p).hidden = p !== id; }
-function start() { reset(); if (soundOn) BGM.play('fly_' + stageNo); const ub = $('ultBtn'), im = ub.querySelector('img'); if (im) im.src = 'assets/' + (NM() ? 'jiao_pair.png' : RM() ? (img.ult_icon_rail ? 'ult_icon_rail.png' : 'rail_ult.png') : PM() ? (img.fx_keel ? 'ult_icon_pier.png' : 'pier_ult.png') : 'whaleshark_top.png'); if (im && RM() && !img.ult_icon_rail) im.src = crabIconURL(); ub.setAttribute('aria-label', NM() ? '擲筊祈福' : RM() ? '呼叫紅蟹鐵道車' : PM() ? '彩虹鏡海' : '呼叫鯨鯊'); mode = 'play'; show(null); $('hud').hidden = false; $('hint').hidden = false; $('ultBtn').hidden = false; banner('第 ' + stageNo + ' 關　' + ST().name); beep(523, 0.12, 'triangle', 0.06, 260); }
+function start() { reset(); if (soundOn) BGM.play('fly_' + stageNo); const ub = $('ultBtn'), im = ub.querySelector('img'); if (im) im.src = 'assets/' + (NM() ? 'jiao_pair.png' : RM() ? (img.ult_icon_rail ? 'ult_icon_rail.png' : 'rail_ult.png') : PM() ? (img.fx_keel ? 'ult_icon_pier.png' : 'pier_ult.png') : 'whaleshark_top.png'); if (im && RM() && !img.ult_icon_rail) im.src = crabIconURL(); ub.setAttribute('aria-label', NM() ? '擲筊祈福' : RM() ? '呼叫鐵道車' : PM() ? '彩虹鏡海' : '呼叫鯨鯊'); mode = 'play'; show(null); $('hud').hidden = false; $('hint').hidden = false; $('ultBtn').hidden = false; banner('第 ' + stageNo + ' 關　' + ST().name); beep(523, 0.12, 'triangle', 0.06, 260); }
 function pause() { if (mode !== 'play') return; mode = 'pause'; BGM.stop(); kite.drag = false; pauseInfo(); show('pausePanel'); }
 /* v0.35（C-140）：暫停時看得到這一關的三顆星條件，和「照現在這樣過關的話」拿不拿得到；還有體力 */
 function pauseInfo() {
