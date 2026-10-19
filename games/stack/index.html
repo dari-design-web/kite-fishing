@@ -28,7 +28,7 @@ canvas{height:100%;max-width:100%;aspect-ratio:360/600;border-radius:18px;touch-
 .tag{font-size:11px;font-weight:700;color:#9FC3D4;border:1px solid #2B4A60;border-radius:999px;padding:2px 8px;white-space:nowrap}
 </style>
 
-<div class="top"><a class="back" href="../../line/index.html?p=park" id="backBtn">← 小鳶樂園</a><b>小鳶疊貨櫃</b><button class="snd" id="sndBtn" type="button" aria-pressed="true" aria-label="音效開關">音效</button></div>
+<div class="top"><a class="back" href="../../line/index.html?p=park" id="backBtn">← 小鳶樂園</a><b>小鳶疊貨櫃</b><span id="lbSlot" class="lbslot"></span><button class="snd" id="sndBtn" type="button" aria-pressed="true" aria-label="音效開關">音效</button></div>
 <div class="tabs" hidden role="tablist" aria-label="選試玩">
   <button role="tab" id="t-merge" data-m="merge" aria-selected="true">合成港</button>
   <button role="tab" id="t-stack" data-m="stack" aria-selected="false">疊貨櫃</button>
@@ -36,6 +36,8 @@ canvas{height:100%;max-width:100%;aspect-ratio:360/600;border-radius:18px;touch-
 <div class="stage"><canvas id="cv" width="360" height="600" aria-label="遊戲畫面"></canvas></div>
 <p class="how" id="how"></p>
 
+<script src="../../shared/kite_core.js"></script>
+<script src="../../shared/kite_lb.js"></script>
 <script>
 (() => {
 'use strict';
@@ -531,6 +533,7 @@ cv.addEventListener('pointerup', upH); cv.addEventListener('pointercancel', upH)
 document.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { if (state !== 'play') { cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: 0, clientY: 0 })); upH(); } else if (mode === 'stack') G.tap(); else if (G.fall) G.release(); e.preventDefault(); } if (mode === 'merge' && state === 'play' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { G.tx = clamp(G.tx + (e.key === 'ArrowLeft' ? -30 : 30), 0, W); } });
 function finish() {
   const s = Math.round(G.score), nb = saveBest(mode, s);
+  try { if (window.KiteCore && KiteCore.reportMini && s > 0) KiteCore.reportMini(mode, s); } catch (e) {}      // D123：進排行榜
   if (mode === 'merge') endInfo = { s, nb, t: 0, title: G.over > 1.6 ? '堆過紅線了' : '魚艙塞滿了', rows: [['最大合到', SEAF[G.top][0]], ['撐到', '第 ' + G.lv + ' 關'], ['合成次數', G.mergesAll + ' 次'], ['最長連鎖', '×' + Math.max(1, G.bestChain)]], icon: G.top, found: G.newFound };
   else { const h = G.blocks.length - 1; if (h > (best.stackH || 0)) { best.stackH = h; store.set('kiteMiniBest1', best); } endInfo = { s, nb, t: 0, title: '貨櫃掉下去了', rows: [['疊了', h + ' 層'], ['裝滿貨船', G.ships + ' 艘'], ['完美', G.perfects + ' 次'], ['最長完美連擊', '×' + G.bestCombo]] }; }
   state = 'end'; jingle(nb ? [523, 659, 784, 1047] : [392, 330], 110);
@@ -550,4 +553,5 @@ window.__mini = { get G() { return G; }, get state() { return state; }, setMode,
 })();
 </script>
 <script>(function () { var b = document.getElementById('backBtn'); if (!/[?&]from=line/.test(location.search)) { b.href = '../../hub/'; b.textContent = '← 入口'; } })();</script>
+<script>/* D123：排行榜按鈕（一顆，進去再分類） */ (function () { var tb = /stack/.test(location.pathname) ? 'stack' : 'merge'; if (window.KiteLB) KiteLB.button(document.getElementById('lbSlot'), { cat: tb, game: tb, mini: true, title: '', tabs: [['all', tb === 'stack' ? '疊貨櫃' : '合成港']] }); })();</script>
 </body></html>
