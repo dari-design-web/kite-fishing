@@ -274,7 +274,7 @@
   };
 
   /* 營運總覽也看得到正在進行的活動（給 analytics.js 呼叫） */
-  window.__ADM_CP = { live: (D) => all(D.cfg).map((it) => Object.assign(it, { st: status(it) })).filter((it) => it.st[0] === 'live' || it.st[0] === 'armed' || it.st[0] === 'sched'), rule: (cfg, it) => rule(cfg, it) };
+  window.__ADM_CP = { effect: (D, it, f, t) => effect(D, it, f, t), all: (cfg) => all(cfg), live: (D) => all(D.cfg).map((it) => Object.assign(it, { st: status(it) })).filter((it) => it.st[0] === 'live' || it.st[0] === 'armed' || it.st[0] === 'sched'), rule: (cfg, it) => rule(cfg, it) };
 
   A.addNav('內容', ['campaigns', '🎯 行銷活動'], 0);
   A.addNav('分析', ['a_campaign', '🎯 活動成效'], 1);
