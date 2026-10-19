@@ -21,13 +21,19 @@
       '.klb .rk img{width:34px;height:34px}.klb .rk.ri{background:none}.klb-btn img{width:26px;height:26px}' +
       '.klb-alias{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:10px;padding:10px 12px;border-radius:14px;border:1px dashed #E3D9C8;font-size:14px}.klb-alias b{color:#2F7F86}.klb-alias button{min-height:40px;border-radius:10px;border:1px solid #E3D9C8;background:#fff;font:inherit;font-size:14px;font-weight:700;padding:0 12px;color:#24343A}.klb-alias label{display:flex;align-items:center;gap:6px;min-height:40px}.klb-alias input[type=checkbox]{width:22px;height:22px}.klb-alias input[type=text]{flex:1;min-width:120px;min-height:40px;border:1px solid #E3D9C8;border-radius:10px;padding:0 10px;font:inherit}' +
       '.klb-sumlk{display:block;width:100%;min-height:44px;margin-top:10px;border:1px solid #E3D9C8;border-radius:14px;background:#FFF6DE;color:#7A4A00;font:inherit;font-weight:800;font-size:14px}' +
+      '.klb-cats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 0 10px}.klb-cats button{min-height:40px;padding:0 6px;border-radius:12px;border:1px solid #E3D9C8;background:#fff;font:inherit;font-weight:800;font-size:14px;color:#24343A}.klb-cats button[aria-selected=true]{background:#2F7F86;border-color:#2F7F86;color:#fff}' +
       '.klb-sync{margin:0 2px 8px;font-size:13px;color:#8A5310;background:#FFF6DE;border-radius:10px;padding:7px 10px}' +
       '.klb-btn{display:inline-flex;align-items:center;gap:4px;min-height:44px;min-width:44px;padding:0 12px;border-radius:14px;border:1px solid rgba(0,0,0,.08);background:#FFF6DE;color:#7A4A00;font:inherit;font-weight:800;font-size:14px;box-shadow:0 2px 0 rgba(0,0,0,.08)}';
     document.head.appendChild(s);
   }
   function row(r, sub, val) { return '<li class="' + (r.me ? 'me' : '') + '"><span class="rk ' + (r.rank <= 3 ? 'r' + r.rank + ' ri' : '') + '">' + (r.rank <= 3 ? '<img src="' + BASE + 'assets/rank_' + r.rank + '.png" alt="第 ' + r.rank + ' 名">' : r.rank) + '</span><span class="nm">' + esc(r.name) + (r.me ? '（你' + (r.hide ? '・不公開' : '') + '）' : '') + (sub ? '<small>' + sub + '</small>' : '') + '</span><span class="sc">' + val + '</span></li>'; }
+  /* D123（Dari 10/19 14:46）：只留一顆排行榜按鈕，進去再分類：捕魚／飛行／合成港／疊貨櫃／旅行／總分 */
+  var CATS = [['fish', '捕魚', { title: '小鳶捕魚排行榜', game: 'fish', tabs: [['keelung', '基隆港'], ['s2', '八斗子'], ['s3', '和平島'], ['s4', '基隆嶼']] }], ['fly', '飛行', { title: '飛行冒險排行榜', game: 'fly', tabs: [['1', '第 1 關'], ['2', '第 2 關'], ['3', '第 3 關'], ['4', '第 4 關'], ['5', '第 5 關'], ['6', '第 6 關'], ['7', '第 7 關'], ['8', '第 8 關']] }],
+    ['merge', '合成港', { title: '小鳶合成港排行榜', game: 'merge', mini: true, tabs: [['all', '合成港']] }], ['stack', '疊貨櫃', { title: '小鳶疊貨櫃排行榜', game: 'stack', mini: true, tabs: [['all', '疊貨櫃']] }], ['travel', '旅行', { title: '小鳶旅行收藏排行', travel: true }], ['sum', '總分', { title: '累積總分排行榜', sum: true }]];
+  function catOf(o) { return o.cat || (o.sum ? 'sum' : o.travel ? 'travel' : o.game) || 'fish'; }
   function render(box, o) {
-    var h = '<div class="klb-h"><b>🏆 ' + esc(o.title || '排行榜') + '</b><button class="klb-x" type="button" aria-label="關閉">✕</button></div>', R, sy = K.lbSync ? K.lbSync() : { st: 'ok' };
+    var cat = catOf(o), h = '<div class="klb-h"><b>🏆 排行榜</b><button class="klb-x" type="button" aria-label="關閉">✕</button></div>', R, sy = K.lbSync ? K.lbSync() : { st: 'ok' };
+    h += '<div class="klb-cats" role="tablist">' + CATS.map(function (c) { return '<button type="button" role="tab" data-c="' + c[0] + '" aria-selected="' + (c[0] === cat) + '">' + c[1] + '</button>'; }).join('') + '</div>';;
     if (sy.st === 'local') h += '<div class="klb-sync">目前只讀到這支手機的成績，還沒取得完整的雲端排行。</div>';
     else if (sy.st === 'old') h += '<div class="klb-sync">雲端排行資料還在更新中，目前只看得到部分玩家，名次可能不完整。</div>';
     if (o.sum) {
@@ -43,13 +49,14 @@
       h += '<p class="klb-note">比收集到的不同明信片張數（常設 24 張），重複的不加分；一樣多就同名次，同名次裡先達到的排前面。不比旅行次數。</p>';
     } else {
       var tab = o.tabs[Math.min(st.tab, o.tabs.length - 1)];
-      h += '<div class="klb-tabs">' + o.tabs.map(function (t, i) { return '<button type="button" data-t="' + i + '" aria-pressed="' + (t === tab) + '">' + esc(t[1]) + '</button>'; }).join('') + '</div>';
+      if (o.tabs.length > 1) h += '<div class="klb-tabs">' + o.tabs.map(function (t, i) { return '<button type="button" data-t="' + i + '" aria-pressed="' + (t === tab) + '">' + esc(t[1]) + '</button>'; }).join('') + '</div>';
       h += '<div class="klb-per"><button type="button" data-p="month" aria-pressed="' + (st.period === 'month') + '">本月</button><button type="button" data-p="all" aria-pressed="' + (st.period === 'all') + '">全部</button></div>';
       R = K.leaderboard(o.game, tab[0], st.period, 10);
       h += R.top.length ? '<ol>' + R.top.map(function (r) { return row(r, '', K.fmtScore(r.score) + ' 分'); }).join('') + '</ol>' : '<div class="klb-empty">' + (st.period === 'month' ? '這個月' : '') + '還沒有人上榜，快來搶第一名！</div>';
       h += R.mine ? (R.mine.rank > 10 ? '<div class="klb-me">你目前第 <b>' + R.mine.rank + '</b> 名・最高 ' + K.fmtScore(R.mine.score) + ' 分</div>' : '') : '<div class="klb-me">你在「' + esc(tab[1]) + '」還沒有成績</div>';
-      h += '<button type="button" class="klb-sumlk" data-sum="1">看全部遊戲的累積總分排行 ›</button>';
-      h += '<p class="klb-note">每位會員取' + (st.period === 'month' ? '這個月' : '') + '這一關「算分場次」裡的最高一局，用遊戲原始分數排名（點數加倍活動不影響名次）。同分時，累積總分高的排前面；總分也一樣才同名次。</p>';
+      if (o.mini) h += '<p class="klb-note">每位會員取' + (st.period === 'month' ? '這個月' : '') + '玩過的最高一局。小遊戲不換點數，也不算進累積總分，純比高分。</p>';
+      else h += '<button type="button" class="klb-sumlk" data-sum="1">看全部遊戲的累積總分排行 ›</button>';
+      if (!o.mini) h += '<p class="klb-note">每位會員取' + (st.period === 'month' ? '這個月' : '') + '這一關「算分場次」裡的最高一局，用遊戲原始分數排名（點數加倍活動不影響名次）。同分時，累積總分高的排前面；總分也一樣才同名次。</p>';
     }
     if (R && R.hidden) h += '<p class="klb-note">有參賽者選擇不公開，公開名單的名次可能跳號。</p>';
     var me = K.lbMe ? K.lbMe() : null;
@@ -64,7 +71,8 @@
     });
     box.querySelector('.klb-x').onclick = close;
     box.querySelectorAll('[data-t]').forEach(function (b) { b.onclick = function () { st.tab = +b.dataset.t; render(box, o); }; });
-    box.querySelectorAll('[data-sum]').forEach(function (b) { b.onclick = function () { render(box, { title: '累積總分排行榜', sum: true }); }; });
+    box.querySelectorAll('[data-c]').forEach(function (b) { b.onclick = function () { var c = CATS.filter(function (x) { return x[0] === b.dataset.c; })[0]; st.tab = 0; render(box, Object.assign({ cat: c[0] }, c[2], o.cat === c[0] || catOf(o) === c[0] ? o : {})); }; });
+    box.querySelectorAll('[data-sum]').forEach(function (b) { b.onclick = function () { render(box, { title: '累積總分排行榜', sum: true, cat: 'sum' }); }; });
     box.querySelectorAll('[data-p]').forEach(function (b) { b.onclick = function () { st.period = b.dataset.p; render(box, o); }; });
   }
   var mask = null;
@@ -77,5 +85,6 @@
     if (K.cloudStatus && K.cloudStatus().url && K.cloudPull) K.cloudPull(true).then(function () { if (mask && mask.firstChild === box) render(box, o); });      // 打開時跟雲端對一次，拿最新名次
   }
   function button(parent, o, label) { addCss(); var b = document.createElement('button'); b.type = 'button'; b.className = 'klb-btn'; b.innerHTML = '<img src="' + BASE + 'assets/rank_btn.png" alt="">' + (label ? '<span>' + esc(label) + '</span>' : ''); b.setAttribute('aria-label', '排行榜'); b.onclick = function (e) { e.stopPropagation(); open(typeof o === 'function' ? o() : o); }; parent.appendChild(b); return b; }
-  G.KiteLB = { open: open, close: close, button: button };
+  function hub(cat) { var c = CATS.filter(function (x) { return x[0] === cat; })[0] || CATS[0]; st.tab = 0; open(Object.assign({ cat: c[0] }, c[2])); }
+  G.KiteLB = { open: open, close: close, button: button, hub: hub, CATS: CATS };
 })(window);
