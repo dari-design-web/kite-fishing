@@ -76,7 +76,7 @@
   }
   function custText(cfg, it) {      // 客人在官方 LINE 看到的說明
     const e = it.e;
-    if (it.type === 'game') return '🎉 ' + e.title + '：' + daysTxt(e.days) + (e.from === '00:00' && e.to === '23:59' ? '整天' : ' ' + e.from + '～' + e.to) + '玩「' + gameTxt(e.game) + '」，換到的點數 ×' + e.mult + '！' + (e.dateFrom || e.dateTo ? '（' + (e.dateFrom ? md(e.dateFrom) : '即日起') + '～' + (e.dateTo ? md(e.dateTo) : '') + '）' : '');
+    if (it.type === 'game') { const cap = (cfg.gameDailyCap || 0) * (cfg.eventCapMult ? e.mult : 1); return '🎉 ' + e.title + '：' + daysTxt(e.days) + (e.from === '00:00' && e.to === '23:59' ? '整天' : ' ' + e.from + '～' + e.to) + '玩「' + gameTxt(e.game) + '」，換到的點數 ×' + e.mult + '！' + (e.dateFrom || e.dateTo ? '（' + (e.dateFrom ? md(e.dateFrom) : '即日起') + '～' + (e.dateTo ? md(e.dateTo) : '') + '）' : '') + (cap ? '活動期間每天遊戲最多可換 ' + Math.round(cap) + ' 點。' : ''); }
     if (it.type === 'store') return '🧾 ' + e.title + '：' + (e.from ? md(e.from) : '') + '～' + (e.to ? md(e.to) : '') + '在' + storeTxt(cfg, e.stores) + '消費，集點 ×' + e.mult + '！';
     return '➕ ' + e.title + '：' + (e.from ? md(e.from) : '') + '～' + (e.to ? md(e.to) : '') + '在' + storeTxt(cfg, e.stores) + '單筆消費滿 NT$' + num(e.minAmount) + '，多送 ' + e.add + ' 點！';
   }
@@ -95,16 +95,16 @@
       const hin = wd * winH, hout = Math.max(1, nd * 24 - hin), r1 = hin ? P1.length / hin : 0, r0 = P0.length / hout;
       const ppl = A.K ? Object.keys(P1.reduce((o, p) => (o[p.mid] = 1, o), {})).length : 0, boosted = P1.filter((p) => (p.mult || 1) > 1).length;
       const young = !P1.length && f0 && f0 >= addD(td, -1);      // 剛開始、還沒有資料：不要算成「成效比平常低」
-      return { from, to, nd, kind: 'game', main: P1.length, mainL: '活動時段局數', ppl, pplL: '參與玩家', r1, r0, lift: young ? null : r0 ? (r1 - r0) / r0 : null, boosted, liftL: '活動時段每小時局數 vs 平常', P1, hin };
+      return { from, to, nd, kind: 'game', main: P1.length, mainL: '活動時段局數', ppl, pplL: '參與玩家', r1, r0, lift: young || P1.length + P0.length < 10 || hin < 6 ? null : r0 ? (r1 - r0) / r0 : null, thin: P1.length + P0.length < 10 || hin < 6, n0: P0.length, boosted, liftL: '活動時段每小時局數 vs 平常', P1, hin };
     }
     const sids = e.stores && e.stores.length ? e.stores : null, ok = (x) => (x.type === 'store' || x.type === 'backfill') && (!sids || sids.indexOf(x.store) >= 0);
     const pf = addD(from, -nd), pt = addD(from, -1), inp = (t) => { const d = K.dayKey(t); return d >= pf && d <= pt; };
     const S1 = D.led.filter((x) => ok(x) && inr(x.t)), S0 = D.led.filter((x) => ok(x) && inp(x.t)), amt = (a) => a.reduce((n, x) => n + (x.amount || 0), 0), ppl = (a) => Object.keys(a.reduce((o, x) => (o[x.mid] = 1, o), {})).length;
     if (it.type === 'bonus') { const q1 = S1.filter((x) => (x.amount || 0) >= e.minAmount), q0 = S0.filter((x) => (x.amount || 0) >= e.minAmount), sh1 = S1.length ? q1.length / S1.length : 0, sh0 = S0.length ? q0.length / S0.length : 0;
-      return { from, to, nd, pf, pt, kind: 'bonus', main: q1.length, mainL: '達門檻筆數', ppl: ppl(q1), pplL: '達門檻的人', extra: q1.length * e.add, sh1, sh0, lift: sh0 ? (sh1 - sh0) / sh0 : null, liftL: '達門檻比例 vs 前一段', avg1: S1.length ? amt(S1) / S1.length : 0, avg0: S0.length ? amt(S0) / S0.length : 0, S1, S0 }; }
-    return { from, to, nd, pf, pt, kind: 'store', main: S1.length, mainL: '消費筆數', ppl: ppl(S1), pplL: '消費人數', amt1: amt(S1), amt0: amt(S0), n0: S0.length, lift: amt(S0) ? (amt(S1) - amt(S0)) / amt(S0) : null, liftL: '消費金額 vs 前一段同長度', S1, S0 };
+      return { from, to, nd, pf, pt, kind: 'bonus', main: q1.length, mainL: '達門檻筆數', ppl: ppl(q1), pplL: '達門檻的人', extra: q1.length * e.add, sh1, sh0, thin: S1.length < 5 || S0.length < 5, lift: S1.length < 5 || S0.length < 5 ? null : sh0 ? (sh1 - sh0) / sh0 : null, liftL: '達門檻比例 vs 前一段', avg1: S1.length ? amt(S1) / S1.length : 0, avg0: S0.length ? amt(S0) / S0.length : 0, S1, S0 }; }
+    return { from, to, nd, pf, pt, kind: 'store', main: S1.length, mainL: '消費筆數', ppl: ppl(S1), pplL: '消費人數', amt1: amt(S1), amt0: amt(S0), n0: S0.length, thin: S1.length < 5 || S0.length < 5, lift: S1.length < 5 || S0.length < 5 ? null : amt(S0) ? (amt(S1) - amt(S0)) / amt(S0) : null, liftL: '消費金額 vs 前一段同長度', S1, S0 };
   }
-  const liftTxt = (l) => l == null ? '<span class="muted">沒有可比資料</span>' : '<b style="color:' + (l >= 0 ? '#1E8A4C' : '#C8442F') + '">' + (l >= 0 ? '▲ ' : '▼ ') + Math.abs(Math.round(l * 100)) + '%</b>';
+  const liftTxt = (l) => l == null ? '<span class="muted">資料不足，暫不比較</span>' : '<b style="color:' + (l >= 0 ? '#1E8A4C' : '#C8442F') + '">' + (l >= 0 ? '▲ ' : '▼ ') + Math.abs(Math.round(l * 100)) + '%</b>';
 
   /* ====== 行銷活動（管理） ====== */
   V.campaigns = function (c, D) {
@@ -119,10 +119,10 @@
       '<div class="cp-list">' + (show.length ? show.map((it) => { const ef = effect(D, it), id = it.type + ':' + it.i;
         return '<div class="cp-item' + (it.e.on ? '' : ' off') + '"><div class="cp-ic">' + TYPES[it.type].icon + '</div><div><div class="cp-t">' + esc(it.e.title || '（沒有名稱）') + '<span class="cp-st ' + it.st[0] + '">' + esc(it.st[1]) + '</span><span class="pill gr">' + TYPES[it.type].name + '</span></div><div class="cp-r">' + esc(rule(cfg, it)) + '</div>' + (it.e.memo ? '<div class="cp-m">🎯 目標：' + esc(it.e.memo) + '</div>' : '') + '</div>' +
           '<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><div class="cp-kpi">' + ef.mainL + '<b>' + num(ef.main) + '</b>' + ef.liftL.split(' vs')[0] + ' ' + liftTxt(ef.lift) + '</div><div class="cp-a"><button class="cp-sw' + (it.e.on ? ' on' : '') + '" data-csw="' + id + '" title="' + (it.e.on ? '關閉' : '開啟') + '這個活動" aria-label="開關"></button><button class="btn alt" data-cfx="' + id + '">📈 成效</button><button class="btn alt" data-ced="' + id + '">編輯</button><button class="btn alt" data-ccp="' + id + '">複製</button><button class="btn alt" data-cdl="' + id + '">刪除</button></div></div></div>'; }).join('')
-        : '<div class="card cp-empty"><b>' + (sts.length ? '沒有符合的活動' : '還沒有行銷活動') + '</b>按右上角「＋ 新增行銷活動」，可以從範本開始，三步驟就建好。</div>') + '</div>';
+        : sts.length ? '<div class="card cp-empty"><b>沒有符合「' + esc(q || F.filter((x) => x[0] === f)[0][1]) + '」的活動</b><button class="btn" id="cpClr" style="margin-top:8px">清除搜尋與篩選，看全部 ' + sts.length + ' 個活動</button></div>' : '<div class="card cp-empty"><b>還沒有行銷活動</b>按右上角「＋ 新增行銷活動」，可以從範本開始，三步驟就建好。</div>') + '</div>';
     c.querySelectorAll('[data-cf]').forEach((b) => { b.onclick = () => { V.campaigns.f = b.dataset.cf; A.app(); }; });
     const qi = $('cpQ'); qi.onkeydown = (ev) => { if (ev.key === 'Enter') { V.campaigns.q = qi.value; A.app(); } };
-    $('cpNew').onclick = () => wizard(null);
+    $('cpNew').onclick = () => wizard(null); if ($('cpClr')) $('cpClr').onclick = () => { V.campaigns.q = ''; V.campaigns.f = 'all'; A.app(); };
     const get = (id) => { const [t, i] = id.split(':'); return { type: t, i: +i, e: (K.cfg()[TYPES[t].key] || [])[+i] }; };
     c.querySelectorAll('[data-csw]').forEach((b) => { b.onclick = () => { const x = K.cfg(), it = get(b.dataset.csw), o = x[TYPES[it.type].key][it.i]; o.on = !o.on; K.saveCfg(x, '行銷活動「' + o.title + '」' + (o.on ? '開啟' : '關閉')); A.toast(o.on ? '已開啟：' + o.title : '已關閉：' + o.title); A.app(); }; });
     c.querySelectorAll('[data-ced]').forEach((b) => { b.onclick = () => wizard(get(b.dataset.ced)); });
@@ -162,7 +162,7 @@
       }
       h += '</div><div class="cp-step">' + (edit ? '③' : '④') + ' 上線前檢查</div><ul class="cp-warn" id="w_chk"></ul>';
       h += '<div class="cp-step">' + (edit ? '④' : '⑤') + ' 客人會看到</div><div class="cp-prev" id="w_prev"></div>';
-      h += '<div class="cp-form" style="margin-top:10px"><label>公告</label><label style="color:var(--ink);font-weight:600"><input type="checkbox" id="w_nt"' + (edit ? '' : ' checked') + '> 同時新增一則公告（官方 LINE「活動」頁，期間同活動日期）</label></div>';
+      h += '<div class="cp-form" style="margin-top:10px"><label>公告</label><label style="color:var(--ink);font-weight:600"><input type="checkbox" id="w_nt"> 同時新增一則公告草稿</label><div class="small muted full" style="margin-top:-4px">公告會出現在官方 LINE「活動」頁（客人自己打開才看得到，<b>不會推播</b>）。活動存成草稿時，公告也是關閉的；活動開啟時公告才一起開啟。</div></div>';
       h += '<div class="cp-foot">' + (edit ? '' : '<button class="btn alt" id="w_draft">存成草稿（先不開啟）</button>') + '<button class="btn" id="w_save">' + (edit ? '儲存變更' : '建立並開啟') + '</button></div>';
       A.drawer(h); wire();
     }
@@ -239,7 +239,7 @@
     let h = '<h2 style="margin:0">📈 ' + esc(it.e.title) + '</h2><p class="small muted" style="margin:4px 0 12px">' + esc(rule(cfg, it)) + '<br>看的是 ' + md(ef.from) + '～' + md(ef.to) + '（' + ef.nd + ' 天）' + (ef.pf ? '，對照前一段 ' + md(ef.pf) + '～' + md(ef.pt) : '') + '</p>';
     const box = (l, v, s) => '<div class="akpi"><div class="l">' + l + '</div><div class="v">' + v + '</div>' + (s ? '<div class="s">' + s + '</div>' : '') + '</div>';
     if (ef.kind === 'game') {
-      h += '<div class="akpis" style="grid-template-columns:repeat(3,1fr)">' + box(ef.mainL, num(ef.main), '其中加倍入帳 ' + num(ef.boosted) + ' 局') + box(ef.pplL, num(ef.ppl) + ' 人', '') + box('每小時局數', ef.r1.toFixed(1), '平常 ' + ef.r0.toFixed(1) + '・' + liftTxt(ef.lift)) + '</div>';
+      h += '<div class="akpis" style="grid-template-columns:repeat(3,1fr)">' + box(ef.mainL, num(ef.main), '其中加倍入帳 ' + num(ef.boosted) + ' 局') + box(ef.pplL, num(ef.ppl) + ' 人', '') + box('每小時局數', ef.r1.toFixed(2), '平常 ' + ef.r0.toFixed(2) + '（' + num(ef.n0) + ' 局／' + num(Math.round(ef.hin)) + ' 活動小時）・' + liftTxt(ef.lift)) + '</div>';
       const gs = it.e.game === 'all' ? ['fish', 'fly'] : [it.e.game], P = D.plays.filter((p) => gs.indexOf(p.game) >= 0 && !p.lbOnly);
       h += ui.card('每天局數：活動時段 vs 其他時段', ui.line([{ name: '活動時段', color: ui.C.orange, vals: days.map((d) => ef.P1.filter((p) => K.dayKey(p.t) === d).length) }, { name: '其他時段', color: ui.C.blue, vals: days.map((d) => P.filter((p) => K.dayKey(p.t) === d && ef.P1.indexOf(p) < 0).length) }], days.map(md), { h: 190 }));
       const hrs = new Array(24).fill(0); ef.P1.forEach((p) => { hrs[new Date(p.t).getHours()]++; });
@@ -263,9 +263,9 @@
     const act = L.filter((x) => x.act && x.e.on);
     const boosted = act.filter((x) => x.ef.kind === 'game').reduce((n, x) => n + x.ef.boosted, 0), gplay = act.filter((x) => x.ef.kind === 'game').reduce((n, x) => n + x.ef.main, 0);
     const amt = act.filter((x) => x.ef.kind === 'store').reduce((n, x) => n + x.ef.amt1, 0), extra = act.filter((x) => x.ef.kind === 'bonus').reduce((n, x) => n + x.ef.extra, 0);
-    const best = act.filter((x) => x.ef.lift != null).sort((a, b) => b.ef.lift - a.ef.lift)[0];
+    const best = act.filter((x) => x.ef.lift != null && x.ef.lift > 0).sort((a, b) => b.ef.lift - a.ef.lift)[0], thin = act.filter((x) => x.ef.lift == null).length;      // G95-R02：資料不夠的不排名次、不給建議
     c.innerHTML += ui.rangeBar(D, rg) + '<div class="akpis" style="grid-template-columns:repeat(4,minmax(0,1fr))">' + ui.kpi('期間內生效的活動', num(act.length) + ' 個', null, null, L.filter((x) => x.st[0] === 'live').length + ' 個正在進行') + ui.kpi('活動時段遊戲局數', num(gplay), null, null, '其中加倍入帳 ' + num(boosted) + ' 局', 'a_game') + ui.kpi('加倍期間消費金額', 'NT$ ' + num(amt), null, null, '消費集點加倍活動合計', 'a_store') + ui.kpi('滿額加點多送', num(extra) + ' 點', null, null, '達門檻筆數 × 加點') + '</div>' +
-      (best ? ui.card('📝 重點', '<ul class="ainsight"><li>這段期間成效最好的是「<b>' + esc(best.e.title) + '</b>」：' + esc(best.ef.liftL) + ' ' + liftTxt(best.ef.lift) + '。</li>' + (act.filter((x) => x.ef.lift != null && x.ef.lift < 0).length ? '<li>有 ' + act.filter((x) => x.ef.lift != null && x.ef.lift < 0).length + ' 個活動成效比平常低，可以考慮換時段、換倍數或停掉。</li>' : '') + '<li>活動成效排行可以點「成效」看每天的變化；要新增活動請到「🎯 行銷活動」。</li></ul>') : '') +
+      (act.length ? ui.card('📝 重點', '<ul class="ainsight">' + (best ? '<li>這段期間觀察到最明顯的是「<b>' + esc(best.e.title) + '</b>」：' + esc(best.ef.liftL) + ' ' + liftTxt(best.ef.lift) + '（是觀察到的差異，不代表一定是活動造成的）。</li>' : '') + (act.filter((x) => x.ef.lift != null && x.ef.lift < -0.2).length ? '<li>有 ' + act.filter((x) => x.ef.lift != null && x.ef.lift < -0.2).length + ' 個活動的數字比平常低，可以點「看成效」看看是不是時段或倍數不合適。</li>' : '') + (thin ? '<li>' + thin + ' 個活動資料還太少（局數或筆數不到門檻），先不比較、不排名。</li>' : '') + '<li>要新增或調整活動請到「🎯 行銷活動」。</li></ul>') : '') +
       ui.card('🎯 活動成效排行（期間內）', act.length ? '<div class="scroll"><table class="tbl"><tr><th>活動</th><th>類型</th><th>狀態</th><th style="text-align:right">主要數字</th><th style="text-align:right">參與人數</th><th>比較</th><th></th></tr>' + act.sort((a, b) => (b.ef.lift == null ? -9 : b.ef.lift) - (a.ef.lift == null ? -9 : a.ef.lift)).map((x) => '<tr><td><b>' + esc(x.e.title) + '</b><div class="small muted">' + esc(rule(cfg, x)) + '</div></td><td>' + TYPES[x.type].icon + ' ' + TYPES[x.type].name + '</td><td><span class="cp-st ' + x.st[0] + '">' + esc(x.st[1]) + '</span></td><td style="text-align:right">' + esc(x.ef.mainL) + ' <b>' + num(x.ef.main) + '</b></td><td style="text-align:right">' + num(x.ef.ppl) + '</td><td style="white-space:normal;min-width:150px">' + liftTxt(x.ef.lift) + '<div class="small muted">' + esc(x.ef.liftL) + '</div></td><td><button class="btn alt sm" data-cfx2="' + x.type + ':' + x.i + '">看成效</button></td></tr>').join('') + '</table></div>' : '<p class="muted small">這段期間沒有生效的活動。到「🎯 行銷活動」新增一個吧。</p>', { right: '<button class="btn sm" id="toCp">🎯 管理行銷活動</button>' });
     ui.wireRange(c);
     c.querySelectorAll('[data-cfx2]').forEach((b) => { b.onclick = () => { const [t, i] = b.dataset.cfx2.split(':'); fxDrawer(A.data(), { type: t, i: +i, e: K.cfg()[TYPES[t].key][+i] }); }; });

@@ -73,7 +73,8 @@
     else if (R.p === 'custom' && R.from && R.to) { from = R.from <= R.to ? R.from : R.to; to = R.from <= R.to ? R.to : R.from; }
     const days = []; for (let t = new Date(from + 'T12:00:00').getTime(); K.dayKey(t) <= to && days.length < 400; t += DAY) days.push(K.dayKey(t));
     const pTo = K.dayKey(new Date(from + 'T12:00:00').getTime() - DAY), pFrom = K.dayKey(new Date(from + 'T12:00:00').getTime() - days.length * DAY);
-    return { from, to, days, pFrom, pTo, label: from === to ? md(from) : md(from) + '～' + md(to) + '（' + days.length + ' 天）' };
+    const e0 = earliest(D); A.R.noPrev = e0 > pTo ? 'none' : e0 > pFrom ? 'part' : '';      // G95-R05：前期是真的 0，還是根本還沒有資料
+    return { from, to, days, pFrom, pTo, noPrev: A.R.noPrev, label: from === to ? md(from) : md(from) + '～' + md(to) + '（' + days.length + ' 天）' };
   }
   function rangeBar(D, rg) {
     const P = [['today', '今天'], ['7', '近 7 天'], ['lastweek', '上週'], ['30', '近 30 天'], ['month', '本月'], ['lastmonth', '上個月'], ['90', '近 90 天'], ['all', '全部']];
@@ -107,6 +108,7 @@
       players: uniq(P.map((p) => p.mid)), visitIn };
   }
   function delta(cur, prev, lowerBetter) {
+    if (A.R.noPrev === 'none') return '<span class="d eq">前期還沒有資料，無法比較</span>';
     if (!prev && !cur) return '<span class="d eq">與上期相同</span>'; if (!prev) return '<span class="d eq">上期 0 → 多 ' + num(cur) + '（無法算百分比）</span>';
     const r = Math.round((cur - prev) / prev * 100); if (!r) return '<span class="d eq">與上期持平</span>';
     if (prev < 10) return '<span class="d eq">' + (cur >= prev ? '多 ' : '少 ') + num(Math.abs(cur - prev)) + '（上期只有 ' + num(prev) + '，基數小不算百分比）</span>';      // G94-A07
@@ -169,7 +171,7 @@
     const ins = [];
     const ch = (a, b) => b ? Math.round((a - b) / b * 100) : null;
     if (ch(M.active.length, Pm.active.length) != null) ins.push('活躍會員 <b>' + num(M.active.length) + ' 人</b>，比上期' + (M.active.length >= Pm.active.length ? '多' : '少') + ' ' + Math.abs(ch(M.active.length, Pm.active.length)) + '%。');
-    else if (M.active.length) ins.push('這段期間有 <b>' + num(M.active.length) + ' 位</b>會員有活動（上期沒有資料可比）。');
+    else if (M.active.length) ins.push('這段期間有 <b>' + num(M.active.length) + ' 位</b>會員有活動（' + (A.R.noPrev === 'none' ? '前期還沒有資料可比' : '上期 0 位') + '）。');
     const srcTop = SRC.map((s) => [s[1], M.gainBy[s[0]] || 0]).sort((a, b) => b[1] - a[1])[0]; if (M.gain) ins.push('發出 <b>' + num(M.gain) + ' 點</b>，最大來源是「' + srcTop[0] + '」（' + pct(srcTop[1], M.gain) + '）；用掉 <b>' + num(M.spent) + ' 點</b>，' + (M.spent > M.gain ? '用得比發得多。' : '點數池淨增 ' + num(M.gain - M.spent) + ' 點。'));
     if (topPrize[0]) ins.push('最熱門贈品是 <a class="alink" data-ap="' + topPrize[0].attr.match(/"(.+)"/)[1] + '">' + esc(topPrize[0].label) + '</a>（' + topPrize[0].v + ' 張）；領取率 ' + pct(M.done, M.eff) + '，還有 ' + M.wait + ' 張待領。');
     if (topStore[0]) ins.push('消費集點最多的是 <a class="alink" data-as="' + topStore[0].attr.match(/"(.+)"/)[1] + '">' + esc(topStore[0].label) + '</a>（NT$ ' + num(topStore[0].v) + '）。');
@@ -177,11 +179,11 @@
     if (!ins.length) ins.push('這段期間還沒有資料。測試玩家開始集點、玩遊戲、兌換後，這裡會自動整理重點。');
     c.innerHTML += rangeBar(D, rg) +
       '<div class="akpis">' + kpi('新會員', num(M.newM.length), M.newM.length, Pm.newM.length, '', 'a_member') + kpi('活躍會員', num(M.active.length), M.active.length, Pm.active.length, '有集點、遊戲、兌換或來訪', 'a_member') +
-      kpi('發出點數', num(M.gain), M.gain, Pm.gain, SRC.filter((s) => M.gainBy[s[0]]).map((s) => s[1] + ' ' + num(M.gainBy[s[0]])).join('・'), 'a_points') + kpi('用掉點數', num(M.spent), M.spent, Pm.spent, '實體 ' + num(M.phys) + '・便當 ' + num(M.bento), 'a_points') +
+      kpi('發出點數', num(M.gain), M.gain, Pm.gain, SRC.filter((s) => M.gainBy[s[0]]).map((s) => s[1] + ' ' + num(M.gainBy[s[0]])).join('・'), 'a_points') + kpi('淨用點（扣點−退回）', num(M.spent), M.spent, Pm.spent, '兌換扣 ' + num(M.phys + M.bento) + '−退回 ' + num(M.refund) + '・實體 ' + num(M.phys) + '・便當 ' + num(M.bento), 'a_points') +
       kpi('遊戲局數', num(M.P.length), M.P.length, Pm.P.length, M.players.length + ' 人玩・' + mins(sum(M.P, (p) => p.sec || 0)), 'a_game') + kpi('店家消費（已集點）', 'NT$ ' + num(M.amount), M.amount, Pm.amount, M.storeE.length + ' 筆', 'a_store') +
       kpi('實體兌換單', num(M.Rd.length), M.Rd.length, Pm.Rd.length, '已領 ' + M.done + '・待領 ' + M.wait, 'a_redeem') + kpi('領取率', pct(M.done, M.eff), M.done, Pm.done, '已領 ÷（兌換單 − 取消、逾期）', 'a_redeem') + '</div>' +
       card('📝 這段期間的重點', '<ul class="ainsight">' + ins.map((s) => '<li>' + s + '</li>').join('') + '</ul>', { hint: rg.label + '（點底線文字可以直接看那一項的分析）' }) +
-      '<div class="agrid21">' + card('點數發出與用掉（每天）', line([{ name: '發出點數', color: C.blue, vals: daily(rg, M.L.filter((e) => e.pts > 0 && e.type !== 'refund'), (e) => e.t, (e) => e.pts) }, { name: '用掉點數', color: C.orange, vals: daily(rg, M.L.filter((e) => e.type === 'redeem'), (e) => e.t, (e) => -e.pts) }], rg.days.map(md), { title: '點數發出與用掉' }), { right: '<a class="alink" data-av="a_points">點數分析 →</a>' }) +
+      '<div class="agrid21">' + card('點數發出與用掉（每天）', line([{ name: '發出點數', color: C.blue, vals: daily(rg, M.L.filter((e) => e.pts > 0 && e.type !== 'refund'), (e) => e.t, (e) => e.pts) }, { name: '兌換扣點（未扣退回）', color: C.orange, vals: daily(rg, M.L.filter((e) => e.type === 'redeem'), (e) => e.t, (e) => -e.pts) }], rg.days.map(md), { title: '點數發出與用掉' }), { right: '<a class="alink" data-av="a_points">點數分析 →</a>' }) +
       card('點數從哪裡來', donut(SRC.map((s) => ({ label: s[1], v: M.gainBy[s[0]] || 0, color: s[2], attr: s[0] === 'store' ? ' data-av="a_store"' : s[0] === 'game' ? ' data-av="a_game"' : '' })), { unit: ' 點', center: '發出點數' })) + '</div>' +
       '<div class="agrid21">' + card('會員活躍（每天）', line([{ name: '有活動的會員', avg: 1, color: C.aqua, vals: rg.days.map((d) => dayActive(D, M, d)) }, { name: '新會員', color: C.violet, vals: daily(rg, M.newM, (m) => m.created) }], rg.days.map(md), { title: '會員活躍' }), { right: '<a class="alink" data-av="a_member">會員分析 →</a>' }) +
       card('點數用到哪裡', donut([{ label: '實體贈品', v: M.phys - M.refund > 0 ? M.phys - M.refund : 0, color: C.blue, attr: ' data-av="a_redeem"' }, { label: '小鳶便當', v: M.bento, color: C.orange, attr: ' data-av="a_redeem"' }, { label: '到期失效', v: M.expired, color: C.yellow }, { label: '後台扣點', v: M.adjNeg, color: C.violet }], { unit: ' 點', center: '用掉＋失效' })) + '</div>' +
@@ -209,17 +211,17 @@
     const wk = {}; coh.forEach((m) => { const d = new Date(m.created); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); const k = K.dayKey(d.getTime()); (wk[k] = wk[k] || []).push(m); });
     const cell = (r) => r ? '<td style="text-align:right;background:rgba(27,175,122,' + (0.08 + r.v * 0.55).toFixed(2) + ')"><b>' + Math.round(r.v * 100) + '%</b><div class="small muted">' + r.n + ' 人可算</div></td>' : '<td style="text-align:right" class="muted small">還沒到</td>';
     const tot = DAYN.map((n) => rate(coh, n));
-    return card('🔁 新會員留存（加入後有沒有再回來）', coh.length ? '<div class="akpis">' + DAYN.map((n, i) => kpi('第 ' + n + ' 天內回來', tot[i] ? Math.round(tot[i].v * 100) + '%' : '—', null, null, tot[i] ? tot[i].n + ' 位新會員可以算' : '加入還不滿 ' + n + ' 天')).join('') + '</div>' +
+    return card('🔁 新會員留存（加入後有沒有再回來）', coh.length ? '<div class="akpis">' + DAYN.map((n, i) => kpi('第 ' + n + ' 天內回來', tot[i] ? Math.round(tot[i].v * 100) + '%' : '—', null, null, tot[i] ? Math.round(tot[i].v * tot[i].n) + ' / ' + tot[i].n + ' 人（只算加入滿 ' + n + ' 天的人）' : '還沒有人加入滿 ' + n + ' 天')).join('') + '</div>' +
       '<div class="scroll"><table class="tbl"><tr><th>加入的那一週</th><th style="text-align:right">新會員</th>' + DAYN.map((n) => '<th style="text-align:right">第 ' + n + ' 天內回來</th>').join('') + '</tr>' + Object.keys(wk).sort().reverse().map((k) => '<tr><td>' + md(k) + ' 那週</td><td style="text-align:right">' + wk[k].length + '</td>' + DAYN.map((n) => cell(rate(wk[k], n))).join('') + '</tr>').join('') + '</table></div>' : '<p class="muted small">這段期間沒有新會員。</p>',
-      { hint: '只算這段期間加入的會員；「回來」＝加入那天之後有再來訪、玩遊戲或集點。加入還不滿 N 天的人不算進第 N 天。' });
+      { hint: '算法：「N 天內回來」＝加入當天之後的 N 個日曆日內，有任何一天再來訪、玩遊戲或集點（加入當天不算）。只算這段期間加入、而且已經加入滿 N 天的人；未滿的不算進分母、顯示「還沒到」，不填 0%。' });
   }
   function funnel(D, rg) {
     const M = build(D, rg.from, rg.to), act = M.active, has = (f) => act.filter((id) => f(id)).length;
     const pl = {}; M.P.forEach((p) => { pl[p.mid] = 1; }); const st = {}; M.storeE.forEach((e) => { st[e.mid] = 1; }); const rd = {}; M.Rd.forEach((r) => { if (r.st !== 'cancel') rd[r.mid] = 1; }); M.L.forEach((e) => { if (e.type === 'redeem') rd[e.mid] = 1; });
     const steps = [['全部會員', D.ms.filter((m) => !m.created || K.dayKey(m.created) <= rg.to).length], ['期間內有來（活躍）', act.length], ['有玩遊戲', has((id) => pl[id])], ['有到店消費集點', has((id) => st[id])], ['有兌換', has((id) => rd[id])]];
-    const mx = Math.max(1, steps[0][1]);
-    return card('🪜 會員行為涵蓋（不要求先後順序）', '<div class="ab">' + steps.map((s, i) => '<div class="ab-row" data-tip="' + esc(s[0] + '：' + s[1] + ' 人' + (i ? '\n佔上一步 ' + pct(s[1], steps[i - 1][1]) : '')) + '"><span class="ab-l">' + (i + 1) + '. ' + s[0] + '</span><span class="ab-t" style="height:18px"><i style="width:' + Math.max(2, s[1] / mx * 100).toFixed(1) + '%;background:' + SER[i] + '"></i></span><span class="ab-v">' + num(s[1]) + ' 人 <small>' + (i ? '佔上一步 ' + pct(s[1], steps[i - 1][1]) : '') + '</small></span></div>').join('') + '</div>',
-      { hint: '期間內：活躍的會員裡各做過哪些事（只看有沒有做過，不看先後；遊戲與消費是兩條路，沒玩遊戲直接消費也正常）。掉最多的那一步就是最該加強的地方（例如有玩遊戲但沒到店消費 → 可以辦「消費集點加倍」）。' });
+    const mx = Math.max(1, steps[0][1]), base = steps[1][1];      // G95-R01：涵蓋不是逐層漏斗——後三項都除以同一個母體（期間內活躍）
+    return card('🧭 會員行為涵蓋（不要求先後順序）', '<div class="ab">' + steps.map((s, i) => { const r = i >= 2 ? s[1] + ' / ' + base + '（' + pct(s[1], base) + '）' : i === 1 ? '佔全部會員 ' + pct(s[1], steps[0][1]) : ''; return '<div class="ab-row" data-tip="' + esc(s[0] + '：' + s[1] + ' 人' + (r ? '\n' + r : '')) + '"><span class="ab-l">' + (i >= 2 ? '　└ ' : '') + s[0] + '</span><span class="ab-t" style="height:18px"><i style="width:' + Math.max(2, s[1] / mx * 100).toFixed(1) + '%;background:' + SER[i] + '"></i></span><span class="ab-v">' + num(s[1]) + ' 人 <small>' + r + '</small></span></div>'; }).join('') + '</div>',
+      { hint: '母體＝期間內活躍的會員；玩遊戲、到店集點、兌換這三項都除以這個母體，可以重疊、不看先後（沒玩遊戲直接消費也正常）。比例低的那一項就是可以加強的地方，例如到店集點比例低 → 可以辦「消費集點加倍」。' });
   }
 
   /* G94-A10：點數對帳——把「期間流量」和「餘額」分開，期初＋增加－減少＝期末，並跟目前餘額核對 */
@@ -246,9 +248,9 @@
     const canBuy = D.cfg.prizes.filter((p) => p.on !== false).map((p) => ({ label: p.name + '（' + p.points + ' 點）', v: D.ms.filter((m) => (m.points || 0) >= p.points).length, attr: ' data-ap="' + p.id + '"' })).sort((a, b) => b.v - a.v);
     const mr = memberRows(D, M).filter((r) => r.earned || r.spent).sort((a, b) => b.earned - a.earned);
     c.innerHTML += rangeBar(D, rg) +
-      '<div class="akpis">' + kpi('發出點數', num(M.gain), M.gain, Pm.gain, '每位活躍會員平均 ' + (M.active.length ? Math.round(M.gain / M.active.length) : 0) + ' 點') + kpi('用掉點數', num(M.spent), M.spent, Pm.spent, '實體 ' + num(M.phys) + '・便當 ' + num(M.bento) + '・退回 ' + num(M.refund), 'a_redeem') + kpi('淨增（發出−用掉−失效）', num(M.gain - M.spent - M.expired), M.gain - M.spent - M.expired, Pm.gain - Pm.spent - Pm.expired) + kpi('目前全部會員餘額', num(tot) + ' 點', null, null, '有點數 ' + bal.filter((v) => v > 0).length + ' 人・30 天內將到期 ' + num(exp30) + ' 點') + '</div>' +
+      '<div class="akpis">' + kpi('發出點數', num(M.gain), M.gain, Pm.gain, '每位活躍會員平均 ' + (M.active.length ? Math.round(M.gain / M.active.length) : 0) + ' 點') + kpi('淨用點（扣點−退回）', num(M.spent), M.spent, Pm.spent, '兌換扣 ' + num(M.phys + M.bento) + '−退回 ' + num(M.refund) + '・實體 ' + num(M.phys) + '・便當 ' + num(M.bento) + '・退回 ' + num(M.refund), 'a_redeem') + kpi('淨增（發出−用掉−失效）', num(M.gain - M.spent - M.expired), M.gain - M.spent - M.expired, Pm.gain - Pm.spent - Pm.expired) + kpi('目前全部會員餘額', num(tot) + ' 點', null, null, '有點數 ' + bal.filter((v) => v > 0).length + ' 人・30 天內將到期 ' + num(exp30) + ' 點') + '</div>' +
       recon(D, rg) +
-      card('每天點數（依來源）', line(SRC.map((s) => ({ name: s[1], color: s[2], vals: daily(rg, M.L.filter((e) => e.type === s[0] && e.pts > 0), (e) => e.t, (e) => e.pts) })).filter((s) => sum(s.vals)).concat([{ name: '用掉', color: C.red, vals: daily(rg, M.L.filter((e) => e.type === 'redeem'), (e) => e.t, (e) => -e.pts) }]), rg.days.map(md), { legend: true, title: '每天點數' }), { hint: rg.label }) +
+      card('每天點數（依來源）', line(SRC.map((s) => ({ name: s[1], color: s[2], vals: daily(rg, M.L.filter((e) => e.type === s[0] && e.pts > 0), (e) => e.t, (e) => e.pts) })).filter((s) => sum(s.vals)).concat([{ name: '兌換扣點（未扣退回）', color: C.red, vals: daily(rg, M.L.filter((e) => e.type === 'redeem'), (e) => e.t, (e) => -e.pts) }]), rg.days.map(md), { legend: true, title: '每天點數' }), { hint: rg.label }) +
       '<div class="agrid2">' + card('店家集點發出的點數', hbars(byStore, { unit: ' 點' }), { right: '<a class="alink" data-av="a_store">店家分析 →</a>' }) + card('遊戲發出的點數（記在當天入帳的遊戲）', hbars(byGame, { unit: ' 點', color: C.orange }), { right: '<a class="alink" data-av="a_game">遊戲分析 →</a>' }) + '</div>' +
       '<div class="agrid2">' + card('會員目前點數分布', cols(dist, BK.map((b) => b[2] + ' 點'), { unit: ' 人', color: C.aqua, title: '點數分布' }), { hint: '橫軸是目前餘額，直條是人數' }) + card('餘額達門檻人數（只看點數，不含庫存、限換）', hbars(canBuy, { unit: ' 人', color: C.violet }), { hint: '用來判斷贈品點數訂得太高或太低；點贈品看兌換情況' }) + '</div>' +
       card('會員點數排行（期間內）', tbl('a_pt_m', memberCols(D), mr), { right: '<button class="btn alt sm" id="exPtM">匯出 CSV</button>', hint: '點會員看他每一筆點數從哪來、用到哪' });
@@ -334,10 +336,12 @@
         card('在這家集點的會員', tbl('a_st_m', [{ k: 'id', t: '會員', f: (r) => ml(D, r.id) }, { k: 'n', t: '筆數', num: 1 }, { k: 'amt', t: '金額', num: 1, f: (r) => num(r.amt) }, { k: 'pts', t: '點數', num: 1 }, { k: 'last', t: '最近一次', f: (r) => dt(r.last) }], mm));
     }
     const rows = D.cfg.stores.map((x) => { const E = sE(M.storeE, x.id), TX = M.TX.filter((t) => t.store === x.id); return { k: x.id, name: x.name, n: E.length, amt: sum(E, (e) => e.amount || 0), pts: sum(E, (e) => e.pts), avg: E.length ? Math.round(sum(E, (e) => e.amount || 0) / E.length) : 0, mem: uniq(E.map((e) => e.mid)).length, tx: TX.length, un: TX.filter((t) => !claimed[t.nonce] && !t.void).length }; });
-    html += (s ? '<h3 style="margin:18px 2px 10px;font-size:15px">全部店家</h3>' : '') +
-      '<div class="akpis">' + kpi('集點筆數', num(M.storeE.length), M.storeE.length, Pm.storeE.length) + kpi('消費金額', 'NT$ ' + num(M.amount), M.amount, Pm.amount) + kpi('平均客單', 'NT$ ' + num(M.storeE.length ? Math.round(M.amount / M.storeE.length) : 0)) + kpi('消費發出點數', num(M.gainBy.store) + ' 點', M.gainBy.store, Pm.gainBy.store, '', 'a_points') + kpi('集點會員', num(uniq(M.storeE.map((e) => e.mid)).length), uniq(M.storeE.map((e) => e.mid)).length, uniq(Pm.storeE.map((e) => e.mid)).length) + '</div>' +
+    const ua = M.storeE.filter((e) => !D.cfg.stores.some((x) => x.id === e.store)); if (ua.length) rows.push({ k: '', name: '⚠ 未歸屬店家（舊資料或店家已移除）', n: ua.length, amt: sum(ua, (e) => e.amount || 0), pts: sum(ua, (e) => e.pts), avg: 0, mem: uniq(ua.map((e) => e.mid)).length, tx: 0, un: 0 });      // G95-R03：總數要跟各店加起來對得上
+    const withAmt = M.storeE.filter((e) => e.amount > 0), noAmt = M.storeE.length - withAmt.length;
+    html += (s ? '<h3 style="margin:18px 2px 10px;font-size:15px">全部店家</h3>' : '') + (ua.length || noAmt ? '<div class="test" style="margin-bottom:12px">對帳提醒：' + (ua.length ? ua.length + ' 筆集點找不到對應的店家（列在表格最後一列）' : '') + (ua.length && noAmt ? '；' : '') + (noAmt ? noAmt + ' 筆沒有記錄消費金額（客單價不算這幾筆）' : '') + '。總數＝各店加總＋未歸屬。</div>' : '') +
+      '<div class="akpis">' + kpi('集點筆數', num(M.storeE.length), M.storeE.length, Pm.storeE.length) + kpi('消費金額', 'NT$ ' + num(M.amount), M.amount, Pm.amount) + kpi('平均客單', withAmt.length ? 'NT$ ' + num(Math.round(sum(withAmt, (e) => e.amount) / withAmt.length)) : '資料不足', null, null, '有記錄金額的 ' + withAmt.length + ' 筆平均') + kpi('消費發出點數', num(M.gainBy.store) + ' 點', M.gainBy.store, Pm.gainBy.store, '', 'a_points') + kpi('集點會員', num(uniq(M.storeE.map((e) => e.mid)).length), uniq(M.storeE.map((e) => e.mid)).length, uniq(Pm.storeE.map((e) => e.mid)).length) + '</div>' +
       card('每天消費金額（依店家）', line(D.cfg.stores.map((x, i) => ({ name: x.name, color: SER[i % 8], vals: daily(rg, sE(M.storeE, x.id), (e) => e.t, (e) => e.amount || 0) })).filter((q) => sum(q.vals)), rg.days.map(md), { legend: true }), { hint: rg.label }) +
-      '<div class="agrid21">' + card('各店家（點店家看細節）', tbl('a_st_all', [{ k: 'name', t: '店家', f: (r) => sl(D, r.k) }, { k: 'n', t: '筆數', num: 1 }, { k: 'amt', t: '金額', num: 1, f: (r) => num(r.amt) }, { k: 'avg', t: '客單', num: 1, f: (r) => num(r.avg) }, { k: 'pts', t: '點數', num: 1 }, { k: 'mem', t: '會員', num: 1 }, { k: 'un', t: '出碼沒領', num: 1 }], rows)) + card('金額占比', donut(rows.map((r, i) => ({ label: r.name, v: r.amt, color: SER[i % 8], attr: ' data-as="' + r.k + '"' })), { center: '消費金額' })) + '</div>';
+      '<div class="agrid21">' + card('各店家（點店家看細節）', tbl('a_st_all', [{ k: 'name', t: '店家', f: (r) => r.k ? sl(D, r.k) : '<span style="color:#9A6A10">' + esc(r.name) + '</span>' }, { k: 'n', t: '筆數', num: 1 }, { k: 'amt', t: '金額', num: 1, f: (r) => num(r.amt) }, { k: 'avg', t: '客單', num: 1, f: (r) => num(r.avg) }, { k: 'pts', t: '點數', num: 1 }, { k: 'mem', t: '會員', num: 1 }, { k: 'un', t: '出碼沒領', num: 1 }], rows)) + card('金額占比', donut(rows.map((r, i) => ({ label: r.name, v: r.amt, color: SER[i % 8], attr: ' data-as="' + r.k + '"' })), { center: '消費金額' })) + '</div>';
     c.innerHTML += html; wireRange(c); wire(['a_st_m', 'a_st_all']);
     if ($('aBack')) $('aBack').onclick = () => { V.a_store.s = ''; A.app(); };
   };
@@ -391,7 +395,7 @@
   /* ====== 7. 營運報告（排版、可列印／存 PDF） ====== */
   V.a_report = function (c, D) {
     const rg = range(D), M = build(D, rg.from, rg.to), Pm = build(D, rg.pFrom, rg.pTo), site = (D.cfg.site || {}).name || '';
-    const r2 = (cur, prev) => { if (!prev) return cur ? '新增' : '—'; const r = Math.round((cur - prev) / prev * 100); return (r > 0 ? '+' : '') + r + '%'; };
+    const r2 = (cur, prev) => { if (A.R.noPrev === 'none') return '前期無資料'; if (!prev) return cur ? '上期 0' : '—'; if (prev < 10) return (cur >= prev ? '+' : '−') + num(Math.abs(cur - prev)); const r = Math.round((cur - prev) / prev * 100); return (r > 0 ? '+' : '') + r + '%'; };
     const kp = [['新會員', M.newM.length, Pm.newM.length], ['活躍會員', M.active.length, Pm.active.length], ['發出點數', M.gain, Pm.gain], ['用掉點數', M.spent, Pm.spent], ['遊戲局數', M.P.length, Pm.P.length], ['遊戲玩家', M.players.length, Pm.players.length], ['店家消費（元）', M.amount, Pm.amount], ['集點筆數', M.storeE.length, Pm.storeE.length], ['實體兌換單', M.Rd.length, Pm.Rd.length], ['已領', M.done, Pm.done], ['便當', M.L.filter((e) => e.type === 'redeem' && e.virtual).length, Pm.L.filter((e) => e.type === 'redeem' && e.virtual).length], ['券核銷', M.cpUsed.length, Pm.cpUsed.length]];
     const prizeT = D.cfg.prizes.map((p) => { const a = M.Rd.filter((r) => r.prize === p.id); return [p.name, a.filter((r) => r.st !== 'cancel').length, a.filter((r) => r.st === 'done').length, K.stockLeft(p.id)]; }).filter((r) => r[1] || r[3] <= 10);
     const storeT = D.cfg.stores.map((s) => { const a = M.storeE.filter((e) => e.store === s.id); return [s.name, a.length, sum(a, (e) => e.amount || 0), sum(a, (e) => e.pts), uniq(a.map((e) => e.mid)).length]; });
@@ -401,7 +405,7 @@
     c.innerHTML += rangeBar(D, rg) + '<div class="noprint" style="display:flex;gap:8px;margin-bottom:12px"><button class="btn" id="rpPrint">🖨️ 列印／存成 PDF</button><button class="btn alt" id="rpCsv">匯出摘要 CSV</button><span class="small muted" style="align-self:center">列印時會自動隱藏選單與按鈕；要細節表格請到「明細匯出」</span></div>' +
       '<div class="rep"><h1>營運報告</h1><div class="sub">' + esc(site) + '・期間 ' + rg.from + ' ～ ' + rg.to + '（' + rg.days.length + ' 天）・與前一段同長度期間（' + rg.pFrom + ' ～ ' + rg.pTo + '）比較・產生時間 ' + dt(Date.now()) + '</div>' +
       '<h3>一、摘要</h3>' + T(['項目', '本期', '上期', '變化'], kp.map((k) => [k[0], k[1], k[2], r2(k[1], k[2])]), [1, 2, 3]) +
-      '<h3>二、點數</h3><div class="agrid21"><div>' + line([{ name: '發出', color: C.blue, vals: daily(rg, M.L.filter((e) => e.pts > 0 && e.type !== 'refund'), (e) => e.t, (e) => e.pts) }, { name: '用掉', color: C.orange, vals: daily(rg, M.L.filter((e) => e.type === 'redeem'), (e) => e.t, (e) => -e.pts) }], rg.days.map(md)) + '</div><div>' + donut(SRC.map((s) => ({ label: s[1], v: M.gainBy[s[0]] || 0, color: s[2] })), { unit: ' 點', center: '發出' }) + '</div></div>' +
+      '<h3>二、點數</h3><div class="agrid21"><div>' + line([{ name: '發出', color: C.blue, vals: daily(rg, M.L.filter((e) => e.pts > 0 && e.type !== 'refund'), (e) => e.t, (e) => e.pts) }, { name: '兌換扣點（未扣退回）', color: C.orange, vals: daily(rg, M.L.filter((e) => e.type === 'redeem'), (e) => e.t, (e) => -e.pts) }], rg.days.map(md)) + '</div><div>' + donut(SRC.map((s) => ({ label: s[1], v: M.gainBy[s[0]] || 0, color: s[2] })), { unit: ' 點', center: '發出' }) + '</div></div>' +
       '<p style="font-size:13px">發出 ' + num(M.gain) + ' 點（' + SRC.filter((s) => M.gainBy[s[0]]).map((s) => s[1] + ' ' + num(M.gainBy[s[0]])).join('、') + '）；用掉 ' + num(M.spent) + ' 點（實體 ' + num(M.phys) + '、便當 ' + num(M.bento) + '、退回 ' + num(M.refund) + '）；到期 ' + num(M.expired) + ' 點；目前全部會員餘額 ' + num(sum(D.ms, (m) => m.points || 0)) + ' 點。</p>' +
       '<h3>三、會員</h3>' + line([{ name: '有活動的會員', avg: 1, color: C.aqua, vals: rg.days.map((d) => dayActive(D, M, d)) }, { name: '新會員', color: C.violet, vals: daily(rg, M.newM, (x) => x.created) }], rg.days.map(md), { h: 170 }) +
       '<h3>四、兌換</h3><p style="font-size:13px">實體兌換單 ' + M.Rd.length + ' 張，已領 ' + M.done + '、待領 ' + M.wait + '、取消或逾期 ' + M.cx + '，領取率 ' + pct(M.done, M.eff) + '。</p>' + T(['贈品', '兌換', '已領', '目前可兌換'], prizeT, [1, 2, 3]) +
