@@ -95,14 +95,14 @@
       const hin = wd * winH, hout = Math.max(1, nd * 24 - hin), r1 = hin ? P1.length / hin : 0, r0 = P0.length / hout;
       const ppl = A.K ? Object.keys(P1.reduce((o, p) => (o[p.mid] = 1, o), {})).length : 0, boosted = P1.filter((p) => (p.mult || 1) > 1).length;
       const young = !P1.length && f0 && f0 >= addD(td, -1);      // 剛開始、還沒有資料：不要算成「成效比平常低」
-      return { from, to, nd, kind: 'game', main: P1.length, mainL: '活動時段局數', ppl, pplL: '參與玩家', r1, r0, lift: young || P1.length + P0.length < 10 || hin < 6 ? null : r0 ? (r1 - r0) / r0 : null, thin: P1.length + P0.length < 10 || hin < 6, n0: P0.length, boosted, liftL: '活動時段每小時局數 vs 平常', P1, hin };
+      return { from, to, nd, kind: 'game', main: P1.length, mainL: '活動時段局數', ppl, pplL: '參與玩家', r1, r0, lift: young || P1.length + P0.length < 10 || hin < 6 ? null : r0 ? (r1 - r0) / r0 : null, thin: P1.length + P0.length < 10 || hin < 6, n0: P0.length, exact: D.plays.filter((p) => p.cp === e.id && inr(p.t)).length, boosted, liftL: '活動時段每小時局數 vs 平常', P1, hin };
     }
     const sids = e.stores && e.stores.length ? e.stores : null, ok = (x) => (x.type === 'store' || x.type === 'backfill') && (!sids || sids.indexOf(x.store) >= 0);
     const pf = addD(from, -nd), pt = addD(from, -1), inp = (t) => { const d = K.dayKey(t); return d >= pf && d <= pt; };
     const S1 = D.led.filter((x) => ok(x) && inr(x.t)), S0 = D.led.filter((x) => ok(x) && inp(x.t)), amt = (a) => a.reduce((n, x) => n + (x.amount || 0), 0), ppl = (a) => Object.keys(a.reduce((o, x) => (o[x.mid] = 1, o), {})).length;
     if (it.type === 'bonus') { const q1 = S1.filter((x) => (x.amount || 0) >= e.minAmount), q0 = S0.filter((x) => (x.amount || 0) >= e.minAmount), sh1 = S1.length ? q1.length / S1.length : 0, sh0 = S0.length ? q0.length / S0.length : 0;
-      return { from, to, nd, pf, pt, kind: 'bonus', main: q1.length, mainL: '達門檻筆數', ppl: ppl(q1), pplL: '達門檻的人', extra: q1.length * e.add, sh1, sh0, thin: S1.length < 5 || S0.length < 5, lift: S1.length < 5 || S0.length < 5 ? null : sh0 ? (sh1 - sh0) / sh0 : null, liftL: '達門檻比例 vs 前一段', avg1: S1.length ? amt(S1) / S1.length : 0, avg0: S0.length ? amt(S0) / S0.length : 0, S1, S0 }; }
-    return { from, to, nd, pf, pt, kind: 'store', main: S1.length, mainL: '消費筆數', ppl: ppl(S1), pplL: '消費人數', amt1: amt(S1), amt0: amt(S0), n0: S0.length, thin: S1.length < 5 || S0.length < 5, lift: S1.length < 5 || S0.length < 5 ? null : amt(S0) ? (amt(S1) - amt(S0)) / amt(S0) : null, liftL: '消費金額 vs 前一段同長度', S1, S0 };
+      return { from, to, nd, pf, pt, kind: 'bonus', main: q1.length, mainL: '達門檻筆數', ppl: ppl(q1), pplL: '達門檻的人', extra: q1.length * e.add, sh1, sh0, exact: D.led.filter((x) => x.cpb === e.id && inr(x.t)).length, thin: S1.length < 5 || S0.length < 5, lift: S1.length < 5 || S0.length < 5 ? null : sh0 ? (sh1 - sh0) / sh0 : null, liftL: '達門檻比例 vs 前一段', avg1: S1.length ? amt(S1) / S1.length : 0, avg0: S0.length ? amt(S0) / S0.length : 0, S1, S0 }; }
+    return { from, to, nd, pf, pt, kind: 'store', main: S1.length, mainL: '消費筆數', ppl: ppl(S1), pplL: '消費人數', amt1: amt(S1), amt0: amt(S0), n0: S0.length, exact: D.led.filter((x) => x.cp === e.id && inr(x.t)).length, thin: S1.length < 5 || S0.length < 5, lift: S1.length < 5 || S0.length < 5 ? null : amt(S0) ? (amt(S1) - amt(S0)) / amt(S0) : null, liftL: '消費金額 vs 前一段同長度', S1, S0 };
   }
   const liftTxt = (l) => l == null ? '<span class="muted">資料不足，暫不比較</span>' : '<b style="color:' + (l >= 0 ? '#1E8A4C' : '#C8442F') + '">' + (l >= 0 ? '▲ ' : '▼ ') + Math.abs(Math.round(l * 100)) + '%</b>';
 
@@ -252,6 +252,7 @@
       const B = [0, 300, 500, 800, 1000, 1500, 2000], lab = B.map((b, i) => i < B.length - 1 ? b + '–' + (B[i + 1] - 1) : b + '+'), bin = (a) => B.map((b, i) => a.filter((x) => (x.amount || 0) >= b && (i === B.length - 1 || (x.amount || 0) < B[i + 1])).length);
       h += ui.card('每筆消費金額分布（活動期間）', ui.cols(bin(ef.S1), lab, { unit: ' 筆', color: ui.C.aqua, h: 160 }), { hint: '門檻 NT$' + num(it.e.minAmount) + '：想讓更多單跨過門檻，可以把門檻設在最多單的區間上面一點' });
     }
+    h += '<p class="small" style="margin:6px 0">🏷️ 入帳時有記下「套用這個活動」的：<b>' + num(ef.exact || 0) + '</b> ' + (ef.kind === 'game' ? '局' : '筆') + '<span class="muted">（2026/10/20 起的新紀錄才有；之前的資料只能用時段／期間觀察）</span></p>';
     h += '<p class="small muted">成效是用後台現有資料估算：遊戲活動比「活動時段」與「其他時段」每小時局數；消費活動比活動期間與前一段同樣天數。天數少、人少時數字會跳動，當參考就好。</p>';
     A.drawer(h);
   }

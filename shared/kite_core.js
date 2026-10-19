@@ -202,6 +202,9 @@
   function pointsForSpend(amount, storeId) {      // 工作單 24 v4：A＜T → 0；A≥T → 向下取整（A÷N×M）；日上限在入帳時再套
     var c = cfg(), s = storeId && storeById(storeId), per = (s && s.spendPerPoint) || c.spendPerPoint, m = storeId ? storeMult(storeId) : 1;
     if (amount < c.minSpend) return 0; return Math.floor(amount / per * m + 1e-9) + storeBonusPts(amount, storeId); }
+  function storeCampaigns(amount, storeId, t) {      // G94-B10：這筆消費實際套用了哪個加倍活動、哪條滿額加點（入帳時記下來，成效分析才準）
+    var d = dayKey(t), m = { id: '', mult: 1 }, b = { id: '', add: 0 }; (cfg().storeEvents || []).forEach(function (e) { if (e.on && (!e.stores || !e.stores.length || e.stores.indexOf(storeId) >= 0) && (!e.from || d >= e.from) && (!e.to || d <= e.to) && e.mult > m.mult) m = { id: e.id, mult: e.mult }; });
+    (cfg().storeBonus || []).forEach(function (x) { if (x.on && amount >= (x.minAmount || 0) && (!x.stores || !x.stores.length || x.stores.indexOf(storeId) >= 0) && (!x.from || d >= x.from) && (!x.to || d <= x.to) && x.add > b.add) b = { id: x.id, add: x.add }; }); return { ev: m.id, bonus: b.id }; }
   function storeBonusPts(amount, storeId, t) { var d = dayKey(t), best = 0; (cfg().storeBonus || []).forEach(function (b) { if (b.on && amount >= (b.minAmount || 0) && (!b.stores || !b.stores.length || b.stores.indexOf(storeId) >= 0) && (!b.from || d >= b.from) && (!b.to || d <= b.to) && b.add > best) best = b.add; }); return best; }
   function makeEarnCode(storeId, amount) {
     var s = storeById(storeId); if (!s) throw new Error('沒有這個店家');
@@ -259,17 +262,17 @@
     var pts = +p[4], room = c.maxStorePointsPerDay - storePointsToday(m), give = Math.max(0, Math.min(pts, room));
     m.nonces.push(p[6]); m.nonces = m.nonces.slice(-500);
     var tx0 = sl.filter(function (r) { return r.nonce === p[6]; })[0];      // 用出碼當時的規則版本（同一台裝置才查得到；跨裝置待中央）
-    addLedger(m, { type: 'store', pts: give, store: s.id, storeName: s.name, amount: +p[3], ref: p[6], rv: tx0 && tx0.rv }); saveMember(m);
+    addLedger(m, Object.assign({ type: 'store', pts: give, store: s.id, storeName: s.name, amount: +p[3], ref: p[6], rv: tx0 && tx0.rv }, (function (cp) { var o = {}; if (cp.ev) o.cp = cp.ev; if (cp.bonus) o.cpb = cp.bonus; return o; })(storeCampaigns(+p[3], s.id, (tx0 && tx0.t) || Date.now())))); saveMember(m);
     var why = give === pts ? (pts > 0 ? 'ok' : (+p[3] < c.minSpend ? 'below' : 'zero')) : give > 0 ? 'partial' : 'quota';   // 工作單24 v5：依實際原因顯示，不把 0 點一律說成額度用完
     return { ok: true, pts: give, expected: pts, capped: give < pts, why: why, minSpend: c.minSpend, store: s.name, amount: +p[3], total: m.points, ref: p[6] };
   }
 
   /* ====== 遊戲分數 ====== */
   function eventMult(game, t) {
-    var d = new Date(t || Date.now()), hm = pad(d.getHours()) + ':' + pad(d.getMinutes()), best = 1, title = '';
+    var d = new Date(t || Date.now()), hm = pad(d.getHours()) + ':' + pad(d.getMinutes()), best = 1, title = '', id = '';
     var dk = dayKey(d.getTime());
-    cfg().events.forEach(function (e) { if (e.on && (e.game === game || e.game === 'all') && (e.days || []).indexOf(d.getDay()) >= 0 && hm >= e.from && hm <= e.to && (!e.dateFrom || dk >= e.dateFrom) && (!e.dateTo || dk <= e.dateTo) && e.mult > best) { best = e.mult; title = e.title; } });
-    return { mult: best, title: title };
+    cfg().events.forEach(function (e) { if (e.on && (e.game === game || e.game === 'all') && (e.days || []).indexOf(d.getDay()) >= 0 && hm >= e.from && hm <= e.to && (!e.dateFrom || dk >= e.dateFrom) && (!e.dateTo || dk <= e.dateTo) && e.mult > best) { best = e.mult; title = e.title; id = e.id; } });
+    return { mult: best, title: title, id: id };
   }
   /* D97／D98：每日累計總分階梯 */
   function tierPts(total) { var p = 0; (cfg().gameTiers || []).forEach(function (r) { if (total >= r[0] && r[1] > p) p = r[1]; }); return p; }
@@ -295,7 +298,7 @@
     var counted = m.status !== 'frozen' && gc.on !== false && triesLeft(o.game, o.level) > 0, ev = eventMult(o.game), add = counted ? Math.round(sc * ev.mult) : 0;
     m.tries[k] = (m.tries[k] || 0) + 1;
     var tier = cfg().gamePointMode === 'tier';
-    m.plays.unshift({ t: Date.now(), game: o.game, level: String(o.level), score: o.score || 0, capped: !!capped, sec: Math.round(o.sec || 0), counted: counted, mult: ev.mult, raw: counted ? sc : 0, bank: tier ? 0 : add }); m.plays = m.plays.slice(0, 800);
+    m.plays.unshift({ t: Date.now(), game: o.game, level: String(o.level), score: o.score || 0, capped: !!capped, sec: Math.round(o.sec || 0), counted: counted, mult: ev.mult, cp: ev.id || undefined, raw: counted ? sc : 0, bank: tier ? 0 : add }); m.plays = m.plays.slice(0, 800);
     if (!tier) { m.scoreBank[o.game] = (m.scoreBank[o.game] || 0) + add; saveMember(m); return { counted: counted, add: add, mult: ev.mult, event: ev.title, bank: m.scoreBank[o.game], left: triesLeft(o.game, o.level) }; }
     /* D97：階梯制——把今天累計的點數補到應得的數字（只增不減，當天上限內） */
     var tap = cfg().gameClaim === 'tap', g = gameToday(m), gain = Math.max(0, g.pts - g.got), lit = 0;
