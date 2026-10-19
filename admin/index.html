@@ -143,7 +143,13 @@ svg text{font-family:inherit}
     var mx = Math.max(1, Math.max.apply(null, h.map(function (r) { return Math.max.apply(null, r); }))), D = '日一二三四五六';
     var s = '<div class="heat"><span></span>' + Array.from({ length: 24 }, function (_, i) { return '<span style="text-align:center">' + (i % 3 ? '' : i) + '</span>'; }).join('');
     for (d = 1; d <= 7; d++) { var di = d % 7; s += '<span>' + D[di] + '</span>' + h[di].map(function (v, i) { return '<i title="星期' + D[di] + ' ' + i + ' 點：' + v + '" style="background:' + (v ? 'rgba(47,127,134,' + (0.15 + 0.85 * v / mx) + ')' : '#EEF3F3') + '"></i>'; }).join(''); }
-    return s + '</div><div class="small muted" style="margin-top:6px">顏色越深越多人用（橫軸：幾點；直軸：星期幾）</div>';
+    /* G94-A28：色階加數字、尖峰用文字寫出來（不用只靠顏色判讀） */
+    var cells = []; h.forEach(function (r, di) { r.forEach(function (v, hr) { if (v) cells.push([v, di, hr]); }); }); cells.sort(function (a, b) { return b[0] - a[0]; });
+    var byDay = h.map(function (r) { return r.reduce(function (a, b) { return a + b; }, 0); }), byHr = Array.from({ length: 24 }, function (_, i) { return h.reduce(function (a, r) { return a + r[i]; }, 0); });
+    var bd = byDay.indexOf(Math.max.apply(null, byDay)), bh = byHr.indexOf(Math.max.apply(null, byHr)), tot = times.length;
+    var leg = '<div class="small muted" style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap">次數：<span>0</span>' + [0.15, 0.36, 0.58, 0.79, 1].map(function (k) { return '<i style="display:inline-block;width:16px;height:12px;border-radius:3px;background:rgba(47,127,134,' + k + ')"></i>'; }).join('') + '<span>' + mx + '</span>　（滑過格子看數字；橫軸幾點、直軸星期幾，共 ' + tot + ' 次）</div>';
+    var peak = tot ? '<div class="small" style="margin-top:4px">🔎 最多人的是 <b>星期' + D[bd] + '</b>（' + byDay[bd] + ' 次）與 <b>' + bh + '～' + (bh + 1) + ' 點</b>（' + byHr[bh] + ' 次）；單格最高：' + cells.slice(0, 3).map(function (c) { return '星期' + D[c[1]] + ' ' + c[2] + ' 點（' + c[0] + '）'; }).join('、') + '。</div>' : '<div class="small muted" style="margin-top:4px">這段期間沒有資料。</div>';
+    return s + '</div>' + leg + peak;
   }
   function bars(vals, labels) {
     var mx = Math.max(1, Math.max.apply(null, vals)), W = 640, H = 160, bw = (W - 30) / vals.length;
