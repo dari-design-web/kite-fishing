@@ -120,7 +120,26 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 
 /* UX 走查（10/17）：可以點的地方至少 44px、字至少 12px */
 #menuSnd{width:44px!important;height:44px!important}#sessionPick button,.pick button{min-height:44px!important}
-.ptnote a{display:inline-block;padding:14px 4px;margin:-14px -4px}h1 #lbSlot .klb-btn{min-height:44px!important}
+.ptnote a{display:inline-block;padding:14px 4px;margin:-14px -4px}
+/* D120（Dari 10/19「捕魚四關首頁一樣要做成關卡地圖，不要只是按鍵」）：和飛行一樣的關卡地圖；地圖圖檔 assets/stage_map_fish.jpg（720×1280，按鈕在右半邊） */
+.fmap{padding:0;display:block;background:#2F7FA8}
+.fmap .mapbg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.fmap .maptitle{position:absolute;left:3%;right:3%;top:1.6%;margin:0;padding:8px 12px;border-radius:14px;background:rgba(16,41,61,.82);border:2px solid #E8B879;color:var(--paper);font-family:var(--display);font-size:26px;line-height:1.2;text-align:center}
+.fmap .maptitle small{display:block;font-family:inherit;font-size:13px;font-weight:700;color:#FFD58A;margin-top:2px}
+.fmap #lbSlot{position:absolute;right:5%;top:2.6%;z-index:5}
+.fmap .fst{position:absolute;left:52%;width:44%;min-height:9.4%;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:6px 10px;border-radius:12px;border:2px solid #E8B879;background:rgba(16,41,61,.86);color:var(--paper);text-align:left;font-size:12px;line-height:1.35;box-shadow:0 3px 0 rgba(8,20,32,.45);animation:stin .45s cubic-bezier(.2,1.4,.5,1) both;cursor:pointer}
+.fmap .fst b{font-family:var(--display);font-size:15px}
+.fmap .fst span{color:#F4D9A8;font-variant-numeric:tabular-nums}
+.fmap .fst:nth-of-type(2){animation-delay:.08s}.fmap .fst:nth-of-type(3){animation-delay:.16s}.fmap .fst:nth-of-type(4){animation-delay:.24s}
+.fmap .fst.next{border-color:#FFD36B;animation:stin .45s cubic-bezier(.2,1.4,.5,1) both,nextglow 1.8s ease-in-out .6s infinite}
+.fmap .fst .go{position:absolute;left:-14px;top:-12px;padding:2px 8px;border-radius:999px;background:#C9473A;color:#fff;font-size:12px;font-weight:700;font-style:normal;border:2px solid #FFF4E2}
+@keyframes stin{from{transform:translateY(14px) scale(.9);opacity:0}}
+@keyframes nextglow{50%{box-shadow:0 3px 0 rgba(8,20,32,.45),0 0 0 4px rgba(255,211,107,.55),0 0 18px rgba(255,211,107,.6)}}
+@media (prefers-reduced-motion:reduce){.fmap .fst,.fmap .fst.next{animation:none}}
+.fmap .mapnote{position:absolute;left:3%;bottom:1.2%;width:46%;margin:0;padding:6px 8px;border-radius:8px;background:rgba(16,41,61,.72);color:#DCE6EC;font-size:12px;line-height:1.4}
+.fmap .mapnote a{color:inherit;font-weight:800}
+#sessionPick[hidden]{display:none}
+.card .stgTitle{font-family:var(--display);font-size:15px;color:var(--muted);margin:-6px 0 0}h1 #lbSlot .klb-btn{min-height:44px!important}
 .dexline .chips span{font-size:12px}
 </style>
 
@@ -150,11 +169,20 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
   <div class="hint" id="hint" hidden>點水裡的魚，小鳶會俯衝去抓</div>
   <button class="ult" id="ultBtn" hidden disabled aria-label="呼叫鯨鯊"><span class="ring"></span><span class="disc"><img src="assets/whaleshark_top.png" alt="" onerror="this.remove()"><svg viewBox="0 0 64 64" aria-hidden="true"><g stroke="#402B20" stroke-width="2" stroke-linejoin="round"><path d="M21 23C13 25 8 31 6 38c7-1 13-3 18-6z" fill="#4E7FA0"/><path d="M43 23c8 2 13 8 15 15-7-1-13-3-18-6z" fill="#4E7FA0"/><path d="M32 49c-3 4-7 8-11 11 5 0 8-1 11-3 3 2 6 3 11 3-4-3-8-7-11-11z" fill="#4E7FA0"/><path d="M32 5c8 0 12 5 12 12 0 11-5 23-10 33l-2 4-2-4C25 40 20 28 20 17 20 10 24 5 32 5z" fill="#5E90B2"/></g><path d="M26 10.5h12" stroke="#402B20" stroke-width="1.6" stroke-linecap="round" fill="none"/><g fill="#402B20"><circle cx="23.6" cy="14.5" r="1.3"/><circle cx="40.4" cy="14.5" r="1.3"/></g><g fill="#F5FBFD"><circle cx="27" cy="18" r="1.4"/><circle cx="32" cy="16.5" r="1.4"/><circle cx="37" cy="18" r="1.4"/><circle cx="25" cy="24" r="1.3"/><circle cx="29.6" cy="23" r="1.4"/><circle cx="34.4" cy="23" r="1.4"/><circle cx="39" cy="24" r="1.3"/><circle cx="27" cy="30" r="1.3"/><circle cx="32" cy="29" r="1.4"/><circle cx="37" cy="30" r="1.3"/><circle cx="28.6" cy="36" r="1.2"/><circle cx="33" cy="35" r="1.3"/><circle cx="36.4" cy="37" r="1.1"/><circle cx="31" cy="41.5" r="1.1"/><circle cx="33.8" cy="43.5" r="1"/><circle cx="13" cy="33" r="1.1"/><circle cx="17.5" cy="29.5" r="1.1"/><circle cx="51" cy="33" r="1.1"/><circle cx="46.5" cy="29.5" r="1.1"/></g></svg></span><span class="tag" id="ultTag">鯨鯊</span></button>
 
-  <div class="panel" id="startPanel">
+  <div class="panel fmap" id="mapPanel">
+    <img class="mapbg" id="fmapImg" src="assets/stage_map_fish.jpg" alt="">
+    <h1 class="maptitle" id="fmapTitle">小鳶捕魚</h1>
+    <span id="lbSlot"></span>
+    <div id="fstages"></div>
+    <p class="mapnote ptnote"></p>
+  </div>
+
+  <div class="panel" id="startPanel" hidden>
     <div class="card">
-      <h1 style="position:relative">小鳶捕魚<span id="lbSlot" style="position:absolute;right:0;top:50%;transform:translateY(-50%)"></span></h1>
+      <h1 id="stgName">基隆港</h1>
+      <p class="stgTitle" id="stgNo">小鳶捕魚・第 1 關</p>
       <p id="sessionNote">60 秒內，看你能幫小鳶拿到幾分。</p>
-      <div class="pick" id="sessionPick" role="group" aria-label="選擇關卡"></div>
+      <div class="pick" id="sessionPick" role="group" aria-label="選擇關卡" hidden></div>
       <div class="dexline" id="dexLine"></div>
       <ul class="how">
         <li><b>點魚</b><span>點水裡的魚，小鳶會俯衝下去抓</span></li>
@@ -166,6 +194,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
         <li><b>便當</b><span>今天算分場次的分數加起來到了門檻，就能在「小鳶樂園」領點數；點數可以到「港口換禮」換便當和贈品</span></li>
       </ul>
       <button class="btn" id="startBtn">開始</button>
+      <button class="btn quiet" id="toMapBtn">回關卡地圖</button>
       <p class="note ptnote"></p>
     </div>
   </div>
@@ -195,7 +224,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
         <div><span>還想再玩一局</span><span class="yn" data-q="again"><button aria-pressed="false">是</button><button aria-pressed="false">否</button></span></div>
       </div>
       <button class="btn" id="againBtn">再玩一局</button>
-      <button class="btn quiet" id="menuBtn">換場次・看圖鑑</button>
+      <button class="btn quiet" id="menuBtn">回關卡地圖</button>
       <button class="btn quiet" id="copyBtn">複製測試紀錄</button>
       <textarea id="log" readonly hidden aria-label="測試紀錄"></textarea>
     </div>
@@ -433,7 +462,7 @@ const CONFIG = {
     suodi:     { st: 's3', name: '梭地豆娘魚', kg: 0.5, speed: [44, 62], r: 13, depth: [250, 520], sprite: 'f_s3_suodi',     sw: 40, sh: 20, color: '#93ABBE', fin: '#5E7890', shape: 'tall', fact: '潮池和礁岸邊，也住著豆娘魚朋友。' },
     douzai:    { st: 's3', name: '豆仔魚',   kg: 0.3, speed: [52, 70],   r: 10, depth: [240, 420], sprite: 'f_s3_douzai',    sw: 32, sh: 14, color: '#CDD6DA', fin: '#8A9AA2', school: [3, 4], fact: '豆仔魚常成群穿梭在潮池和水道之間。' },
     xiangyu:   { st: 's3', name: '褐籃子魚', kg: 1.0, speed: [50, 70],   r: 16, depth: [300, 520], sprite: 'f_s3_xiangyu',   sw: 46, sh: 21, color: '#B0966E', fin: '#7A6244', shape: 'tall', spots: '#E8D9B0', fact: '和平島附近的人叫牠「象魚」，鰭上有刺，遠遠看就好。' },
-    lobster:   { st: 's3', name: '龍蝦',     kg: 4.0, speed: [30, 44],   r: 22, depth: [470, 505], sprite: 'f_s3_lobster',   sw: 72, sh: 36, shape: 'lobster', rare: true, fact: '和平島外側較深的水下也有龍蝦。只觀察，不採集，把海裡的朋友留在家。' },
+    lobster:   { st: 's3', name: '龍蝦',     kg: 4.0, speed: [30, 44],   r: 22, depth: [470, 505], sprite: 'f_s3_lobster',   sw: 72, sh: 36, shape: 'lobster', rare: true, fact: '和平島外側較深的水下也有龍蝦，牠很少游到淺處，是這一關的稀有漁獲。' },
     flying:    { st: 's4', name: '尖頭細身飛魚', kg: 0.6, speed: [70, 96], r: 13, depth: [235, 320], sprite: 'f_s4_flying', sw: 44, sh: 18, color: '#C2D8EA', fin: '#6C93B8', shape: 'flying', jump: true, fact: '飛魚會在漂浮物附近產卵，初夏常聚集在基隆嶼附近海域。' },
     baimao:    { st: 's4', name: '低鰭舵魚', kg: 0.9, speed: [60, 84],   r: 15, depth: [280, 470], sprite: 'f_s4_baimao',    sw: 44, sh: 21, color: '#A3ADB2', fin: '#6E787E', shape: 'tall', fact: '低鰭舵魚在地叫「白毛」，基隆嶼的礁邊也看得到。' },
     juwei:     { st: 's4', name: '鋸尾鯛',   kg: 1.0, speed: [70, 92],   r: 15, depth: [300, 500], sprite: 'f_s4_juwei',     sw: 44, sh: 23, color: '#5E6F8E', fin: '#F0CF4C', shape: 'tall', fact: '鋸尾鯛是暖水季節會來到島礁邊的魚。' },
@@ -471,7 +500,7 @@ const CONFIG = {
         { from: 30, to: 45, every: 0.75, speedMul: 1.0, w: { huashen: 3, squid: 1.4, zhenshen: 3, jialie: 2.5, zhengjian: 1.8, trash: 1.5 } },
         { from: 45, to: 60, every: 0.58, speedMul: 1.05, w: { huashen: 3, squid: 1.4, zhenshen: 3, jialie: 3, zhengjian: 2 } }
       ] },
-    { id: 's3', name: '和平島', full: '和平島・礁岸觀察', rule: 'reef', note: '魚會從礁石後面游出來。等牠完全游出來再點，小鳶掠過水面幫牠拍照記錄，魚會留在海裡。', how: ['礁岸觀察', '魚躲在礁石後面點不到，游出來再點；記錄過的魚會亮相機標記，不能重複記錄'], tip: '等牠游出石頭旁，再點牠！', verb: '記錄',
+    { id: 's3', name: '和平島', full: '和平島・礁岸', rule: 'reef', note: '魚會躲在礁石後面，從石頭旁游出來。等牠完全游出來再點，小鳶就能俯衝抓到。', how: ['礁岸', '魚躲在礁石後面點不到，游出來再點'], tip: '等牠游出石頭旁，再點牠！',
       sp: ['douzai', 'doubang', 'suodi', 'xiangyu', 'lobster'], rare: { type: 'lobster', at: [22, 46] },
       reefs: [{ x: 50, y: 330, rx: 64, ry: 62 }, { x: 312, y: 420, rx: 66, ry: 66 }, { x: 168, y: 560, rx: 92, ry: 52 }], fromReef: 0.6, leave: 1.7,
       phases: [
@@ -635,7 +664,7 @@ function resolveDive() {
     things.splice(things.indexOf(best), 1); stats.trash++; stats.combo = 0; comboBadge(); kite.stunNext = true; kite.carry = 'trash';
     say('抓到垃圾，暈一下', tx, ty - 18, '#FFD0C4'); beep(140, 0.25, 'square', 0.05, -60);
   } else if (best) {
-    const watch = RULE() === 'reef';      // D119 第 3 關：觀察——魚不叼走，亮標記、加速游走，同一條只算一次
+    const watch = false;      // D120（Dari 10/19「第三關一樣抓，抓了上面有個相機也奇怪」）：取消 D119 的觀察模式，第 3 關跟其他關一樣抓走
     if (watch) { best.seen = true; best.seenT = t; best.vx *= LVL().leave; } else things.splice(things.indexOf(best), 1);
     const def = CONFIG.fish[best.type], inEvent = EVENT(), mult = inEvent ? CONFIG.ult.mult : 1, lucky = best.type === LK(), gain = def.kg * mult * (lucky ? LUCKY_MUL : 1);
     kg += gain; stats.hits++; stats.counts[best.type]++; if (inEvent) stats.kgInEvent += gain; else { energy = Math.min(CONFIG.ult.need, energy + (def.rare ? 3 : def.kg >= 1.5 ? 2 : 1)); ultUI(); } kite.carry = watch ? null : best.type; firstCatchDone = true; if (watch) { stars(best.x, best.y, 8, 55, '#FFFFFF'); flash = Math.max(flash, 0.18); } if (best.jp === 'air') { stats.jumps = (stats.jumps || 0) + 1; }
@@ -1181,6 +1210,7 @@ function renderStart() {
     b.append(s.soon ? '第 ' + (i + 1) + ' 關' : s.name, sm); b.onclick = () => { lvl = s.id; renderStart(); }; box.appendChild(b);
   });
   $('sessionNote').textContent = LVL().note;
+  { const i = CONFIG.stages.indexOf(LVL()); $('stgName').textContent = LVL().full || LVL().name; $('stgNo').textContent = '小鳶捕魚・第 ' + (i + 1) + ' 關'; }
   { const hr = $('howRule'), hw = LVL().how; if (hr && hw) { hr.firstChild.textContent = hw[0]; hr.lastChild.textContent = hw[1]; } }
   if (0) { let nl = $('nightLine'); if (!nl) { nl = document.createElement('p'); nl.id = 'nightLine'; nl.className = 'lucky nightTip'; $('sessionNote').after(nl); } const nt = CONFIG.sessions.find((x) => x.id === 'night'); nl.hidden = !NIGHT_NOW && !DUSK_NOW; const dk = CONFIG.sessions.find((x) => x.id === 'dusk'); nl.textContent = NIGHT_NOW ? (nt && isOpen(nt) ? '🌙 現在是晚上，漁船的燈亮了，夜釣場小卷特別多！' : '🌙 現在是晚上～先玩過「午後」「黃昏」，就能開放夜釣場') : (dk && isOpen(dk) ? '🌇 太陽快下山了，黃昏場的白帶魚正多！' : '🌇 傍晚了～先玩一局「午後」，就能開放黃昏場'); }
   { let lk = $('luckyLine'); if (!lk) { lk = document.createElement('p'); lk.id = 'luckyLine'; lk.className = 'lucky'; $('sessionNote').after(lk); } lk.textContent = '🍀 今日幸運魚：' + CONFIG.fish[LK()].name + '（抓到分數 ×1.5，明天會換）'; }
@@ -1190,7 +1220,26 @@ function renderStart() {
   for (const k of L) { const c = document.createElement('span'); c.textContent = dex[k] ? CONFIG.fish[k].name : '？？'; if (!dex[k]) c.className = 'no'; chips.appendChild(c); }
   dl.appendChild(chips);
 }
-function show(id) { for (const p of ['startPanel', 'pausePanel', 'resultPanel']) $(p).hidden = p !== id; }
+function show(id) { for (const p of ['mapPanel', 'startPanel', 'pausePanel', 'resultPanel']) $(p).hidden = p !== id; }
+/* D120：捕魚關卡地圖——右半邊四顆關卡按鈕（由下往上第 1～4 關），按了進那一關的開始卡 */
+const FMAP_TOP = [79.3, 56.3, 31.3, 10.3];
+function renderMap() {
+  const box = $('fstages'); box.textContent = '';
+  const st = CONFIG.stages, played = st.filter((s) => prog.best[s.id] !== undefined).length;
+  $('fmapTitle').innerHTML = '小鳶捕魚<small>已玩過 ' + played + ' / ' + st.length + ' 關' + (played === st.length ? '　全部都去過了！' : '') + '</small>';
+  const next = (st.find((s) => !s.soon && prog.best[s.id] === undefined) || {}).id;
+  st.forEach((s, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'fst'; b.style.top = FMAP_TOP[i] + '%'; b.disabled = !!s.soon;
+    const t = document.createElement('b'); t.textContent = '第 ' + (i + 1) + ' 關　' + s.name;
+    const L = s.sp, got = L.filter((k) => dex[k]).length, best = prog.best[s.id], sp = document.createElement('span');
+    sp.textContent = s.soon ? '製作中' : (best !== undefined ? '最佳 ' + PTS(best) + ' 分' : '還沒玩過') + '・圖鑑 ' + got + '/' + L.length;
+    b.append(t, sp);
+    if (s.id === next) { b.classList.add('next'); const g = document.createElement('i'); g.className = 'go'; g.textContent = '出發'; b.append(g); }
+    b.onclick = () => { lvl = s.id; renderStart(); show('startPanel'); };
+    box.append(b);
+  });
+}
+function toMap() { mode = 'start'; BGM.stop(); renderMap(); show('mapPanel'); }
 function start() { reset(); mode = 'play'; $('hint').textContent = LVL().tip || '點水裡的魚，小鳶會俯衝去抓'; if (soundOn) BGM.play('fish_' + session); show(null); $('hud').hidden = false; $('hint').hidden = false; ultUI(); stage.classList.toggle('dark', !!SES().light); const bt = LVL().name + '・' + SES().name, bn = $('banner'); bn.textContent = bt; bn.hidden = false; setTimeout(() => { if (bn.textContent === bt) { bn.hidden = true; bn.textContent = '鯨鯊來了！分數加倍'; } }, 1600); beep(523, 0.12, 'triangle', 0.06, 260); }
 function pause() { if (mode !== 'play') return; mode = 'pause'; BGM.stop(); show('pausePanel'); ultUI(); }
 /* D118：鯨鯊絕招鍵 */
@@ -1272,7 +1321,7 @@ cv.addEventListener('pointerdown', (e) => {
   stats.dives++; kite.tx = x; kite.ty = Math.max(CONFIG.skyY + 8, Math.min(H - 30, y)); kite.state = 'dive'; kite.lock = null;
   if (CONFIG.assist.on) { let bd = CONFIG.assist.radius; for (const o of things) { if (!CONFIG.fish[o.type] || o.hid || o.seen || o.jp === 'hint') continue; const d = Math.hypot(o.x - x, o.y - y); if (d < bd) { bd = d; kite.lock = o; } } } beep(700, 0.18, 'sawtooth', 0.03, -420);
 });
-$('startBtn').onclick = start; $('againBtn').onclick = start; $('menuBtn').onclick = () => { renderStart(); show('startPanel'); }; $('restartBtn').onclick = start; $('resumeBtn').onclick = resume; $('pauseBtn').onclick = () => (mode === 'pause' ? resume() : pause());
+$('startBtn').onclick = start; $('againBtn').onclick = start; $('menuBtn').onclick = toMap; $('toMapBtn').onclick = toMap; $('restartBtn').onclick = start; $('resumeBtn').onclick = resume; $('pauseBtn').onclick = () => (mode === 'pause' ? resume() : pause());
 $('soundBtn').onclick = toggleSound; $('ultBtn').onclick = callWhale;
 document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
 for (const g of document.querySelectorAll('.yn')) g.addEventListener('click', (e) => {
@@ -1284,7 +1333,7 @@ $('copyBtn').onclick = () => {
   const fallback = () => { log.value = text; log.hidden = false; log.focus(); log.select(); $('copyBtn').textContent = '請長按上方文字複製'; };
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
 };
-window.__kiteGame = { CONFIG, lucky: () => LK(), stageState: () => ({ lvl, rule: RULE(), lamp, jumpAt }), setSession: (s) => { lvl = s; renderStart(); }, callWhale, fillEnergy: () => { energy = CONFIG.ult.need; ultUI(); }, tod: () => ({ start: todStart, idx: todIdx, id: session, fade: todFade }), energy: () => energy, prog: () => prog, state: () => ({ mode, session, t, kg, kite, things: things.map((o) => ({ type: o.type, x: o.x, y: o.y, vx: o.vx, move: o.move })), stats, shark: !!shark, flash }), skip: (s) => { t = s; }, testEnd: (k, h, lc) => { kg = k; if (h) stats.hits = h; if (lc) stats.counts[LK()] = lc; finish(); } };      // v0.20：testEnd 只給自動測試用（指定分數直接結算）
+window.__kiteGame = { CONFIG, lucky: () => LK(), stageState: () => ({ lvl, rule: RULE(), lamp, jumpAt }), setSession: (s) => { lvl = s; renderStart(); show('startPanel'); }, callWhale, fillEnergy: () => { energy = CONFIG.ult.need; ultUI(); }, tod: () => ({ start: todStart, idx: todIdx, id: session, fade: todFade }), energy: () => energy, prog: () => prog, state: () => ({ mode, session, t, kg, kite, things: things.map((o) => ({ type: o.type, x: o.x, y: o.y, vx: o.vx, move: o.move })), stats, shark: !!shark, flash }), skip: (s) => { t = s; }, testEnd: (k, h, lc) => { kg = k; if (h) stats.hits = h; if (lc) stats.counts[LK()] = lc; finish(); } };      // v0.20：testEnd 只給自動測試用（指定分數直接結算）
 /* C-81／C-82（Dari 10/13 01:03）：音樂開關、暫停鈕改圖示；選單畫面也有音樂，每個場景不同曲子 */
 const MENU_TRACK = () => 'fish_' + session, PLAY_TRACK = () => 'fish_' + session;
 function drawSnd() { const h = SND_ICON[soundOn ? 'on' : 'off']; for (const b of [$('soundBtn'), $('menuSnd')]) { if (!b) continue; b.innerHTML = h; b.setAttribute('aria-pressed', String(!soundOn)); b.setAttribute('aria-label', soundOn ? '音樂開著，點一下關掉' : '音樂關著，點一下打開'); } }
@@ -1307,7 +1356,7 @@ const DUSK_NOW = (() => { const h = new Date().getHours(); return h >= 16 && h <
 /* D118：天色改成局內自動輪替，不再依現在時間預選場次 */
 /* v0.26（C-174）：傍晚 4 點到 7 點打開，而且黃昏場已經開放，就先幫玩家選好黃昏場，開始畫面多一行傍晚的提示（文字是建議） */
 
-reset(); renderStart(); requestAnimationFrame(frame);
+reset(); renderStart(); renderMap(); requestAnimationFrame(frame);
 })();
 </script>
 
