@@ -48,7 +48,7 @@ const FONT = (s, w) => (w || 700) + ' ' + s + "px 'Zen Maru Gothic','Noto Sans T
 const rnd = (a, b) => a + Math.random() * (b - a), clamp = (v, a, b) => Math.max(a, Math.min(b, v)), pick = (a) => a[Math.floor(Math.random() * a.length)], lerp = (a, b, k) => a + (b - a) * k;
 const RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const HOW = {
-  merge: '小鳶抓著海鮮，手指<b>左右滑</b>帶牠移動，<b>點一下</b>小鳶就放開。時間到也會<b>自己放手</b>，越後面抓得越短。一樣的碰在一起就<b>合成下一級</b>，一路合到<b>鯨鯊</b>！堆過紅線就結束。',
+  merge: '小鳶抓著海鮮，按住<b>左右滑</b>帶牠移動，<b>手放開</b>海鮮就掉下去；也可以直接<b>點想放的位置</b>，小鳶會飛過去放開。時間到也會<b>自己放手</b>，越後面抓得越短。一樣的碰在一起就<b>合成下一級</b>，一路合到<b>鯨鯊</b>！堆過紅線就結束。',
   stack: '<b>點一下</b>放下貨櫃，對齊下面那個。切齊是<b>完美</b>，連續完美貨櫃會<b>變寬</b>；<b>金貨櫃</b>大加分；每 10 層<b>裝滿一艘船</b>出港。疊越高越難！'
 };
 const store = { get(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
@@ -183,7 +183,7 @@ function buildMergeBG() {
   x.fillStyle = '#E8C58A'; for (const px of [BOX.l - 6, BOX.r + 6]) for (let py = BOX.line - 20; py < BOX.floor; py += 70) { x.beginPath(); x.arc(px, py, 2.5, 0, 6.283); x.fill(); }
   return c;
 }
-const MF = { spd0: 60, spdUp: 36, spdMax: 380, steer: 600, fast: 1000, grav: 1800, hold0: 2.6, holdStep: 0.22, holdMin: 0.8, needBase: 3, needStep: 1 };      // D121：hold＝小鳶抓著海鮮最多幾秒就自己放手
+const MF = { spd0: 60, spdUp: 36, spdMax: 380, steer: 900, fast: 1000, grav: 1800, gravUp: 0.06, gravMax: 2.3, hold0: 2.6, holdStep: 0.22, holdMin: 0.8, needBase: 3, needStep: 1 };      // D121：hold＝小鳶抓著海鮮最多幾秒就自己放手
 function makeMerge() {
   const g = { balls: [], fall: null, q: [], score: 0, done: false, over: 0, say: '', sayT: 0, top: 0, t: 0, lv: 1, merges: 0, mergesAll: 0, need: MF.needBase + MF.needStep, chain: 0, chainT: 0, bestChain: 0, tx: W / 2, wait: 0.5, banner: '', bannerT: 0, tap: null, found: null, newFound: [] };
   const gen = () => Math.floor(rnd(0, g.lv >= 4 ? 4 : 3) + (g.lv >= 7 && Math.random() < 0.25 ? 1 : 0));
@@ -193,7 +193,7 @@ function makeMerge() {
      點一下（或時間到）腳放開，海鮮自己往下掉，掉下去就不能再改位置。關卡越後面，小鳶抓得越短就自己放手。 */
   const KF = 86;      // 小鳶腳尖的高度
   g.kx = W / 2;
-  g.holdT = () => Math.max(MF.holdMin, MF.hold0 - (g.lv - 1) * MF.holdStep);
+  g.holdT = () => Math.max(g.lv > 12 ? 0.6 : MF.holdMin, MF.hold0 - (g.lv - 1) * MF.holdStep);
   g.spawn = () => {
     const lv = g.q.shift(); g.q.push(gen()); const r = SEAF[lv][1], x = clamp(g.kx, BOX.l + r, BOX.r - r), y = KF + r - 2;
     if (g.balls.some((b) => Math.hypot(b.x - x, b.y - y) < b.r + r - 4)) { g.done = true; g.say = '魚艙塞滿了！'; g.sayT = 2; return; }
@@ -209,9 +209,9 @@ function makeMerge() {
     if (!g.fall && !g.done) { g.wait -= dt; if (g.wait <= 0) g.spawn(); }
     const f = g.fall;
     { const r = f && f.held ? f.r : 20, wantX = clamp(g.tx, BOX.l + r, BOX.r - r), mv = MF.steer * dt; g.kx += clamp(wantX - g.kx, -mv, mv); }
-    if (f && f.held) { f.x = clamp(g.kx, BOX.l + f.r, BOX.r - f.r); f.hold -= dt; if (f.hold <= 0) g.release(); }
+    if (f && f.held) { f.x = clamp(g.kx, BOX.l + f.r, BOX.r - f.r); f.hold -= dt; if (f.hold <= 0) { g.dropAt = null; g.release(); } else if (g.dropAt != null && Math.abs(g.kx - clamp(g.dropAt, BOX.l + f.r, BOX.r - f.r)) < 1.5) { g.dropAt = null; g.release(); } }      // D124：手放開（或點一下）後，小鳶飛到那個位置自動放手
     else if (f) {
-      const r = f.r; f.vy = Math.min(MF.fast, f.vy + MF.grav * dt);
+      const r = f.r, gk = Math.min(MF.gravMax, 1 + (g.lv - 1) * MF.gravUp); f.vy = Math.min(MF.fast * gk, f.vy + MF.grav * gk * dt);      // D124：關數越後面掉越快
       const steps = 4;
       for (let i = 0; i < steps && g.fall; i++) {
         f.y += f.vy * dt / steps;
@@ -261,9 +261,9 @@ function makeMerge() {
     if (mul === 3) { g.say = '連鎖三次！'; g.sayT = 1.4; }
     g.merges++; if (g.merges >= g.need) { g.lv++; g.merges = 0; g.need = MF.needBase + MF.needStep * g.lv; g.score += 10 * g.lv; g.banner = '第 ' + g.lv + ' 關・掉得更快了'; g.bannerT = 1.4; jingle([660, 880], 110); }
   };
-  g.down = (x, y) => { g.tx = x; g.tap = { x, y, t: g.t }; };
-  g.move = (x, y) => { g.tx = x; if (g.tap && y - g.tap.y > 45 && g.fall) { g.release(); g.tap = null; } };
-  g.up = () => { if (g.tap && g.t - g.tap.t < 0.25 && g.fall) g.release(); g.tap = null; };
+  g.down = (x, y) => { g.tx = x; g.dropAt = null; g.tap = { x, y, t: g.t }; };      // D124（Dari 10/19 14:57）：按住滑動＝移動，手放開就落下；點一下＝飛到那裡自動放手
+  g.move = (x, y) => { g.tx = x; };
+  g.up = () => { if (g.tap && g.fall && g.fall.held) g.dropAt = g.tx; g.tap = null; };
   g.draw = (tt) => {
     const bg = ready('bg_merge'); if (bg) ctx.drawImage(bg, 0, 0, W, H); else { mergeBG = mergeBG || buildMergeBG(); ctx.drawImage(mergeBG, 0, 0, W, H); }
     // 紅線
@@ -451,7 +451,9 @@ function makeStack() {
       const y = Y0 - g.blocks.length * BH, mx = g.mv.x + g.mv.w / 2, fa = g.mv.fog ? clamp(Math.abs(mx - W / 2) / (W * 0.24), 0.06, 1) : 1;
       ctx.globalAlpha = fa; ctx.fillStyle = 'rgba(16,41,61,.18)'; ctx.fillRect(g.mv.x + 3, Y0 - (g.blocks.length - 1) * BH - 2, g.mv.w - 6, 3);
       crate(g.mv.x, y, g.mv.w, g.mv.c, g.mv.gold); drawKiteCarry(mx, y + 2, 0.8, tt * (g.mv.wind || g.mv.rush ? 16 : 9), 'kite_carry'); ctx.globalAlpha = 1;
-      if (g.mv.fog) for (let i = 0; i < 6; i++) ell(W / 2 + (i - 2.5) * 34 + Math.sin(tt + i) * 6, y - 4 + (i % 2) * 14, 44, 20, 'rgba(240,246,250,.5)');
+      if (g.mv.fog) { const fi = ready('fog_bank');      // D124：霧改成柔邊的霧團（有 G90 的 fog_bank 圖就用圖）
+        if (fi) { const fw = W * 0.86, fh = fw * fi.naturalHeight / fi.naturalWidth; for (let i = 0; i < 2; i++) { ctx.globalAlpha = 0.92; ctx.drawImage(fi, W / 2 - fw / 2 + Math.sin(tt * 0.6 + i * 2) * 14, y - fh / 2 + (i - 0.5) * 18, fw, fh); } ctx.globalAlpha = 1; }
+        else for (let i = 0; i < 9; i++) { const fx = W / 2 + (i - 4) * 26 + Math.sin(tt * 0.7 + i) * 10, fy = y + 8 + Math.sin(i * 1.7) * 18, fr = 46 + (i % 3) * 12, gr = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr); gr.addColorStop(0, 'rgba(246,248,250,.62)'); gr.addColorStop(0.55, 'rgba(240,244,248,.38)'); gr.addColorStop(1, 'rgba(240,244,248,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(fx, fy, fr, 0, 6.283); ctx.fill(); } }
       const wi = g.mv.wind && ready('wind_' + (Math.floor(tt * 6) % 3)); if (wi) { for (let i = 0; i < 2; i++) { const wy = y - 30 + i * 22, wx = ((tt * 260 + i * 150) % (W + 160)) - 80; ctx.globalAlpha = 0.85; ctx.drawImage(wi, wx - 60, wy - 15, 120, 120 * wi.naturalHeight / wi.naturalWidth); ctx.globalAlpha = 1; } }
       else if (g.mv.wind) { ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 2; for (let i = 0; i < 3; i++) { const wy = y - 40 + i * 14, wx = ((tt * 260 + i * 120) % (W + 80)) - 40; ctx.beginPath(); ctx.moveTo(wx, wy); ctx.quadraticCurveTo(wx + 20, wy - 6, wx + 40, wy); ctx.stroke(); } }
     }
@@ -478,7 +480,7 @@ function drawTitle(tt) {
       if (known) { drawSea(i, x, y + Math.sin(tt * 2 + i) * 2, rr, 0); } else { ell(x, y, rr, rr, '#E9E1D2', '#C9B48E', 2); text('?', x, y + 1, 15, '#B09A74', 'center', 900, false); }
       text(known ? SEAF[i][0] : '???', x, y + rr + 12, 11, C.ink, 'center', 700, false); }
     text('圖鑑 ' + Object.keys(mdex).length + ' / 10', W / 2, 330, 14, C.leaf, 'center', 900, false);
-    const tips = ['左右滑：帶小鳶移到想放的位置', '點一下：小鳶放開海鮮', '越後面小鳶抓得越短，別堆過紅線'];
+    const tips = ['按住滑動，手放開就落下', '或直接點位置：小鳶飛過去放開', '越後面掉越快、抓得越短，別堆過紅線'];
     tips.forEach((s, i) => { ell(70, 364 + i * 26, 4, 4, C.dusk); text(s, 84, 364 + i * 26, 13.5, C.ink, 'left', 700, false); });
     text(best.merge ? '最佳 ' + best.merge + ' 分' : '第一次玩，試試看能合到哪裡！', W / 2, 446, 13, '#6A7F8E', 'center', 700, false);
     startBtnR = btn('點一下開始', 456);
@@ -516,7 +518,7 @@ let mode = 'merge', G = null, state = 'ready', down = false, last = performance.
 function newGame() { floats = []; parts = []; rings = []; G = { merge: makeMerge, stack: makeStack }[mode](); }
 function setMode(m) {
   mode = m; document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.m === m))); document.getElementById('how').innerHTML = HOW[m]; state = 'ready'; newGame();
-  const A = m === 'merge' ? ['bg_merge', 'kite_hold', 'kite_hold_fly', 'fx_merge'].concat(SEAF.map((_, i) => 'sea_' + i)) : ['bg_stack_base', 'bg_stack_sky', 'ship', 'kite_carry', 'kite_carry_fly', 'box_gold', 'far_mtn', 'cloud_0', 'cloud_1', 'cloud_2', 'gull', 'wind_0', 'wind_1', 'wind_2'].concat(BOXC.map((_, i) => 'box_' + i));
+  const A = m === 'merge' ? ['bg_merge', 'kite_hold', 'kite_hold_fly', 'fx_merge'].concat(SEAF.map((_, i) => 'sea_' + i)) : ['bg_stack_base', 'bg_stack_sky', 'ship', 'kite_carry', 'kite_carry_fly', 'box_gold', 'far_mtn', 'cloud_0', 'cloud_1', 'cloud_2', 'gull', 'wind_0', 'wind_1', 'wind_2', 'fog_bank'].concat(BOXC.map((_, i) => 'box_' + i));
   A.forEach((k) => { if (!IMG[k]) want(k, '../assets/' + m + '/' + k + (k.indexOf('bg_') === 0 ? '.jpg' : '.png')); });
 }
 document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.m)));
