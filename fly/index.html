@@ -678,7 +678,7 @@ function reset() {
   seed = CONFIG.seed; cine = 0; slowmo = 0; rushes = []; t = 0; si = 0; fireAcc = 0; gauge = 0; ult = null; cut = null; flash = 0; shake = 0; boss = null; endTimer = 0; firstMove = false; toldUlt = false; toldBarrel = false; toldGate = false; toldRing = false; guide = null; won = false; seenPick = {};
   kite = { x: W / 2, y: 520, tx: W / 2, ty: 520, jetT: 0, ringT: 0, slowT: 0, homeT: 0, drumT: 0, drumAcc: 0, hearts: LV().hearts, safe: 0, power: 1, powerT: 0, galeT: 0, shield: false, drag: false, lx: 0, ly: 0 };
   T = stageTypes(); vents = []; clouds = []; boats = []; mascots = []; beatDemo = null; menu = null; escort = null;
-  foes = []; shots = []; picks = []; parts = []; floats = []; friends = []; pals = []; rings = []; warns = []; script = buildScript();
+  foes = []; shots = []; picks = []; parts = []; floats = []; friends = []; pals = []; rings = []; warns = []; booms = []; script = buildScript();
   stats = { spawned: 0, cleared: 0, leaked: 0, score: 0, hits: 0, hitBy: {}, rescued: 0, trapped: 0, lost: 0, trappedBy: { squid: 0, turtle: 0, friend: 0, mascot: 0 }, lostBy: { squid: 0, turtle: 0, friend: 0, mascot: 0 }, jerky: 0, powerUps: 0, gales: 0, maxPower: 1, ultUsed: 0, ultCleared: 0, combo: 0, comboT: 0, bestCombo: 0, blasts: 0, bestBlast: 0, chain: false, rescuedBy: { squid: 0, turtle: 0, friend: 0, mascot: 0 }, friendIds: [], eaten: 0, jiao: { holy: 0, laugh: 0, yin: 0 }, shieldSaves: 0, bossCleared: false, dragPx: 0, byType: {} };
   for (const k in answers) delete answers[k];
   for (const b of document.querySelectorAll('.yn button')) b.setAttribute('aria-pressed', 'false');
@@ -761,7 +761,7 @@ function clearFoe(f, how) {      // how：'' 羽毛或墨汁、'blast' 被炸到
   }
   if (f.type === 'minib') miniCleared(f);
   if (f.type === 'boss') {      // 清掉大垃圾團：畫面上的垃圾與還在倒數的側邊橫衝一起清掉
-    boss = null; stats.bossCleared = true; warns = []; for (const o of foes.slice()) clearFoe(o, 'sweep');      // sweep：過關收尾，不算鯨鯊、不算連清
+    bossBoom(f.x, f.y); boss = null; stats.bossCleared = true; warns = []; for (const o of foes.slice()) clearFoe(o, 'sweep');      // sweep：過關收尾，不算鯨鯊、不算連清
     if (kite.hearts > 0) { won = true; banner(ST().clean); flash = 0.7; shake = 0.4; jingle([523, 659, 784, 1047, 1319], 100); parade(); endTimer = 3.4; }      // 過關：之後的收尾不再受傷，結果鎖定。體力在同一刻已經歸零則照體力歸零結算
   }
 }
@@ -1164,6 +1164,7 @@ function update(dt) {
   friends = friends.filter((c) => (c.vx > 0 ? c.x < W + 90 : c.vx < 0 ? c.x > -90 : true) && c.y > -60);      // 依前進方向判斷：真的游出畫面才移除，還在畫面外等著進場的不算
   // 鯨鯊大招：慢動作起手 → 鯨鯊由左下游向右上、身後的大浪由下往上掃過 → 結算清掉幾件
   if (ult && ult.kind) updateUlt2(real);
+  if (booms.length) updateBooms(real);
   else if (ult && ult.jiao) updateJiao(real);
   else if (ult) {
     const u = ult; u.t += real;
@@ -2814,7 +2815,8 @@ function tintRing(hue) {      // 光隧道霓虹環：把 ChatGPT 的白色光�
 /* ====== D123：大絕招動漫開場（畫面停住、變淡、磅！招式名）＋第 5～8 關新大絕招＋第 8 關鯨龍魔王 ====== */
 let cut = null;
 const CUTS = { squid: ['小卷王', '墨浪千觸', '179,139,224', ['ult_squidking', 'ult_squid'], '🦑'], dolphin: ['海豚群', '浪花衝鋒', '110,195,232', ['ult_dolphin'], '🐬'], turtle: ['海龜', '玄甲潮湧', '127,211,154', ['ult_turtle'], '🐢'], dragons: ['黑潮逆命', '雙龍破', '58,123,213', ['ult_dragons'], '🐉'], whale: ['鯨鯊', '全海大掃除', '255,214,110', ['shark_top'], '🦈'], jiao: ['擲筊', '祈福淨化', '255,190,120', ['jiao_flat'], '🙏'] };
-function cutInfo(kind) { const c = CUTS[kind] || CUTS.whale; return kind === 'whale' && (RM() || PM()) ? [ULTN(), '出動！', c[2], [], '✨'] : c; }
+const ULT5 = { 1: ['鯨鯊', '星斑巨鯨嘯'], 2: ['擲筊', '聖筊天雷落'], 3: ['彩虹鏡海', '虹彩鏡海陣'], 4: ['紅蟹鐵道車', '赤蟹列車轟'], 5: ['小卷王', '墨潮千觸縛'], 6: ['海豚群', '萬豚破浪擊'], 7: ['海龜', '玄甲震海波'], 8: ['黑潮逆命', '逆命雙龍破'] };      // D125（Dari 10/19 15:09）：每關絕招五個字、帥氣中二
+function cutInfo(kind) { const c = CUTS[kind] || CUTS.whale, n = ULT5[stageNo] || [c[0], c[1]], icons = RM() ? ['ult_icon_rail', 'rail_ult'] : PM() ? ['ult_icon_pier', 'pier_ult'] : c[3], col = RM() ? '232,103,74' : PM() ? '255,170,200' : c[2]; return [n[0], n[1], col, icons, RM() ? '🦀' : PM() ? '🌈' : c[4]]; }
 function startCut(kind, go) { cut = { t: 0, dur: calm ? 0.6 : 1.3, kind, go, b1: false, b2: false }; $('banner').hidden = true; beep(1200, 0.08, 'square', 0.04, -600); }
 function updateCut(dt) {
   const c = cut; c.t += dt;
@@ -2851,6 +2853,15 @@ function drawCut() {
   boom('磅！', 74, y0 - 34, 0.28, -0.25); boom('磅！', W - 70, y0 + 214, 0.58, 0.2);
   ctx.restore();
 }
+
+/* ---- D125：魔王倒下時碰碰碰連環爆炸＋震動 ---- */
+let booms = [];
+function bossBoom(x, y) { booms = []; for (let i = 0; i < 7; i++) booms.push({ t: -i * 0.2, x: x + (i === 6 ? 0 : rand(-60, 60)), y: y + (i === 6 ? 0 : rand(-46, 46)), big: i === 6, done: false }); }
+function updateBooms(dt) {
+  for (const b of booms) { b.t += dt; if (b.t >= 0 && !b.done) { b.done = true; shake = Math.max(shake, b.big ? 0.9 : 0.45); flash = Math.max(flash, b.big ? 0.95 : 0.35); rings.push({ x: b.x, y: b.y, r: 10, max: b.big ? 320 : 120, life: 1, color: '255,200,120' }); burst(b.x, b.y, b.big ? 46 : 18, b.big ? '#FFE08A' : '#FFB84D', b.big ? 300 : 170); beep(b.big ? 45 : rand(70, 110), b.big ? 0.7 : 0.35, 'square', b.big ? 0.12 : 0.09, -20); if (!calm) say(b.big ? '碰碰碰！' : '碰！', b.x, b.y - 24, b.big ? '#FFE08A' : '#FFD0A0', true); try { if (navigator.vibrate) navigator.vibrate(b.big ? [80, 40, 160] : 45); } catch (e) {} } }
+  booms = booms.filter((b) => b.t < 0.9);
+}
+function drawBooms() { for (const b of booms) { if (b.t < 0) continue; const k = b.t / 0.55; if (k > 1) continue; const r = (b.big ? 150 : 60) * (0.4 + k); ctx.save(); ctx.translate(b.x, b.y); ctx.globalAlpha = 1 - k; glow(r, '255,236,170', 1); ctx.beginPath(); for (let i = 0; i < 16; i++) { const rr = i % 2 ? r * 0.45 : r * 0.8, an = i * 0.3927 + b.x; ctx.lineTo(Math.cos(an) * rr, Math.sin(an) * rr); } ctx.closePath(); ctx.fillStyle = 'rgba(255,170,80,.85)'; ctx.fill(); ctx.beginPath(); ctx.arc(0, 0, r * 0.3, 0, 6.2832); ctx.fillStyle = '#FFF8EA'; ctx.fill(); ctx.restore(); } ctx.globalAlpha = 1; }
 
 /* ---- 第 5～8 關朋友大招（D123 加強） ---- */
 const U2 = { squid: { dur: 3.1, n: 14, fly: 0.55, ring: 720 }, dolphin: { dur: 3.3, band: 150 }, turtle: { dur: 5, r: 64, waves: [0.2, 0.7, 1.2], ws: 640 }, dragons: { dur: 3.4, meet: 1.5, boom: 2.3 } };
@@ -2908,10 +2919,12 @@ function drawDragon(u, i) {
   const hs = img[i ? 'dragon_blue_head' : 'dragon_black_head'], bs = img[i ? 'dragon_blue_body' : 'dragon_black_body'];
   if (hs && bs) { for (let j = segs - 1; j >= 1; j--) { const p = pts[j], q = pts[j - 1], r = Math.max(5, 16 - j * 0.4); ctx.save(); ctx.translate(p[0], p[1]); ctx.rotate(Math.atan2(q[1] - p[1], q[0] - p[0]) + 1.571); ctx.drawImage(bs, -r * 1.3, -r * 1.3, r * 2.6, r * 2.6); ctx.restore(); } const h0 = pts[0], h1 = pts[1]; ctx.save(); ctx.translate(h0[0], h0[1]); ctx.rotate(Math.atan2(h0[1] - h1[1], h0[0] - h1[0]) + 1.571); ctx.drawImage(hs, -30, -36, 60, 60); ctx.restore(); ctx.restore(); return; }
   for (let j = segs - 1; j >= 1; j--) { const p = pts[j], r = Math.max(4, 15 - j * 0.42); ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 6.2832); ctx.fillStyle = col[0]; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#0B1A26'; ctx.stroke(); ctx.beginPath(); ctx.arc(p[0] - r * 0.3, p[1] - r * 0.3, r * 0.45, 0, 6.2832); ctx.fillStyle = col[1]; ctx.fill();
+    if (j % 2 === 1 && j < segs - 3) { const q = pts[j - 1], an2 = Math.atan2(q[1] - p[1], q[0] - p[0]); poly([p[0] + Math.cos(an2 + 2.6) * r * 0.6, p[1] + Math.sin(an2 + 2.6) * r * 0.6, p[0] + Math.cos(an2 + 3.14) * (r + 9), p[1] + Math.sin(an2 + 3.14) * (r + 9), p[0] + Math.cos(an2 - 2.6) * r * 0.6, p[1] + Math.sin(an2 - 2.6) * r * 0.6], i ? '#D8F0FF' : '#7FF3FF', '#0B1A26'); }      // 背鰭
     if (j % 4 === 2) { const q = pts[j - 1], an = Math.atan2(q[1] - p[1], q[0] - p[0]) + 1.571; poly([p[0] + Math.cos(an) * r, p[1] + Math.sin(an) * r, p[0] + Math.cos(an) * (r + 10), p[1] + Math.sin(an) * (r + 10) - 4, p[0] + Math.cos(an) * r + 4, p[1] + Math.sin(an) * r + 4], col[1], '#0B1A26'); } }
   const h = pts[0], n = pts[1], an = Math.atan2(h[1] - n[1], h[0] - n[0]);
   ctx.save(); ctx.translate(h[0], h[1]); ctx.rotate(an);
-  poly([-6, -10, -22, -22, -12, -6], col[1], '#0B1A26'); poly([-6, 10, -22, 22, -12, 6], col[1], '#0B1A26');
+  for (const sg of [-1, 1]) { ctx.strokeStyle = i ? '#FFE9A8' : '#C9F7FF'; ctx.lineWidth = 3.5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-4, sg * 8); ctx.lineTo(-24, sg * 22); ctx.moveTo(-14, sg * 15); ctx.lineTo(-16, sg * 28); ctx.moveTo(-20, sg * 19); ctx.lineTo(-32, sg * 18); ctx.stroke(); }      // 鹿角
+  for (let m = 0; m < 5; m++) poly([-6, (m - 2) * 5, -20 - Math.sin(clock * 9 + m) * 4, (m - 2) * 7, -8, (m - 2) * 5 + 3], i ? '#9ED4FF' : '#3E5A70', '#0B1A26');      // 鬃毛
   ctx.beginPath(); ctx.ellipse(4, 0, 20, 14, 0, 0, 6.2832); ctx.fillStyle = col[0]; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = '#0B1A26'; ctx.stroke();
   ctx.beginPath(); ctx.ellipse(18, 0, 9, 9, 0, 0, 6.2832); ctx.fill(); ctx.stroke();
   for (const s of [-1, 1]) { ctx.save(); ctx.translate(8, s * 7); glow(9, i ? '255,216,106' : '127,243,255', 0.9); ctx.restore(); ell(8, s * 7, 3, 3, col[2], '#0B1A26'); ctx.strokeStyle = col[1]; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(22, s * 5); ctx.quadraticCurveTo(34, s * 18, 30 + Math.sin(clock * 10) * 4, s * 28); ctx.stroke(); }
@@ -3048,7 +3061,7 @@ function draw() {
   if (ult) { if (ult.kind) drawUlt2(); else if (ult.jiao) drawJiao(); else drawUlt(); }
   for (const s of shots) drawShot(s);
   for (const p of pals) drawPal(p);
-  drawRing(); if (PM()) drawPierFriendFx(); drawKite(); drawNetOnKite(); drawParts();
+  drawRing(); if (PM()) drawPierFriendFx(); drawKite(); drawNetOnKite(); drawParts(); if (booms.length) drawBooms();
   ctx.restore();
   if (flash > 0) { ctx.fillStyle = 'rgba(255,248,220,' + flash * (calm ? 0.2 : 0.5) + ')'; ctx.fillRect(0, 0, W, H); }
   ctx.textAlign = 'center'; ctx.lineJoin = 'round';
