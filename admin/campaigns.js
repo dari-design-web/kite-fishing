@@ -136,7 +136,7 @@
   function wizard(it) {
     const cfg = K.cfg(), edit = !!it, td = today();
     let type = it ? it.type : (V.campaigns.lastType || 'game');
-    let e = it ? JSON.parse(JSON.stringify(it.e)) : null;
+    let e = it ? JSON.parse(JSON.stringify(it.e)) : null; const orig = it ? JSON.parse(JSON.stringify(it.e)) : null;      // G94-D05：編輯時比對舊值
     const blank = (t) => t === 'game' ? { title: '', game: 'fish', days: [0, 6], from: '00:00', to: '23:59', dateFrom: td, dateTo: addD(td, 13), mult: 2, on: true, memo: '' }
       : t === 'store' ? { title: '', stores: [], from: td, to: addD(td, 6), mult: 2, on: true, memo: '' } : { title: '', stores: [], minAmount: 1000, add: 5, from: td, to: addD(td, 13), on: true, memo: '' };
     if (!e) e = blank(type);
@@ -188,6 +188,10 @@
       if (ov.length) L.push(['w', '跟「' + ov.map((x) => x.e.title).join('」「') + '」時間重疊：' + (type === 'bonus' ? '同一筆只取加最多的一條' : '同時段只取倍數最高的一個')]);
       if (type === 'game') L.push(['i', '每人每天遊戲最多 ' + num(c2.gameDailyCap || 0) + ' 點' + (c2.eventCapMult ? '，活動時上限跟著乘 ' + e.mult + ' 倍（' + num(Math.round((c2.gameDailyCap || 0) * e.mult)) + ' 點）' : '（活動時上限不變）') + '。']);
       const est = estimate(A.data(), type, e); if (est) L.push(['i', est]);
+      if (orig) { const lab = { title: '名稱', memo: '目標', game: '遊戲', days: '星期', from: type === 'game' ? '開始時間' : '開始日', to: type === 'game' ? '結束時間' : '結束日', dateFrom: '開始日', dateTo: '結束日', mult: '倍數', minAmount: '門檻', add: '加點', stores: '店家' };
+        const fmt = (k, v) => k === 'days' ? daysTxt(v) : k === 'stores' ? storeTxt(c2, v) : k === 'game' ? gameTxt(v) : v === '' || v == null ? '（空白）' : String(v);
+        const ch = Object.keys(lab).filter((k) => k in e || k in orig).filter((k) => (function () { const n = (v) => JSON.stringify(v == null ? '' : Array.isArray(v) ? v.slice().sort() : v); return n(e[k]) !== n(orig[k]); })());
+        L.push(['i', ch.length ? '這次改了：' + ch.map((k) => lab[k] + '「' + fmt(k, orig[k]) + '」→「' + fmt(k, e[k]) + '」').join('；') : '還沒有改任何內容。']); }
       if (!L.some((x) => x[0] === 'e')) L.unshift(['ok', '可以上線']);
       return L;
     }
