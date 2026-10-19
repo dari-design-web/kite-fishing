@@ -53,6 +53,10 @@
     });
   }
 
+  /* D130：指標卡排版——依張數決定欄數，避免最後一排只剩一兩張（5＋1、5＋3） */
+  if (!A.kpiFix) { A.kpiFix = 1; const fix = () => document.querySelectorAll('.akpis').forEach((g) => { if (g.style.gridTemplateColumns) return; const n = g.children.length, w = g.clientWidth || 1000, max = Math.max(1, Math.floor((w + 12) / 172)); let k = n <= max ? n : [4, 3, 5, 2].filter((x) => x <= max && n % x === 0)[0] || Math.min(max, 4); g.style.gridTemplateColumns = 'repeat(' + k + ',minmax(0,1fr))'; });
+    new MutationObserver(() => requestAnimationFrame(fix)).observe(document.getElementById('root') || document.body, { childList: true, subtree: true }); addEventListener('resize', () => { document.querySelectorAll('.akpis').forEach((g) => { g.style.gridTemplateColumns = ''; }); fix(); }); }
+
   /* 點左側選單＝回到該分析的總表（清掉上次點進去的單一會員／贈品／遊戲／店家） */
   if (!A.navReset) { A.navReset = 1; document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('.side button[data-v]'); if (!b) return; V.a_member.id = ''; V.a_redeem.pid = ''; V.a_game.g = ''; V.a_store.s = ''; }, true); }
 
@@ -179,6 +183,7 @@
       '<div class="agrid21">' + card('會員活躍（每天）', line([{ name: '有活動的會員', avg: 1, color: C.aqua, vals: rg.days.map((d) => dayActive(D, M, d)) }, { name: '新會員', color: C.violet, vals: daily(rg, M.newM, (m) => m.created) }], rg.days.map(md), { title: '會員活躍' }), { right: '<a class="alink" data-av="a_member">會員分析 →</a>' }) +
       card('點數用到哪裡', donut([{ label: '實體贈品', v: M.phys - M.refund > 0 ? M.phys - M.refund : 0, color: C.blue, attr: ' data-av="a_redeem"' }, { label: '小鳶便當', v: M.bento, color: C.orange, attr: ' data-av="a_redeem"' }, { label: '到期失效', v: M.expired, color: C.yellow }, { label: '後台扣點', v: M.adjNeg, color: C.violet }], { unit: ' 點', center: '用掉＋失效' })) + '</div>' +
       '<div class="agrid3">' + card('🎁 熱門贈品', hbars(topPrize, { unit: ' 張', color: C.blue }), { right: '<a class="alink" data-av="a_redeem">兌換分析 →</a>' }) + card('🧾 店家消費', hbars(topStore, { unit: '', color: C.aqua }), { right: '<a class="alink" data-av="a_store">店家分析 →</a>' }) + card('🎮 遊戲', hbars(topGame, { unit: ' 局' }), { right: '<a class="alink" data-av="a_game">遊戲分析 →</a>' }) + '</div>' +
+      (window.__ADM_CP ? (function () { const L = window.__ADM_CP.live(D); return card('🎯 行銷活動（正在進行與排程）', L.length ? '<div class="ab">' + L.slice(0, 6).map((it) => '<div class="ab-row" data-av="a_campaign" style="grid-template-columns:auto 1fr auto"><span class="cp-st ' + it.st[0] + '">' + esc(it.st[1]) + '</span><span class="ab-l"><b>' + esc(it.e.title) + '</b>　<span class="muted">' + esc(window.__ADM_CP.rule(D.cfg, it)) + '</span></span><span></span></div>').join('') + '</div>' : '<p class="muted small">目前沒有進行中的活動。</p>', { right: '<a class="alink" data-av="a_campaign">活動成效 →</a>　<a class="alink" data-av="campaigns">管理 →</a>' }); })() : '') +
       card('🏅 最活躍的會員（前 10）', tbl('a_ov_m', memberCols(D), mrows), { hint: '依期間內集點、遊戲、兌換、來訪綜合排序；點會員看他的完整分析' }) +
       card('使用時段（期間內）', A.heat(M.P.map((p) => p.t).concat(M.L.map((e) => e.t))));
     wireRange(c); wire(['a_ov_m']);
@@ -191,6 +196,28 @@
   }
   function memberCols(D) { return [{ k: 'name', t: '會員', f: (r) => ml(D, r.id) + '<div class="small muted">' + esc(r.id) + '</div>', csv: (r) => r.id + ' ' + r.name }, { k: 'vis', t: '來訪天數', num: 1 }, { k: 'earned', t: '獲得點數', num: 1 }, { k: 'spent', t: '用掉點數', num: 1 }, { k: 'plays', t: '遊戲局數', num: 1 }, { k: 'amount', t: '消費金額', num: 1, f: (r) => num(r.amount) }, { k: 'red', t: '實體兌換', num: 1 }, { k: 'bal', t: '目前點數', num: 1 }]; }
 
+
+  /* D130：會員留存與轉換漏斗 */
+  function retention(D, rg) {
+    const td = K.dayKey(), DAYN = [1, 7, 30], ad = (d, n) => K.dayKey(new Date(d + 'T12:00:00').getTime() + n * DAY);
+    const back = (m, n) => { const c0 = K.dayKey(m.created), lim = ad(c0, n); return (m.visits || []).some((d) => d > c0 && d <= lim) || (m.plays || []).some((p) => { const d = K.dayKey(p.t); return d > c0 && d <= lim; }) || (m.ledger || []).some((e) => { const d = K.dayKey(e.t); return d > c0 && d <= lim; }); };
+    const coh = D.ms.filter((m) => m.created && K.dayKey(m.created) >= rg.from && K.dayKey(m.created) <= rg.to);
+    const rate = (arr, n) => { const el = arr.filter((m) => ad(K.dayKey(m.created), n) <= td); return el.length ? { v: el.filter((m) => back(m, n)).length / el.length, n: el.length } : null; };
+    const wk = {}; coh.forEach((m) => { const d = new Date(m.created); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); const k = K.dayKey(d.getTime()); (wk[k] = wk[k] || []).push(m); });
+    const cell = (r) => r ? '<td style="text-align:right;background:rgba(27,175,122,' + (0.08 + r.v * 0.55).toFixed(2) + ')"><b>' + Math.round(r.v * 100) + '%</b><div class="small muted">' + r.n + ' 人可算</div></td>' : '<td style="text-align:right" class="muted small">還沒到</td>';
+    const tot = DAYN.map((n) => rate(coh, n));
+    return card('🔁 新會員留存（加入後有沒有再回來）', coh.length ? '<div class="akpis">' + DAYN.map((n, i) => kpi('第 ' + n + ' 天內回來', tot[i] ? Math.round(tot[i].v * 100) + '%' : '—', null, null, tot[i] ? tot[i].n + ' 位新會員可以算' : '加入還不滿 ' + n + ' 天')).join('') + '</div>' +
+      '<div class="scroll"><table class="tbl"><tr><th>加入的那一週</th><th style="text-align:right">新會員</th>' + DAYN.map((n) => '<th style="text-align:right">第 ' + n + ' 天內回來</th>').join('') + '</tr>' + Object.keys(wk).sort().reverse().map((k) => '<tr><td>' + md(k) + ' 那週</td><td style="text-align:right">' + wk[k].length + '</td>' + DAYN.map((n) => cell(rate(wk[k], n))).join('') + '</tr>').join('') + '</table></div>' : '<p class="muted small">這段期間沒有新會員。</p>',
+      { hint: '只算這段期間加入的會員；「回來」＝加入那天之後有再來訪、玩遊戲或集點。加入還不滿 N 天的人不算進第 N 天。' });
+  }
+  function funnel(D, rg) {
+    const M = build(D, rg.from, rg.to), act = M.active, has = (f) => act.filter((id) => f(id)).length;
+    const pl = {}; M.P.forEach((p) => { pl[p.mid] = 1; }); const st = {}; M.storeE.forEach((e) => { st[e.mid] = 1; }); const rd = {}; M.Rd.forEach((r) => { if (r.st !== 'cancel') rd[r.mid] = 1; }); M.L.forEach((e) => { if (e.type === 'redeem') rd[e.mid] = 1; });
+    const steps = [['全部會員', D.ms.filter((m) => !m.created || K.dayKey(m.created) <= rg.to).length], ['期間內有來（活躍）', act.length], ['有玩遊戲', has((id) => pl[id])], ['有到店消費集點', has((id) => st[id])], ['有兌換', has((id) => rd[id])]];
+    const mx = Math.max(1, steps[0][1]);
+    return card('🪜 會員轉換漏斗', '<div class="ab">' + steps.map((s, i) => '<div class="ab-row" data-tip="' + esc(s[0] + '：' + s[1] + ' 人' + (i ? '\n佔上一步 ' + pct(s[1], steps[i - 1][1]) : '')) + '"><span class="ab-l">' + (i + 1) + '. ' + s[0] + '</span><span class="ab-t" style="height:18px"><i style="width:' + Math.max(2, s[1] / mx * 100).toFixed(1) + '%;background:' + SER[i] + '"></i></span><span class="ab-v">' + num(s[1]) + ' 人 <small>' + (i ? '佔上一步 ' + pct(s[1], steps[i - 1][1]) : '') + '</small></span></div>').join('') + '</div>',
+      { hint: '期間內：活躍的會員裡，有多少人往下走一步。掉最多的那一步就是最該加強的地方（例如有玩遊戲但沒到店消費 → 可以辦「消費集點加倍」）。' });
+  }
   /* ====== 2. 點數分析 ====== */
   V.a_points = function (c, D) {
     const rg = range(D), M = build(D, rg.from, rg.to), Pm = build(D, rg.pFrom, rg.pTo);
@@ -310,7 +337,7 @@
       '<div class="akpis">' + Object.keys(SN).map((k) => '<div class="akpi" data-seg="' + k + '" style="cursor:pointer;' + (seg === k ? 'border-color:#2F7F86;box-shadow:0 0 0 2px rgba(47,127,134,.2)' : '') + '"><div class="l">' + SN[k] + '</div><div class="v">' + rows.filter(S[k]).length + '</div><div class="s">點一下只看這群</div></div>').join('') + kpi('活躍會員', num(M.active.length), M.active.length, Pm.active.length, '全部會員 ' + D.ms.length + ' 位') + '</div>' +
       card('會員列表（點會員看他的完整分析）', '<div class="filters noprint" style="margin-bottom:8px"><input id="amQ" placeholder="搜尋會員編號或名稱" value="' + esc(V.a_member.q || '') + '" style="width:240px"><button class="btn alt" id="amGo">搜尋</button>' + (seg ? '<button class="btn alt" id="amSeg">清除篩選：' + SN[seg] + '</button>' : '') + '<span class="sp"></span><button class="btn alt sm" id="exAm">匯出 CSV</button></div>' + tbl('a_mb_all', memberCols(D).concat([{ k: 'created', t: '加入', f: (r) => r.created ? dt(r.created).slice(0, 10) : '' }, { k: 'status', t: '狀態' }]), list), { hint: '數字都是' + rg.label + '的期間內；「目前點數」是現在的餘額' }) +
       '<div class="agrid2">' + card('每天活躍會員', line([{ name: '有活動的會員', avg: 1, color: C.aqua, vals: rg.days.map((d) => dayActive(D, M, d)) }, { name: '新會員', color: C.violet, vals: daily(rg, M.newM, (m) => m.created) }], rg.days.map(md))) +
-      card('會員來訪天數分布（期間內）', cols([1, 2, 3, 4, 5].map((n, i) => rows.filter((r) => i < 4 ? r.vis === n : r.vis >= n).length), ['1 天', '2 天', '3 天', '4 天', '5 天以上'], { unit: ' 人', color: C.aqua }), { hint: '回訪越多越好' }) + '</div>';
+      card('會員來訪天數分布（期間內）', cols([1, 2, 3, 4, 5].map((n, i) => rows.filter((r) => i < 4 ? r.vis === n : r.vis >= n).length), ['1 天', '2 天', '3 天', '4 天', '5 天以上'], { unit: ' 人', color: C.aqua }), { hint: '回訪越多越好' }) + '</div>' + retention(D, rg) + funnel(D, rg);
     wireRange(c); wire(['a_mb_all']);
     $('amGo').onclick = () => { V.a_member.q = $('amQ').value.trim(); A.app(); }; $('amQ').onkeydown = (e) => { if (e.key === 'Enter') $('amGo').onclick(); };
     if ($('amSeg')) $('amSeg').onclick = () => { V.a_member.seg = ''; A.app(); };
@@ -370,5 +397,6 @@
   };
 
   /* 選單：分析群組換成新的分析中心；舊網址導向新頁 */
+  window.__ADM_UI = { C, SER, SRC, sum, uniq, pct, md, range, rangeBar, wireRange, build, delta, kpi, line, hbars, donut, cols, card, daily, ml, gl, sl, tbl, wire, hourCols };      // D130：給 campaigns.js（行銷活動）共用同一套圖表與期間
   A.setAnalyticsNav([['a_overview', '📈 營運總覽'], ['a_points', '🪙 點數分析'], ['a_redeem', '🎁 兌換分析'], ['a_game', '🎮 遊戲分析'], ['a_store', '🧾 店家消費分析'], ['a_member', '👤 會員分析'], ['a_report', '📄 營運報告'], ['reports', '📋 明細匯出']], { pstats: 'a_points', rstats: 'a_redeem', mstats: 'a_member' });
 });
