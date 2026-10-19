@@ -548,7 +548,7 @@ const EASY2 = /[?&]easy2=1/.test(location.search), E2 = () => EASY2 && level ===
 if (EASY2) CONFIG.levels.easy.bossHp = 0.8;
 const SPD = () => LVF('speed') * (ST().speed || 1), BHP = () => LVF('bossHp') * (ST().bossHp || 1), BTIME = () => (PHASED() ? CONFIG.bossFx.time : CONFIG.boss.leaveAfter) * LVF('bossTime') * (ST().bossHp || 1);      // 速度、大垃圾團血量與停留時間 = 難度倍率 × 關卡倍率
 const ASSET_FILES = { trash: 'trash.png', fish_small: 'fish_small.png', fish_squid: 'fish_squid.png', whaleshark: 'whaleshark.png', shark_top: 'whaleshark_top.png', night_bag: 'night_bag.png', night_temple: 'night_temple.png', jiao_flat: 'jiao_flat.png', jiao_convex: 'jiao_convex.png', lantern: 'lantern.png',
-  kite_a: 'kite_top_a.png', kite_b: 'kite_top_b.png', kite_fly: 'kite_top_fly.png', feather: 'feather.png', turtle: 'turtle_top.png',
+  kite_a: 'kite_top_a.png', kite_b: 'kite_top_b.png', kite_fly: 'kite_top_fly.png', feather: 'feather.png', turtle: 'turtle_top.png', fx_wind_route: 'fx_wind_route.png', lamp_garbage_cover: 'lamp_garbage_cover.png', squid_top: 'squid_top.png', dolphin_top: 'dolphin_top.png',      // G88（D122 新圖，沒有圖時用程式畫的）
   can: 'foe_can.png', bag: 'foe_bag.png', butt: 'foe_butt.png', foam: 'foe_foam.png', barrel: 'foe_barrel.png', tire: 'foe_tire.png', oil: 'foe_oil.png', goo: 'foe_goo.png',
   battery: 'foe_battery.png', sprayer: 'foe_sprayer.png', log: 'foe_log.png', net: 'foe_net.png', tangle: 'foe_tangle.png', boss: 'foe_boss.png',
   ui_menu_card: 'ui_menu_card.png', ui_beat_lamp: 'ui_beat_lamp.png', p_escort: 'p_escort.png', p_boss_stun: 'p_boss_stun.png',      // G-35 B（v0.25 起接上）
@@ -684,7 +684,7 @@ function reset() {
   for (const b of document.querySelectorAll('.yn button')) b.setAttribute('aria-pressed', 'false');
   newReset();
   drawHearts(); const ub = $('ultBtn'); ub.disabled = true; ub.classList.remove('ready'); ub.style.setProperty('--fill', '0%'); $('ultTag').textContent = ULTN(); $('banner').hidden = true;
-  { const disc = document.querySelector('#ultBtn .disc'), k = ULT2[TH()]; let em = disc.querySelector('.u2'); if (k) { if (!em) { em = document.createElement('span'); em.className = 'u2'; em.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px;background:inherit;border-radius:50%'; disc.appendChild(em); } em.textContent = k[2]; em.hidden = false; } else if (em) em.hidden = true; }
+  { const disc = document.querySelector('#ultBtn .disc'), k = ULT2[TH()]; let em = disc.querySelector('.u2'); if (k) { if (!em) { em = document.createElement('span'); em.className = 'u2'; em.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px;background:inherit;border-radius:50%'; disc.appendChild(em); } if (em.dataset.k !== k[0]) { em.dataset.k = k[0]; em.textContent = ''; const im = new Image(); im.alt = ''; im.style.cssText = 'width:86%;height:86%;object-fit:contain'; im.onerror = () => { em.textContent = k[2]; }; im.src = 'assets/ult_' + k[0] + '.png'; em.appendChild(im); } em.hidden = false; } else if (em) em.hidden = true; }
 }
 function drawHearts() { $('hearts').textContent = '♥'.repeat(Math.max(0, kite.hearts)) + '♡'.repeat(Math.max(0, LV().hearts - kite.hearts)); }
 
