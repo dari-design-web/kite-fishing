@@ -1510,7 +1510,8 @@ function drawJiao() {
   const u = ult, cx = W / 2, cy = CONFIG.jiao.y, a = Math.min(1, u.t / 0.4) * Math.min(1, Math.max(0, (3.1 - u.t) / 0.5));
   ctx.fillStyle = 'rgba(30,12,28,' + 0.45 * a + ')'; ctx.fillRect(-10, -10, W + 20, H + 20);
   const g = ctx.createRadialGradient(cx, cy, 10, cx, cy, 200); g.addColorStop(0, 'rgba(255,236,160,' + 0.55 * a + ')'); g.addColorStop(1, 'rgba(255,236,160,0)'); ctx.fillStyle = g; ctx.fillRect(cx - 200, cy - 200, 400, 400);
-  if (u.rad > 0 && u.rad < 820) { ctx.strokeStyle = 'rgba(255,236,160,' + 0.9 * a + ')'; ctx.lineWidth = 8; ctx.beginPath(); ctx.arc(cx, cy, u.rad, 0, 6.2832); ctx.stroke(); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,' + 0.8 * a + ')'; ctx.beginPath(); ctx.arc(cx, cy, Math.max(0, u.rad - 14), 0, 6.2832); ctx.stroke(); }
+  if (img.fx_sacred_light && u.rad > 0) { const ph = Math.min(H * 1.05, 120 + u.rad * 1.3), pw = ph * 384 / 720 * 1.25; ctx.save(); ctx.globalAlpha = a * (u.rad < 820 ? 1 : 0.6); ctx.drawImage(img.fx_sacred_light, cx - pw / 2, cy + 70 - ph * 688 / 720, pw, ph); ctx.restore(); }      // G92 天光柱
+  if (u.rad > 0 && u.rad < 820) { ctx.strokeStyle = 'rgba(255,236,160,' + 0.9 * a * (img.fx_sacred_light ? 0.4 : 1) + ')'; ctx.lineWidth = 8; ctx.beginPath(); ctx.arc(cx, cy, u.rad, 0, 6.2832); ctx.stroke(); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,' + 0.8 * a + ')'; ctx.beginPath(); ctx.arc(cx, cy, Math.max(0, u.rad - 14), 0, 6.2832); ctx.stroke(); }
   const p = Math.min(1, u.t / 1.15), J = JIAO[u.res];
   for (let i = 0; i < 2; i++) {
     const sx = i ? 1 : -1, tx = cx + sx * 24, x = u.sx + (tx - u.sx) * p, y = u.sy + (cy - u.sy) * p - Math.sin(p * Math.PI) * 170, sc = 1 + Math.sin(p * Math.PI) * 0.45;
@@ -1768,6 +1769,7 @@ function drawMirrorUlt() {
   ctx.fillStyle = 'rgba(210,240,250,' + 0.45 * mir * a + ')'; ctx.fillRect(-10, -10, W + 20, H + 20);
   for (let i = 0; i < 16; i++) { ctx.fillStyle = cols[i % cols.length]; ctx.globalAlpha = 0.45 * mir * a * (u.waveY < H + 40 ? 0.6 : 1); const x = i * W / 16; ctx.fillRect(x, 0, W / 16 - 2, H); } ctx.globalAlpha = 1;
   if (u.t > 0.5 && u.t < 1.3 && !calm) { ctx.strokeStyle = 'rgba(255,255,255,' + 0.8 * a + ')'; ctx.lineWidth = 2; ctx.beginPath(); for (let i = 0; i < 6; i++) { const x = (i * 71.7 + 30) % W, y = H * 0.4 + (i * 53) % 200; ctx.moveTo(x, y); ctx.lineTo(x + 30, y - 40); ctx.lineTo(x + 52, y - 20); } ctx.stroke(); }      // 鏡面出現裂痕
+  if (img.fx_rainbow_mirror && u.t > 0.3) { const mw = W * 1.2, mh = mw * 512 / 720, my = u.waveY < H + 40 ? u.waveY - mh * 0.55 : H * 0.35; ctx.save(); ctx.globalAlpha = 0.85 * a; ctx.drawImage(img.fx_rainbow_mirror, W / 2 - mw / 2 + Math.sin(clock * 2) * 8, my, mw, mh); ctx.restore(); }      // G92 虹彩鏡海
   if (u.waveY < H + 40) {
     const y0 = u.waveY;
     if (img.fx_keel) for (let i = 0; i < 5; i++) { const x = 30 + i * 75, h = 120 + (i % 2) * 60; ctx.save(); ctx.translate(x, y0 + 40 - h / 2); ctx.globalAlpha = 0.55 * a; if (i % 2) ctx.scale(-1, 1); sprite('fx_keel', h / 2, h); ctx.restore(); }      // 龍骨與吊臂幻影（ChatGPT 的圖，透明度由程式控制）
@@ -3037,7 +3039,7 @@ function drawUlt() {
   if (u.waveY < H + 40) {
     const band = (dy, amp, color, lw) => { ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.beginPath(); for (let x = -10; x <= W + 10; x += 8) { const y = u.waveY + dy + Math.sin(x * 0.05 + clock * 9 + dy) * amp; x > -10 ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke(); };
     const g = ctx.createLinearGradient(0, u.waveY, 0, u.waveY + 150); g.addColorStop(0, 'rgba(232,246,251,' + 0.6 * a + ')'); g.addColorStop(1, 'rgba(120,200,230,0)'); ctx.fillStyle = g; ctx.fillRect(-10, u.waveY, W + 20, 150);
-    band(26, 6, 'rgba(255,224,138,' + 0.9 * a + ')', 3); band(12, 8, 'rgba(160,225,240,' + a + ')', 5); band(0, 10, 'rgba(255,255,255,' + a + ')', 6);
+    if (img.fx_whaleshark_wave && !RM()) { const ww = W * 1.15, wh = ww * 384 / 720; ctx.save(); ctx.globalAlpha = a; ctx.drawImage(img.fx_whaleshark_wave, W / 2 - ww / 2 + Math.sin(clock * 3) * 6, u.waveY - wh * 0.45, ww, wh); ctx.restore(); } else { band(26, 6, 'rgba(255,224,138,' + 0.9 * a + ')', 3); band(12, 8, 'rgba(160,225,240,' + a + ')', 5); band(0, 10, 'rgba(255,255,255,' + a + ')', 6); }      // G92 鯨鯊大弧浪
     const foam = 'rgba(255,255,255,' + 0.9 * a + ')'; for (let x = 6; x < W; x += 22) ell(x + Math.sin(clock * 7 + x) * 4, u.waveY - 8 + Math.sin(x * 0.4 + clock * 11) * 6, 3, 3, foam);
   }
   const g2 = ctx.createRadialGradient(u.sx, u.sy, 10, u.sx, u.sy, 190); g2.addColorStop(0, 'rgba(255,240,170,' + 0.75 * a + ')'); g2.addColorStop(0.5, 'rgba(255,236,160,' + 0.28 * a + ')'); g2.addColorStop(1, 'rgba(255,236,160,0)'); ctx.fillStyle = g2; ctx.fillRect(u.sx - 190, u.sy - 190, 380, 380);
@@ -3046,6 +3048,7 @@ function drawUlt() {
     ctx.restore();
     for (let i = 0; i < 6; i++) { const k = ((u.t * 1.6 + i / 6) % 1), rr = 30 + k * 380, hue = (i * 60 + clock * 200) % 360, ring = tintRing(hue); if (ring) { ctx.globalAlpha = (1 - k) * a; ctx.drawImage(ring, u.sx - rr, u.sy + 40 - rr * 0.467, rr * 2, rr * 0.933); ctx.globalAlpha = 1; continue; } ctx.strokeStyle = 'hsla(' + hue + ',95%,65%,' + (1 - k) * a + ')'; ctx.lineWidth = 6 * (1 - k) + 2; ctx.beginPath(); ctx.ellipse(u.sx, u.sy + 40, rr, rr * 0.45, 0, 0, 6.2832); ctx.stroke(); }
     if (!calm) for (let i = 0; i < 4; i++) part('star', u.sx + rand(-120, 120), u.sy + rand(0, 140), { vx: rand(-80, 80), vy: rand(20, 90), size: rand(3, 6), color: 'hsl(' + Math.floor(rand(0, 360)) + ',95%,70%)', fade: 1.6 });
+    if (img.fx_rail_trail) { const th = 330 * Math.min(1, u.t / 0.6), tw = th * 384 / 720; ctx.save(); ctx.globalAlpha = 0.9 * a; ctx.drawImage(img.fx_rail_trail, u.sx - tw / 2, u.sy + 70 - th * 688 / 720, tw, th); ctx.restore(); }      // G92 極軌光軌（車前）
     ctx.save(); ctx.translate(u.sx, u.sy + Math.sin(clock * 6) * 4); if (!sprite('rail_car_crab_top', 150, 150)) drawCrabTop(2.6); ctx.restore(); return;
   } if (img.shark_top) { ctx.rotate(u.hd + 1.5708 + Math.sin(clock * 7) * 0.06); sprite('shark_top', 250, 250); ctx.restore(); return; }      // 俯視鯨鯊：頭朝前進方向，尾巴輕輕擺
   ctx.rotate(-0.42 + Math.sin(clock * 5) * 0.04); if (!sprite('whaleshark', 290, 116)) ell(0, 0, 130, 44, '#6F9BBB', PAL.line); ctx.restore();
