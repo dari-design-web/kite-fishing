@@ -688,8 +688,9 @@ function reset() {
 }
 function drawHearts() { $('hearts').textContent = '♥'.repeat(Math.max(0, kite.hearts)) + '♡'.repeat(Math.max(0, LV().hearts - kite.hearts)); }
 
+const FOE_VIS = 1.45, FOE_BIG = (ty) => ty !== 'boss' && ty !== 'log' && ty !== 'bound' && !(T[ty] && (T[ty].solid || T[ty].rescue));      // D128（Dari 10/19 18:22「怪物圖案都有點偏小」）：一般怪物畫大 1.45 倍、判定圓大 1.18 倍；魔王、漂流木、被困的朋友不變
 function mk(type, x, y, o) {
-  const d = T[type], f = Object.assign({ type, x, y, x0: x, vx: 0, vy: R(d.speed[0], d.speed[1]) * SPD() * (type === 'can' && E2() ? 0.8 : 1), hp: d.hp, r: d.r, ph: R(0, 6.28), give: '', rot: R(-0.5, 0.5), age: 0, zapAcc: R(0, 1) }, o);
+  const d = T[type], f = Object.assign({ type, x, y, x0: x, vx: 0, vy: R(d.speed[0], d.speed[1]) * SPD() * (type === 'can' && E2() ? 0.8 : 1), hp: d.hp, r: d.r * (FOE_BIG(type) ? 1.18 : 1), ph: R(0, 6.28), give: '', rot: R(-0.5, 0.5), age: 0, zapAcc: R(0, 1) }, o);
   foes.push(f); if (!f.noCount) stats.spawned++; if (d.rescue) { stats.trapped++; stats.trappedBy[d.rescue]++; } return f;      // noCount：只是要閃的障礙，不算在乾淨度裡
 }
 function spawn(e) {
@@ -2736,8 +2737,9 @@ function drawFoeSprite(f) {
 function drawFoe(f) {
   if (f.hidden) return; ctx.save(); ctx.translate(f.x, f.y); ctx.lineWidth = 1.6; ctx.lineJoin = 'round';
   if (f.hitT > 0) ctx.globalAlpha = 0.55; if (f.ghost) ctx.globalAlpha = 0.12;
-  const r = f.r, ty = f.type;
+  const r = f.r, ty = f.type, big = FOE_BIG(ty); if (big) ctx.scale(FOE_VIS, FOE_VIS);      // 素材圖用固定尺寸，整個放大 1.35
   if (drawFoeSprite(f)) { ctx.restore(); return; }
+  if (big) ctx.scale(1 / 1.18, 1 / 1.18);      // 程式畫的佔位圖用 r（已放大 1.18），扣回來
   if (ty === 'bottle') { ctx.rotate(f.rot + Math.sin(clock * 1.5 + f.ph) * 0.2); if (!sprite('trash', 30, 30)) { ctx.fillStyle = '#C9D6C4'; ctx.fillRect(-6, -10, 12, 22); ctx.strokeStyle = PAL.line; ctx.strokeRect(-6, -10, 12, 22); ctx.fillStyle = '#E8674A'; ctx.fillRect(-4, -15, 8, 5); } }
   else if (ty === 'can') { ctx.rotate(f.rot + clock * 1.2); ell(0, 0, r - 1, r - 1, '#B8C2C8', PAL.line); ell(0, 0, r - 5, r - 5, '#DCE3E7', PAL.line); ctx.fillStyle = '#E8674A'; ctx.fillRect(-r + 3, -2, 5, 4); }
   else if (ty === 'bag') { const w = Math.sin(clock * 3 + f.ph) * 2; ctx.globalAlpha *= 0.9; poly([-11, -8 + w, -6, -15, -2, -9, 2, -9, 6, -15, 11, -8 - w, 13, 8, 4, 14 + w, -5, 13, -13, 7], '#F4F7F8', PAL.line); ctx.strokeStyle = '#B9C7CE'; ctx.beginPath(); ctx.moveTo(-5, -2); ctx.lineTo(-3, 8); ctx.moveTo(4, -3); ctx.lineTo(5, 7); ctx.stroke(); }
