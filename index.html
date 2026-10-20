@@ -702,9 +702,11 @@ function knockCover(x, y) {      // D123：點到沉船＝敲一下，裡面的�
     c.cool = 5; const pool = Object.keys(CONFIG.fish).filter((k) => CONFIG.fish[k].st === LVL().id && !CONFIG.fish[k].jump), hx = c.x + c.rx * 0.55, hy = c.y - 2, k = 2 + Math.floor(Math.random() * 3);
     for (let i = 0; i < k; i++) { let ty = pool[Math.floor(Math.random() * pool.length)]; if (CONFIG.fish[ty].rare && Math.random() < 0.6) ty = pool.find((q) => !CONFIG.fish[q].rare) || ty; const def = CONFIG.fish[ty], dir = Math.random() < 0.5 ? 1 : -1, sp = rand(def.speed[0], def.speed[1]) * 1.5;
       things.push({ type: ty, x: hx + rand(-6, 6), y: hy + rand(-6, 6), y0: hy, vx: dir * sp, r: def.r, ph: rand(0, 6.28), move: def.move || '', panic: 2.6 + Math.random(), pvy: rand(-90, 90), pt: 0, scareT: 3.6, fromWreck: true }); n++; }
-    bubbles(hx, hy, 16); stars(hx, hy, 10, 70, '#FFE08A'); }
+    bubbles(hx, hy, 16); stars(hx, hy, 10, 70, '#FFE08A');
+    const rareT = pool.find((q) => CONFIG.fish[q].rare);      // 玩家角度：洞口畫了金光，偶爾要真的敲出寶——每局最多一次、約 1/5 機率衝出稀有魚
+    if (rareT && !stats.wreckRare && Math.random() < 0.2) { const def = CONFIG.fish[rareT], dir = Math.random() < 0.5 ? 1 : -1; stats.wreckRare = 1; things.push({ type: rareT, x: hx, y: hy - 4, y0: hy, vx: dir * def.speed[0] * 1.2, r: def.r, ph: 0, move: def.move || '', panic: 3.2, pvy: rand(-60, 60), pt: 0, scareT: 4, fromWreck: true, treasure: true }); n++; stars(hx, hy, 24, 120, '#FFD54A'); stars(hx, hy, 12, 60, '#FFFFFF'); beep(880, 0.12, 'triangle', 0.06, 30); beep(1320, 0.18, 'triangle', 0.05, 40); } }
   for (const o of things) { if (o.type === 'trash' || o.fromWreck) continue; const dx = (o.x - c.x) / (c.rx + o.r), dy = (o.y - c.y) / (c.ry + o.r); if (dx * dx + dy * dy < 1.3) { o.scareT = 2.2; o.vx = (o.vx >= 0 ? 1 : -1) * Math.abs(o.vx) * 1.3; n++; stars(o.x, o.y, 4, 30, '#FFE08A'); } }
-  say(n ? '咚咚！' + n + ' 條魚從沉船衝出來了，快抓！' : '咚咚！沉船裡的魚剛跑光，等一下再敲', x, y - 24, n ? '#FFE08A' : '#CFE6F2'); stats.knocks = (stats.knocks || 0) + 1; stats.combo = 0; comboBadge(); return true;
+  if (things.some((o) => o.treasure && !o.saidT && (o.saidT = 1))) say('✨ 沉船裡的寶魚「' + CONFIG.fish[things.find((o) => o.treasure).type].name + '」衝出來了！', W / 2, y - 24, '#FFD54A'); else say(n ? '咚咚！' + n + ' 條魚從沉船衝出來了，快抓！' : '咚咚！沉船裡的魚剛跑光，等一下再敲', x, y - 24, n ? '#FFE08A' : '#CFE6F2'); stats.knocks = (stats.knocks || 0) + 1; stats.combo = 0; comboBadge(); return true;
 }
 function drawCovers(front) {      // D123：基隆嶼海底：後面畫沙紋、海草，前面畫沉船與礁石（有 G89 圖就用圖）
   const C = LVL().covers; if (!C) return;
@@ -1211,6 +1213,7 @@ function draw() {
       if (o.vx < 0) ctx.scale(-1, 1);
       if (o.move !== 'wave') ctx.rotate(Math.cos(clock * 2.4 + o.ph) * 0.07);      // 隨上下游動微微抬頭低頭
       if (o.lit) { ctx.shadowColor = 'rgba(255,240,170,.9)'; ctx.shadowBlur = 10; }
+      if (o.treasure) { ctx.shadowColor = 'rgba(255,213,74,' + (0.75 + 0.25 * Math.sin(clock * 8)) + ')'; ctx.shadowBlur = 18; }      // 沉船寶魚：金色閃光
       drawFish(o.type, o.ph); ctx.shadowBlur = 0;
     }
     ctx.restore();
