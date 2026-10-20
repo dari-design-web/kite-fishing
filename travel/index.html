@@ -707,7 +707,7 @@ const PET = (() => {
 })();
 function showTrips() {      // 旅行紀錄：郵票、遠行便當、稱號一眼看完
   const t = Object.values(calcTitles());
-  const m = $('modal'); m.innerHTML = '<div class="sheet2"><h3 style="margin:0 0 10px">旅行紀錄</h3><p>旅行 <b>' + S.trips + '</b> 次・郵票 <b>' + S.stamps + '</b> 枚（滿 ' + CFG.stampsToPick + ' 枚可以指定地點）</p>' + (CFG.farEvery ? '<p>遠行便當：再旅行 <b>' + (CFG.farEvery - S.farAcc) + '</b> 趟，小鳶會自己存下 1 份</p>' : '<p>便當到官方 LINE「港口換禮」用點數換。</p>') + '<p>便當：遠行 ' + (S.bento.far || 0) + '、小卷 ' + (S.bento.squid || 0) + '、白帶魚 ' + (S.bento.hair || 0) + '、特製 ' + (S.bento.special || 0) + '；今天的飯糰' + (riceLeft() ? '還在' : '已經用了') + '</p><p>稱號：' + (t.length ? t.join('、') : '還沒有') + '</p><button class="btn" id="tClose" style="margin-top:12px">好</button></div>';
+  const m = $('modal'); m.innerHTML = '<div class="sheet2"><h3 style="margin:0 0 10px">旅行紀錄</h3><p>旅行 <b>' + S.trips + '</b> 次・郵票 <b>' + S.stamps + '</b> 枚（滿 ' + CFG.stampsToPick + ' 枚可以指定地點）</p>' + (CFG.farEvery ? '<p>遠行便當：再旅行 <b>' + (CFG.farEvery - S.farAcc) + '</b> 趟，小鳶會自己存下 1 份</p>' : '<p>便當到官方 LINE「港口換禮」用點數換。</p>') + '<p>便當：遠行 ' + (S.bento.far || 0) + '、小卷 ' + (S.bento.squid || 0) + '、白帶魚 ' + (S.bento.hair || 0) + '、特製 ' + (S.bento.special || 0) + '；今天的飯糰' + (riceLeft() ? '還在' : '已經用了') + '</p><p>稱號：' + (t.length ? t.join('、') : '還沒有') + '</p><button class="btn" id="tClose" style="margin-top:12px">關閉</button></div>';
   m.classList.add('on'); $('tClose').onclick = () => m.classList.remove('on');
 }
 function openDev() {      // 測試面板改成從右上「測試」打開（原型階段一直可以用）
