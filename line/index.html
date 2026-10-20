@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>小鳶來港・官方 LINE（示意）</title>
+<title>小鳶來港</title>
 <link rel="stylesheet" href="../shared/sys.css">
 <style>
 /* 官方 LINE 示意 v2（C-194，D75）：上面是聊天室、下面是四格圖文選單（2500×1200 一張圖＋四個點擊區，跟真的 LINE 一樣）；
@@ -270,10 +270,10 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
     if (m.status === 'frozen') return;      // D82 C4：凍結時不提醒去換
     var B = K.bentoState ? K.bentoState().filter(function (b) { return b.on !== false; }) : [], c = K.cfg();
     var have = B.reduce(function (a, b) { return a + (b.have || 0); }, 0), buy = B.filter(function (b) { return b.canBuy; });
-    if (B.length && have === 0) say('🍱 我的便當盒空空的～' + (buy.length ? '你的點數夠換「' + esc(buy[0].name) + '」（' + buy[0].points + ' 點）喔！換好就會放進便當盒。' : '每天有一份免費港邊飯糰，也可以去港口換禮看看便當喔。') + '<br><a href="#" data-open="shop" data-arg="bento">去港口換禮看便當 ›</a>');
+    if (B.length && have === 0) say('🍱 便當盒空空的～' + (buy.length ? '你的點數夠換「' + esc(buy[0].name) + '」了！' : '每天都有一份免費飯糰喔。') + '<br><a href="#" data-open="shop" data-arg="bento">去看便當 ›</a>');
     var ps = c.prizes.filter(function (p) { return p.on !== false && p.points > 0 && p.points <= m.points && K.stockLeft(p.id) > 0 && !K.redeemBlock(p.id); }).sort(function (a, b) { return b.points - a.points; });
-    if (ps.length) say('🎁 你有 ' + m.points + ' 點囉！點數夠換「' + esc(ps[0].name) + '」（' + ps[0].points + ' 點），想看看嗎？' + (K.stockLeft(ps[0].id) <= 10 ? '目前還有 ' + K.stockLeft(ps[0].id) + ' 個。' : '') + '<br><a href="#" data-open="item" data-arg="' + esc(ps[0].id) + '">看看這個禮物 ›</a>');
-    else { var nx = c.prizes.filter(function (p) { return p.on !== false && p.points > m.points && K.stockLeft(p.id) > 0; }).sort(function (a, b) { return a.points - b.points; })[0]; if (nx && nx.points - m.points <= 10) say('✨ 再集 ' + (nx.points - m.points) + ' 點，就到「' + esc(nx.name) + '」的兌換點數囉！遊戲分數累積夠了，也能換點數喔。<br><a href="#" data-open="park">去小鳶樂園 ›</a>'); }
+    if (ps.length) say('🎁 你的 ' + m.points + ' 點可以換「' + esc(ps[0].name) + '」了！' + (K.stockLeft(ps[0].id) <= 10 ? '只剩 ' + K.stockLeft(ps[0].id) + ' 個。' : '') + '<br><a href="#" data-open="item" data-arg="' + esc(ps[0].id) + '">看看 ›</a>');
+    else { var nx = c.prizes.filter(function (p) { return p.on !== false && p.points > m.points && K.stockLeft(p.id) > 0; }).sort(function (a, b) { return a.points - b.points; })[0]; if (nx && nx.points - m.points <= 10) say('✨ 再 ' + (nx.points - m.points) + ' 點就能換「' + esc(nx.name) + '」！玩遊戲也能集點。<br><a href="#" data-open="park">去小鳶樂園 ›</a>'); }
   }
 
   /* ====== 選單與 LIFF 頁 ====== */
@@ -380,7 +380,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
     var nf = Object.keys(fr).length; o.meet = { n: nf, max: 6, label: '港口朋友 ' + nf + '／6', extra: [] };
     var has = { fish: !!(rd('kiteFishingProg1') || rd('kiteFishingDex2')), fly: !!rd('kiteFlyProgress1'), travel: !!rd('kiteTravel1'), stamp: !!rd('kiteStamp1'), photo: !!rd('kitePhoto1'), meet: !!rd('kiteFriends1') };
     (K.member().plays || []).forEach(function (p) { if (p.game in has) has[p.game] = true; });      // G59 T01：有遊玩／存摺紀錄就不說「尚無紀錄」
-    Object.keys(o).forEach(function (k) { if (!has[k]) { o[k].label = '這個瀏覽器尚無紀錄'; o[k].extra = []; } });      // ChatGPT 意見：沒資料不等於沒玩過（可能在別的手機玩）
+    Object.keys(o).forEach(function (k) { if (!has[k]) { o[k].label = '還沒有紀錄'; o[k].extra = []; } });      // ChatGPT 意見：沒資料不等於沒玩過（可能在別的手機玩）
     return o;
   }
   R.mygames = function () {

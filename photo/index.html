@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>小鳶合照館原型</title>
+<title>小鳶合照館</title>
 <style>
 :root{--ink:#3E2B1D;--muted:#8A7565;--paper:#F4EFE6;--card:#FFFDF8;--teal:#2F7F86;--teal-d:#1F5A5F;--gold:#E8B879;--red:#C9473A;--line:#E2D6C6;--night:#22313A;
   --font:'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif}
@@ -138,13 +138,13 @@ button{font-family:inherit}
     <img class="homekite" src="assets/stk_kite_wave.png" alt="">
     <div class="homein">
       <h1>小鳶合照館</h1>
-      <p>按「拍照」打開相機，一邊看小鳶、鯨鯊貼紙和相框一邊拍；下方可以切換 0.6／1／2／3／5 倍。</p>
+      <p>按「拍照」跟小鳶合照，可以加貼紙和相框。</p>
       <button class="btn" id="camBtn" type="button">📷　拍照</button>
       <button class="btn ghost" id="albumBtn" type="button">從相簿選照片</button>
       <button class="btn ghost" id="demoBtn" type="button" style="border:0;font-size:13px;padding:6px">用示範背景試試 ›</button>
       <input type="file" id="file" accept="image/*" hidden>
       <input type="file" id="snap" accept="image/*" capture="environment" hidden>
-      <small>原型 <span id="ver"></span>：暫用貼紙與相框。照片只在這支手機上合成，不會上傳；換手機就沒有。</small>
+      <small>照片只存在這支手機，不會上傳。<span id="ver" hidden></span></small>
     </div>
   </section>
 

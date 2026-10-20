@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>港灣蓋章散步原型</title>
+<title>港灣蓋章散步</title>
 <style>
 /* P3 港灣蓋章散步 原型 v0.16（v0.16：港灣小劇場（C-107）——蓋到的章變成場景道具、可選主角、自動寫「今天的旅程」；v0.15：港口聲音尋寶（C-108）——蓋完章可停下來聽 5 秒、選聽到的聲音，小鳶回一句；v0.14：感應印章照 ChatGPT 現場體驗意見——「把章放這裡」、「章收好啦！」、沒讀到請抬起再放、建議大人扶手機小孩蓋；v0.13：感應印章測試模式（C-106，D65⑨），三指模擬實體感應章；v0.12：Dari 10/13 16:58 決定——夜間章 18:00–22:00、祕密章改成六章蓋滿＋三款遊戲玩到一定程度（抽屜裡看得到進度）；v0.10：照 ChatGPT 實測意見 v3 修兩句舊文案；v0.9：照 ChatGPT 實測意見——主進度只看 6 站、建議下一站、亮線加白邊、直接看結果會記住、地圖以外收進抽屜、親子觀察接力；G-50 正式夜間章；v0.8：G-50 港區小地圖當護照內頁、章照地圖圓圈對位、走過的路段沿小路亮起來；v0.7：G-50 正式彩色章、存檔失敗提示、中途離開補發集滿、壓印說明改成章已收好；v0.6：先存進度再演出、集滿等最後一章落下、港口札記；工作單 18 港灣護照升級提案 v1，D62，C-89）。只做手機版（D55）。
    v0.5：彩色墨水（每站一色，正式彩色章等 ChatGPT）、章＋稱號、組合稱號、按住蓋章、稀有章（金／彩虹）、夜間章、
@@ -549,7 +549,7 @@ function render() {
   $('ver').textContent = 'v' + CFG.version;
   /* v0.21（C-159）：晚上 6～10 點上方出現「現在蓋的是夜間版章」提示；10 點後到清晨 6 點提醒「今晚打烊了，明天再來」（打烊時間照 Dari 10/13 16:58；文字是建議） */
   { const h = new Date().getHours(), nn = $('nightNow');
-    if (h >= CFG.nightFrom && h < CFG.nightTo) { nn.textContent = '🌙 現在是夜間時段：晚上 ' + (CFG.nightTo - 12) + ' 點前蓋的章會是限定的「夜間版」，章旁邊有星星喔！'; nn.className = 'nightNow'; nn.hidden = false; }
+    if (h >= CFG.nightFrom && h < CFG.nightTo) { nn.textContent = '🌙 夜間限定：現在蓋的章是「夜間版」！'; nn.className = 'nightNow'; nn.hidden = false; }
     else if (h >= CFG.nightTo || h < 6) { nn.textContent = '🏮 晚上 ' + (CFG.nightTo - 12) + ' 點後港邊打烊了。現在掃到的章一樣會收進護照；明天白天再來，找還沒見到的朋友吧！'; nn.className = 'nightNow closed'; nn.hidden = false; } }
   $('grid').innerHTML = SPOTS.map((s, i) => {
     const done = !!P.spots[s.id], [x, y] = FRAMES[i], d = FRAME_R * 2, v = P.var[s.id] || '', lv = lvOf(s.id);
