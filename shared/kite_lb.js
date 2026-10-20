@@ -19,7 +19,7 @@
       '.klb .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}.klb .nm small{display:block;font-weight:400;color:#6B7F86;font-size:12px}.klb .sc{font-weight:900;font-variant-numeric:tabular-nums;color:#E2702A}' +
       '.klb-me{margin-top:10px;padding:10px 12px;border-radius:14px;background:#F6F1E6;font-size:14px}.klb-empty{padding:24px 6px;text-align:center;color:#6B7F86}.klb-note{margin:10px 2px 0;font-size:12px;color:#6B7F86;line-height:1.5}' +
       '.klb .rk img{width:34px;height:34px}.klb .rk.ri{background:none}.klb-btn img{width:26px;height:26px}' +
-      '.klb-alias{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:10px;padding:10px 12px;border-radius:14px;border:1px dashed #E3D9C8;font-size:14px}.klb-alias b{color:#2F7F86}.klb-alias button{min-height:40px;border-radius:10px;border:1px solid #E3D9C8;background:#fff;font:inherit;font-size:14px;font-weight:700;padding:0 12px;color:#24343A}.klb-alias label{display:flex;align-items:center;gap:6px;min-height:40px}.klb-alias input[type=checkbox]{width:22px;height:22px}.klb-alias input[type=text]{flex:1;min-width:120px;min-height:40px;border:1px solid #E3D9C8;border-radius:10px;padding:0 10px;font:inherit}' +
+      '.klb-alias{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:10px;padding:10px 12px;border-radius:14px;border:1px dashed #E3D9C8;font-size:14px}.klb-alias b{color:#2F7F86}.klb-alias button{min-height:40px;border-radius:10px;border:1px solid #E3D9C8;background:#fff;font:inherit;font-size:14px;font-weight:700;padding:0 12px;color:#24343A}.klb-alias label{display:flex;align-items:center;gap:6px;min-height:40px}.klb-alias input[type=checkbox]{width:22px;height:22px}.klb-alias button.ok{background:#2F7F86;border-color:#2F7F86;color:#fff}.klb-alias input[type=text]{flex:1;min-width:120px;min-height:40px;border:1px solid #E3D9C8;border-radius:10px;padding:0 10px;font:inherit}' +
       '.klb-sumlk{display:block;width:100%;min-height:44px;margin-top:10px;border:1px solid #E3D9C8;border-radius:14px;background:#FFF6DE;color:#7A4A00;font:inherit;font-weight:800;font-size:14px}' +
       '.klb-cats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 0 10px}.klb-cats button{min-height:40px;padding:0 6px;border-radius:12px;border:1px solid #E3D9C8;background:#fff;font:inherit;font-weight:800;font-size:14px;color:#24343A}.klb-cats button[aria-selected=true]{background:#2F7F86;border-color:#2F7F86;color:#fff}' +
       '.klb-sync{margin:0 2px 8px;font-size:13px;color:#8A5310;background:#FFF6DE;border-radius:10px;padding:7px 10px}' +
@@ -34,43 +34,44 @@
   function render(box, o) {
     var cat = catOf(o), h = '<div class="klb-h"><b>🏆 排行榜</b><button class="klb-x" type="button" aria-label="關閉">✕</button></div>', R, sy = K.lbSync ? K.lbSync() : { st: 'ok' };
     h += '<div class="klb-cats" role="tablist">' + CATS.map(function (c) { return '<button type="button" role="tab" data-c="' + c[0] + '" aria-selected="' + (c[0] === cat) + '">' + c[1] + '</button>'; }).join('') + '</div>';;
-    if (sy.st === 'local') h += '<div class="klb-sync">目前只讀到這支手機的成績，還沒取得完整的雲端排行。</div>';
-    else if (sy.st === 'old') h += '<div class="klb-sync">雲端程式還是舊版，目前看不到其他玩家的成績（只有你自己）。請管理員更新雲端程式。</div>';
-    else if (sy.st === 'wait') h += '<div class="klb-sync">正在連雲端拿大家的成績…目前先顯示這支手機的成績。</div>';
-    else if (sy.st === 'fail') h += '<div class="klb-sync">連不上雲端排行（' + (sy.err || '網路不穩') + '），目前只看得到這支手機的成績，稍後再打開看看。</div>';
+    if (sy.st === 'local') h += '<div class="klb-sync">目前只顯示這支手機的成績</div>';
+    else if (sy.st === 'old') h += '<div class="klb-sync">雲端尚未更新，暫時只看得到自己的成績</div>';
+    else if (sy.st === 'wait') h += '<div class="klb-sync">正在讀取大家的成績…</div>';
+    else if (sy.st === 'fail') h += '<div class="klb-sync">連不上雲端，暫時只看得到自己的成績</div>';
     if (o.sum) {
       h += '<div class="klb-per"><button type="button" data-p="month" aria-pressed="' + (st.period === 'month') + '">本月</button><button type="button" data-p="all" aria-pressed="' + (st.period === 'all') + '">全部</button></div>';
       R = K.sumBoard(st.period, 10);
-      h += R.top.length ? '<ol>' + R.top.map(function (r) { return row(r, '', K.fmtScore(r.score) + ' 分'); }).join('') + '</ol>' : '<div class="klb-empty">' + (st.period === 'month' ? '這個月' : '') + '還沒有人上榜，玩捕魚或飛行就能累積！</div>';
-      h += R.mine ? (R.mine.rank > 10 ? '<div class="klb-me">你目前第 <b>' + R.mine.rank + '</b> 名・累積 ' + K.fmtScore(R.mine.score) + ' 分</div>' : '') : '<div class="klb-me">你還沒有累積分數</div>';
-      h += '<p class="klb-note">捕魚四關＋飛行八關，' + (st.period === 'month' ? '這個月' : '全部') + '每一局「算分場次」的分數加起來。一萬以上用「萬」、一百萬以上用「百萬」、一億以上用「億」顯示。同分同名次。</p>';
+      h += R.top.length ? '<ol>' + R.top.map(function (r) { return row(r, '', K.fmtScore(r.score) + ' 分'); }).join('') + '</ol>' : '<div class="klb-empty">' + (st.period === 'month' ? '這個月' : '') + '還沒有人上榜</div>';
+      h += R.mine ? (R.mine.rank > 10 ? '<div class="klb-me">你目前第 <b>' + R.mine.rank + '</b> 名・累積 ' + K.fmtScore(R.mine.score) + ' 分</div>' : '') : '<div class="klb-me">你還沒有分數</div>';
+      h += '<p class="klb-note">捕魚＋飛行每局分數加總</p>';
     } else if (o.travel) {
       R = K.travelBoard(10);
-      h += R.top.length ? '<ol>' + R.top.map(function (r) { return row(r, '紀念品 ' + r.sv + '・旅行 ' + r.trips + ' 次', r.cards + ' 張'); }).join('') + '</ol>' : '<div class="klb-empty">還沒有人上榜，帶小鳶去旅行收集明信片吧！</div>';
+      h += R.top.length ? '<ol>' + R.top.map(function (r) { return row(r, '紀念品 ' + r.sv + '・旅行 ' + r.trips + ' 次', r.cards + ' 張'); }).join('') + '</ol>' : '<div class="klb-empty">還沒有人上榜</div>';
       h += R.mine && R.mine.rank > 10 ? '<div class="klb-me">你目前第 <b>' + R.mine.rank + '</b> 名・明信片 ' + R.mine.cards + ' 張</div>' : '';
-      h += '<p class="klb-note">比收集到的不同明信片張數（常設 24 張），重複的不加分；一樣多就同名次，同名次裡先達到的排前面。不比旅行次數。</p>';
+      h += '<p class="klb-note">比收集到的明信片張數</p>';
     } else {
       var tab = o.tabs[Math.min(st.tab, o.tabs.length - 1)];
       if (o.tabs.length > 1) h += '<div class="klb-tabs">' + o.tabs.map(function (t, i) { return '<button type="button" data-t="' + i + '" aria-pressed="' + (t === tab) + '">' + esc(t[1]) + '</button>'; }).join('') + '</div>';
       h += '<div class="klb-per"><button type="button" data-p="month" aria-pressed="' + (st.period === 'month') + '">本月</button><button type="button" data-p="all" aria-pressed="' + (st.period === 'all') + '">全部</button></div>';
       R = K.leaderboard(o.game, tab[0], st.period, 10);
-      h += R.top.length ? '<ol>' + R.top.map(function (r) { return row(r, '', K.fmtScore(r.score) + ' 分'); }).join('') + '</ol>' : '<div class="klb-empty">' + (st.period === 'month' ? '這個月' : '') + '還沒有人上榜，快來搶第一名！</div>';
-      h += R.mine ? (R.mine.rank > 10 ? '<div class="klb-me">你目前第 <b>' + R.mine.rank + '</b> 名・最高 ' + K.fmtScore(R.mine.score) + ' 分</div>' : '') : '<div class="klb-me">你在「' + esc(tab[1]) + '」還沒有成績</div>';
-      if (o.mini) h += '<p class="klb-note">每位會員取' + (st.period === 'month' ? '這個月' : '') + '玩過的最高一局。小遊戲不換點數，也不算進累積總分，純比高分。</p>';
-      else h += '<button type="button" class="klb-sumlk" data-sum="1">看全部遊戲的累積總分排行 ›</button>';
-      if (!o.mini) h += '<p class="klb-note">每位會員取' + (st.period === 'month' ? '這個月' : '') + '這一關「算分場次」裡的最高一局，用遊戲原始分數排名（點數加倍活動不影響名次）。同分時，累積總分高的排前面；總分也一樣才同名次。</p>';
+      h += R.top.length ? '<ol>' + R.top.map(function (r) { return row(r, '', K.fmtScore(r.score) + ' 分'); }).join('') + '</ol>' : '<div class="klb-empty">' + (st.period === 'month' ? '這個月' : '') + '還沒有人上榜，快來搶第一！</div>';
+      h += R.mine ? (R.mine.rank > 10 ? '<div class="klb-me">你目前第 <b>' + R.mine.rank + '</b> 名・最高 ' + K.fmtScore(R.mine.score) + ' 分</div>' : '') : '<div class="klb-me">你這關還沒有成績</div>';
+      if (o.mini) h += '<p class="klb-note">每人取最高一局</p>';
+      else h += '<button type="button" class="klb-sumlk" data-sum="1">看累積總分 ›</button>';
+      if (!o.mini) h += '<p class="klb-note">每人取這關最高一局</p>';
     }
-    if (R && R.hidden) h += '<p class="klb-note">有參賽者選擇不公開，公開名單的名次可能跳號。</p>';
+    if (R && R.hidden) h += '<p class="klb-note">有人不公開，名次可能跳號</p>';
     var me = K.lbMe ? K.lbMe() : null;
-    if (me) h += st.edit ? '<div class="klb-alias"><input type="text" maxlength="10" value="' + esc(me.alias) + '" aria-label="排行榜化名"><button type="button" data-a="save">存</button><button type="button" data-a="cancel">取消</button>' + (st.err ? '<span style="color:#C0392B;width:100%">' + esc(st.err) + '</span>' : '') + '</div>'
-      : '<div class="klb-alias"><span>你在排行榜上的名字：<b>' + esc(me.alias) + '</b></span><button type="button" data-a="edit">改名</button><label><input type="checkbox" data-a="hide"' + (me.hide ? ' checked' : '') + '>不出現在公開名單</label></div>';
-    if (me) h += '<p class="klb-note">排行榜只顯示化名，不會出現 LINE 名字、頭像或會員編號。選「不公開」後別人看不到你，你自己還是看得到名次。</p>';
+    if (me) h += st.edit ? '<div class="klb-alias"><input type="text" maxlength="10" value="' + esc(me.alias) + '" aria-label="排行榜名字" placeholder="最多 10 個字"><button type="button" data-a="save" class="ok">確認</button><button type="button" data-a="cancel">取消</button>' + (st.err ? '<span style="color:#C0392B;width:100%">' + esc(st.err) + '</span>' : '') + '</div>'
+      : '<div class="klb-alias"><span>排行榜名字：<b>' + esc(me.alias) + '</b></span><button type="button" data-a="edit">改名</button><label><input type="checkbox" data-a="hide"' + (me.hide ? ' checked' : '') + '>不公開</label></div>';
+    if (me) h += '<p class="klb-note">只顯示這個名字，不會出現 LINE 名稱或頭像</p>';
     box.innerHTML = h;
     box.querySelectorAll('[data-a]').forEach(function (b) {
       var a = b.dataset.a;
       if (a === 'hide') b.onchange = function () { K.setLbMe({ hide: b.checked }); if (K.cloudPush) K.cloudPush(); render(box, o); };
       else b.onclick = function () { if (a === 'edit') st.edit = true; else if (a === 'cancel') { st.edit = false; st.err = ''; } else { var v = box.querySelector('.klb-alias input[type=text]').value, res = K.setLbMe({ alias: v }); if (!res.ok) { st.err = res.msg; render(box, o); return; } st.edit = false; st.err = ''; if (K.cloudPush) K.cloudPush(); } render(box, o); };
     });
+    var ai = box.querySelector('.klb-alias input[type=text]'); if (ai) { ai.focus(); ai.onkeydown = function (e) { if (e.key === 'Enter') box.querySelector('[data-a=save]').click(); else if (e.key === 'Escape') box.querySelector('[data-a=cancel]').click(); }; }
     box.querySelector('.klb-x').onclick = close;
     box.querySelectorAll('[data-t]').forEach(function (b) { b.onclick = function () { st.tab = +b.dataset.t; render(box, o); }; });
     box.querySelectorAll('[data-c]').forEach(function (b) { b.onclick = function () { var c = CATS.filter(function (x) { return x[0] === b.dataset.c; })[0]; st.tab = 0; render(box, Object.assign({ cat: c[0] }, c[2], o.cat === c[0] || catOf(o) === c[0] ? o : {})); }; });

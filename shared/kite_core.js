@@ -358,7 +358,7 @@
   }
   function lbName(m) { return m.lbAlias && !nameBad(m.lbAlias) ? String(m.lbAlias).slice(0, 10) : lbAutoAlias(m.id); }
   function lbMe() { var m = member(); return { alias: lbName(m), custom: !!m.lbAlias, hide: !!m.lbHide }; }
-  function setLbMe(o) { var m = member(); if (o.alias != null) { var a = String(o.alias).replace(/[\s　]+/g, ' ').trim().slice(0, 10); if (/\d{6,}|@/.test(a)) return { ok: false, msg: '化名裡不要放電話或 email' }; var bad = nameBad(a); if (bad) return { ok: false, msg: bad }; m.lbAlias = a; } if (o.hide != null) m.lbHide = !!o.hide; saveMember(m); return { ok: true }; }
+  function setLbMe(o) { var m = member(); if (o.alias != null) { var a = String(o.alias).replace(/[\s　]+/g, ' ').trim().slice(0, 10); if (/\d{6,}|@/.test(a)) return { ok: false, msg: '名字裡不要放電話或 email' }; var bad = nameBad(a); if (bad) return { ok: false, msg: bad }; m.lbAlias = a; } if (o.hide != null) m.lbHide = !!o.hide; saveMember(m); return { ok: true }; }
   function lbRank(rows, val, n) {      // 同分同名次（1、2、2、4）；前 n 名含最後名次的所有同分者；選擇不公開的人照算名次但不列出
     rows.forEach(function (r, i) { r.rank = i && val(r) === val(rows[i - 1]) ? rows[i - 1].rank : i + 1; });
     var mine = rows.filter(function (r) { return r.me; })[0] || null;
