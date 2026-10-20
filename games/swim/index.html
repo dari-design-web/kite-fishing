@@ -1,0 +1,254 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>鯨鯊快游</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
+<style>
+/* D136（Dari 10/20 22:37「可以試試看」）：鯨鯊快游 3D 試玩版。
+   three.js（shared/vendor，MIT）即時算出來的鯨鯊與海底，不用模型檔；整頁約 700KB（大部分是 three.js，GitHub Pages 會壓縮）。
+   玩法：手指按住拖，鯨鯊跟著手指游；吃發光的浮游生物、躲漁網和垃圾。三條命，越游越快。只進排行榜，不換點數。 */
+:root{--ink:#10293D;--paper:#FFF8EA;--dusk:#F4B37A;--teal:#2F7F86;--round:'Zen Maru Gothic','Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif;color-scheme:light}
+html,body{height:100%;margin:0}
+body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex;flex-direction:column;align-items:center;padding:0 max(16px,env(safe-area-inset-left,0px)) max(10px,env(safe-area-inset-bottom,0px));box-sizing:border-box;gap:8px;overflow:hidden;-webkit-user-select:none;user-select:none}
+.top{display:flex;align-items:center;gap:10px;width:100%;max-width:420px;font-weight:900;font-size:17px;padding-top:max(10px,env(safe-area-inset-top,0px))}
+.top .back{color:#CFE3EC;text-decoration:none;font-size:13px;font-weight:700;padding:6px 10px;border:2px solid #2B4A60;border-radius:12px;white-space:nowrap}
+.top b{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .snd{font-family:var(--round);font-size:13px;font-weight:700;color:#CFE3EC;background:none;border:2px solid #2B4A60;border-radius:12px;padding:5px 10px;min-height:34px}
+.top .snd[aria-pressed="false"]{opacity:.6}
+.stage{position:relative;flex:1;min-height:0;width:100%;max-width:420px;border-radius:18px;overflow:hidden;box-shadow:0 6px 0 rgba(0,0,0,.25);background:#1C6E8C;touch-action:none}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.hud{position:absolute;left:10px;right:10px;top:10px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;font-weight:900}
+.hud .sc{background:rgba(10,34,54,.55);border-radius:999px;padding:4px 14px;font-size:22px;font-variant-numeric:tabular-nums}
+.hud .sc small{font-size:12px;opacity:.75;margin-right:6px}
+.hud .hp{background:rgba(10,34,54,.55);border-radius:999px;padding:4px 10px;font-size:18px;letter-spacing:2px}
+.hud .m{position:absolute;left:50%;top:44px;transform:translateX(-50%);font-size:12px;opacity:.8;background:rgba(10,34,54,.45);border-radius:999px;padding:2px 10px}
+.pop{position:absolute;font-weight:900;font-size:18px;color:#FFF3A8;text-shadow:0 2px 0 rgba(0,0,0,.35);pointer-events:none;transform:translate(-50%,-50%);animation:pop .8s ease-out forwards}
+.pop.bad{color:#FF8A73}
+@keyframes pop{to{transform:translate(-50%,-160%);opacity:0}}
+.flash{position:absolute;inset:0;background:rgba(255,80,60,.35);pointer-events:none;opacity:0;transition:opacity .25s}
+.flash.on{opacity:1;transition:none}
+.card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(300px,86%);background:var(--paper);color:var(--ink);border-radius:22px;padding:20px 18px 18px;text-align:center;box-shadow:0 10px 0 rgba(0,0,0,.25);border:3px solid var(--ink)}
+.card[hidden]{display:none}
+.card h2{margin:0 0 4px;font-size:28px}
+.card p{margin:6px 0;font-size:14px;line-height:1.5;color:#3A5568}
+.card .big{font-size:48px;font-weight:900;margin:4px 0}
+.card .row{display:flex;justify-content:space-between;background:#F3EAD8;border-radius:10px;padding:6px 12px;margin:6px 0;font-size:14px;font-weight:700}
+.card .rk{color:var(--teal);font-weight:900;margin:8px 0 2px}
+.card .nb{display:inline-block;background:#E8674A;color:#fff;border-radius:999px;padding:2px 12px;font-weight:900;font-size:14px;margin-bottom:4px}
+.card .go{display:block;width:100%;min-height:52px;margin-top:12px;border:3px solid var(--ink);border-radius:999px;background:#4FBF88;color:var(--ink);font:inherit;font-weight:900;font-size:20px;box-shadow:0 4px 0 var(--ink)}
+.card .go:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.card ul{list-style:none;padding:0;margin:10px 0 0;text-align:left;font-size:14px;font-weight:700}
+.card li{margin:6px 0;display:flex;gap:8px;align-items:center}
+.card li i{font-style:normal;width:26px;text-align:center}
+.tag3d{position:absolute;right:10px;bottom:10px;font-size:11px;font-weight:700;color:#CFE3EC;background:rgba(10,34,54,.5);border-radius:999px;padding:2px 8px;pointer-events:none}
+.how{width:100%;max-width:420px;font-size:13px;line-height:1.5;color:#CFE3EC;text-align:center;margin:0}
+.how b{color:var(--dusk)}
+.err{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:20px;font-size:15px;line-height:1.6}
+</style></head><body>
+<div class="top"><a class="back" href="../../line/index.html?p=park" id="backBtn">← 小鳶樂園</a><b>鯨鯊快游</b><span id="lbSlot"></span><button class="snd" id="sndBtn" type="button" aria-pressed="true" aria-label="音效開關">音效</button></div>
+<div class="stage" id="stage">
+  <canvas id="gl" aria-label="遊戲畫面"></canvas>
+  <div class="flash" id="flash"></div>
+  <div class="hud" id="hud" hidden><span class="sc"><small>分數</small><span id="sc">0</span></span><span class="m" id="dist">0 公尺</span><span class="hp" id="hp">💙💙💙</span></div>
+  <div class="card" id="startCard">
+    <h2>鯨鯊快游</h2>
+    <p>帶鯨鯊游過基隆外海！</p>
+    <ul><li><i>👆</i>按住拖，鯨鯊跟著手指游</li><li><i>✨</i>吃發光的浮游生物加分</li><li><i>🕸️</i>躲開漁網和垃圾</li></ul>
+    <button class="go" id="goBtn" type="button">開始</button>
+  </div>
+  <div class="card" id="endCard" hidden></div>
+  <span class="tag3d">3D 試玩版</span>
+</div>
+<p class="how"><b>按住拖</b>帶鯨鯊游，吃<b>浮游生物</b>、躲<b>漁網</b>！</p>
+
+<script src="../../shared/kite_core.js"></script>
+<script src="../../shared/kite_lb.js"></script>
+<script type="module">
+import * as THREE from '../../shared/vendor/three.module.min.js';
+const $ = (id) => document.getElementById(id), stage = $('stage'), cv = $('gl');
+const rnd = (a, b) => a + Math.random() * (b - a), clamp = (v, a, b) => Math.max(a, Math.min(b, v)), lerp = (a, b, k) => a + (b - a) * k;
+const RM = matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const Q = new URLSearchParams(location.search);
+const CFG = { xMax: 3.0, yMin: 0.7, yMax: 3.6, v0: 13, vMax: 30, accel: 0.16, hearts: 3, inv: 1.3, spawnGap: [9, 15], netAfter: 120 };
+
+/* ---------- 3D 場景 ---------- */
+let R;
+try { R = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: Q.has('icon'), preserveDrawingBuffer: Q.has('icon') }); }
+catch (e) { stage.innerHTML = '<div class="err">這支手機的瀏覽器不支援 3D 畫面 😢<br>可以先玩其他遊戲喔！</div>'; throw e; }
+R.setPixelRatio(Math.min(2, devicePixelRatio || 1));
+const S = new THREE.Scene(), SEA = new THREE.Color('#1C6E8C');
+if (!Q.has('icon')) { S.background = SEA; S.fog = new THREE.Fog(SEA, 18, 70); }
+const cam = new THREE.PerspectiveCamera(55, 1, 0.1, 120); cam.position.set(0, 5.4, 6.6); cam.lookAt(0, 1.3, -9);
+S.add(new THREE.HemisphereLight('#BFF4FF', '#0E3A4F', 1.6));
+const sun = new THREE.DirectionalLight('#FFFFFF', 1.6); sun.position.set(2, 10, 4); S.add(sun);
+
+function canvasTex(w, h, draw) { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; }
+
+/* 鯨鯊：用旋轉體做身體（頭寬扁、尾巴細），貼上程式畫的白點花紋；鰭是薄片 */
+function makeShark() {
+  const g = new THREE.Group(), L = 3.2;
+  const prof = [[0, 0], [0.34, 0.04], [0.5, 0.14], [0.57, 0.3], [0.57, 0.55], [0.51, 0.9], [0.41, 1.25], [0.28, 1.6], [0.16, 1.9], [0.09, 2.15], [0.0, 2.3]].map(([r, y]) => new THREE.Vector2(r, (2.3 - y) / 2.3 * L)).reverse();      // 由下往上排，面才朝外
+  const body = new THREE.LatheGeometry(prof, 40); body.rotateX(-Math.PI / 2); body.scale(1.25, 0.72, 1); body.translate(0, 0, L / 2);
+  const skin = canvasTex(512, 256, (c, w, h) => {
+    for (let x = 0; x < w; x++) { const u = x / w, top = Math.cos(u * Math.PI * 2); c.fillStyle = top > -0.15 ? '#2E5A78' : top > -0.4 ? '#7D9DB0' : '#EEF3F2'; c.fillRect(x, 0, 1, h); }
+    c.fillStyle = 'rgba(255,255,255,.9)';
+    for (let i = 0; i < 260; i++) { const u = Math.random(); if (Math.cos(u * Math.PI * 2) < 0.05) continue; const v = Math.random(); c.beginPath(); c.arc(u * w, v * h, 2 + Math.random() * 3.2 * (1 - v * 0.5), 0, 7); c.fill(); }
+    c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = 2;
+    for (let k = 1; k < 9; k++) { const v = 0.22 + k * 0.075; c.beginPath(); for (let x = 0; x <= w; x += 8) { const u = x / w; if (Math.cos(u * Math.PI * 2) < 0.1) { c.moveTo(x + 8, v * h); continue; } c.lineTo(x, v * h + Math.sin(x * 0.05) * 2); } c.stroke(); }
+  });
+  const mat = new THREE.MeshStandardMaterial({ map: skin, roughness: 0.55, metalness: 0.05 });
+  const m = new THREE.Mesh(body, mat); g.add(m);
+  const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.045, 6, 24, Math.PI), new THREE.MeshStandardMaterial({ color: '#16222C' })); mouth.rotation.set(0, 0, Math.PI); mouth.scale.set(1.25, 0.35, 1); mouth.position.set(0, -0.06, -L / 2 + 0.1); g.add(mouth);
+  const eyeG = new THREE.SphereGeometry(0.055, 10, 8), eyeM = new THREE.MeshStandardMaterial({ color: '#0A0F14', roughness: 0.2 });
+  [-1, 1].forEach((s) => { const e = new THREE.Mesh(eyeG, eyeM); e.position.set(s * 0.6, 0.06, -L / 2 + 0.45); g.add(e); });
+  const finM = new THREE.MeshStandardMaterial({ color: '#2E5A78', side: THREE.DoubleSide, roughness: 0.6 });
+  const tri = (pts) => { const sh = new THREE.Shape(); sh.moveTo(pts[0][0], pts[0][1]); pts.slice(1).forEach((p) => sh.lineTo(p[0], p[1])); return new THREE.ExtrudeGeometry(sh, { depth: 0.04, bevelEnabled: false }); };
+  const dorsal = new THREE.Mesh(tri([[0, 0], [0.75, 0], [0.15, 0.62]]), finM); dorsal.rotation.y = Math.PI / 2; dorsal.position.set(0.02, 0.3, 0.2); g.add(dorsal);
+  const pecs = [-1, 1].map((s) => { const p = new THREE.Mesh(tri([[0, 0], [0.9, -0.25], [0.2, 0.42]]), finM); p.rotation.set(Math.PI / 2, 0, s < 0 ? Math.PI : 0); p.position.set(s * 0.55, -0.15, -0.35); p.rotation.z += s * 0.1; g.add(p); return p; });
+  const tail = new THREE.Group(); tail.position.set(0, 0.02, L / 2 - 0.3);
+  const tf = new THREE.Mesh(tri([[0, 0], [0.55, 1.05], [0.35, 0.05], [0.42, -0.6], [0, 0]]), finM); tf.rotation.y = Math.PI / 2; tf.position.set(0.02, 0, 0.45); tail.add(tf); g.add(tail);
+  g.userData = { tail, pecs, L };
+  return g;
+}
+const shark = makeShark(); S.add(shark);
+
+if (Q.has('icon')) {      // 圖示輸出：?icon=1 只畫一隻斜側面的鯨鯊、透明背景（給小鳶樂園按鈕用）
+  R.setSize(512, 512, false); cam.aspect = 1; cam.fov = 30; cam.position.set(5.6, 2.6, 4.2); cam.lookAt(0, 0, 0.2); cam.updateProjectionMatrix();
+  shark.rotation.y = -0.15; R.render(S, cam); window.__iconReady = true;
+  throw new Error('icon mode');
+}
+
+/* 海底與光：沙地、遠方岩石、光柱、氣泡 */
+const sandTex = canvasTex(256, 256, (c, w, h) => { c.fillStyle = '#C9B48A'; c.fillRect(0, 0, w, h); for (let i = 0; i < 900; i++) { c.fillStyle = Math.random() < 0.5 ? 'rgba(255,255,255,.18)' : 'rgba(90,70,40,.18)'; c.fillRect(Math.random() * w, Math.random() * h, 2, 2); } c.strokeStyle = 'rgba(255,255,255,.25)'; c.lineWidth = 3; for (let y = 10; y < h; y += 28) { c.beginPath(); for (let x = 0; x <= w; x += 8) c.lineTo(x, y + Math.sin(x * 0.06) * 5); c.stroke(); } });
+sandTex.wrapS = sandTex.wrapT = THREE.RepeatWrapping; sandTex.repeat.set(6, 24);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 140), new THREE.MeshStandardMaterial({ map: sandTex, roughness: 1 })); floor.rotation.x = -Math.PI / 2; floor.position.set(0, -0.6, -55); S.add(floor);
+const rockM = new THREE.MeshStandardMaterial({ color: '#2F5566', roughness: 1, flatShading: true }), weedM = new THREE.MeshStandardMaterial({ color: '#3E8A5A', roughness: 1, side: THREE.DoubleSide });
+const deco = [];
+function placeDeco(o, z) { o.position.z = z; S.add(o); deco.push(o); }
+for (let i = 0; i < 26; i++) {
+  const side = i % 2 ? 1 : -1;
+  if (i % 3) { const r = new THREE.Mesh(new THREE.DodecahedronGeometry(rnd(0.6, 1.8), 0), rockM); r.position.set(side * rnd(5, 9), -0.4, 0); r.scale.y = rnd(0.5, 1.2); placeDeco(r, -i * 5); }
+  else { const w = new THREE.Mesh(new THREE.PlaneGeometry(0.5, rnd(1.4, 2.8), 1, 4), weedM); w.position.set(side * rnd(4.4, 7), 0.6, 0); placeDeco(w, -i * 5); }
+}
+const rayM = new THREE.MeshBasicMaterial({ color: '#E8FBFF', transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
+const rays = []; for (let i = 0; i < 7; i++) { const r = new THREE.Mesh(new THREE.PlaneGeometry(rnd(1, 2.4), 18), rayM); r.position.set(rnd(-8, 8), 7, rnd(-40, -4)); r.rotation.set(0, rnd(-0.4, 0.4), rnd(-0.35, -0.15)); S.add(r); rays.push(r); }
+const bubbleG = new THREE.BufferGeometry(), NB = 140, bp = new Float32Array(NB * 3);
+for (let i = 0; i < NB; i++) { bp[i * 3] = rnd(-9, 9); bp[i * 3 + 1] = rnd(-0.5, 7); bp[i * 3 + 2] = rnd(-60, 6); }
+bubbleG.setAttribute('position', new THREE.BufferAttribute(bp, 3));
+const dotTex = canvasTex(64, 64, (c) => { const gr = c.createRadialGradient(32, 32, 2, 32, 32, 30); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.4, 'rgba(255,255,255,.5)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = gr; c.fillRect(0, 0, 64, 64); });
+S.add(new THREE.Points(bubbleG, new THREE.PointsMaterial({ map: dotTex, size: 0.18, transparent: true, opacity: 0.55, depthWrite: false })));
+
+/* ---------- 東西：浮游生物（加分）、漁網（6 格留 1～2 格空）、垃圾 ---------- */
+const objs = [];
+const plankM = new THREE.PointsMaterial({ map: dotTex, size: 0.42, color: '#FFE45C', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+const krillM = new THREE.PointsMaterial({ map: dotTex, size: 0.5, color: '#FF9FD0', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+function plankton(x, y, z, big) {
+  const n = big ? 26 : 12, g = new THREE.BufferGeometry(), p = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { p[i * 3] = rnd(-0.45, 0.45); p[i * 3 + 1] = rnd(-0.35, 0.35); p[i * 3 + 2] = rnd(-0.45, 0.45); }
+  g.setAttribute('position', new THREE.BufferAttribute(p, 3)); const o = new THREE.Points(g, big ? krillM : plankM); o.position.set(x, y, z); S.add(o);
+  objs.push({ o, kind: big ? 'krill' : 'plank', r: big ? 1.0 : 0.85, pts: big ? 50 : 10 });
+}
+const netTex = canvasTex(128, 128, (c, w, h) => { c.clearRect(0, 0, w, h); c.strokeStyle = '#E9E2C8'; c.lineWidth = 3; for (let k = 0; k <= w; k += 16) { c.beginPath(); c.moveTo(k, 0); c.lineTo(k + 16, h); c.stroke(); c.beginPath(); c.moveTo(k + 16, 0); c.lineTo(k, h); c.stroke(); } });
+netTex.wrapS = netTex.wrapT = THREE.RepeatWrapping;
+const netM = new THREE.MeshStandardMaterial({ map: netTex, transparent: true, alphaTest: 0.3, side: THREE.DoubleSide, roughness: 1 });
+const floatM = new THREE.MeshStandardMaterial({ color: '#F06A3C', roughness: 0.6 }), ropeM = new THREE.MeshStandardMaterial({ color: '#C9B98A' });
+const CW = (CFG.xMax * 2 + 1.6) / 3, CH = (CFG.yMax - CFG.yMin + 1.0) / 2;
+function cellOf(x, y) { return [clamp(Math.floor((x + CFG.xMax + 0.8) / CW), 0, 2), clamp(Math.floor((y - CFG.yMin + 0.5) / CH), 0, 1)]; }
+function net(z, d) {
+  const g = new THREE.Group(), open = new Set(), free = Math.floor(Math.random() * 6); open.add(free);
+  if (d < 0.5) { const nb = [free ^ 1, free < 3 ? free + 3 : free - 3][Math.floor(Math.random() * 2)]; open.add(nb); }      // 前面比較簡單：留兩格
+  const cells = [];
+  for (let i = 0; i < 6; i++) { const cx = i % 3, cy = Math.floor(i / 3), x = -CFG.xMax - 0.8 + CW * (cx + 0.5), y = CFG.yMin - 0.5 + CH * (cy + 0.5);
+    if (open.has(cx + cy * 3)) continue; cells.push([cx, cy]);
+    const pl = new THREE.Mesh(new THREE.PlaneGeometry(CW, CH), netM.clone()); pl.material.map = netTex.clone(); pl.material.map.repeat.set(CW / 0.7, CH / 0.7); pl.material.map.needsUpdate = true; pl.position.set(x, y, 0); g.add(pl);
+    if (cy === 1) for (let k = 0; k < 3; k++) { const f = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), floatM); f.position.set(x - CW / 2 + CW * (k + 0.5) / 3, y + CH / 2, 0); g.add(f); } }
+  const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, CW * 3, 6), ropeM); rope.rotation.z = Math.PI / 2; rope.position.set(0, CFG.yMin - 0.5 + CH * 2, 0); g.add(rope);
+  g.position.z = z; S.add(g); objs.push({ o: g, kind: 'net', cells, r: 0 });
+}
+const trashM = [new THREE.MeshStandardMaterial({ color: '#7FD3E8', transparent: true, opacity: 0.7, roughness: 0.2 }), new THREE.MeshStandardMaterial({ color: '#F4F4F0', transparent: true, opacity: 0.8, roughness: 0.9 })];
+function trash(x, y, z) {
+  let o; if (Math.random() < 0.5) { o = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.7, 10), trashM[0]); o.rotation.set(rnd(0, 3), 0, rnd(0, 3)); }
+  else { o = new THREE.Mesh(new THREE.SphereGeometry(0.42, 10, 8), trashM[1]); o.scale.set(1, 0.6, 0.8); }
+  o.position.set(x, y, z); S.add(o); objs.push({ o, kind: 'trash', r: 0.75, spin: rnd(-2, 2) });
+}
+
+/* ---------- 遊戲狀態 ---------- */
+let state = 'ready', v = CFG.v0, dist = 0, score = 0, bonus = 0, hearts = CFG.hearts, inv = 0, nextSpawn = 12, combo = 0, t = 0, last = performance.now();
+const tgt = { x: 0, y: 2 }, pos = { x: 0, y: 2 };
+const best = (() => { try { return +localStorage.getItem('kiteSwimBest1') || 0; } catch (e) { return 0; } })();
+let bestNow = best;
+function resize() { const w = stage.clientWidth, h = stage.clientHeight; R.setSize(w, h, false); cam.aspect = w / h; cam.fov = w / h < 0.62 ? 62 : 55; cam.updateProjectionMatrix(); }
+addEventListener('resize', resize); resize();
+function reset() { objs.splice(0).forEach((b) => S.remove(b.o)); v = CFG.v0; dist = 0; score = 0; bonus = 0; hearts = CFG.hearts; inv = 0; nextSpawn = 12; combo = 0; tgt.x = pos.x = 0; tgt.y = pos.y = 2; hud(); }
+function hud() { $('sc').textContent = score.toLocaleString(); $('dist').textContent = Math.floor(dist) + ' 公尺'; $('hp').textContent = '💙'.repeat(hearts) + '🤍'.repeat(Math.max(0, CFG.hearts - hearts)); }
+function pop(txt, wx, wy, wz, bad) { const p = new THREE.Vector3(wx, wy, wz).project(cam), el = document.createElement('span'); el.className = 'pop' + (bad ? ' bad' : ''); el.textContent = txt; el.style.left = ((p.x + 1) / 2 * 100) + '%'; el.style.top = ((1 - p.y) / 2 * 100) + '%'; stage.appendChild(el); setTimeout(() => el.remove(), 800); }
+
+/* 音效：程式即時合成的小聲音 */
+let AC = null, snd = true; try { snd = localStorage.getItem('kiteMiniSnd') !== '0'; } catch (e) {}
+const sb = $('sndBtn'); sb.setAttribute('aria-pressed', String(snd)); sb.textContent = snd ? '音效 開' : '音效 關';
+sb.onclick = () => { snd = !snd; sb.setAttribute('aria-pressed', String(snd)); sb.textContent = snd ? '音效 開' : '音效 關'; try { localStorage.setItem('kiteMiniSnd', snd ? '1' : '0'); } catch (e) {} };
+function beep(fs, dur, type) { if (!snd) return; try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); const t0 = AC.currentTime; fs.forEach((f, i) => { const o = AC.createOscillator(), g = AC.createGain(); o.type = type || 'sine'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t0 + i * dur / 1000); g.gain.exponentialRampToValueAtTime(0.12, t0 + i * dur / 1000 + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + (i + 1) * dur / 1000); o.connect(g).connect(AC.destination); o.start(t0 + i * dur / 1000); o.stop(t0 + (i + 1) * dur / 1000 + 0.02); }); } catch (e) {} }
+const buzz = (ms) => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
+
+function spawn() {
+  const d = clamp(dist / 900, 0, 1), z = -62;
+  if (dist > CFG.netAfter && Math.random() < 0.28 + d * 0.25) { net(z, d); for (let k = 0; k < 3; k++) plankton(rnd(-2.5, 2.5), rnd(1, 3.2), z - 6 - k * 1.5); return; }
+  const n = 1 + Math.floor(Math.random() * (2 + d * 2));
+  for (let i = 0; i < n; i++) { const x = rnd(-CFG.xMax, CFG.xMax), y = rnd(CFG.yMin, CFG.yMax), zz = z - i * rnd(2, 5); if (Math.random() < 0.35 + d * 0.2 && dist > 40) trash(x, y, zz); else plankton(x, y, zz, Math.random() < 0.12); }
+  if (Math.random() < 0.5) { const x0 = rnd(-2, 2), y0 = rnd(1.2, 3); for (let k = 0; k < 5; k++) plankton(x0 + Math.sin(k) * 0.8, y0 + Math.cos(k * 0.7) * 0.4, z - 10 - k * 1.6); }      // 一串，讓人想沿路吃
+}
+function hit(b) {
+  if (inv > 0) return; hearts--; inv = CFG.inv; combo = 0; beep([220, 150], 120, 'square'); buzz(120);
+  $('flash').classList.add('on'); setTimeout(() => $('flash').classList.remove('on'), 60);
+  pop(b.kind === 'net' ? '被漁網纏住！' : '吃到垃圾！', pos.x, pos.y + 0.8, 0, true); hud(); if (hearts <= 0) end();
+}
+function update(dt) {
+  t += dt; if (inv > 0) inv -= dt;
+  v = Math.min(CFG.vMax, v + CFG.accel * dt * 6); const dz = v * dt; dist += dz; score = Math.floor(dist) + bonus;
+  pos.x = lerp(pos.x, tgt.x, 1 - Math.exp(-dt * 7)); pos.y = lerp(pos.y, tgt.y, 1 - Math.exp(-dt * 7));
+  nextSpawn -= dz; if (nextSpawn <= 0) { spawn(); nextSpawn = rnd(CFG.spawnGap[0], CFG.spawnGap[1]) * (1 - clamp(dist / 2500, 0, 0.35)); }
+  for (let i = objs.length - 1; i >= 0; i--) { const b = objs[i], z0 = b.o.position.z; b.o.position.z += dz; if (b.spin) b.o.rotation.y += b.spin * dt;
+    if (b.kind === 'net') { if (z0 < -0.3 && b.o.position.z >= -0.3) { const [cx, cy] = cellOf(pos.x, pos.y); if (b.cells.some((c) => c[0] === cx && c[1] === cy)) hit(b); else { bonus += 30; pop('閃過 +30', pos.x, pos.y + 0.9, 0); beep([660, 880], 70); } } }
+    else if (!b.done && Math.abs(b.o.position.z - (-1.2)) < 1.2) { const dx = b.o.position.x - pos.x, dy = b.o.position.y - pos.y; if (dx * dx + dy * dy < b.r * b.r * 1.6) {
+      if (b.kind === 'trash') { b.done = true; hit(b); }
+      else { b.done = true; combo++; const add = b.pts * (combo >= 10 ? 3 : combo >= 5 ? 2 : 1); bonus += add; pop('+' + add + (combo >= 5 ? ' 連吃×' + combo : ''), b.o.position.x, b.o.position.y + 0.3, b.o.position.z); beep([880 + Math.min(combo, 12) * 40], 60, 'triangle'); S.remove(b.o); objs.splice(i, 1); continue; } } }
+    if (b.o.position.z > 9) { if ((b.kind === 'plank' || b.kind === 'krill') && !b.done) combo = 0; S.remove(b.o); objs.splice(i, 1); } }
+  deco.forEach((o) => { o.position.z += dz * 0.9; if (o.position.z > 10) o.position.z -= 130; });
+  sandTex.offset.y += dz / 140 * 24 / 24 * 0.5;
+  const bpA = bubbleG.attributes.position; for (let i = 0; i < NB; i++) { bpA.array[i * 3 + 1] += dt * 0.6; bpA.array[i * 3 + 2] += dz * 0.6; if (bpA.array[i * 3 + 2] > 8) bpA.array[i * 3 + 2] -= 68; if (bpA.array[i * 3 + 1] > 7) bpA.array[i * 3 + 1] = -0.5; } bpA.needsUpdate = true;
+  if (Math.floor(t * 10) % 3 === 0) hud();
+}
+function pose(dt, speedK) {
+  const u = shark.userData, sw = Math.sin(t * (6 + speedK * 4)) * (RM ? 0.15 : 0.35);
+  shark.position.set(pos.x, pos.y, 0); shark.rotation.y = (pos.x - tgt.x) * 0.12 + sw * 0.08; shark.rotation.z = (pos.x - tgt.x) * 0.18; shark.rotation.x = (tgt.y - pos.y) * 0.15;
+  u.tail.rotation.y = sw; u.pecs.forEach((p, i) => { p.rotation.x = Math.PI / 2 + Math.sin(t * 3 + i) * 0.08; });
+  shark.visible = !(inv > 0 && Math.floor(inv * 12) % 2 === 0);
+  cam.position.x = lerp(cam.position.x, pos.x * 0.35, 1 - Math.exp(-dt * 3)); cam.position.y = lerp(cam.position.y, 4.7 + pos.y * 0.3, 1 - Math.exp(-dt * 3)); cam.lookAt(pos.x * 0.25, 1.3, -9);
+  rays.forEach((r, i) => { r.material.opacity = 0.05 + Math.sin(t * 0.7 + i) * 0.025; });
+}
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (state === 'play') { const TS = +Q.get('ts') || 1; for (let k = 0; k < TS; k++) update(dt); }      // ?ts=4：測試用，快轉 else { t += dt; pos.x = lerp(pos.x, Math.sin(t * 0.6) * 1.2, 0.02); pos.y = lerp(pos.y, 2 + Math.sin(t * 0.9) * 0.4, 0.02); tgt.x = pos.x; tgt.y = pos.y; if (state === 'ready') { deco.forEach((o) => { o.position.z += dt * 4; if (o.position.z > 10) o.position.z -= 130; }); } }
+  pose(dt, (v - CFG.v0) / (CFG.vMax - CFG.v0)); R.render(S, cam); requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ---------- 操作：按住拖，鯨鯊游到手指的位置（手指在下方時鯨鯊在下方） ---------- */
+function aim(e) { const r = cv.getBoundingClientRect(), u = (e.clientX - r.left) / r.width, w = (e.clientY - r.top) / r.height; tgt.x = clamp((u - 0.5) * 2 * CFG.xMax * 1.15, -CFG.xMax, CFG.xMax); tgt.y = clamp(CFG.yMax - (w - 0.25) / 0.6 * (CFG.yMax - CFG.yMin), CFG.yMin, CFG.yMax); }
+let down = false;
+cv.addEventListener('pointerdown', (e) => { if (state !== 'play') return; down = true; cv.setPointerCapture && cv.setPointerCapture(e.pointerId); aim(e); });
+cv.addEventListener('pointermove', (e) => { if (state === 'play' && (down || e.pointerType === 'mouse')) aim(e); });
+addEventListener('pointerup', () => { down = false; });
+addEventListener('keydown', (e) => { if (state !== 'play') { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); start(); } return; } const k = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[e.key]; if (k) { e.preventDefault(); tgt.x = clamp(tgt.x + k[0] * 1.2, -CFG.xMax, CFG.xMax); tgt.y = clamp(tgt.y + k[1] * 0.8, CFG.yMin, CFG.yMax); } });
+document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') { state = 'pause'; } else if (!document.hidden && state === 'pause') { last = performance.now(); state = 'play'; } });
+
+function start() { reset(); $('startCard').hidden = true; $('endCard').hidden = true; $('hud').hidden = false; state = 'play'; last = performance.now(); beep([523, 659, 784], 90); }
+function end() {
+  state = 'end'; $('hud').hidden = true; stage.querySelectorAll('.pop').forEach((e) => e.remove()); const s = score, nb = s > bestNow; if (nb) { bestNow = s; try { localStorage.setItem('kiteSwimBest1', String(s)); } catch (e) {} }
+  let rk = ''; try { const K = window.KiteCore; if (K && K.reportMini && s > 0) { const r = K.rankAround ? K.rankAround('swim', 'all', () => K.reportMini('swim', s)) : (K.reportMini('swim', s), null); rk = r && K.rankText ? K.rankText(r) : ''; } } catch (e) {}
+  const c = $('endCard'); c.innerHTML = (nb ? '<span class="nb">新紀錄！</span>' : '') + '<p style="margin:2px 0 0;font-weight:700">游了 ' + Math.floor(dist) + ' 公尺</p><div class="big">' + s.toLocaleString() + '</div>' +
+    (rk ? '<div class="rk">🏆 本月' + rk + '</div>' : '') + '<div class="row"><span>最佳</span><span>' + bestNow.toLocaleString() + ' 分</span></div>' + '<button class="go" id="againBtn" type="button">再玩一次</button>';
+  c.hidden = false; $('againBtn').onclick = start; beep(nb ? [523, 659, 784, 1047] : [392, 330], 110);
+}
+$('goBtn').onclick = start;
+if (window.KiteLB) KiteLB.button($('lbSlot'), () => Object.assign({ cat: 'swim' }, (KiteLB.CATS.filter((c) => c[0] === 'swim')[0] || [])[2] || {}));
+window.__swim = { get state() { return state; }, get score() { return score; }, get dist() { return dist; }, get hearts() { return hearts; }, set hearts(v) { hearts = v; }, objs, start, end, tgt };
+</script>
+</body></html>
