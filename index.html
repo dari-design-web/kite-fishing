@@ -89,7 +89,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .headline{display:flex;align-items:center;justify-content:center;gap:10px}
 .seal{align-self:center;font-size:12px;font-weight:700;color:var(--coral);border:2px solid var(--coral);border-radius:8px;padding:0 8px;transform:rotate(-3deg)}
 .dex{display:flex;flex-wrap:wrap;gap:4px;justify-content:center}
-.dex button{border:1.5px solid var(--ink);border-radius:999px;background:#fff;padding:1px 8px;font-size:12px}
+.dex button{border:1.5px solid var(--ink);border-radius:12px;background:#fff;padding:3px 3px 2px;font-size:11.5px;display:inline-flex;flex-direction:column;align-items:center;gap:1px;min-width:44px}.dex button img{height:20px;max-width:40px;object-fit:contain}.dex button img.sil{filter:brightness(0);opacity:.35}
 .dex button.fresh{background:var(--gold)}
 #stage.dark .time span{color:#F5F8FA;text-shadow:0 1px 2px rgba(0,0,0,.6)}
 .pick{display:flex;gap:6px;justify-content:center}
@@ -1360,7 +1360,9 @@ function finish() { BGM.stop();
   const SPL = SP(), got = SPL.filter((k) => dex[k]).length, box = $('dex'), fact = $('fact'); box.textContent = '';
   const tell = (k, b) => { fact.textContent = CONFIG.fish[k].name + '：' + CONFIG.fish[k].fact; for (const x of box.children) x.setAttribute('aria-pressed', String(x === b)); };
   for (const k of SPL) {
-    const b = document.createElement('button'); b.type = 'button'; b.textContent = dex[k] ? CONFIG.fish[k].name : '？？'; b.disabled = !dex[k]; b.setAttribute('aria-pressed', 'false');
+    const b = document.createElement('button'); b.type = 'button'; b.disabled = !dex[k]; b.setAttribute('aria-pressed', 'false'); b.setAttribute('aria-label', dex[k] ? CONFIG.fish[k].name : '還沒抓到的' + (VB === '抓' ? '漁獲' : '魚'));
+    const im0 = img[CONFIG.fish[k].sprite]; if (im0 && im0.src) { const ie = document.createElement('img'); ie.src = im0.src; ie.alt = ''; if (!dex[k]) ie.className = 'sil'; b.appendChild(ie); }      // 玩家角度：沒抓到的顯示黑色剪影，知道還有什麼可以抓
+    const nm = document.createElement('span'); nm.textContent = dex[k] ? CONFIG.fish[k].name : '？？'; b.appendChild(nm);
     if (stats.newDex.includes(k)) b.className = 'fresh'; b.onclick = () => tell(k, b); box.appendChild(b);
   }
   const nk = stats.newDex[stats.newDex.length - 1];
