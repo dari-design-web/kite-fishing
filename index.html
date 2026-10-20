@@ -1354,8 +1354,9 @@ function finish() { BGM.stop();
     else rn.hidden = true; }
   add(LVL().name + '最佳', PTS(prog.best[sid]) + ' 分' + (old !== undefined && kg > old ? '　新紀錄' : ''));
   /* v0.28（C-185，D71）：把這局分數送進官方 LINE 的「遊戲分數存摺」（每關每天前幾次才算、活動時段乘倍數；規則在後台改）。沒有載入共用資料層時（G 槽複本）就跳過 */
-  if (window.KiteCore) { try { const rp = KiteCore.reportPlay({ game: 'fish', level: sid, score: PTS(kg), sec: t });
+  window.__lastRank = null; if (window.KiteCore) { try { const rk = KiteCore.rankAround ? KiteCore.rankAround('fish', sid, () => KiteCore.reportPlay({ game: 'fish', level: sid, score: PTS(kg), sec: t })) : { res: KiteCore.reportPlay({ game: 'fish', level: sid, score: PTS(kg), sec: t }) }, rp = rk.res; window.__lastRank = rk;
     add(rp.tier ? '官方 LINE 點數' : '官方 LINE 分數存摺', (rp.tier ? (rp.counted ? '今天累計 ' + rp.today.toLocaleString() + ' 分＝' + rp.pts + ' 點' + (rp.tap ? (rp.lit ? '・這局新亮 ' + rp.lit + ' 格' : '') + (rp.claim ? '，回樂園領 ' + rp.claim + ' 點！' : '') : rp.gain ? '（這局 +' + rp.gain + ' 點）' : '') + (rp.next ? '・再 ' + rp.next.need.toLocaleString() + ' 分多 1 點' : rp.pts >= rp.cap ? '・今天已拿滿' : '') + (rp.mult > 1 ? '・' + rp.event + ' ×' + rp.mult : '') : '今天這場已經算過分了（明天再來）') : rp.counted ? '+' + rp.add + ' 分' + (rp.mult > 1 ? '（' + rp.event + ' ×' + rp.mult + '）' : '') + '・存摺 ' + rp.bank + ' 分' : '今天這場已經算過分了（明天再來）')); } catch (e) {} }
+  if (window.KiteCore && KiteCore.rankText && window.__lastRank) { const tx = KiteCore.rankText(window.__lastRank); if (tx) add('本月排名', tx + ' 🏆'); }      // D133：結算直接看到名次
   /* v0.24（C-162）：結算多一行「今天」——這支手機今天玩了幾局、一共抓了幾條（只記在這支手機；過了午夜重新算） */
   { const d = new Date(), day = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(), td = prog.today && prog.today.d === day ? prog.today : { d: day, g: 0, n: 0 };
     td.g++; td.n += stats.hits || 0; prog.today = td; saveProg();
