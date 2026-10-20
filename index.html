@@ -1330,7 +1330,12 @@ function record() {
 }
 function finish() { BGM.stop();
   mode = 'result'; ultUI(); $('hud').hidden = true; $('banner').hidden = true; $('hint').hidden = true; jingle([523, 659, 784], 110);
-  $('totalKg').textContent = PTS(kg); $('rank').textContent = rankOf(kg);
+  $('totalKg').textContent = '0'; $('rank').textContent = rankOf(kg);
+  { const tgt = PTS(kg), el = $('totalKg'), t0 = performance.now(), dur = Math.min(1100, 350 + tgt / 4); let lastTick = 0;      // 玩家角度：結算分數從 0 往上跳（跟飛行、合成港一致），最後彈一下
+    const step = (now) => { if (mode !== 'result') { el.textContent = tgt; return; } const k = Math.min(1, (now - t0) / dur), v = Math.round(tgt * (1 - Math.pow(1 - k, 3))); el.textContent = v;
+      if (now - lastTick > 70 && k < 1) { lastTick = now; beep(660 + k * 500, 0.03, 'triangle', 0.025); }
+      if (k < 1) requestAnimationFrame(step); else { el.style.transition = 'transform .18s'; el.style.display = 'inline-block'; el.style.transform = 'scale(1.18)'; setTimeout(() => { el.style.transform = ''; }, 180); } };
+    requestAnimationFrame(step); }
   const acc = stats.dives ? Math.round(stats.hits / stats.dives * 100) : 0, rows = $('rows'); rows.textContent = '';
   const add = (a, b, isNew) => { const l = document.createElement('span'); l.textContent = a; if (isNew) { const n = document.createElement('span'); n.className = 'new'; n.textContent = '新圖鑑'; l.appendChild(n); } const r = document.createElement('span'); r.textContent = b; rows.append(l, r); };
   const VB = LVL().verb || '抓', UN = (k) => (k === 'squid' || k === 'lobster' ? ' 隻' : ' 條');
