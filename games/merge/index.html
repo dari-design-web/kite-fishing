@@ -514,6 +514,7 @@ function drawEnd(e) {
   e.rows.forEach((r, i) => { const y = 232 + i * 34; rrect(50, y - 14, W - 100, 28, 10, '#F3EAD8'); text(r[0], 64, y, 13, '#3A5568', 'left', 700, false); text(r[1], W - 64, y, 14, C.ink, 'right', 900, false);
     if (i === 0 && e.icon != null) { ctx.font = FONT(14, 900); drawSea(e.icon, W - 64 - ctx.measureText(r[1]).width - 16, y, 11, 0); } });
   if (e.found && e.found.length) text('新發現：' + e.found.map((l) => SEAF[l][0]).join('、'), W / 2, 232 + e.rows.length * 34 + 4, 13, C.warn, 'center', 900, false);
+  if (e.rank) text('🏆 本月' + e.rank, W / 2, e.found && e.found.length ? 390 : 232 + e.rows.length * 34 + 4, 13, '#2F7F86', 'center', 900, false);      // D133
   text('最佳 ' + (best[mode] || e.s) + ' 分', W / 2, 408, 13, '#6A7F8E', 'center', 700, false);
   endBtnR = btn('再玩一次', 426);
   ctx.restore(); ctx.globalAlpha = 1;
@@ -541,9 +542,10 @@ cv.addEventListener('pointerup', upH); cv.addEventListener('pointercancel', upH)
 document.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { if (state !== 'play') { const ev = new PointerEvent('pointerdown', { clientX: 0, clientY: 0 }); ev.kbd = true; cv.dispatchEvent(ev); upH(); } else if (mode === 'stack') G.tap(); else if (G.fall) G.release(); e.preventDefault(); } if (mode === 'merge' && state === 'play' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { G.tx = clamp(G.tx + (e.key === 'ArrowLeft' ? -30 : 30), 0, W); } });
 function finish() {
   const s = Math.round(G.score), nb = saveBest(mode, s);
-  try { if (window.KiteCore && KiteCore.reportMini && s > 0) KiteCore.reportMini(mode, s); } catch (e) {}      // D123：進排行榜
+  let rk = null; try { if (window.KiteCore && KiteCore.reportMini && s > 0) { if (KiteCore.rankAround) rk = KiteCore.rankAround(mode, 'all', () => KiteCore.reportMini(mode, s)); else KiteCore.reportMini(mode, s); } } catch (e) {}      // D123：進排行榜；D133：記下名次
   if (mode === 'merge') endInfo = { s, nb, t: 0, title: G.over > 1.6 ? '堆過紅線了' : '魚艙塞滿了', rows: [['最大合到', SEAF[G.top][0]], ['撐到', '第 ' + G.lv + ' 關'], ['合成次數', G.mergesAll + ' 次'], ['最長連鎖', '×' + Math.max(1, G.bestChain)]], icon: G.top, found: G.newFound };
   else { const h = G.blocks.length - 1; if (h > (best.stackH || 0)) { best.stackH = h; store.set('kiteMiniBest1', best); } endInfo = { s, nb, t: 0, title: '貨櫃掉下去了', rows: [['疊了', h + ' 層'], ['裝滿貨船', G.ships + ' 艘'], ['完美', G.perfects + ' 次'], ['最長完美連擊', '×' + G.bestCombo]] }; }
+  endInfo.rank = rk && KiteCore.rankText ? KiteCore.rankText(rk) : '';
   state = 'end'; jingle(nb ? [523, 659, 784, 1047] : [392, 330], 110);
 }
 function frame(now) {
