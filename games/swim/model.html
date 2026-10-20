@@ -1,0 +1,45 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>3D 模型展示</title>
+<style>
+/* D137：3D 小鳶與鯨鯊的展示頁——手指拖曳轉動、兩指或滾輪縮放。?m=kite／shark 決定先看哪個，?png=1 給測試截圖用 */
+html,body{height:100%;margin:0;background:#BFE7F2;font-family:'Noto Sans TC','PingFang TC',system-ui,sans-serif;color:#10293D;overflow:hidden}
+canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:block}
+.bar{position:fixed;left:0;right:0;bottom:max(14px,env(safe-area-inset-bottom,0px));display:flex;justify-content:center;gap:8px;z-index:2}
+.bar button{min-height:44px;padding:0 16px;border-radius:999px;border:2px solid #10293D;background:#FFF8EA;font:inherit;font-weight:800;font-size:15px}
+.bar button[aria-pressed=true]{background:#2F7F86;color:#fff;border-color:#2F7F86}
+.top{position:fixed;top:max(12px,env(safe-area-inset-top,0px));left:16px;right:16px;display:flex;justify-content:space-between;align-items:center;z-index:2;font-weight:900}
+.top a{color:#10293D;text-decoration:none;font-size:13px;border:2px solid #10293D;border-radius:12px;padding:6px 10px;background:#FFF8EA}
+.hint{font-size:12px;font-weight:600;opacity:.7}
+</style></head><body>
+<div class="top"><a href="index.html">← 鯨鯊快游</a><span class="hint">拖曳轉動・滾輪／雙指縮放</span></div>
+<canvas id="gl"></canvas>
+<div class="bar"><button type="button" data-m="kite">小鳶</button><button type="button" data-m="shark">鯨鯊</button><button type="button" id="anim" aria-pressed="true">動起來</button></div>
+<script type="module">
+import * as THREE from '../../shared/vendor/three.module.min.js';
+import { makeKite, makeShark } from '../../shared/kite3d.js';
+const Q = new URLSearchParams(location.search), cv = document.getElementById('gl');
+const R = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: Q.has('clear'), preserveDrawingBuffer: Q.has('png') }); R.setPixelRatio(Math.min(2, devicePixelRatio || 1));
+const S = new THREE.Scene(); if (!Q.has('clear')) S.background = new THREE.Color('#BFE7F2');
+const cam = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
+S.add(new THREE.HemisphereLight('#FFFFFF', '#8FB8C4', 1.4)); const sun = new THREE.DirectionalLight('#FFFFFF', 2.2); sun.position.set(3, 6, 5); S.add(sun);
+const floor = new THREE.Mesh(new THREE.CircleGeometry(3, 48), new THREE.MeshBasicMaterial({ color: '#A9D8E4' })); floor.rotation.x = -Math.PI / 2; floor.position.y = -0.78; if (!Q.has('clear')) S.add(floor);
+const models = { kite: makeKite(THREE), shark: makeShark(THREE) };
+models.shark.position.y = 0.3; models.kite.userData.y0 = 0;
+let cur = Q.get('m') === 'shark' ? 'shark' : 'kite', yaw = +(Q.get('yaw') || 0.5), pitch = +(Q.get('pitch') || 0.12), dist = 6.5, anim = true;
+function show(m) { cur = m; Object.entries(models).forEach(([k, o]) => { if (k === m) S.add(o); else S.remove(o); }); document.querySelectorAll('[data-m]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.m === m))); dist = m === 'shark' ? 6.8 : 6.2; }
+document.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => show(b.dataset.m));
+document.getElementById('anim').onclick = function () { anim = !anim; this.setAttribute('aria-pressed', String(anim)); };
+let drag = null, pinch = 0; const pts = new Map();
+cv.addEventListener('pointerdown', (e) => { pts.set(e.pointerId, [e.clientX, e.clientY]); cv.setPointerCapture(e.pointerId); drag = [e.clientX, e.clientY]; });
+cv.addEventListener('pointermove', (e) => { if (!pts.has(e.pointerId)) return; pts.set(e.pointerId, [e.clientX, e.clientY]);
+  if (pts.size === 2) { const [a, b] = [...pts.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]); if (pinch) dist = Math.max(3, Math.min(12, dist * pinch / d)); pinch = d; return; }
+  if (drag) { yaw -= (e.clientX - drag[0]) * 0.01; pitch = Math.max(-0.6, Math.min(1.2, pitch + (e.clientY - drag[1]) * 0.006)); drag = [e.clientX, e.clientY]; } });
+const up = (e) => { pts.delete(e.pointerId); if (pts.size < 2) pinch = 0; if (!pts.size) drag = null; }; cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+cv.addEventListener('wheel', (e) => { e.preventDefault(); dist = Math.max(3, Math.min(12, dist * (1 + e.deltaY * 0.001))); }, { passive: false });
+function resize() { R.setSize(innerWidth, innerHeight, false); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); } addEventListener('resize', resize); resize();
+show(cur); let t = 0, last = performance.now();
+function frame(now) { const dt = Math.min(0.05, (now - last) / 1000); last = now; if (anim) t += dt; const o = models[cur];
+  o.userData.tick(t, cur === 'kite' ? 0.35 : 0.3); const ty = cur === 'kite' ? 0.45 : 0.3;
+  cam.position.set(Math.sin(yaw) * Math.cos(pitch) * dist, ty + Math.sin(pitch) * dist, Math.cos(yaw) * Math.cos(pitch) * dist); cam.lookAt(0, ty, 0);
+  R.render(S, cam); window.__ready = true; requestAnimationFrame(frame); }
+requestAnimationFrame(frame);
+</script></body></html>
