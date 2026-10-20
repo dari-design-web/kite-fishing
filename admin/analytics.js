@@ -80,13 +80,23 @@
     const P = [['today', '今天'], ['7', '近 7 天'], ['lastweek', '上週'], ['30', '近 30 天'], ['month', '本月'], ['lastmonth', '上個月'], ['90', '近 90 天'], ['all', '全部']];
     return '<div class="arange noprint"><b style="margin-right:4px">期間</b>' + P.map((p) => '<button class="btn ' + (R.p === p[0] ? '' : 'alt') + '" data-rg="' + p[0] + '">' + p[1] + '</button>').join('') +
       '<span style="margin-left:8px" class="small">自訂</span><input type="date" id="rgF" value="' + rg.from + '"> ～ <input type="date" id="rgT" value="' + rg.to + '"><button class="btn alt" id="rgGo">套用</button>' +
-      '<span class="small muted" style="margin-left:auto">比較：前一段同長度 ' + md(rg.pFrom) + '～' + md(rg.pTo) + '</span></div>' + '<div class="small muted noprint" style="margin:-8px 0 12px">🕒 台北時間・資料截至 ' + new Date().toTimeString().slice(0, 5) + (rg.to >= K.dayKey() ? '・<b style="color:#9A6A10">今天還沒結束</b>，圖上今天用虛線、空心點表示，不要跟完整的日子直接比' : '・期間都是完整的日子') + '</div>';      // G94-A06／D01
+      '<span class="small muted" style="margin-left:auto">比較：前一段同長度 ' + md(rg.pFrom) + '～' + md(rg.pTo) + '</span></div>' + dq(D) + '<div class="small muted noprint" style="margin:-8px 0 4px">🕒 台北時間・資料截至 ' + new Date().toTimeString().slice(0, 5) + (rg.to >= K.dayKey() ? '・<b style="color:#9A6A10">今天還沒結束</b>，圖上今天用虛線、空心點表示，不要跟完整的日子直接比' : '・期間都是完整的日子') + '</div>';      // G94-A06／D01
   }
   function wireRange(c) {
     c.querySelectorAll('[data-rg]').forEach((b) => { b.onclick = () => { R.p = b.dataset.rg; A.app(); }; });
     const go = $('rgGo'); if (go) go.onclick = () => { R.p = 'custom'; R.from = $('rgF').value; R.to = $('rgT').value; A.app(); };
   }
 
+
+  /* G95-P02：資料完整度——每個分析頁都先講清楚資料從哪來、缺了什麼 */
+  function dq(D) {
+    const cs = K.cloudStatus ? K.cloudStatus() : {}, src = D.demo ? '🧪 示範資料（假的）' : !cs.url ? '只有這台電腦' : cs.admin ? '雲端完整資料＋這台' : '雲端精簡資料＋這台（沒輸入後台金鑰，缺點數明細與遊戲紀錄）';
+    const st = D.led.filter((e) => e.type === 'store' || e.type === 'backfill'), noAmt = st.filter((e) => !(e.amount > 0)).length, given = {}; D.desk.forEach((g) => { given[g.rcode] = 1; });
+    const doneNoT = D.red.filter((r) => r.status === 'done' && !given[r.id]).length, noStore = st.filter((e) => !D.cfg.stores.some((x) => x.id === e.store)).length;
+    let e0 = Date.now(); D.ms.forEach((m) => { if (m.created && m.created < e0) e0 = m.created; }); D.led.forEach((e) => { if (e.t < e0) e0 = e.t; });
+    const gaps = [noAmt ? noAmt + ' 筆集點沒有金額' : '', noStore ? noStore + ' 筆集點找不到店家' : '', doneNoT ? doneNoT + ' 張已領單沒有服務台領取時間' : ''].filter(Boolean);
+    return '<div class="small noprint" style="margin:-8px 0 4px;color:' + C.muted + '">📦 資料來源：<b style="color:' + C.ink + '">' + src + '</b>・會員 ' + num(D.ms.length) + ' 位・最早資料 ' + K.dayKey(e0) + (gaps.length ? '・<span style="color:#9A6A10">資料缺口：' + gaps.join('、') + '</span>' : '・<span style="color:#1a7f4b">沒有發現資料缺口</span>') + '</div>';
+  }
   /* ---------- 統一算數字 ---------- */
   function build(D, from, to) {
     const inr = (t) => { if (!t) return false; const d = K.dayKey(t); return d >= from && d <= to; };
