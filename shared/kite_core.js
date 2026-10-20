@@ -100,7 +100,8 @@
     photo: { name: '小鳶合照館', levels: {} },
     stamp: { name: '港灣蓋章散步', levels: {} },
     merge: { name: '小鳶合成港', levels: {} },      // D119：放進遊戲大廳，不計分
-    stack: { name: '小鳶疊貨櫃', levels: {} }
+    stack: { name: '小鳶疊貨櫃', levels: {} },
+    swim: { name: '鯨鯊快游', levels: {} }      // D136：3D 試玩版，只進排行榜
   };
 
   function rd(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
