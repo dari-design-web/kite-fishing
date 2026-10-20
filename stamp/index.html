@@ -524,7 +524,7 @@ function renderTitleBar() {
 }
 function openTitles() {
   const list = allTitles().map((x) => '<button type="button" data-t="' + x.t + '" aria-pressed="' + (x.t === P.cur) + '"' + (x.ok ? '' : ' disabled') + '>' + (x.ok ? '🏅 <b>' + x.t + '</b>' : '🔒 ' + (x.combo ? '？？？' : x.t)) + '<small>' + x.how + '</small></button>').join('');
-  $('sheet').innerHTML = '<h3>我的稱號</h3><p class="again">蓋章就會拿到稱號；有些稱號要特定的章湊在一起才會出現。</p><div class="tlist">' + list + '</div><button class="btn" type="button" id="ovOk">好</button>';
+  $('sheet').innerHTML = '<h3>我的稱號</h3><p class="again">蓋章就會拿到稱號；有些稱號要特定的章湊在一起才會出現。</p><div class="tlist">' + list + '</div><button class="btn" type="button" id="ovOk">關閉</button>';
   $('ov').hidden = false;
   $('sheet').querySelectorAll('.tlist button').forEach((b) => (b.onclick = () => { P.cur = b.dataset.t; save(); openTitles(); renderTitleBar(); }));
   $('ovOk').onclick = () => { $('ov').hidden = true; };
