@@ -48,8 +48,8 @@ const FONT = (s, w) => (w || 700) + ' ' + s + "px 'Zen Maru Gothic','Noto Sans T
 const rnd = (a, b) => a + Math.random() * (b - a), clamp = (v, a, b) => Math.max(a, Math.min(b, v)), pick = (a) => a[Math.floor(Math.random() * a.length)], lerp = (a, b, k) => a + (b - a) * k;
 const RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const HOW = {
-  merge: '小鳶抓著海鮮，按住<b>左右滑</b>帶牠移動，<b>手放開</b>海鮮就掉下去；也可以直接<b>點想放的位置</b>，小鳶會飛過去放開。時間到也會<b>自己放手</b>，越後面抓得越短。一樣的碰在一起就<b>合成下一級</b>，一路合到<b>鯨鯊</b>！堆過紅線就結束。',
-  stack: '<b>點一下</b>放下貨櫃，對齊下面那個。切齊是<b>完美</b>，連續完美貨櫃會<b>變寬</b>；<b>金貨櫃</b>大加分；每 10 層<b>裝滿一艘船</b>出港。疊越高越難！'
+  merge: '<b>左右滑</b>移動小鳶，<b>放手</b>海鮮就掉下去。一樣的碰在一起會<b>合成</b>，一路合到<b>鯨鯊</b>！堆過紅線就結束。',
+  stack: '<b>點一下</b>放下貨櫃，對齊下面那個。連續<b>完美</b>貨櫃會變寬，<b>金貨櫃</b>大加分！'
 };
 const store = { get(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
 let best = store.get('kiteMiniBest1', {}) || {};

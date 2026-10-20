@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>小鳶去旅行原型</title>
+<title>小鳶去旅行</title>
 <style>
 :root{--paper:#F4EFE6;--card:#FFFDF8;--ink:#4A3426;--muted:#8A7565;--teal:#2F7F86;--teal2:#D9ECEA;--gold:#E8B879;--line:#E2D6C6;--red:#C9473A;--display:'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif}
 *{box-sizing:border-box}
@@ -716,7 +716,7 @@ function openDev() {      // 測試面板改成從右上「測試」打開（原
 }
 function showIntro() {
   const d = document.createElement('div'); d.className = 'intro';
-  d.innerHTML = '<div class="sheet"><p><b>幫小鳶帶上便當，牠會把風景寄回來。</b><br><span class="muted">小鳶出門一陣子就會回來，帶一封信和明信片給你。信會一直等你，不會過期。</span></p><div class="row"><button class="btn" id="i1">帶牠出門</button><button class="btn ghost" id="i2">先看看收藏冊</button></div></div>';
+  d.innerHTML = '<div class="sheet"><p><b>幫小鳶帶上便當，牠會寄明信片回來。</b></p><div class="row"><button class="btn" id="i1">帶牠出門</button><button class="btn ghost" id="i2">先看看收藏冊</button></div></div>';
   document.body.appendChild(d); S.seen.intro = 1; save();
   $('i1').onclick = () => { d.remove(); startFirst(); }; $('i2').onclick = () => { d.remove(); go('album'); };
 }
