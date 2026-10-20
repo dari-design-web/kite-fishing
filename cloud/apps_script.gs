@@ -1,4 +1,4 @@
-/* 小鳶來港・測試期雲端資料（Google 試算表＋Apps Script）v2（D100，Dari 10/17；夜間獨立複查後修正）
+/* 小鳶來港・測試期雲端資料（Google 試算表＋Apps Script）v8（10/20 修排行榜）｜原 v2（D100，Dari 10/17；夜間獨立複查後修正）
    用法：在 Google 雲端硬碟新增一份 Google 試算表 → 擴充功能 → Apps Script → 把這整份貼上 → 部署 → 網頁應用程式
          （執行身分：我；存取權：所有人）→ 複製網址給 Claude。詳細步驟見 Claude產出/雲端測試資料庫_設定步驟（最新版）.md。
    只放測試資料；正式上線前到後台按「清空全部測試資料」，之後改接正式資料庫。
@@ -55,7 +55,8 @@ function lite_(m) {
 }
 function lb_(m) {
   var mk = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy-MM'), o = {};
-  (m.plays || []).forEach(function (p) { if (!p || !p.game || p.game === 'travel' || p.counted === false) return;      // v6：只算「算分場次」 var k = p.game + '|' + p.level, s = +p.score || 0, v = o[k] || [0, 0, mk]; if (s > v[0]) v[0] = s; if (s > v[1] && Utilities.formatDate(new Date(p.t), 'Asia/Taipei', 'yyyy-MM') === mk) v[1] = s; o[k] = v; });
+  // v6：只算「算分場次」；v8（D132，Dari 10/20 排行榜看不到別人）：原本這行註解把後面的程式也註解掉了，各關最高分一直是空的；合成港／疊貨櫃（lbOnly）也要算
+  (m.plays || []).forEach(function (p) { if (!p || !p.game || p.game === 'travel' || (p.counted === false && !p.lbOnly)) return; var k = p.game + '|' + p.level, s = +p.score || 0, v = o[k] || [0, 0, mk]; if (s > v[0]) v[0] = s; if (s > v[1] && Utilities.formatDate(new Date(p.t), 'Asia/Taipei', 'yyyy-MM') === mk) v[1] = s; o[k] = v; });
   var sa = 0, sm = 0; (m.plays || []).forEach(function (p) { if (!p || (p.game !== 'fish' && p.game !== 'fly') || p.counted === false) return; var s = +p.score || 0; sa += s; if (Utilities.formatDate(new Date(p.t), 'Asia/Taipei', 'yyyy-MM') === mk) sm += s; });
   o.__sum = [sa, sm, mk];      // v7（D105）：累積總分
   return o;

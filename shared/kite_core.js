@@ -398,6 +398,7 @@
   }
   function lbSync() {      // 排行資料狀態：local＝沒接雲端；old＝雲端還沒更新到 v5（別人的成績拿不到）；ok
     var c = cloudStatus(); if (!c.url) return { st: 'local' };
+    if (!c.lastPull) return { st: c.err ? 'fail' : 'wait', err: c.err };      // D132：還沒成功拿到雲端資料，不要讓人以為大家都沒玩
     var others = allMembers().filter(function (m) { return !m.plays; }); if (!others.length) return { st: 'ok', t: c.lastPull };
     return { st: others.some(function (m) { return 'lb' in m || 'tstat' in m; }) ? 'ok' : 'old', t: c.lastPull };
   }

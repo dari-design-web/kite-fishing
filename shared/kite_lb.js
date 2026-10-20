@@ -35,7 +35,9 @@
     var cat = catOf(o), h = '<div class="klb-h"><b>🏆 排行榜</b><button class="klb-x" type="button" aria-label="關閉">✕</button></div>', R, sy = K.lbSync ? K.lbSync() : { st: 'ok' };
     h += '<div class="klb-cats" role="tablist">' + CATS.map(function (c) { return '<button type="button" role="tab" data-c="' + c[0] + '" aria-selected="' + (c[0] === cat) + '">' + c[1] + '</button>'; }).join('') + '</div>';;
     if (sy.st === 'local') h += '<div class="klb-sync">目前只讀到這支手機的成績，還沒取得完整的雲端排行。</div>';
-    else if (sy.st === 'old') h += '<div class="klb-sync">雲端排行資料還在更新中，目前只看得到部分玩家，名次可能不完整。</div>';
+    else if (sy.st === 'old') h += '<div class="klb-sync">雲端程式還是舊版，目前看不到其他玩家的成績（只有你自己）。請管理員更新雲端程式。</div>';
+    else if (sy.st === 'wait') h += '<div class="klb-sync">正在連雲端拿大家的成績…目前先顯示這支手機的成績。</div>';
+    else if (sy.st === 'fail') h += '<div class="klb-sync">連不上雲端排行（' + (sy.err || '網路不穩') + '），目前只看得到這支手機的成績，稍後再打開看看。</div>';
     if (o.sum) {
       h += '<div class="klb-per"><button type="button" data-p="month" aria-pressed="' + (st.period === 'month') + '">本月</button><button type="button" data-p="all" aria-pressed="' + (st.period === 'all') + '">全部</button></div>';
       R = K.sumBoard(st.period, 10);
