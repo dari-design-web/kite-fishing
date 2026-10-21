@@ -561,7 +561,8 @@ function renderHome() {
   if (!S.firstDone && st === 'home') { $('chip').textContent = '第一次見面！先帶小鳶在附近走走吧'; b.style.backgroundImage = 'url(assets/kite_wave.png)'; $('say').textContent = '你好！我是小鳶。'; main.textContent = '第一次，先在附近走走吧（3 分鐘）'; main.onclick = startFirst; }
   /* v0.27（C-150）：晚上 7 點到早上 6 點，小屋變成夜晚（房間暗一點、燈亮起來），小鳶在家時說晚上的話 */
   const hh = new Date().getHours(), night = hh >= 19 || hh < 6; $('room').classList.toggle('night', night);
-  if (S.firstDone && st === 'home' && night) { $('chip').textContent = '晚上了，小鳶在家'; b.style.backgroundImage = 'url(assets/kite_home.png)'; $('say').textContent = ['天黑了，港口的燈好漂亮～', '晚上的海風涼涼的，我們明天再出門好不好？', '我在數窗外的漁船燈，一、二、三……', '晚上出門也可以喔，我會小心飛！'][Math.floor(Math.random() * 4)]; main.textContent = '打包出門'; main.onclick = () => go('pack'); }
+  if (!S.firstDone && st === 'home') { /* QA 10/21：第一趟還沒走時保留上面的「先在附近走走」按鈕，不被下面的「打包出門」蓋掉（新使用者會卡住出不了門） */ }
+  else if (S.firstDone && st === 'home' && night) { $('chip').textContent = '晚上了，小鳶在家'; b.style.backgroundImage = 'url(assets/kite_home.png)'; $('say').textContent = ['天黑了，港口的燈好漂亮～', '晚上的海風涼涼的，我們明天再出門好不好？', '我在數窗外的漁船燈，一、二、三……', '晚上出門也可以喔，我會小心飛！'][Math.floor(Math.random() * 4)]; main.textContent = '打包出門'; main.onclick = () => go('pack'); }
   /* v0.29（C-170）：早上 6 點到 9 點小鳶在家，說早晨的話（台詞是建議） */
   else if (S.firstDone && st === 'home' && hh >= 6 && hh < 9) { $('chip').textContent = '早安！小鳶剛起床'; b.style.backgroundImage = 'url(assets/kite_home.png)'; $('say').textContent = ['早安～我剛起床，羽毛還翹翹的！', '早上的港口好安靜，漁船都出海了嗎？', '早餐吃飽飽，今天要去哪裡玩呢？'][Math.floor(Math.random() * 3)]; main.textContent = '打包出門'; main.onclick = () => go('pack'); }
   else if (st === 'home') { $('chip').textContent = '小鳶在家，還沒出發'; b.style.backgroundImage = 'url(assets/kite_home.png)'; $('say').textContent = sayOne('home'); main.textContent = '打包出門'; main.onclick = () => go('pack'); }
@@ -868,7 +869,8 @@ function openLetter() {
     $('skipL2').onclick = finish; $('flipL').onclick = () => { const p = $('pc'); p.classList.toggle('flip'); $('flipL').textContent = p.classList.contains('flip') ? '看正面' : '看背面'; };
     $('nextL').onclick = () => { step++; showCard(); };
   };
-  $('envL').onclick = () => { $('envL').classList.add('open'); $('tapme').textContent = ''; setTimeout(showCard, 750); };
+  $('envL').onclick = () => { if ($('envL').classList.contains('open')) return; $('envL').classList.add('open'); $('tapme').textContent = ''; setTimeout(showCard, 750); };
+  $('tapme').onclick = () => $('envL').onclick();      // QA：點「點一下打開信封」的字也能開
 }
 
 /* 收藏冊：常設 24 張、每週限定、港灣護照、合照（本機） */
@@ -876,7 +878,7 @@ let tab = 'main';
 function renderAlbum() {
   /* v0.28（C-164）：收藏冊上方多寫集滿了幾個地點（建議） */
   { const full = LOCS.filter((l) => l.cards.every((c, i) => S.cards[cardId(l, i)])).length; $('albumCount').textContent = ownedCount() + ' / 24' + (full ? '・集滿 ' + full + ' 個地點' : ''); }
-  const tabs = [['main', '常設'], ['lim', '本週限定'], ['pass', '港灣護照'], ['photo', '合照（本機）']];
+  const tabs = [['main', '常設'], ['lim', '本週限定'], ['pass', '港灣探險護照'], ['photo', '合照（本機）']];
   $('tabs').innerHTML = tabs.map((t) => '<button data-t="' + t[0] + '" aria-pressed="' + (tab === t[0]) + '">' + t[1] + '</button>').join('');
   $('tabs').querySelectorAll('button').forEach((b) => (b.onclick = () => { tab = b.dataset.t; renderAlbum(); }));
   const body = $('albumBody'); body.innerHTML = '';

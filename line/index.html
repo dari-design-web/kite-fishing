@@ -287,7 +287,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
   K.onCloud(function (e) { if (e && e.wiped) return location.reload(); if (scanner || document.querySelector('.modal')) return; var t = stack[stack.length - 1]; if (t && $('sheet').classList.contains('on') && ['points', 'mine', 'coupon', 'ticket', 'shop', 'item', 'park', 'mygames', 'me'].indexOf(t[0]) >= 0) { var y = $('sbody').scrollTop; R[t[0]](t[1]); $('sbody').scrollTop = y; } });
   var INLIFF = /[?&]liff=1/.test(location.search) || /[?&]liff\.state=/.test(location.search);      // D144：在 LINE 裡點一般連結（LINE 內建瀏覽器）要看到示意聊天室；只有正式 LIFF 入口才直接進樂園
   if (INLIFF) document.body.classList.add('inliff');
-  if (K.cloudStatus().url) { var tb = document.querySelector('.testbar'), tbf = function () { var c = K.cloudStatus(); tb.textContent = c.err ? '測試資料：目前連不上雲端，先存在這支手機；連線後會再嘗試同步' : '測試資料：已同步到雲端。正式上線前會全部清空'; }; tbf(); K.onCloud(tbf); setInterval(tbf, 10000); }
+  if (K.cloudStatus().url) { var tb = document.querySelector('.testbar'), tbf = function () { var c = K.cloudStatus(); tb.textContent = c.err ? '測試資料：目前連不上雲端，先存在這支手機；連線後會再嘗試同步' : c.lastPull ? '測試資料：已同步到雲端。正式上線前會全部清空' : '測試資料：同步中…'; }; tbf(); K.onCloud(tbf); setInterval(tbf, 2000); /* QA：還沒同步前不要先說「已同步」 */ }
   function close() { if (scanner) { scanner.stop(); scanner = null; } if (INLIFF) { if (window.liff && liff.isInClient && liff.isInClient()) return liff.closeWindow(); stack = []; return open('park'); } $('sheet').className = 'sheet'; stack = []; }
   function back() { stack.pop(); var t = stack.pop(); if (t) open(t[0], t[1], true); else close(); }
   $('close').onclick = close; $('back').onclick = back;
@@ -310,7 +310,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
   /* G97：小鳶樂園最上方「今日挑戰」卡（每天一題、正式 3 次、可練習、不給點數） */
   function dailyCard() {      // D143：跟上下的框一樣左右留白、間距；後台可關掉、改次數與題目
     var D = window.KiteDaily; if (!D || !D.on()) return ''; var td = D.today(), n = D.left(), T = D.tries(), u = td.url;
-    return '<div class="lb-daily"><div class="dh"><img src="../hub/btn/m/btn_' + td.game + '.webp" alt=""><div class="dt"><small>📅 今日挑戰</small><b>' + esc(td.name) + '</b></div><span class="dn">正式 <b>' + n + '</b>/' + T + '</span></div>' +
+    return '<div class="lb-daily"><div class="dh"><img src="../hub/btn/m/btn_' + td.game + '.webp" alt=""><div class="dt"><small>📅 今日挑戰</small><b>' + esc(td.name) + '</b></div><span class="dn">' + (n > 0 ? '正式還剩 <b>' + n + '</b> 次' : '正式已用完') + '</span></div>' +
       '<div class="dv">' + esc(td.vary) + '</div><div class="dm">今天大家條件一樣・正式挑戰的分數也算今日積分</div>' +
       '<div class="db">' + (n > 0 ? '<a class="go" href="' + u + 'official">正式挑戰</a>' : '<span class="go done">今天完成了</span>') + '<a href="' + u + 'practice">先練習</a><button type="button" data-lb="daily">今日榜</button></div></div>';
   }
@@ -339,7 +339,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
       '<div class="lbrow"><button type="button" data-lb="fish" style="flex:1"><img class="gi" src="../shared/assets/rank_btn.png" alt="">排行榜<small style="font-weight:600;opacity:.75;margin-left:6px">捕魚・飛行・合成港・疊貨櫃・鯨鯊・旅行・總分</small></button></div>' + '<div class="lb-sec">' + (evs.length ? '今日推薦' : '人氣遊戲') + '</div><div class="lb-grid">' + booth(fg, 0, true) + '</div>' +
       '<div class="lb-sec">全部遊戲</div><div class="lb-grid">' + GL.filter(function (g) { return g.id !== feat; }).map(function (g, i) { return booth(g, i + 1); }).join('') +
       '</div>' +      // D83：港口朋友已併進港灣蓋章散步（每站住一位朋友）
-      '<div class="lb-foot">' + (TIER ? '<p class="muted" style="color:#CFE3EA;font-size:12.5px;margin:0;text-align:center">小鳶去旅行回家，偶爾也會帶點數或優惠券回來喔。</p>' : '<div class="card" style="margin:0"><b>怎麼用遊戲換點數？</b><p class="muted" style="margin:6px 0 0">會算分的遊戲，每關每天前 ' + c.triesPerLevel + ' 次的分數會存進「分數存摺」，滿 ' + c.scorePerPoint.toLocaleString() + ' 分就能在「我的資訊 → 我的遊戲」換 1 點。</p><button class="btn alt full" style="margin-top:10px" id="toMG2">看我的遊戲紀錄</button></div>') + '</div></div>';
+      '<div class="lb-foot">' + (TIER ? '<p class="muted" style="color:#CFE3EA;font-size:12.5px;margin:0;text-align:center">小鳶去旅行回家，偶爾也會帶點數或優惠券回來喔。</p>' : '<div class="card" style="margin:0"><b>怎麼用遊戲換點數？</b><p class="muted" style="margin:6px 0 0">會算分的遊戲，每款遊戲每天前幾局（捕魚、飛行每關 ' + c.triesPerLevel + ' 局；小遊戲看遊戲卡上的「今天還能算分」）的分數會存進「分數存摺」，滿 ' + c.scorePerPoint.toLocaleString() + ' 分就能在「我的資訊 → 我的遊戲」換 1 點。</p><button class="btn alt full" style="margin-top:10px" id="toMG2">看我的遊戲紀錄</button></div>') + '</div></div>';
     var mg = function () { go('mygames'); }; if ($('toMG')) $('toMG').onclick = mg; if ($('toMG2')) $('toMG2').onclick = mg; wireTrack(R.park);
     $('sbody').querySelectorAll('[data-lb]').forEach(function (b) { b.onclick = function () { if (window.KiteLB) KiteLB.hub(b.dataset.lb); }; });      // D123：一顆排行榜按鈕，進去再分類
   };
@@ -360,7 +360,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
       '<div class="trk-row" style="--n:' + n + '">' + nodes + '</div><div class="trk-bar"><i style="width:' + fill.toFixed(1) + '%"></i></div><div class="trk-lab" style="--n:' + n + '">' + labs + '</div>' +
       (ev ? '<div class="trk-ev' + (evLeft > 0 ? ' lit' : '') + '"><img src="assets/trk_event.png" alt="">' + (bonus ? (evLeft > 0 ? '活動加送 <b>+' + evLeft + '</b> 點' + (gotE ? '（已領 ' + gotE + '）' : '') : '活動加送已領 <b>' + bonus + '</b> 點') : '今天有加倍活動，玩活動遊戲會多送點數') + '</div>' : '') +
       '<div class="trk-f"><span>' + msg + '</span>' + (claim ? '<button class="btn trk-go" id="tkAll">領取 ' + claim + ' 點' + (evLeft > 0 && claim > evLeft ? '<small>含活動 ' + evLeft + ' 點</small>' : '') + '</button>' : '') + '</div>' +
-      '<details><summary>怎麼集點？</summary>捕魚、飛行每關每天前 ' + c.triesPerLevel + ' 次的分數加起來，到了門檻那一格就會發亮。每格都是 1 點，寶箱也是喔；每天最多 ' + c.gameDailyCap + ' 點' + (c.eventCapMult ? '（加倍活動時上限跟著加倍，多送的放在「活動加送」）' : '') + '。亮著忘了領也沒關係，隔天再打開時會自動補進你的點數。</details></div>';
+      '<details><summary>怎麼集點？</summary>捕魚、飛行每款遊戲每天前幾局（捕魚、飛行每關 ' + c.triesPerLevel + ' 局；小遊戲看遊戲卡上的「今天還能算分」）的分數加起來，到了門檻那一格就會發亮。每格都是 1 點，寶箱也是喔；每天最多 ' + c.gameDailyCap + ' 點' + (c.eventCapMult ? '（加倍活動時上限跟著加倍，多送的放在「活動加送」）' : '') + '。亮著忘了領也沒關係，隔天再打開時會自動補進你的點數。</details></div>';
   }
   function wireTrack(done) {
     var el = $('trk'); if (!el) return; var busy = false;
@@ -413,7 +413,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
         '<a class="btn alt full" style="margin-top:8px;min-height:38px" href="' + gameLink(g) + '">去玩</a></div></div></div>';
     }).join('');
     if (false) html += '<div class="card"><div class="gcard"><img src="../meet/assets/pal_f4.webp" alt="" style="object-fit:contain;background:#E9F2F1"><div class="g"><b>港口朋友</b><div class="gbar"><i style="width:' + Math.round(100 * P.meet.n / 6) + '%"></i></div><span class="muted">' + P.meet.label + '</span></div></div></div>';
-    html += '<p class="note">遊戲進度存在這支手機；正式版會跟著 LINE 帳號走。' + (TIER ? '換點規則：每關每天前 ' + c.triesPerLevel + ' 次的分數加總，照表自動換點，每天最多 ' + c.gameDailyCap + ' 點。' : '分數換點規則：每 ' + c.scorePerPoint.toLocaleString() + ' 分＝1 點，每關每天前 ' + c.triesPerLevel + ' 次算分。') + '</p>';
+    html += '<p class="note">遊戲進度存在這支手機；正式版會跟著 LINE 帳號走。' + (TIER ? '換點規則：每款遊戲每天前幾局（捕魚、飛行每關 ' + c.triesPerLevel + ' 局；小遊戲看遊戲卡上的「今天還能算分」）的分數加總，照表自動換點，每天最多 ' + c.gameDailyCap + ' 點。' : '分數換點規則：每 ' + c.scorePerPoint.toLocaleString() + ' 分＝1 點，每款遊戲每天前幾局（捕魚、飛行每關 ' + c.triesPerLevel + ' 局；小遊戲看遊戲卡上的「今天還能算分」）算分。') + '</p>';
     $('sbody').innerHTML = html;
     wireTrack(R.mygames);
     $('sbody').querySelectorAll('[data-cv]').forEach(function (b) { b.onclick = function () { var r = K.convertScore(b.dataset.cv); toast(r.ok ? '換到 ' + r.pts + ' 點！' : r.msg); if (r.ok) { R.mygames(); hello(); } }; });

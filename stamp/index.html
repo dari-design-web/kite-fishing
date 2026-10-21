@@ -698,7 +698,7 @@ async function sharePassport() {
   cv.toBlob(async (blob) => {
     const f = new File([blob], '我的港灣護照.png', { type: 'image/png' });
     if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: '我的港灣護照' }); return; } catch (e) {} }
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = '我的港灣護照.png'; document.body.appendChild(a); a.click(); a.remove();
+    KiteSaveImg(blob, '我的港灣護照.png', () => { if (typeof toast === 'function') toast('已送出下載，請到下載項目或相簿確認'); });      // QA：LINE 裡改成長按存圖
   }, 'image/png');
 }
 /* ===== v0.6 留給下次的我（ChatGPT G-50 創意 B）：選一個心情、寫一句下次還想看什麼；只存在這支手機，不用寫也能集滿 ===== */
@@ -796,6 +796,7 @@ else if (m) { try { const fv = sessionStorage.getItem('kiteForceVar'); if (fv) {
       // v1.2（G-61、D86）：拿掉「我的港灣小劇場」入口（Dari：沒什麼意義），改成 6 站集滿的完成卡＋合照館港灣章貼紙
 window.__stamp = { theater: openTheater, P: () => P, scan, force: (v) => { forceVar = v; }, share: sharePassport };
 </script>
+<script src="../shared/save_img.js"></script>
 <script src="../shared/back_line.js"></script>
 </body>
 </html>

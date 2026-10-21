@@ -7,11 +7,13 @@
     if (document.getElementById('kiteBackLine')) return;
     var a = document.createElement('a'); a.id = 'kiteBackLine'; a.href = base + 'line/index.html?p=park'; a.textContent = '‹ 回官方 LINE';
     // 貼在左邊中間的綠色小標籤，不擋各遊戲上方的標題與按鈕；剛進來 3 秒先展開寫字，之後收成小標籤
-    a.setAttribute('style', 'position:fixed;left:0;top:42%;z-index:2147483000;background:#06C755;color:#fff;font:700 12px/1.15 system-ui,sans-serif;padding:8px 8px 8px 6px;border-radius:0 12px 12px 0;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.25);opacity:.95;white-space:nowrap;transition:padding .3s');
+    a.setAttribute('style', 'position:fixed;left:0;top:42%;z-index:30;background:#06C755;color:#fff;font:700 12px/1.15 system-ui,sans-serif;padding:8px 8px 8px 6px;border-radius:0 12px 12px 0;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.25);opacity:.95;white-space:nowrap;transition:padding .3s');
     a.setAttribute('aria-label', '回官方 LINE');
-    setTimeout(function () { a.innerHTML = '‹<br>LINE'; a.style.textAlign = 'center'; a.style.fontSize = '11px'; a.style.padding = '7px 5px 7px 3px'; }, 3000);
+    setTimeout(function () { a.innerHTML = '‹<br>LINE'; a.style.textAlign = 'center'; a.style.fontSize = '11px'; a.style.padding = '7px 5px 7px 3px'; a.style.minWidth = '34px'; a.style.minHeight = '44px'; a.style.boxSizing = 'border-box'; }, 3000);
     a.onclick = function () { try { sessionStorage.removeItem('kiteFromLine'); } catch (e) {} };
     document.body.appendChild(a);
+    /* QA 10/21：彈出視窗（蓋章、故事、相框、信件…）打開時先藏起來，免得蓋住或誤按 */
+    setInterval(function () { var L = document.querySelectorAll('.ov, .modal, .sheet, .letter, .press, [role=dialog]'), open = false; for (var k = 0; k < L.length && !open; k++) { var el = L[k]; if (el.hidden || el.id === 'kiteBackLine') continue; var cs = getComputedStyle(el); if (cs.display !== 'none' && cs.visibility !== 'hidden' && (cs.position === 'fixed' || cs.position === 'absolute') && el.getClientRects().length) open = true; } a.style.display = open ? 'none' : ''; }, 400);
   }
   if (document.body) add(); else document.addEventListener('DOMContentLoaded', add);
 })();

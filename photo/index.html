@@ -135,7 +135,7 @@ button{font-family:inherit}
 <div id="app">
   <section class="screen on" id="home">
     <button class="snd" id="snd" type="button"></button>
-    <img class="homekite" src="assets/stk_kite_wave.png" alt="">
+    <img class="homekite" src="assets/stk_kite_wave.webp" alt="">
     <div class="homein">
       <h1>小鳶合照館</h1>
       <p>按「拍照」跟小鳶合照，可以加貼紙和相框。</p>
@@ -181,7 +181,7 @@ button{font-family:inherit}
 
   <section class="screen" id="preview">
     <div class="imgwrap"><img id="out" alt="合照"></div>
-    <div class="kitesay" id="kiteSay" hidden><img src="assets/stk_kite_peace.png" alt=""><p id="kiteSayT"></p></div>
+    <div class="kitesay" id="kiteSay" hidden><img src="assets/stk_kite_peace.webp" alt=""><p id="kiteSayT"></p></div>
     <div class="prow">
       <button class="btn" id="saveBtn" type="button">存到手機</button>
       <button class="btn light" id="shareBtn" type="button">分享</button>
@@ -428,7 +428,7 @@ const STK = [
 STK.push(...[['kite', '小鳶章'], ['ship', '郵輪章'], ['shark', '鯨鯊章'], ['bowl', '碗筷章'], ['chair', '椅子章'], ['car', '小車章']].map(([ic, nm], i) => ({ tab: '港灣章', id: '../../stamp/assets/stamp_c_' + ic, name: nm, s: 0.3, ok: () => gotSpot(i + 1), how: '港灣蓋章散步蓋到第 ' + (i + 1) + ' 站' })));
 const TABS = ['小鳶與鯨鯊', '港口朋友', '港灣章', '飛行朋友', '漁獲', '紀念品'];
 const IMG = {};
-function img(id, ext) { if (!IMG[id]) { IMG[id] = new Image(); IMG[id].src = 'assets/' + id + '.' + (ext || 'png'); } return IMG[id]; }
+function img(id, ext) { if (!IMG[id]) { IMG[id] = new Image(); IMG[id].src = 'assets/' + id + '.' + (ext || 'webp'); } return IMG[id]; }
 
 /* ---- 相框：v0.2 用 G-44 的 1080×1440 透明 PNG（暫用），文字與郵票地點圖由程式放 ---- */
 const weekIdx = Math.floor((Date.now() / 86400000 + 3) / 7) % 8, WEEK = LOCS[weekIdx];
@@ -595,13 +595,13 @@ function renderTray() {
     b.setAttribute('aria-pressed', String(t === tab)); b.onclick = () => { tab = t; renderTray(); }; $('tabs').appendChild(b); }
   $('items').innerHTML = '';
   for (const d of STK.filter((x) => x.tab === tab)) {
-    const ok = !d.ok || d.ok(), b = document.createElement('button'); b.type = 'button'; b.className = 'it' + (ok ? '' : ' lock'); b.title = d.name; b.innerHTML = '<img src="assets/' + d.id + '.png" alt="">';
+    const ok = !d.ok || d.ok(), b = document.createElement('button'); b.type = 'button'; b.className = 'it' + (ok ? '' : ' lock'); b.title = d.name; b.innerHTML = '<img src="assets/' + d.id + '.webp" alt="">';
     b.onclick = () => ok ? addSticker(d) : toast(d.how + '就能用「' + d.name + '」'); $('items').appendChild(b);
   }
 }
 function addSticker(d) {
   const o = { d, x: 0.5 + (Math.random() - 0.5) * 0.2, y: 0.55 + (Math.random() - 0.5) * 0.2, s: d.s, r: 0, el: document.createElement('div') };
-  o.el.className = 'stk'; o.el.innerHTML = '<img src="assets/' + d.id + '.png" alt=""><span class="del">×</span><span class="rot">↻</span>';
+  o.el.className = 'stk'; o.el.innerHTML = '<img src="assets/' + d.id + '.webp" alt=""><span class="del">×</span><span class="rot">↻</span>';
   $('layer').appendChild(o.el); stks.push(o); select(o); place(o); $('hint').hidden = true; sfx('pop');
   o.el.querySelector('img').onload = () => place(o);
   o.el.querySelector('.del').addEventListener('pointerdown', (e) => { e.stopPropagation(); remove(o); });
@@ -676,7 +676,7 @@ function capture() {
 }
 let lastBlob = null;
 function fname() { const d = new Date(); return '小鳶合照_' + d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0') + '_' + String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0') + '.jpg'; }
-function save() { if (!lastBlob) return; const a = document.createElement('a'); a.href = URL.createObjectURL(lastBlob); a.download = fname(); document.body.appendChild(a); a.click(); a.remove(); toast('已送出下載，請到下載項目或相簿確認照片'); }
+function save() { if (!lastBlob) return; KiteSaveImg(lastBlob, fname(), () => toast('已送出下載，請到下載項目或相簿確認照片')); }      // QA：LINE 裡改成長按存圖
 async function share() {
   if (!lastBlob) return;
   const f = new File([lastBlob], fname(), { type: 'image/jpeg' });
@@ -702,8 +702,8 @@ function openFrames() {
   const g = $('fgrid'); g.innerHTML = '';
   for (const [fi, si, nm, id] of FRAME_LIST) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'fcell' + (fi === frameI && (si === null || si === seasonI) ? ' on' : '');
-    let src2 = id ? 'assets/' + id + '.png' : null;
-    if (!src2) { const k = fi - 3, gid = ['frame_shark', 'frame_night', 'frame_color', 'frame_rail', 'frame_tide'][k]; if (G46[gid]) src2 = 'assets/' + gid + '.png'; else { const t = document.createElement('canvas'); t.width = 270; t.height = 360; const tc = t.getContext('2d'); tc.scale(0.25, 0.25); codeFrame(tc, k, 1080, 1440); src2 = t.toDataURL(); } }
+    let src2 = id ? 'assets/' + id + '.webp' : null;
+    if (!src2) { const k = fi - 3, gid = ['frame_shark', 'frame_night', 'frame_color', 'frame_rail', 'frame_tide'][k]; if (G46[gid]) src2 = 'assets/' + gid + '.webp'; else { const t = document.createElement('canvas'); t.width = 270; t.height = 360; const tc = t.getContext('2d'); tc.scale(0.25, 0.25); codeFrame(tc, k, 1080, 1440); src2 = t.toDataURL(); } }
     b.innerHTML = '<span class="fimg"><img src="' + src2 + '" alt=""></span>' + (fi === 1 ? '港灣四時・' : '') + nm;
     b.onclick = () => { frameI = fi; if (si !== null) seasonI = si; redrawFrame(); $('frameSheet').hidden = true; };
     g.appendChild(b);
@@ -741,6 +741,7 @@ $('saveBtn').onclick = save; $('shareBtn').onclick = share; $('againBtn').onclic
 LOCS.forEach((l) => { img('pc_' + l[0] + '_a_v2', 'jpg').onload = () => { if ($('shoot').classList.contains('on')) redrawFrame(); }; });
 window.__photo = { stks: () => stks, add: (id) => addSticker(STK.find((d) => d.id === id)), capture, setFrame: (i, s) => { frameI = i; if (s !== undefined) seasonI = s; redrawFrame(); }, useImage };
 </script>
+<script src="../shared/save_img.js"></script>
 <script src="../shared/back_line.js"></script>
 </body>
 </html>
