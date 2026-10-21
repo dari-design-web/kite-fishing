@@ -284,7 +284,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
   function go(p, arg) { open(p, arg, true); }
   /* D100：雲端同步回來（服務台發放、券核銷、後台調整、新設定）就重畫目前這頁；後台清空測試資料時整頁重新載入 */
   K.onCloud(function (e) { if (e && e.wiped) return location.reload(); if (scanner || document.querySelector('.modal')) return; var t = stack[stack.length - 1]; if (t && $('sheet').classList.contains('on') && ['points', 'mine', 'coupon', 'ticket', 'shop', 'item', 'park', 'mygames', 'me'].indexOf(t[0]) >= 0) { var y = $('sbody').scrollTop; R[t[0]](t[1]); $('sbody').scrollTop = y; } });
-  var INLIFF = /[?&]liff=1/.test(location.search) || /[?&]liff\.state=/.test(location.search) || / Line\//i.test(navigator.userAgent);
+  var INLIFF = /[?&]liff=1/.test(location.search) || /[?&]liff\.state=/.test(location.search);      // D144：在 LINE 裡點一般連結（LINE 內建瀏覽器）要看到示意聊天室；只有正式 LIFF 入口才直接進樂園
   if (INLIFF) document.body.classList.add('inliff');
   if (K.cloudStatus().url) { var tb = document.querySelector('.testbar'), tbf = function () { var c = K.cloudStatus(); tb.textContent = c.err ? '測試資料：目前連不上雲端，先存在這支手機；連線後會再嘗試同步' : '測試資料：已同步到雲端。正式上線前會全部清空'; }; tbf(); K.onCloud(tbf); setInterval(tbf, 10000); }
   function close() { if (scanner) { scanner.stop(); scanner = null; } if (INLIFF) { if (window.liff && liff.isInClient && liff.isInClient()) return liff.closeWindow(); stack = []; return open('park'); } $('sheet').className = 'sheet'; stack = []; }
