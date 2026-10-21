@@ -471,7 +471,7 @@
       '<h3>五、店家消費</h3>' + T(['店家', '集點筆數', '消費金額', '發出點數', '會員數'], storeT, [1, 2, 3, 4]) +
       '<h3>六、遊戲</h3>' + T(['遊戲', '局數', '玩家', '平均分', '分鐘'], gameT, [1, 2, 3, 4]) +
       '<h3>七、最活躍的會員（前 10）</h3>' + T(['會員', '來訪天數', '獲得', '用掉', '局數', '消費金額'], topM.map((r) => [esc(r.name || r.id) + ' <span style="color:' + C.muted + '">' + esc(r.id) + '</span>', r.vis, r.earned, r.spent, r.plays, r.amount]), [1, 2, 3, 4, 5]) +
-      '<p style="font-size:12px;color:' + C.muted + ';margin-top:18px">資料來源：雲端測試資料庫（各裝置同步）。「活躍會員」＝期間內有集點、遊戲、兌換或來訪。「領取率」＝已領 ÷（兌換單 − 取消 − 逾期退點）。</p></div>';
+      '<p style="font-size:12px;color:' + C.muted + ';margin-top:18px">資料來源：' + (D.demo ? '固定示範資料（假的，40 位會員、30 天，只在這個分頁的記憶體）' : (K.cloudStatus && K.cloudStatus().url ? (K.cloudStatus().admin ? '雲端測試資料庫（各裝置同步，完整資料）' : '雲端測試資料庫（精簡資料，沒填後台金鑰：看不到其他會員的兌換與遊戲）') : '只有這台電腦的資料')) + '・產製 ' + new Date().toLocaleString('zh-TW', { hour12: false }) + '。「活躍會員」＝期間內有集點、遊戲、兌換或來訪。「領取率」＝已領 ÷（兌換單 − 取消 − 逾期退點）。</p></div>';
     wireRange(c);
     $('rpSnap').onclick = () => { const el = document.querySelector('.rep'); if (!el) return; const a = snaps(); a.unshift({ t: Date.now(), from: rg.from, to: rg.to, demo: !!D.demo, html: el.innerHTML }); while (a.length > 12) a.pop();
       try { localStorage.setItem('kiteReportSnaps1', JSON.stringify(a)); K.audit('保存營運報告 ' + rg.from + '～' + rg.to); A.toast('已保存：' + rg.from + '～' + rg.to + '（之後打開數字不會變）'); A.app(); } catch (e) { A.toast('保存失敗：瀏覽器空間不夠，請先刪掉幾份舊的'); } };
