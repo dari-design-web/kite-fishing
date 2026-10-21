@@ -1,7 +1,7 @@
 /* 小鳶來港 共用：每日挑戰（G97，ChatGPT 設計；Claude 實作 v1）
    - 每天（台北日期）一題，全員同一個亂數種子＝同樣的障礙／掉落順序；題目在 3 個小遊戲間輪替，每題一個「今日變化」
    - 正式挑戰每人每天 3 次，開始就扣（記在會員的遊戲紀錄裡，換手機也一樣）；練習不限次數、不計榜
-   - 不給會員點數、不佔一般遊戲次數、不算月榜與總分；今日榜只比同一天同一題，同分同名次
+   - D141（Dari 10/21）：正式局的分數也算進「今日遊戲積分」可換點（照該遊戲換算比例）；不佔一般遊戲次數；今日榜只比同一天同一題，同分同名次
    - 挑戰朋友：只複製一段文字＋今日挑戰連結（D04：不真的發送；連結不含會員資料或分數）
    KiteDaily.today() → { date, game, name, vary, key, seed, url }；KiteDaily.rng(seed) → 0～1 的固定亂數；KiteDaily.left() → 今天剩幾次 */
 (function (G) {
@@ -35,7 +35,7 @@
   function begin(s) { if (!s || !s.official || !K.reportDaily) return; s.id = K.reportDaily(s.td.date, s.td.game, 0); }      // 開始就扣一次
   function finish(s, score) {
     if (!s) return null; var td = s.td, out = { official: s.official, left: left(), best: 0, rank: 0, total: 0 };
-    if (s.official && K.reportDaily) K.reportDaily(td.date, td.game, score, s.id);
+    if (s.official && K.reportDaily) out.tier = K.reportDaily(td.date, td.game, score, s.id);
     try { var L = K.leaderboard('daily', td.date, 'all', 10); out.best = L.mine ? L.mine.score : 0; out.rank = L.mine ? L.mine.rank : 0; out.total = L.total; } catch (e) {}
     out.left = left(); return out;
   }
@@ -46,6 +46,7 @@
   function resultHtml(s, r, score) {
     if (!s || !r) return '';
     var h = '<div class="kd-res"><b>📅 今日挑戰・' + (s.official ? '正式' : '練習（不計榜）') + '</b>';
+    if (s.official && r.tier && K.tierLine) h += '<div>🪙 ' + K.tierLine(r.tier) + '</div>';
     if (s.official) h += '<div>今日最佳 ' + Number(r.best).toLocaleString() + ' 分' + (r.rank ? '・今日第 ' + r.rank + ' 名' : '・名次更新中') + '</div><div>今天還有 ' + r.left + ' 次正式挑戰</div>';
     h += '<div class="kd-btns">' + (r.left > 0 ? '<a class="kd-b" href="?daily=official">再正式挑戰</a>' : '') + '<a class="kd-b" href="?daily=practice">' + (s.official ? '練習' : '再練一次') + '</a>' + (s.official ? '<button type="button" class="kd-b" data-kd="share">挑戰朋友</button>' : '') + '<button type="button" class="kd-b" data-kd="lb">看今日榜</button></div></div>';
     return h;
