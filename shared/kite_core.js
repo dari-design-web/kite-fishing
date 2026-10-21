@@ -99,10 +99,10 @@
     travel: { name: '小鳶去旅行', levels: {} },
     photo: { name: '小鳶合照館', levels: {} },
     stamp: { name: '港灣蓋章散步', levels: {} },
-    merge: { name: '小鳶合成港', levels: {} },      // D119：放進遊戲大廳，不計分
-    stack: { name: '小鳶疊貨櫃', levels: {} },
-    swim: { name: '鯨鯊快游', levels: {} },
-    daily: { name: '今日挑戰', levels: {} }      // G97：每日挑戰（只進今日榜）      // D136：3D 試玩版，只進排行榜
+    merge: { name: '小鳶合成港', levels: { all: '合成港' } },      // D119 放進遊戲大廳；D141（Dari 10/21）：能產生分數的都計入每日累計、可換點
+    stack: { name: '小鳶疊貨櫃', levels: { all: '疊貨櫃' } },
+    swim: { name: '鯨鯊快游', levels: { all: '鯨鯊快游' } },
+    daily: { name: '今日挑戰', levels: {} }      // G97：每日挑戰；D141：正式局也算今日積分
   };
 
   function rd(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
@@ -293,22 +293,31 @@
     var capMax = c.eventCapMult ? Math.max(cap, Math.round((c.gameDailyCap || 0) * tm)) : cap;      // D99：今天有加倍活動時，上限最多可到幾點（給畫面提示）
     return { total: total, base: base, bonus: bonus, pts: pts, got: got, cap: cap, capMax: capMax, next: nx, claim: Math.max(0, pts - got) };
   }
-  function triesLeft(game, level) { var c = cfg(), m = member(), k = dayKey() + '|' + game + '|' + level, n = c.gameTries[game] != null ? c.gameTries[game] : c.triesPerLevel; return Math.max(0, n - ((m.tries || {})[k] || 0)); }
-  function reportPlay(o) {      // o = { game, level, score, sec }
+  /* D141：小遊戲只有一關，預設每天前 3 局算分；分數換算比例（各遊戲分數大小不同，換成和捕魚、飛行差不多的份量），後台 cfg.gameTries／cfg.scoreWeight 可改 */
+  var MINI_TRIES = { merge: 3, stack: 3, swim: 3 }, DEF_W = { merge: 0.4, stack: 1, swim: 0.3 };
+  function scoreW(game) { var w = (cfg().scoreWeight || {})[game]; return w != null ? +w : DEF_W[game] != null ? DEF_W[game] : 1; }
+  function triesLeft(game, level) { var c = cfg(), m = member(), k = dayKey() + '|' + game + '|' + level, gt = c.gameTries || {}, n = gt[game] != null ? gt[game] : MINI_TRIES[game] != null ? MINI_TRIES[game] : c.triesPerLevel; return Math.max(0, n - ((m.tries || {})[k] || 0)); }
+  function reportPlay(o) {      // o = { game, level, score, sec, wg（換算用的遊戲）, lbAll（不算分的局也進排行榜）, counted（指定是否算分） }
     var m = member(), k = dayKey() + '|' + o.game + '|' + o.level; m.tries = m.tries || {};
     var gc = (cfg().games || {})[o.game] || {}, sc = Math.max(0, o.score || 0), capped = gc.maxScore && sc > gc.maxScore; if (capped) sc = gc.maxScore;
-    var counted = m.status !== 'frozen' && gc.on !== false && triesLeft(o.game, o.level) > 0, ev = eventMult(o.game), add = counted ? Math.round(sc * ev.mult) : 0;
-    m.tries[k] = (m.tries[k] || 0) + 1;
-    var tier = cfg().gamePointMode === 'tier';
-    m.plays.unshift({ t: Date.now(), game: o.game, level: String(o.level), score: o.score || 0, capped: !!capped, sec: Math.round(o.sec || 0), counted: counted, mult: ev.mult, cp: ev.id || undefined, raw: counted ? sc : 0, bank: tier ? 0 : add }); m.plays = m.plays.slice(0, 800);
-    if (!tier) { m.scoreBank[o.game] = (m.scoreBank[o.game] || 0) + add; saveMember(m); return { counted: counted, add: add, mult: ev.mult, event: ev.title, bank: m.scoreBank[o.game], left: triesLeft(o.game, o.level) }; }
-    /* D97：階梯制——把今天累計的點數補到應得的數字（只增不減，當天上限內） */
-    var tap = cfg().gameClaim === 'tap', g = gameToday(m), gain = Math.max(0, g.pts - g.got), lit = 0;
-    if (tap) { m.litT = m.litT || {}; lit = Math.max(0, g.pts - (m.litT[dayKey()] || 0)); m.litT = {}; m.litT[dayKey()] = g.pts; gain = 0; }      // D102：點亮制，這局只是點亮格子，到小鳶樂園點一下才入帳
-    else if (gain > 0) addLedger(m, { type: 'game', pts: gain, game: o.game, day: dayKey(), note: '今日累計 ' + g.total + ' 分' });
-    saveMember(m);
-    return { tier: true, tap: tap, counted: counted, add: counted ? sc : 0, mult: ev.mult, event: ev.title, today: g.total, pts: g.pts, gain: gain, lit: lit, claim: tap ? Math.max(0, g.pts - g.got) : 0, cap: g.cap, next: g.next, total: m.points, left: triesLeft(o.game, o.level) };
+    var counted = o.counted != null ? (o.counted && m.status !== 'frozen' && gc.on !== false) : (m.status !== 'frozen' && gc.on !== false && triesLeft(o.game, o.level) > 0), ev = eventMult(o.game);
+    sc = Math.round(sc * scoreW(o.wg || o.game)); var add = counted ? Math.round(sc * ev.mult) : 0;      // D141：換算比例
+    if (o.counted == null) m.tries[k] = (m.tries[k] || 0) + 1;
+    var tier = cfg().gamePointMode === 'tier', id = 'P' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+    m.plays.unshift({ t: Date.now(), id: id, game: o.game, level: String(o.level), sub: o.wg || undefined, did: o.did || undefined, score: o.score || 0, capped: !!capped, sec: Math.round(o.sec || 0), counted: counted, lbOnly: o.lbAll ? true : undefined, mult: ev.mult, cp: ev.id || undefined, raw: counted ? sc : 0, bank: tier ? 0 : add }); m.plays = m.plays.slice(0, 800);
+    if (!tier) { m.scoreBank[o.game] = (m.scoreBank[o.game] || 0) + add; saveMember(m); return { counted: counted, add: add, mult: ev.mult, event: ev.title, bank: m.scoreBank[o.game], left: triesLeft(o.game, o.level), id: id }; }
+    var r = tierSync(m, o.game); saveMember(m);
+    return Object.assign(r, { counted: counted, add: counted ? sc : 0, mult: ev.mult, event: ev.title, left: triesLeft(o.game, o.level), id: id });
   }
+  /* D97／D102：階梯制——把今天累計的點數補到應得的數字（只增不減，當天上限內）；點亮制只點亮格子，回樂園領 */
+  function tierSync(m, game) {
+    var tap = cfg().gameClaim === 'tap', g = gameToday(m), gain = Math.max(0, g.pts - g.got), lit = 0;
+    if (tap) { m.litT = m.litT || {}; lit = Math.max(0, g.pts - (m.litT[dayKey()] || 0)); m.litT = {}; m.litT[dayKey()] = g.pts; gain = 0; }
+    else if (gain > 0) addLedger(m, { type: 'game', pts: gain, game: game, day: dayKey(), note: '今日累計 ' + g.total + ' 分' });
+    return { tier: true, tap: tap, today: g.total, pts: g.pts, gain: gain, lit: lit, claim: tap ? Math.max(0, g.pts - g.got) : 0, cap: g.cap, next: g.next, total: m.points };
+  }
+  /* 結算一行字（捕魚、飛行、小遊戲共用）：今天累計多少分、幾點、這局新亮幾格 */
+  function tierLine(rp) { if (!rp) return ''; if (!rp.tier) return rp.counted ? '分數存摺 +' + rp.add : ''; if (!rp.counted) return '今天這款的算分次數用完了，這局只進排行榜'; return '今日積分 ' + rp.today.toLocaleString() + ' 分＝' + rp.pts + ' 點' + (rp.tap ? (rp.lit ? '・新亮 ' + rp.lit + ' 格' : '') + (rp.claim ? '・回樂園領 ' + rp.claim + ' 點' : '') : rp.gain ? '（+' + rp.gain + ' 點）' : '') + (rp.next ? '・再 ' + rp.next.need.toLocaleString() + ' 分多 1 點' : rp.pts >= rp.cap ? '・今天已滿' : ''); }
   /* D102：小鳶樂園點亮的格子點一下入帳（n＝要領幾點，不給就全部領）；點數記在今天分數最多的遊戲名下，報表才分得出來 */
   function topGame(m, d) { var by = {}; (m.plays || []).forEach(function (p) { if (p.counted && dayKey(p.t) === d) by[p.game] = (by[p.game] || 0) + (p.raw || 0); }); return Object.keys(by).sort(function (a, b) { return by[b] - by[a]; })[0] || 'fish'; }
   function claimGame(n) {
@@ -369,12 +378,12 @@
   function reportMini(game, score) {      // D123：合成港、疊貨櫃只進排行榜（不換點、不佔次數、不算總分）
     var m = member(); m.plays = m.plays || []; m.plays.unshift({ t: Date.now(), game: game, level: 'all', score: Math.max(0, Math.round(score || 0)), counted: false, lbOnly: true, raw: 0, bank: 0 }); m.plays = m.plays.slice(0, 800); saveMember(m); if (cloudStatus().url && typeof cloudPush === 'function') try { cloudPush(); } catch (e) {}
   }
-  /* G97：每日挑戰——正式場次記成 game:'daily'、level:日期（只進今日榜，不換點、不佔次數、不算月榜總分）。開始時先記 0 分扣次，結束再補分數 */
-  function reportDaily(date, game, score, id) {
+  /* G97：每日挑戰——正式場次記成 game:'daily'、level:日期（進今日榜；D141 起也算今日積分；不佔一般次數、不算月榜總分）。開始時先記 0 分扣次，結束再補分數 */
+  function reportDaily(date, game, score, id) {      // D141：今日挑戰的正式局也算進每日累計（照該遊戲的換算比例），每天最多 3 局
     var m = member(); m.plays = m.plays || []; var p = id ? m.plays.filter(function (x) { return x.did === id; })[0] : null;
-    if (p) p.score = Math.max(p.score || 0, Math.max(0, Math.round(score || 0)));
-    else { id = 'D' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); m.plays.unshift({ t: Date.now(), game: 'daily', level: date, sub: game, did: id, score: Math.max(0, Math.round(score || 0)), counted: false, lbOnly: true, raw: 0, bank: 0 }); m.plays = m.plays.slice(0, 800); }
-    saveMember(m); if (cloudStatus().url && typeof cloudPush === 'function') try { cloudPush(); } catch (e) {} return id;
+    if (!p) { id = 'D' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); reportPlay({ game: 'daily', level: date, score: 0, wg: game, did: id, lbAll: true, counted: dailyUsed(date) < 3 }); return id; }
+    var sc = Math.max(0, Math.round(score || 0)); p.score = Math.max(p.score || 0, sc); if (p.counted) p.raw = Math.max(p.raw || 0, Math.round(sc * scoreW(game)));
+    var r = cfg().gamePointMode === 'tier' ? tierSync(m, 'daily') : null; saveMember(m); if (cloudStatus().url && typeof cloudPush === 'function') try { cloudPush(); } catch (e) {} return r ? Object.assign(r, { counted: p.counted }) : id;
   }
   function dailyUsed(date) { return (member().plays || []).filter(function (p) { return p.game === 'daily' && p.level === date; }).length; }
   /* D133：結算畫面顯示「本月第 N 名」——記下這局前後的名次，fn 是送成績的動作 */
@@ -753,7 +762,7 @@
     cloudPull: cloudPull, cloudPush: cloudPush, cloudSync: cloudSync, cloudOp: cloudOp, cloudWipe: cloudWipe, cloudStatus: cloudStatus, onCloud: function (f) { CL.subs.push(f); }, cloudStart: cloudStart, cloudMarkAll: function () { CL.cfgDirty = CL.imgDirty = true; }, liffStart: liffStart, linkLine: linkLine, liffId: liffId,
     member: member, peekMember: function () { return rd(K_MEM); }, saveMember: saveMember, dayKey: dayKey, rid: rid, hmac: hmac, sha256: sha256, utf8: utf8,
     pointsForSpend: pointsForSpend, makeEarnCode: makeEarnCode, claimEarn: claimEarn, storeLog: function () { return lg(K_STORE); }, storeById: storeById,
-    eventMult: eventMult, reportDaily: reportDaily, dailyUsed: dailyUsed, rankAround: rankAround, rankText: rankText, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore, tierPts: tierPts, nextTier: nextTier, gameToday: gameToday, leaderboard: leaderboard, reportMini: reportMini, travelBoard: travelBoard, lbMe: lbMe, setLbMe: setLbMe, lbSync: lbSync, sumBoard: sumBoard, fmtScore: fmtScore, setTravelStat: setTravelStat, claimGame: claimGame, settleGame: settleGame, storeBonusPts: storeBonusPts,
+    eventMult: eventMult, tierLine: tierLine, scoreW: scoreW, reportDaily: reportDaily, dailyUsed: dailyUsed, rankAround: rankAround, rankText: rankText, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore, tierPts: tierPts, nextTier: nextTier, gameToday: gameToday, leaderboard: leaderboard, reportMini: reportMini, travelBoard: travelBoard, lbMe: lbMe, setLbMe: setLbMe, lbSync: lbSync, sumBoard: sumBoard, fmtScore: fmtScore, setTravelStat: setTravelStat, claimGame: claimGame, settleGame: settleGame, storeBonusPts: storeBonusPts,
     travelGift: travelGift, travelPtsThisMonth: function () { return travelPtsThisMonth(member()); }, myCoupons: myCoupons, couponCheck: couponCheck, couponUse: couponUse, couponStoreName: couponStoreName, couponIssued: couponIssued, couponImg: couponImg, couponUsedCount: couponUsedCount, couponFaceHTML: couponFaceHTML,
     prizeById: prizeById, stockLeft: stockLeft, makeRedeem: makeRedeem, maxQty: maxQty, perUserLeft: perUserLeft, cancelRedeem: cancelRedeem, deskCheck: deskCheck, deskGive: deskGive, findRedeem: findRedeem, pendingRedeems: pendingRedeems, memberName: memberName, markGiven: markGiven, deskLog: function () { return lg(K_DESK); },
     allMembers: allMembers, importMembers: importMembers, addAdj: addAdj, adjSum: adjSum, gap: gap, list: list, saveList: saveList, backfill: backfill, claimedRefs: claimedRefs, lookupTx: lookupTx, archiveFull: archiveFull, archives: function () { return (rd('kiteArchive1') || []).map(function (a) { return { id: a.id, t: a.t }; }); }, importPreview: importPreview, dataset: dataset, wipeTest: wipeTest, reissueEarn: reissueEarn, voidEarn: voidEarn, peekEarn: peekEarn, earnCheck: earnCheck, onHand: onHand, reservedCount: reservedCount, exportMe: exportMe, wipeMine: wipeMine, MINE_KEYS: MINE_KEYS, expiring: expiring, batches: batches, housekeep: housekeep, storeMult: storeMult, notices: function () { var d = dayKey(); return (cfg().notices || []).filter(function (n) { return n.on && (!n.from || d >= n.from) && (!n.to || d <= n.to); }); }
