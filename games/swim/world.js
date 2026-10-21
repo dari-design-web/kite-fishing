@@ -9,7 +9,7 @@ export async function makeWorld(THREE, base, onProgress) {
     'seagrass_tall', 'seagrass_cluster', 'seagrass_bent', 'kelp_rock', 'algae_pebbles', 'turtle_side', 'bg_seagrass',
     'shipwreck_buried', 'cargo_decor', 'tire_decor', 'anchor_decor', 'fishing_boat_broken', 'harbor_buoy', 'harbor_signal', 'bg_harbor',
     'jellyfish_glow', 'coral_glow', 'anglerfish', 'deep_rock', 'tube_sponge_glow', 'shells_glow', 'bg_deep',
-    'ob_net', 'ob_reef_pillar', 'ob_reef_arch', 'ob_bottle', 'ob_plastic_bag', 'ob_tire', 'ob_oil_barrel', 'ob_cargo', 'ob_harpoon', 'ob_jellyfish_group',
+    'ob_net', 'ob_net_vertical', 'ob_reef_pillar', 'ob_reef_arch', 'ob_bottle', 'ob_plastic_bag', 'ob_tire', 'ob_oil_barrel', 'ob_cargo', 'ob_harpoon', 'ob_jellyfish_group',
     'food_plankton', 'food_krill', 'food_roe', 'food_small_fish', 'item_speed_ring', 'item_bubble_shield', 'kite_dive_v1', 'item_dash_lightning', 'item_frenzy_flame'];
   const TX = {}, AR = {}, loader = new THREE.TextureLoader(); let done = 0;
   await Promise.all(NAMES.map((n) => loader.loadAsync(base + n + '.webp').then((t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; TX[n] = keep(t); AR[n] = t.image.width / t.image.height; done++; onProgress && onProgress(done / NAMES.length); })));
@@ -65,7 +65,7 @@ export async function makeWorld(THREE, base, onProgress) {
   const O = {
     netTop() { const g = new THREE.Group(), s = spr('ob_net', 4.6); s.scale.x = 8.6; g.add(at(s, 0, 3.4)); g.add(warn('down', 0, 6.2)); return { g, lanes: ALL, y: [1.25, 9], tip: '往下滑，潛過去！', net: 1, hit: '被漁網纏住！' }; },
     netLow() { const g = new THREE.Group(), s = spr('ob_net', 3.8); s.scale.x = 8.6; g.add(at(s, 0, 0.75)); g.add(warn('up', 0, 3.4)); return { g, lanes: ALL, y: [-2, 2.55], tip: '往上滑，游過去！', net: 1, hit: '被漁網纏住！' }; },
-    netWall(open) { const g = new THREE.Group(), cov = ALL.filter((i) => i !== open); cov.forEach((i) => { const s = spr('ob_net', 2.9); s.scale.set(6.4, 2.9, 1); s.material = s.material.clone(); s.material.rotation = Math.PI / 2; g.add(at(s, Lx[i], 2.2)); }); g.add(gap(Lx[open])); g.add(warn('lane', Lx[open], 4.9)); return { g, lanes: cov, y: FULL, tip: '找綠色圈圈的缺口！', net: 1, hit: '被漁網纏住！' }; },
+    netWall(open) { const g = new THREE.Group(), cov = ALL.filter((i) => i !== open); cov.forEach((i) => { g.add(at(spr('ob_net_vertical', 5.6, true), Lx[i], FLOOR)); });      /* G99 補圖：直立圍網 */ g.add(gap(Lx[open])); g.add(warn('lane', Lx[open], 4.9)); return { g, lanes: cov, y: FULL, tip: '找綠色圈圈的缺口！', net: 1, hit: '被漁網纏住！' }; },
     pillar(l) { const g = new THREE.Group(); g.add(at(spr('ob_reef_pillar', 6.2, true), Lx[l], FLOOR)); return { g, lanes: [l], y: FULL, tip: '礁石！左右滑閃開', hit: '撞到礁石！' }; },
     arch() { const g = new THREE.Group(), s = spr('ob_reef_arch', 8.8); s.scale.x = 15; g.add(at(s, 0, 1.3 + 8.8 * 0.2)); g.add(gap(0)); return { g, lanes: [0, 2], y: FULL, tip: '礁石拱門！從中間的洞穿過', hit: '撞到拱門的柱子！' }; },      // D146：畫面上洞在中間，就讓中間水道直接穿過（原本要往下潛，跟畫面不合）
     trash(l) { const g = new THREE.Group(); g.add(at(spr(pick(['ob_bottle', 'ob_plastic_bag']), 2.6), Lx[l], 1.9)); g.userData.wob = 1; return { g, lanes: [l], y: MID, tip: '巨大垃圾！閃開', hit: '撞到垃圾！' }; },
