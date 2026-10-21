@@ -29,7 +29,7 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
 .hud .mid{display:flex;justify-content:center;gap:6px;margin-top:6px}
 .hud .mid span{font-size:12px;background:rgba(10,34,54,.55);border-radius:999px;padding:2px 10px}
 .hud .mid .cb{color:#FFE45C}
-.fever{position:absolute;right:14px;top:70px;overflow:visible;width:14px;height:120px;border-radius:8px;background:rgba(10,34,54,.55);border:2px solid rgba(255,255,255,.6);overflow:hidden;pointer-events:none}
+.fever{position:absolute;right:23px;top:122px;overflow:visible;width:14px;height:120px;border-radius:8px;background:rgba(10,34,54,.55);border:2px solid rgba(255,255,255,.6);overflow:hidden;pointer-events:none}
 .fever i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#FFE45C,#FF8A3C)}
 .fever.on{box-shadow:0 0 14px #FFE45C;border-color:#FFE45C}
 .fever b{position:absolute;right:-6px;top:-26px}
@@ -38,8 +38,18 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
 .pw i{font-style:normal;font-size:18px}
 .pw b{display:block;width:46px;height:6px;border-radius:3px;background:rgba(255,255,255,.25);overflow:hidden}
 .pw b em{display:block;height:100%;background:#FFE45C}
-.tip{position:absolute;left:50%;top:30%;transform:translate(-50%,-50%);background:#FFE45C;color:var(--ink);border:3px solid var(--ink);border-radius:18px;padding:8px 16px;font-weight:900;font-size:19px;white-space:nowrap;pointer-events:none;box-shadow:0 5px 0 rgba(0,0,0,.25)}
+.tip{position:absolute;left:50%;top:92px;transform:translateX(-50%);font-size:16px!important;padding:6px 14px!important;background:#FFE45C;color:var(--ink);border:3px solid var(--ink);border-radius:18px;padding:8px 16px;font-weight:900;font-size:19px;white-space:nowrap;pointer-events:none;box-shadow:0 5px 0 rgba(0,0,0,.25)}
 .tip[hidden]{display:none}
+.lvl{position:absolute;left:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:4px;pointer-events:none}
+.lvl span{font-size:12px;font-weight:900;width:30px;text-align:center;border-radius:8px;padding:3px 0;background:rgba(10,34,54,.45);color:rgba(255,255,255,.55)}
+.lvl span.on{background:#FFE45C;color:var(--ink);box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.lvl[hidden]{display:none}
+.pause{position:absolute;right:10px;top:52px;width:40px;height:40px;border-radius:12px;border:2px solid rgba(255,255,255,.7);background:rgba(10,34,54,.55);color:#fff;font-size:16px;font-weight:900}
+.pause[hidden]{display:none}
+.mis{display:block;margin:8px 0 0;background:#EAF6F4;border-radius:10px;padding:6px 10px;font-size:13px;font-weight:800;color:var(--ink)}
+.card .why{display:flex;gap:8px;align-items:center;background:#FFF1D6;border-radius:12px;padding:6px 10px;margin:6px 0;font-size:13px;font-weight:700;text-align:left}
+.card .why img{width:40px;height:40px;object-fit:contain;flex:none}
+.card .go2{display:block;width:100%;min-height:44px;margin-top:8px;border:2px solid var(--ink);border-radius:999px;background:#fff;color:var(--ink);font:inherit;font-weight:800;font-size:16px}
 .tip.info{background:rgba(255,248,234,.95)}
 .zone{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);font-weight:900;font-size:30px;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.35),0 0 18px rgba(0,0,0,.25);white-space:nowrap;pointer-events:none;animation:zone 2.4s ease-out forwards}
 .zone small{display:block;font-size:14px;text-align:center;opacity:.9}
@@ -83,19 +93,23 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
   <div class="feverfx" id="feverfx"></div>
   <div class="flash" id="flash"></div>
   <div class="helper" id="helper"><img src="assets/kite_dive_v1.webp" alt=""></div>
-  <div class="hud" id="hud" hidden><div class="row"><span class="sc"><small>分數</small><span id="sc">0</span></span><span class="hp" id="hp">💙💙💙</span></div><div class="mid"><span id="dist">0 公尺</span><span id="spd">速度 1</span><span class="cb" id="cb" hidden></span></div></div>
+  <div class="hud" id="hud" hidden><div class="row"><span class="sc"><small>分數</small><span id="sc">0</span></span><span class="hp" id="hp">💙💙💙</span></div><div class="mid"><span id="dist">0 公尺</span><span id="spd">速度 1</span><span class="cb" id="cb" hidden></span><span id="misH" hidden></span></div></div>
   <div class="fever" id="fever" hidden><i id="feverI"></i><b><img src="assets/item_frenzy_flame.webp" alt=""></b></div>
   <div class="pw" id="pw"></div>
+  <div class="lvl" id="lvl" hidden aria-hidden="true"><span>高</span><span class="on">中</span><span>低</span></div>
+  <button class="pause" id="pauseBtn" type="button" aria-label="暫停" hidden>Ⅱ</button>
   <div class="tip" id="tip" hidden></div>
   <div class="card" id="startCard">
     <img class="hero" src="assets/shark_1.webp" alt="">
     <h2>鯨鯊快游</h2>
     <p>帶鯨鯊穿越基隆外海的四種海底世界！</p>
     <div class="ctl"><div><i>👈👉</i>左右滑<br>換水道</div><div><i>👆👇</i>上下滑<br>游高・潛低</div><div><i>💫</i>穿過金圈<br>加速加分</div><div><i>🔥</i>吃滿能量<br>鯨鯊狂歡</div></div>
-    <div class="zl"><span>🐠 珊瑚礁</span><span>🌿 海草森林</span><span>⚓ 沉船港區</span><span>🌌 深海發光</span></div>
+    <div class="zl"><span>🐠 潮境珊瑚礁</span><span>🌿 八斗子海草</span><span>⚓ 正濱沉船港</span><span>🌌 基隆嶼深海</span></div>
+    <span class="mis" id="misStart"></span>
     <button class="go" id="goBtn" type="button">開始</button>
   </div>
   <div class="card" id="endCard" hidden></div>
+  <div class="card" id="pauseCard" hidden><h2>暫停</h2><p id="pauseMis"></p><button class="go" id="resumeBtn" type="button">繼續</button><a class="go2" href="../../line/index.html?p=park" style="text-decoration:none;line-height:40px">回小鳶樂園</a></div>
   <span class="tag3d">試玩版</span>
 </div>
 <p class="how"><b>左右滑</b>換水道・<b>上下滑</b>躲障礙・<b>金圈</b>加速</p>
@@ -152,7 +166,7 @@ let big = null;
 const tgtC = { sea: new THREE.Color(theme.sea), sand: new THREE.Color(theme.sand), fog: theme.fog.slice() };
 function setZone(i, instant) { zone = i; theme = W.THEMES[i % W.THEMES.length]; tgtC.sea.set(theme.sea); tgtC.sand.set(theme.sand); tgtC.fog = theme.fog.slice();
   if (instant) { seaC.copy(tgtC.sea); sandM.color.copy(tgtC.sand); S.fog.near = tgtC.fog[0]; S.fog.far = tgtC.fog[1]; bgs.forEach((b, k) => (b.material.opacity = k === i % 4 ? 1 : 0)); }
-  else { const z = document.createElement('div'); z.className = 'zone'; z.innerHTML = theme.name + '<small>第 ' + (i + 1) + ' 區</small>'; stage.appendChild(z); setTimeout(() => z.remove(), 2500); beep([523, 784, 1047], 120, 'triangle'); }
+  else { const z = document.createElement('div'); z.className = 'zone'; z.innerHTML = theme.name + '<small>' + theme.place + '・第 ' + (i + 1) + ' 區</small>'; stage.appendChild(z); setTimeout(() => z.remove(), 2500); beep([523, 784, 1047], 120, 'triangle'); }
   if (big) { drop(big); big = null; } big = W.bigCreature(theme); const side = Math.random() < 0.5 ? -1 : 1; big.userData.side = side; big.position.set(side * 9, rnd(4.5, 6.5), -45); if (side > 0) { big.material = big.material.clone(); big.material.rotation = 0; big.scale.x *= -1; } S.add(big); }
 setZone(0, true);
 /* 先把所有貼圖、材質送進顯示卡，換場景才不會卡 */
@@ -169,15 +183,20 @@ function powerup(kind, x, y, z) { const s = W.spr(PW[kind].img, 1.6); s.position
 function obstacle(name, arg) { const d = W.O[name](arg); d.g.position.z = CFG.spawnZ; return addObj(d.g, 'ob', Object.assign({ name }, d)); }
 
 /* ---------- 狀態 ---------- */
+/* G98-M1：每局一個小任務（只記在遊戲裡，不給點數） */
+const MIS = [{ id: 'dodge', txt: '安全閃過 3 個漁網或拱門', n: 3 }, { id: 'combo', txt: '連吃 20 個', n: 20 }, { id: 'dist', txt: '游到 800 公尺', n: 800 }, { id: 'ring', txt: '穿過 8 個金圈', n: 8 }, { id: 'eat', txt: '吃 50 個食物', n: 50 }];
+let mis = MIS[Math.floor(Math.random() * MIS.length)], misV = 0, misDone = false, maxCombo = 0, lastHit = null, eaten = 0;
+function misSet(id, val, add) { if (misDone || mis.id !== id) return; misV = add ? misV + val : Math.max(misV, val); if (misV >= mis.n) { misDone = true; misV = mis.n; tip('🎯 任務完成！' + mis.txt, true, 1.8); beep([660, 880, 1100, 1320], 80, 'triangle'); } }
+$('misStart').textContent = '🎯 本局任務：' + mis.txt;
 let state = 'ready', v = CFG.v0, dist = 0, score = 0, bonus = 0, hearts = CFG.hearts, inv = 0, nextRow = 30, combo = 0, t = 0, playT = 0, last = performance.now(), lane = 1, vstate = 'mid', vT = 0, step = 0, tipT = 0, seen = {}, feverE = 0;
 const pos = { x: 0, y: CFG.yMid }, P = { shield: 0, magnet: 0, dash: 0, fever: 0 }, curve = { x: 0, y: 0, tx: 0, ty: 0, next: 6 };
 let bestNow = (() => { try { return +localStorage.getItem('kiteSwimBest1') || 0; } catch (e) { return 0; } })();
 function resize() { const w = stage.clientWidth, h = stage.clientHeight; R.setSize(w, h, false); cam.aspect = w / h; cam.fov = w / h < 0.62 ? 64 : 58; cam.updateProjectionMatrix(); } addEventListener('resize', resize); resize();
-function reset() { objs.splice(0).forEach((b) => drop(b.o)); v = CFG.v0; dist = 0; score = 0; bonus = 0; hearts = CFG.hearts; inv = 0; nextRow = 22; combo = 0; playT = 0; lane = 1; vstate = 'mid'; vT = 0; step = 0; pos.x = 0; pos.y = CFG.yMid; Object.keys(P).forEach((k) => (P[k] = 0)); seen = {}; feverE = 0; curve.tx = curve.ty = 0; curve.next = 8; if (zone !== 0) setZone(0, true); hud(); }
+function reset() { objs.splice(0).forEach((b) => drop(b.o)); v = CFG.v0; dist = 0; score = 0; bonus = 0; hearts = CFG.hearts; inv = 0; nextRow = 22; combo = 0; playT = 0; lane = 1; vstate = 'mid'; vT = 0; step = 0; pos.x = 0; pos.y = CFG.yMid; Object.keys(P).forEach((k) => (P[k] = 0)); seen = {}; feverE = 0; misV = 0; misDone = false; maxCombo = 0; lastHit = null; eaten = 0; curve.tx = curve.ty = 0; curve.next = 8; if (zone !== 0) setZone(0, true); hud(); }
 const speedLv = () => Math.min(Math.floor(playT / CFG.vEvery) + 1, Math.floor((CFG.vMax - CFG.v0) / CFG.vStep) + 1);
 const mult = () => Math.min(5, (combo >= 50 ? 4 : combo >= 25 ? 3 : combo >= 10 ? 2 : 1) * (P.dash > 0 ? 2 : 1) * (P.fever > 0 ? 3 : 1));
 function hud() { $('sc').textContent = score.toLocaleString(); $('dist').textContent = Math.floor(dist) + ' 公尺'; $('spd').textContent = '速度 ' + speedLv(); $('hp').textContent = '💙'.repeat(Math.max(0, hearts)) + '🤍'.repeat(Math.max(0, CFG.hearts - hearts)); const m = mult(); $('cb').hidden = combo < 3 && m < 2; $('cb').textContent = (combo >= 3 ? '連吃 ' + combo : '') + (m > 1 ? '・×' + m : '');
-  $('feverI').style.height = (P.fever > 0 ? P.fever / CFG.fever * 100 : feverE / CFG.feverNeed * 100) + '%'; $('fever').classList.toggle('on', P.fever > 0); $('feverfx').classList.toggle('on', P.fever > 0);
+  $('misH').hidden = false; $('misH').textContent = misDone ? '🎯 任務完成' : '🎯 ' + Math.floor(misV) + '/' + mis.n; $('feverI').style.height = (P.fever > 0 ? P.fever / CFG.fever * 100 : feverE / CFG.feverNeed * 100) + '%'; $('fever').classList.toggle('on', P.fever > 0); $('feverfx').classList.toggle('on', P.fever > 0);
   $('pw').innerHTML = ['shield', 'magnet', 'dash'].filter((k) => P[k] > 0).map((k) => '<span><img src="assets/' + PW[k].img + '.webp" alt="">' + PW[k].name + '<b><em style="width:' + Math.round(P[k] / CFG[k] * 100) + '%"></em></b></span>').join('') + (P.fever > 0 ? '<span><img src="assets/item_frenzy_flame.webp" alt="">鯨鯊狂歡<b><em style="width:' + Math.round(P.fever / CFG.fever * 100) + '%"></em></b></span>' : ''); }
 function pop(txt, wx, wy, wz, cls) { const p = new THREE.Vector3(wx, wy, wz).project(cam), el = document.createElement('span'); el.className = 'pop' + (cls ? ' ' + cls : ''); el.textContent = txt; el.style.left = clamp((p.x + 1) / 2 * 100, 8, 92) + '%'; el.style.top = clamp((1 - p.y) / 2 * 100, 10, 90) + '%'; stage.appendChild(el); setTimeout(() => el.remove(), 800); }
 function tip(txt, info, sec) { const e = $('tip'); e.textContent = txt; e.className = 'tip' + (info ? ' info' : ''); e.hidden = false; tipT = sec || 1.5; }
@@ -207,7 +226,7 @@ function row() {
 function hit(b) {
   if (P.fever > 0 || P.dash > 0) { smash(b); return; } if (inv > 0) return;
   if (P.shield > 0) { P.shield = 0; inv = 0.8; pop('泡泡擋住了！', pos.x, pos.y + 1, 0, 'pw'); beep([500, 700], 80); hud(); return; }
-  hearts--; inv = CFG.inv; combo = 0; beep([220, 150], 120, 'square'); buzz(120); $('flash').classList.add('on'); setTimeout(() => $('flash').classList.remove('on'), 60);
+  hearts--; inv = CFG.inv; combo = 0; lastHit = b.name; beep([220, 150], 120, 'square'); buzz(120); $('flash').classList.add('on'); setTimeout(() => $('flash').classList.remove('on'), 60);
   pop(b.hit || '撞到了！', pos.x, pos.y + 1, 0, 'bad'); hud(); if (hearts <= 0) end();
 }
 function smash(b) { b.smash = 1; bonus += 40; pop('撞飛！+40', pos.x, pos.y + 1, 0, 'gold'); beep([300, 600, 900], 50, 'square', 0.06); buzz(40); }
@@ -217,7 +236,7 @@ function update(dt) {
   t += dt; playT += dt; if (inv > 0) inv -= dt; Object.keys(P).forEach((k) => { if (P[k] > 0) P[k] = Math.max(0, P[k] - dt); });
   const vt = Math.min(CFG.vMax, CFG.v0 + (speedLv() - 1) * CFG.vStep); v = lerp(v, vt * (P.dash > 0 ? 1.5 : 1) * (P.fever > 0 ? 1.25 : 1), 1 - Math.exp(-dt * 2.5));
   if (Math.floor(playT / CFG.vEvery) !== Math.floor((playT - dt) / CFG.vEvery) && playT > 1) { pop('加速！速度 ' + speedLv(), 0, 4.5, -6, 'gold'); beep([700, 900], 60, 'triangle', 0.06); }
-  const dz = v * dt; dist += dz; score = Math.floor(dist) + bonus;
+  const dz = v * dt; dist += dz; score = Math.floor(dist) + bonus; if (mis.id === 'dist' && !misDone) misSet('dist', dist);
   const zi = Math.max(0, Math.floor(dist / CFG.zoneLen)); if (zi !== zone) setZone(zi);
   curve.next -= dt; if (curve.next <= 0) { curve.next = rnd(6, 10); const k = smooth(15, 120, playT); curve.tx = playT < 15 ? 0 : pick([-1, 1]) * rnd(0.35, 1) * 0.003 * (0.5 + k * 0.5); curve.ty = playT < 15 ? 0 : rnd(-1, 1) * 0.0012 * k; }
   curve.x = lerp(curve.x, curve.tx, 1 - Math.exp(-dt * 0.8)); curve.y = lerp(curve.y, curve.ty, 1 - Math.exp(-dt * 0.8)); W.bend.value.set(curve.x, curve.y);
@@ -233,13 +252,13 @@ function update(dt) {
       if (u.harpoon) { const k = smooth(-24, -2, z1); u.harpoon.position.x = lerp(9, -9, k); u.laser.material.opacity = z1 < -2 ? 0.4 + 0.5 * (Math.sin(t * 20) > 0 ? 1 : 0) : 0; }
       b.o.children.forEach((c) => { if (c.userData.float != null) c.position.y = 1.9 + Math.sin(t * 2 + c.userData.float) * 0.25; });
       if (b.tip && !b.tipped && z1 > -28) { b.tipped = true; const n = (seen[b.name] = (seen[b.name] || 0) + 1); if (n === 1 || dist < 350) tip(b.tip, false, 1.3); }
-      if (z0 < -0.2 && z1 >= -0.2 && !b.done) { b.done = true; if (blocked(b)) hit(b); else if (b.net || b.name === 'harpoon' || b.name === 'arch') { bonus += 20 * mult(); pop('閃過 +' + 20 * mult(), pos.x, pos.y + 1.1, 0); beep([660, 990], 60); } } }
-    else if (b.kind === 'ring') { if (z0 < -0.2 && z1 >= -0.2) { if (Math.abs(pos.x - L[b.lane]) < 1.0 && Math.abs(pos.y - b.ry) < 1.0) { bonus += 50 * mult(); P.dash = Math.max(P.dash, 1.2); feverE += 20; pop('💫 +' + 50 * mult(), pos.x, pos.y + 1.2, 0, 'gold'); beep([880, 1320], 60, 'triangle'); drop(b.o); objs.splice(i, 1); continue; } } }
+      if (z0 < -0.2 && z1 >= -0.2 && !b.done) { b.done = true; if (blocked(b)) hit(b); else if (b.net || b.name === 'harpoon' || b.name === 'arch') { if (b.net || b.name === 'arch') misSet('dodge', 1, true); bonus += 20 * mult(); pop('閃過 +' + 20 * mult(), pos.x, pos.y + 1.1, 0); beep([660, 990], 60); } } }
+    else if (b.kind === 'ring') { if (z0 < -0.2 && z1 >= -0.2) { if (Math.abs(pos.x - L[b.lane]) < 1.0 && Math.abs(pos.y - b.ry) < 1.0) { misSet('ring', 1, true); bonus += 50 * mult(); P.dash = Math.max(P.dash, 1.2); feverE += 20; pop('💫 +' + 50 * mult(), pos.x, pos.y + 1.2, 0, 'gold'); beep([880, 1320], 60, 'triangle'); drop(b.o); objs.splice(i, 1); continue; } } }
     else { b.o.position.y += Math.sin(t * 3 + b.ph) * dt * 0.3;
       if ((P.magnet > 0 || P.fever > 0) && b.kind === 'food' && z1 > -18 && z1 < 0.5) { b.o.position.x = lerp(b.o.position.x, pos.x, 1 - Math.exp(-dt * 6)); b.o.position.y = lerp(b.o.position.y, pos.y, 1 - Math.exp(-dt * 6)); }
       if (z1 > -1.6 && z1 < 1.2) { const dx = b.o.position.x - pos.x, dy = b.o.position.y - pos.y; if (dx * dx + dy * dy < b.r * b.r * 1.5) {
         if (b.kind === 'pw') { P[b.pw] = CFG[b.pw]; pop(PW[b.pw].name + '！', pos.x, pos.y + 1.2, 0, 'pw'); beep([660, 880, 1100], 70, 'triangle'); }
-        else { combo++; const add = FOOD[b.food][0] * mult(); bonus += add; if (P.fever <= 0) feverE += FOOD[b.food][0]; pop('+' + add, b.o.position.x, b.o.position.y + 0.3, z1); beep([880 + Math.min(combo, 20) * 25], 50, 'triangle', 0.07);
+        else { combo++; eaten++; maxCombo = Math.max(maxCombo, combo); misSet('combo', combo); misSet('eat', eaten); const add = FOOD[b.food][0] * mult(); bonus += add; if (P.fever <= 0) feverE += FOOD[b.food][0]; pop('+' + add, b.o.position.x, b.o.position.y + 0.3, z1); beep([880 + Math.min(combo, 20) * 25], 50, 'triangle', 0.07);
           if (feverE >= CFG.feverNeed && P.fever <= 0) { P.fever = CFG.fever; feverE = 0; tip('🔥 鯨鯊狂歡！撞飛一切！', true, 1.6); beep([523, 659, 784, 1047, 1319], 70, 'square', 0.06); } }
         drop(b.o); objs.splice(i, 1); hud(); continue; } } }
     if (z1 > 12) { drop(b.o); objs.splice(i, 1); } }
@@ -257,6 +276,7 @@ function pose(dt) {
   const k = clamp((v - CFG.v0) / (CFG.vMax - CFG.v0), 0, 1);
   sharkM.map = W.TX[inv > 0 && P.shield <= 0 ? 'shark_hit' : SF[Math.floor(t * (7 + k * 6)) % SF.length]];
   const tyv = vstate === 'up' ? CFG.yUp : vstate === 'down' ? CFG.yDown : CFG.yMid;
+  if (state === 'play') { const li = pos.y > 2.75 ? 0 : pos.y < 1.2 ? 2 : 1; [...$('lvl').children].forEach((e, i) => e.classList.toggle('on', i === li)); }
   shark.position.set(pos.x, pos.y + Math.sin(t * 3) * 0.05, 0); sharkM.rotation = clamp((L[lane] - pos.x) * 0.25 - curve.x * 60, -0.5, 0.5); shark.visible = !(inv > 0 && P.shield <= 0 && Math.floor(inv * 12) % 2 === 0);
   shadow.position.set(pos.x, -0.64, 0.2); shadow.material.opacity = clamp(1.3 - pos.y * 0.25, 0.3, 1);
   bubble.visible = P.shield > 0; bubble.position.set(pos.x, pos.y, 0.3); bubble.material.opacity = 0.6 + Math.sin(t * 5) * 0.1;
@@ -280,16 +300,24 @@ cv.addEventListener('pointerdown', (e) => { if (state !== 'play') return; sw = {
 cv.addEventListener('pointermove', (e) => { if (!sw || sw.done) return; const dx = e.clientX - sw.x, dy = e.clientY - sw.y; if (Math.hypot(dx, dy) < 26) return; sw.done = true; move(Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'L' : 'R') : (dy < 0 ? 'U' : 'D')); });
 cv.addEventListener('pointerup', (e) => { if (sw && !sw.done && performance.now() - sw.t < 300) { const r = cv.getBoundingClientRect(), u = (e.clientX - r.left) / r.width; if (u < 0.33) move('L'); else if (u > 0.67) move('R'); } sw = null; });
 addEventListener('keydown', (e) => { if (state !== 'play') { if ((e.key === 'Enter' || e.key === ' ') && state !== 'end') { e.preventDefault(); start(); } return; } const k = { ArrowLeft: 'L', ArrowRight: 'R', ArrowUp: 'U', ArrowDown: 'D', a: 'L', d: 'R', w: 'U', s: 'D' }[e.key]; if (k) { e.preventDefault(); move(k); } });
-document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') state = 'pause'; else if (!document.hidden && state === 'pause') { last = performance.now(); state = 'play'; } });
+document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') pause(); });      // 切到背景就暫停，回來按「繼續」
 
-function start() { reset(); $('startCard').hidden = true; $('endCard').hidden = true; $('hud').hidden = false; $('fever').hidden = false; state = 'play'; last = performance.now(); beep([523, 659, 784], 90); tip('左右滑換水道 👈👉', true, 2.0); }
+function start() { reset(); $('startCard').hidden = true; $('endCard').hidden = true; $('pauseCard').hidden = true; $('hud').hidden = false; $('fever').hidden = false; $('lvl').hidden = false; $('pauseBtn').hidden = false; state = 'play'; last = performance.now(); beep([523, 659, 784], 90); tip('左右滑換水道 👈👉', true, 2.0); }
 function end() {
-  state = 'end'; $('hud').hidden = true; $('fever').hidden = true; $('tip').hidden = true; $('pw').innerHTML = ''; helper.style.display = 'none'; $('feverfx').classList.remove('on'); stage.querySelectorAll('.pop,.zone').forEach((e) => e.remove());
+  state = 'end'; $('hud').hidden = true; $('fever').hidden = true; $('lvl').hidden = true; $('pauseBtn').hidden = true; $('tip').hidden = true; $('pw').innerHTML = ''; helper.style.display = 'none'; $('feverfx').classList.remove('on'); stage.querySelectorAll('.pop,.zone').forEach((e) => e.remove());
   const s = score, nb = s > bestNow; if (nb) { bestNow = s; try { localStorage.setItem('kiteSwimBest1', String(s)); } catch (e) {} }
   let rk = ''; try { const K = window.KiteCore; if (K && K.reportMini && s > 0) { const r = K.rankAround ? K.rankAround('swim', 'all', () => K.reportMini('swim', s)) : (K.reportMini('swim', s), null); rk = r && K.rankText ? K.rankText(r) : ''; } } catch (e) {}
-  const c = $('endCard'); c.innerHTML = '<img class="hero" src="assets/shark_hit.webp" alt="">' + (nb ? '<span class="nb">新紀錄！</span>' : '') + '<p style="margin:2px 0 0;font-weight:700">游了 ' + Math.floor(dist) + ' 公尺・到了' + theme.name + '</p><div class="big">' + s.toLocaleString() + '</div>' + (rk ? '<div class="rk">🏆 本月' + rk + '</div>' : '') + '<div class="row"><span>最佳</span><span>' + bestNow.toLocaleString() + ' 分</span></div><button class="go" id="againBtn" type="button">再玩一次</button>';
-  c.hidden = false; $('againBtn').onclick = start; beep(nb ? [523, 659, 784, 1047] : [392, 330], 110);
+  const c = $('endCard'); c.innerHTML = '<img class="hero" src="assets/shark_hit.webp" alt="">' + (nb ? '<span class="nb">新紀錄！</span>' : '') + '<p style="margin:2px 0 0;font-weight:700">游了 ' + Math.floor(dist) + ' 公尺・到了' + theme.name + '</p><div class="big">' + s.toLocaleString() + '</div>' + (rk ? '<div class="rk">🏆 本月' + rk + '</div>' : '') + whyHtml() + '<div class="row"><span>🎯 ' + mis.txt + '</span><span>' + (misDone ? '✅ 完成' : Math.floor(misV) + '/' + mis.n) + '</span></div><div class="row"><span>最高連吃</span><span>' + maxCombo + '</span></div>' + nextZone() + '<div class="row"><span>最佳</span><span>' + bestNow.toLocaleString() + ' 分</span></div><button class="go" id="againBtn" type="button">再玩一次</button>';
+  c.hidden = false; $('againBtn').onclick = () => { mis = MIS[Math.floor(Math.random() * MIS.length)]; start(); }; $('againBtn').disabled = true; setTimeout(() => { const b = $('againBtn'); if (b) b.disabled = false; }, 700);      // G98：結算先擋 0.7 秒，避免最後一下滑動誤按再玩 beep(nb ? [523, 659, 784, 1047] : [392, 330], 110);
 }
+/* G98-R01：結算告訴玩家最後撞到什麼、下次怎麼閃 */
+const WHY = { netTop: ['ob_net', '浮網：看到「⬇ 潛」往下滑'], netLow: ['ob_net', '底網：看到「⬆ 游高」往上滑'], netWall: ['ob_net', '圍網：往綠色圈圈的缺口換水道'], kelpwall: ['seagrass_tall', '海草牆：往綠色圈圈的缺口換水道'], arch: ['ob_reef_arch', '礁石拱門：要往下潛才過得去'], pillar: ['ob_reef_pillar', '礁石柱：提早左右滑換水道'], trash: ['ob_bottle', '巨大垃圾：左右換水道，或上下閃'], tire: ['ob_tire', '大輪胎：換水道或往上游'], drum: ['ob_oil_barrel', '油桶：換水道或往上游'], container: ['ob_cargo', '貨櫃：只能左右換水道'], harpoon: ['ob_harpoon', '魚叉：紅光一閃就往上或往下'], jelly: ['ob_jellyfish_group', '水母群：換水道或上下閃'] };
+function whyHtml() { const w = WHY[lastHit]; return w ? '<div class="why"><img src="assets/' + w[0] + '.webp" alt="">最後撞到 ' + w[1] + '</div>' : ''; }
+function nextZone() { const nz = W.THEMES[(zone + 1) % W.THEMES.length], left = Math.ceil((zone + 1) * CFG.zoneLen - dist); return '<div class="row"><span>下一站 ' + nz.name + '</span><span>還差 ' + left + ' 公尺</span></div>'; }
+/* G98-R08：暫停 */
+function pause() { if (state !== 'play') return; state = 'pause'; $('pauseMis').textContent = '🎯 ' + mis.txt + '（' + (misDone ? '完成' : Math.floor(misV) + '/' + mis.n) + '）'; $('pauseCard').hidden = false; }
+function resume() { if (state !== 'pause') return; $('pauseCard').hidden = true; last = performance.now(); state = 'play'; }
+$('pauseBtn').onclick = pause; $('resumeBtn').onclick = resume;
 goBtn.onclick = start;
 if (window.KiteLB) KiteLB.button($('lbSlot'), () => Object.assign({ cat: 'swim' }, (KiteLB.CATS.filter((c) => c[0] === 'swim')[0] || [])[2] || {}));
 window.__swim = { get state() { return state; }, get score() { return score; }, get dist() { return dist; }, set dist(x) { dist = x; }, get hearts() { return hearts; }, set hearts(x) { hearts = x; }, get lane() { return lane; }, get pos() { return pos; }, get theme() { return theme && theme.id; }, regen() { deco.splice(0).forEach((o) => drop(o)); for (let z = 6; z > -130; z -= 2.6) decoAt(z); }, get speed() { return speedLv(); }, P, objs, start, end, move, L, setZone };

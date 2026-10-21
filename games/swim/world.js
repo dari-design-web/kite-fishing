@@ -30,16 +30,16 @@ export async function makeWorld(THREE, base, onProgress) {
 
   /* ---- 場景 ---- */
   const THEMES = [
-    { id: 'reef', name: '🐠 珊瑚礁', sea: '#36B3CC', fog: [26, 86], sand: '#F1DFB0', light: 1.9, bg: 'bg_coral', big: 'turtle_side',
+    { id: 'reef', name: '🐠 珊瑚礁', place: '潮境', sea: '#36B3CC', fog: [26, 86], sand: '#F1DFB0', light: 1.9, bg: 'bg_coral', big: 'turtle_side',
       deco: [['coral_branch', 3.2], ['coral_brain', 2.6], ['coral_fan', 3.4], ['anemone_clownfish', 2.8], ['reef_rock', 2.6]], small: [['starfish_shells', 0.9], ['coral_brain', 0.8]],
       obst: { trash: 1, pillar: 2, arch: 1.5, net: 1.5, harpoon: 1, jelly: 0.6, tire: 0.6 } },
-    { id: 'kelp', name: '🌿 海草森林', sea: '#2E9C8E', fog: [22, 78], sand: '#D8C995', light: 1.7, bg: 'bg_seagrass', big: 'turtle_side',
+    { id: 'kelp', name: '🌿 海草森林', place: '八斗子', sea: '#2E9C8E', fog: [22, 78], sand: '#D8C995', light: 1.7, bg: 'bg_seagrass', big: 'turtle_side',
       deco: [['seagrass_tall', 6.5], ['seagrass_cluster', 3.2], ['seagrass_bent', 3.0], ['kelp_rock', 2.8], ['seagrass_tall', 5]], small: [['algae_pebbles', 0.9], ['seagrass_cluster', 1.0]],
       obst: { trash: 1, pillar: 1, arch: 1, net: 1.5, harpoon: 1.2, jelly: 0.6, tire: 0.8, kelpwall: 1.5 } },
-    { id: 'wreck', name: '⚓ 沉船港區', sea: '#2A7896', fog: [20, 74], sand: '#C9BC98', light: 1.5, bg: 'bg_harbor', big: 'turtle_side',
+    { id: 'wreck', name: '⚓ 沉船港區', place: '正濱', sea: '#2A7896', fog: [20, 74], sand: '#C9BC98', light: 1.5, bg: 'bg_harbor', big: 'turtle_side',
       deco: [['shipwreck_buried', 4.2], ['cargo_decor', 2.8], ['tire_decor', 2.2], ['anchor_decor', 3.0], ['fishing_boat_broken', 3.6], ['harbor_buoy', 3.0], ['harbor_signal', 4.2]], small: [['tire_decor', 0.9], ['algae_pebbles', 0.8]],
       obst: { trash: 2, tire: 1.6, drum: 1.6, net: 1.5, harpoon: 1.4, container: 1.4 } },
-    { id: 'deep', name: '🌌 深海發光', sea: '#123E62', fog: [16, 66], sand: '#5E7088', light: 1.1, bg: 'bg_deep', big: 'anglerfish',
+    { id: 'deep', name: '🌌 深海發光', place: '基隆嶼', sea: '#123E62', fog: [16, 66], sand: '#5E7088', light: 1.1, bg: 'bg_deep', big: 'anglerfish',
       deco: [['coral_glow', 3.0], ['deep_rock', 3.0], ['tube_sponge_glow', 3.0], ['jellyfish_glow', 2.4, 'float'], ['anglerfish', 2.0, 'float']], small: [['shells_glow', 0.9], ['coral_glow', 0.9]],
       obst: { jelly: 2.2, pillar: 1.2, arch: 1.2, net: 1, harpoon: 1.2, trash: 1 } }
   ];
