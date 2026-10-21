@@ -43,8 +43,13 @@ export async function makeWorld(THREE, base, onProgress) {
       deco: [['coral_glow', 3.0], ['deep_rock', 3.0], ['tube_sponge_glow', 3.0], ['jellyfish_glow', 2.4, 'float'], ['anglerfish', 2.0, 'float']], small: [['shells_glow', 0.9], ['coral_glow', 0.9]],
       obst: { jelly: 2.2, pillar: 1.2, arch: 1.2, net: 1, harpoon: 1.2, trash: 1 } }
   ];
-  function deco(th, small) { const list = small ? th.small : th.deco, [n, h, f] = pick(list), s = spr(n, h * rnd(0.85, 1.15), !f); if (f) { s.position.y = rnd(2.5, 5.5); s.userData.float = rnd(0, 6); } if (Math.random() < 0.5) s.material = s.material; bendAll(s); return s; }
-  function bigCreature(th) { const s = spr(th.big, th.big === 'anglerfish' ? 2.6 : 3.4); bendAll(s); return s; }
+  /* D142：會動的裝飾——海草、海葵、扇珊瑚以底部為軸左右擺；漂浮的水母、燈籠魚上下浮、身體一縮一放 */
+  const SWAY = { seagrass_tall: 0.12, seagrass_cluster: 0.08, seagrass_bent: 0.1, anemone_clownfish: 0.06, coral_fan: 0.05, kelp_rock: 0.04, algae_pebbles: 0.04 };
+  function deco(th, small) { const list = small ? th.small : th.deco, [n, h, f] = pick(list), s = spr(n, h * rnd(0.85, 1.15), !f);
+    if (f) { s.position.y = rnd(2.5, 5.5); s.userData.float = rnd(0, 6); s.userData.pulse = 1; s.userData.sy = s.scale.y; }
+    if (SWAY[n] && !small) { s.material = s.material.clone(); s.userData.sway = SWAY[n]; s.userData.ph = rnd(0, 6); }
+    bendAll(s); return s; }
+  function bigCreature(th) { const s = spr(th.big, th.big === 'anglerfish' ? 2.6 : 3.6); s.material = s.material.clone(); s.userData.sy = s.scale.y; s.userData.sx = s.scale.x; bendAll(s); return s; }      // D142：材質各自一份，才能各自擺動
 
   /* ---- 警告牌（文字） ---- */
   const tex = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return keep(t); };
@@ -62,7 +67,7 @@ export async function makeWorld(THREE, base, onProgress) {
     netLow() { const g = new THREE.Group(), s = spr('ob_net', 3.8); s.scale.x = 8.6; g.add(at(s, 0, 0.75)); g.add(warn('up', 0, 3.4)); return { g, lanes: ALL, y: [-2, 2.55], tip: '往上滑，游過去！', net: 1, hit: '被漁網纏住！' }; },
     netWall(open) { const g = new THREE.Group(), cov = ALL.filter((i) => i !== open); cov.forEach((i) => { const s = spr('ob_net', 2.9); s.scale.set(6.4, 2.9, 1); s.material = s.material.clone(); s.material.rotation = Math.PI / 2; g.add(at(s, Lx[i], 2.2)); }); g.add(gap(Lx[open])); g.add(warn('lane', Lx[open], 4.9)); return { g, lanes: cov, y: FULL, tip: '找綠色圈圈的缺口！', net: 1, hit: '被漁網纏住！' }; },
     pillar(l) { const g = new THREE.Group(); g.add(at(spr('ob_reef_pillar', 6.2, true), Lx[l], FLOOR)); return { g, lanes: [l], y: FULL, tip: '礁石！左右滑閃開', hit: '撞到礁石！' }; },
-    arch() { const g = new THREE.Group(), s = spr('ob_reef_arch', 8.8); s.scale.x = 15; g.add(at(s, 0, 1.3 + 8.8 * 0.2)); g.add(warn('down', 0, 6.4)); return { g, lanes: ALL, y: [1.25, 9], tip: '礁石拱門！往下潛', hit: '撞到礁石！' }; },
+    arch() { const g = new THREE.Group(), s = spr('ob_reef_arch', 8.8); s.scale.x = 15; g.add(at(s, 0, 1.3 + 8.8 * 0.2)); g.add(gap(0)); return { g, lanes: [0, 2], y: FULL, tip: '礁石拱門！從中間的洞穿過', hit: '撞到拱門的柱子！' }; },      // D146：畫面上洞在中間，就讓中間水道直接穿過（原本要往下潛，跟畫面不合）
     trash(l) { const g = new THREE.Group(); g.add(at(spr(pick(['ob_bottle', 'ob_plastic_bag']), 2.6), Lx[l], 1.9)); g.userData.wob = 1; return { g, lanes: [l], y: MID, tip: '巨大垃圾！閃開', hit: '撞到垃圾！' }; },
     tire(l) { const g = new THREE.Group(), s = spr('ob_tire', 2.8); s.material = s.material.clone(); g.add(at(s, Lx[l], 0.9)); g.userData.roll = s; return { g, lanes: [l], y: [-2, 2.7], tip: '大輪胎滾過來！', hit: '被輪胎撞到！' }; },
     drum(l) { const g = new THREE.Group(); g.add(at(spr('ob_oil_barrel', 3.8, true), Lx[l], FLOOR)); return { g, lanes: [l], y: [-2, 3.0], tip: '油桶！閃開', hit: '撞到油桶！' }; },
