@@ -31,13 +31,13 @@ export async function makeWorld(THREE, base, onProgress) {
   /* ---- 場景 ---- */
   const THEMES = [
     { id: 'reef', name: '🐠 珊瑚礁', place: '潮境', sea: '#36B3CC', fog: [26, 86], sand: '#F1DFB0', light: 1.9, bg: 'bg_coral', big: 'turtle_side',
-      deco: [['coral_branch', 3.2], ['coral_brain', 2.6], ['coral_fan', 3.4], ['anemone_clownfish', 2.8], ['reef_rock', 2.6]], small: [['starfish_shells', 0.9], ['coral_brain', 0.8]],
+      deco: [['coral_branch', 3.2], ['coral_brain', 2.6], ['coral_fan', 3.4], ['anemone_clownfish', 2.8], ['reef_rock', 2.6]], small: [['reef_rock', 0.9], ['coral_brain', 0.8]],
       obst: { trash: 1, pillar: 2, arch: 1.5, net: 1.5, harpoon: 1, jelly: 0.6, tire: 0.6 } },
     { id: 'kelp', name: '🌿 海草森林', place: '八斗子', sea: '#2E9C8E', fog: [22, 78], sand: '#D8C995', light: 1.7, bg: 'bg_seagrass', big: 'turtle_side',
       deco: [['seagrass_tall', 6.5], ['seagrass_cluster', 3.2], ['seagrass_bent', 3.0], ['kelp_rock', 2.8], ['seagrass_tall', 5]], small: [['algae_pebbles', 0.9], ['seagrass_cluster', 1.0]],
       obst: { trash: 1, pillar: 1, arch: 1, net: 1.5, harpoon: 1.2, jelly: 0.6, tire: 0.8, kelpwall: 1.5 } },
     { id: 'wreck', name: '⚓ 沉船港區', place: '正濱', sea: '#2A7896', fog: [20, 74], sand: '#C9BC98', light: 1.5, bg: 'bg_harbor', big: 'turtle_side',
-      deco: [['shipwreck_buried', 4.2], ['cargo_decor', 2.8], ['tire_decor', 2.2], ['anchor_decor', 3.0], ['fishing_boat_broken', 3.6], ['harbor_buoy', 3.0], ['harbor_signal', 4.2]], small: [['tire_decor', 0.9], ['algae_pebbles', 0.8]],
+      deco: [['shipwreck_buried', 4.2], ['cargo_decor', 2.8], ['tire_decor', 2.2], ['anchor_decor', 3.0], ['fishing_boat_broken', 3.6], ['harbor_buoy', 3.0], ['harbor_signal', 4.2]], small: [['anchor_decor', 0.9], ['algae_pebbles', 0.8]],
       obst: { trash: 2, tire: 1.6, drum: 1.6, net: 1.5, harpoon: 1.4, container: 1.4 } },
     { id: 'deep', name: '🌌 深海發光', place: '基隆嶼', sea: '#123E62', fog: [16, 66], sand: '#5E7088', light: 1.1, bg: 'bg_deep', big: 'anglerfish',
       deco: [['coral_glow', 3.0], ['deep_rock', 3.0], ['tube_sponge_glow', 3.0], ['jellyfish_glow', 2.4, 'float'], ['anglerfish', 2.0, 'float']], small: [['shells_glow', 0.9], ['coral_glow', 0.9]],
@@ -71,7 +71,7 @@ export async function makeWorld(THREE, base, onProgress) {
     trash(l) { const g = new THREE.Group(); g.add(at(spr(pick(['ob_bottle', 'ob_plastic_bag']), 2.6), Lx[l], 1.9)); g.userData.wob = 1; return { g, lanes: [l], y: MID, tip: '巨大垃圾！閃開', hit: '撞到垃圾！' }; },
     tire(l) { const g = new THREE.Group(), s = spr('ob_tire', 2.8); s.material = s.material.clone(); g.add(at(s, Lx[l], 0.9)); g.userData.roll = s; return { g, lanes: [l], y: [-2, 2.7], tip: '大輪胎滾過來！', hit: '被輪胎撞到！' }; },
     drum(l) { const g = new THREE.Group(); g.add(at(spr('ob_oil_barrel', 3.8, true), Lx[l], FLOOR)); return { g, lanes: [l], y: [-2, 3.0], tip: '油桶！閃開', hit: '撞到油桶！' }; },
-    container(l) { const g = new THREE.Group(); g.add(at(spr('ob_cargo', 5, true), Lx[l], FLOOR)); return { g, lanes: [l], y: FULL, tip: '貨櫃！左右滑', hit: '撞到貨櫃！' }; },
+    container(l) { const g = new THREE.Group(); g.add(at(spr('ob_cargo', 5, true), Lx[l], FLOOR)); return { g, lanes: [l], y: [-2, 3.3], tip: '貨櫃！左右閃或往上游', hit: '撞到貨櫃！' }; },
     harpoon() { const g = new THREE.Group(), s = spr('ob_harpoon', 1.6); g.add(at(s, 9, 1.9)); const laser = new THREE.Mesh(new THREE.BoxGeometry(9, 0.06, 0.06), new THREE.MeshBasicMaterial({ color: '#FF3B30', transparent: true, opacity: 0.8, fog: false })); laser.position.y = 1.9; g.add(laser); g.add(warn('updown', 0, 4.4)); g.userData.harpoon = s; g.userData.laser = laser; return { g, lanes: ALL, y: MID, tip: '魚叉！往上或往下閃', hit: '被魚叉擦到！' }; },
     jelly(lanes) { const g = new THREE.Group(); lanes.forEach((l) => { const s = spr('ob_jellyfish_group', 2.9); s.userData.float = rnd(0, 6); g.add(at(s, Lx[l], 1.9)); }); return { g, lanes, y: MID, tip: '水母群！換水道或上下閃', hit: '被水母螫到！' }; },
     kelpwall(open) { const g = new THREE.Group(), cov = ALL.filter((i) => i !== open); cov.forEach((l) => { for (let k = -1; k <= 1; k++) g.add(at(spr('seagrass_tall', 6.6, true), Lx[l] + k * 0.75, FLOOR)); }); g.add(gap(Lx[open])); g.add(warn('lane', Lx[open], 5.2)); return { g, lanes: cov, y: FULL, tip: '海草牆！找缺口', hit: '被海草纏住！' }; }
