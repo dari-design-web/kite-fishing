@@ -116,11 +116,14 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
 
 <script src="../../shared/kite_core.js"></script>
 <script src="../../shared/kite_lb.js"></script>
+<script src="../../shared/kite_daily.js"></script>
 <script type="module">
 import * as THREE from '../../shared/vendor/three.module.min.js';
 import { makeWorld } from './world.js';
 const $ = (id) => document.getElementById(id), stage = $('stage'), cv = $('gl');
 const rnd = (a, b) => a + Math.random() * (b - a), clamp = (v, a, b) => Math.max(a, Math.min(b, v)), lerp = (a, b, k) => a + (b - a) * k, pick = (a) => a[Math.floor(Math.random() * a.length)];
+/* G97 每日挑戰：?daily=official／practice → 出場、彎道都用當天固定亂數（大家同一條海路） */
+const DS = window.KiteDaily ? KiteDaily.session() : null; let gR = Math.random; const grnd = (a, b) => a + gR() * (b - a), gpick = (a) => a[Math.floor(gR() * a.length)];
 const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 const RM = matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches, Q = new URLSearchParams(location.search);
 /* 數值：起步 14、每 10 秒 +1.2（最快 32）；障礙間距 30→14 公尺；每 450 公尺換場景；能量 600 分滿 */
@@ -188,6 +191,8 @@ const MIS = [{ id: 'dodge', txt: '安全閃過 3 個漁網或拱門', n: 3 }, { 
 let mis = MIS[Math.floor(Math.random() * MIS.length)], misV = 0, misDone = false, maxCombo = 0, lastHit = null, eaten = 0;
 function misSet(id, val, add) { if (misDone || mis.id !== id) return; misV = add ? misV + val : Math.max(misV, val); if (misV >= mis.n) { misDone = true; misV = mis.n; tip('🎯 任務完成！' + mis.txt, true, 1.8); beep([660, 880, 1100, 1320], 80, 'triangle'); } }
 $('misStart').textContent = '🎯 本局任務：' + mis.txt;
+function dailyTag() { if (!DS) return; const t = DS.official ? '📅 今日挑戰・正式（今天還有 ' + KiteDaily.left() + ' 次）' : '📅 今日挑戰・練習（不計榜）'; let e = $('dTag'); if (!e) { e = document.createElement('div'); e.id = 'dTag'; e.className = 'kd-banner'; $('startCard').insertBefore(e, $('misStart')); } e.textContent = t + '｜' + DS.td.vary; }
+dailyTag();
 let state = 'ready', v = CFG.v0, dist = 0, score = 0, bonus = 0, hearts = CFG.hearts, inv = 0, nextRow = 30, combo = 0, t = 0, playT = 0, last = performance.now(), lane = 1, vstate = 'mid', vT = 0, step = 0, tipT = 0, seen = {}, feverE = 0;
 const pos = { x: 0, y: CFG.yMid }, P = { shield: 0, magnet: 0, dash: 0, fever: 0 }, curve = { x: 0, y: 0, tx: 0, ty: 0, next: 6 };
 let bestNow = (() => { try { return +localStorage.getItem('kiteSwimBest1') || 0; } catch (e) { return 0; } })();
@@ -208,20 +213,20 @@ const buzz = (ms) => { try { navigator.vibrate && navigator.vibrate(ms); } catch
 
 /* ---------- 出場：前 5 排是教學；之後照目前場景的障礙比重抽；永遠留活路 ---------- */
 const L = CFG.lanes;
-function trail(ln, z, n, kind, yy) { for (let i = 0; i < n; i++) food(kind || 'plank', L[ln], yy == null ? CFG.yMid : yy, z - i * 2.4); }
-function ringRow(z) { let ln = Math.floor(Math.random() * 3), y = CFG.yMid; for (let i = 0; i < 4; i++) { ring(ln, y, z - i * 6); if (Math.random() < 0.5) ln = clamp(ln + pick([-1, 1]), 0, 2); else y = pick([CFG.yMid, CFG.yUp, CFG.yDown]); } }
+function trail(ln, z, n, kind, yy) { if (DS && DS.td.key === 'food') n = Math.round(n * 1.8); for (let i = 0; i < n; i++) food(kind || 'plank', L[ln], yy == null ? CFG.yMid : yy, z - i * 2.4); }
+function ringRow(z) { let ln = Math.floor(gR() * 3), y = CFG.yMid; for (let i = 0; i < 4; i++) { ring(ln, y, z - i * 6); if (gR() < 0.5) ln = clamp(ln + gpick([-1, 1]), 0, 2); else y = gpick([CFG.yMid, CFG.yUp, CFG.yDown]); } }
 const TUT = [() => { trail(1, CFG.spawnZ, 6); }, () => { obstacle('trash', 1); trail(0, CFG.spawnZ, 5, 'krill'); }, () => { ringRow(CFG.spawnZ); }, () => { obstacle('arch'); trail(1, CFG.spawnZ + 3, 3, 'roe', CFG.yDown); }, () => { obstacle('harpoon'); trail(2, CFG.spawnZ, 4, 'fish', CFG.yUp); }];
 function row() {
   if (step < TUT.length) { TUT[step++](); return; }
-  const d = smooth(300, 2400, dist), z = CFG.spawnZ, free = Math.floor(Math.random() * 3), W0 = theme.obst;
-  if (Math.random() < 0.16) { ringRow(z); return; }
-  const names = Object.keys(W0), tot = names.reduce((s, n) => s + W0[n], 0); let r = Math.random() * tot, nm = names[0]; for (const n of names) { r -= W0[n]; if (r <= 0) { nm = n; break; } }
-  if (nm === 'net') nm = pick(['netTop', 'netLow', 'netWall']);
-  if (['netWall', 'kelpwall'].includes(nm)) { obstacle(nm, free); trail(free, z - 1, 4, pick(['plank', 'krill', 'roe'])); }
-  else if (['trash', 'tire', 'drum', 'pillar', 'container'].includes(nm)) { const busy = [0, 1, 2].filter((i) => i !== free); const n = d > 0.35 && Math.random() < 0.6 ? 2 : 1; busy.slice(0, n).forEach((i, j) => { const b = obstacle(j ? pick(['trash', 'tire', 'drum', 'pillar'].filter((x) => W0[x])) : nm, i); b.o.position.z -= j * 3; }); trail(free, z, 5, pick(['plank', 'krill', 'fish'])); }
-  else if (nm === 'jelly') { const ls = [0, 1, 2].filter((i) => i !== free); obstacle('jelly', d > 0.3 ? ls : [pick(ls)]); trail(free, z, 4, 'krill'); }
-  else { obstacle(nm); const yy = nm === 'netTop' || nm === 'arch' ? CFG.yDown : nm === 'netLow' ? CFG.yUp : pick([CFG.yUp, CFG.yDown]); trail(free, z + 2, 3, pick(['roe', 'fish', 'krill']), yy); }
-  if (Math.random() < 0.12 + (dist > 600 ? 0.05 : 0)) powerup(pick(['shield', 'magnet', 'dash']), L[free], CFG.yMid + (Math.random() < 0.3 ? 1.4 : 0), z - 9);
+  const d = smooth(300, 2400, dist), z = CFG.spawnZ, free = Math.floor(gR() * 3), W0 = theme.obst;
+  if (gR() < (DS && DS.td.key === 'rings' ? 0.32 : 0.16)) { ringRow(z); return; }
+  const names = Object.keys(W0), tot = names.reduce((s, n) => s + W0[n], 0); let r = gR() * tot, nm = names[0]; for (const n of names) { r -= W0[n]; if (r <= 0) { nm = n; break; } }
+  if (nm === 'net') nm = gpick(['netTop', 'netLow', 'netWall']);
+  if (['netWall', 'kelpwall'].includes(nm)) { obstacle(nm, free); trail(free, z - 1, 4, gpick(['plank', 'krill', 'roe'])); }
+  else if (['trash', 'tire', 'drum', 'pillar', 'container'].includes(nm)) { const busy = [0, 1, 2].filter((i) => i !== free); const n = d > 0.35 && gR() < 0.6 ? 2 : 1; busy.slice(0, n).forEach((i, j) => { const b = obstacle(j ? gpick(['trash', 'tire', 'drum', 'pillar'].filter((x) => W0[x])) : nm, i); b.o.position.z -= j * 3; }); trail(free, z, 5, gpick(['plank', 'krill', 'fish'])); }
+  else if (nm === 'jelly') { const ls = [0, 1, 2].filter((i) => i !== free); obstacle('jelly', d > 0.3 ? ls : [gpick(ls)]); trail(free, z, 4, 'krill'); }
+  else { obstacle(nm); const yy = nm === 'netTop' || nm === 'arch' ? CFG.yDown : nm === 'netLow' ? CFG.yUp : gpick([CFG.yUp, CFG.yDown]); trail(free, z + 2, 3, gpick(['roe', 'fish', 'krill']), yy); }
+  if (gR() < 0.12 + (dist > 600 ? 0.05 : 0)) powerup(gpick(['shield', 'magnet', 'dash']), L[free], CFG.yMid + (gR() < 0.3 ? 1.4 : 0), z - 9);
 }
 function hit(b) {
   if (P.fever > 0 || P.dash > 0) { smash(b); return; } if (inv > 0) return;
@@ -238,12 +243,12 @@ function update(dt) {
   if (Math.floor(playT / CFG.vEvery) !== Math.floor((playT - dt) / CFG.vEvery) && playT > 1) { pop('加速！速度 ' + speedLv(), 0, 4.5, -6, 'gold'); beep([700, 900], 60, 'triangle', 0.06); }
   const dz = v * dt; dist += dz; score = Math.floor(dist) + bonus; if (mis.id === 'dist' && !misDone) misSet('dist', dist);
   const zi = Math.max(0, Math.floor(dist / CFG.zoneLen)); if (zi !== zone) setZone(zi);
-  curve.next -= dt; if (curve.next <= 0) { curve.next = rnd(6, 10); const k = smooth(15, 120, playT); curve.tx = playT < 15 ? 0 : pick([-1, 1]) * rnd(0.35, 1) * 0.003 * (0.5 + k * 0.5); curve.ty = playT < 15 ? 0 : rnd(-1, 1) * 0.0012 * k; }
+  curve.next -= dt; if (curve.next <= 0) { curve.next = grnd(6, 10); const k = smooth(15, 120, playT); curve.tx = playT < 15 ? 0 : gpick([-1, 1]) * grnd(0.35, 1) * 0.003 * (0.5 + k * 0.5); curve.ty = playT < 15 ? 0 : grnd(-1, 1) * 0.0012 * k; }
   curve.x = lerp(curve.x, curve.tx, 1 - Math.exp(-dt * 0.8)); curve.y = lerp(curve.y, curve.ty, 1 - Math.exp(-dt * 0.8)); W.bend.value.set(curve.x, curve.y);
   if (vstate !== 'mid') { vT -= dt; if (vT <= 0) vstate = 'mid'; }
   const ty = vstate === 'up' ? CFG.yUp : vstate === 'down' ? CFG.yDown : CFG.yMid;
   pos.x = lerp(pos.x, L[lane], 1 - Math.exp(-dt * 11)); pos.y = lerp(pos.y, ty, 1 - Math.exp(-dt * 9));
-  nextRow -= dz; if (nextRow <= 0) { row(); nextRow = lerp(CFG.gap0, CFG.gap1, smooth(150, 2000, dist)) * rnd(0.9, 1.15); }
+  nextRow -= dz; if (nextRow <= 0) { row(); nextRow = lerp(CFG.gap0, CFG.gap1, smooth(150, 2000, dist)) * grnd(0.9, 1.15); }
   if (tipT > 0) { tipT -= dt; if (tipT <= 0) $('tip').hidden = true; }
   for (let i = objs.length - 1; i >= 0; i--) { const b = objs[i], z0 = b.o.position.z; b.o.position.z += dz; const z1 = b.o.position.z;
     if (b.smash) { b.o.position.y += dt * 9; b.o.position.x += (b.o.position.x >= 0 ? 1 : -1) * dt * 6; }
@@ -302,12 +307,13 @@ cv.addEventListener('pointerup', (e) => { if (sw && !sw.done && performance.now(
 addEventListener('keydown', (e) => { if (state !== 'play') { if ((e.key === 'Enter' || e.key === ' ') && state !== 'end') { e.preventDefault(); start(); } return; } const k = { ArrowLeft: 'L', ArrowRight: 'R', ArrowUp: 'U', ArrowDown: 'D', a: 'L', d: 'R', w: 'U', s: 'D' }[e.key]; if (k) { e.preventDefault(); move(k); } });
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') pause(); });      // 切到背景就暫停，回來按「繼續」
 
-function start() { reset(); $('startCard').hidden = true; $('endCard').hidden = true; $('pauseCard').hidden = true; $('hud').hidden = false; $('fever').hidden = false; $('lvl').hidden = false; $('pauseBtn').hidden = false; state = 'play'; last = performance.now(); beep([523, 659, 784], 90); tip('左右滑換水道 👈👉', true, 2.0); }
+function start() { reset(); if (DS) { gR = KiteDaily.rng(DS.td.seed); if (DS.official && KiteDaily.left() <= 0) { DS.official = false; DS.practice = true; } KiteDaily.begin(DS); if (DS.td.key === 'shield') P.shield = CFG.shield; dailyTag(); } $('startCard').hidden = true; $('endCard').hidden = true; $('pauseCard').hidden = true; $('hud').hidden = false; $('fever').hidden = false; $('lvl').hidden = false; $('pauseBtn').hidden = false; state = 'play'; last = performance.now(); beep([523, 659, 784], 90); tip('左右滑換水道 👈👉', true, 2.0); }
 function end() {
   state = 'end'; $('hud').hidden = true; $('fever').hidden = true; $('lvl').hidden = true; $('pauseBtn').hidden = true; $('tip').hidden = true; $('pw').innerHTML = ''; helper.style.display = 'none'; $('feverfx').classList.remove('on'); stage.querySelectorAll('.pop,.zone').forEach((e) => e.remove());
   const s = score, nb = s > bestNow; if (nb) { bestNow = s; try { localStorage.setItem('kiteSwimBest1', String(s)); } catch (e) {} }
-  let rk = ''; try { const K = window.KiteCore; if (K && K.reportMini && s > 0) { const r = K.rankAround ? K.rankAround('swim', 'all', () => K.reportMini('swim', s)) : (K.reportMini('swim', s), null); rk = r && K.rankText ? K.rankText(r) : ''; } } catch (e) {}
-  const c = $('endCard'); c.innerHTML = '<img class="hero" src="assets/shark_hit.webp" alt="">' + (nb ? '<span class="nb">新紀錄！</span>' : '') + '<p style="margin:2px 0 0;font-weight:700">游了 ' + Math.floor(dist) + ' 公尺・到了' + theme.name + '</p><div class="big">' + s.toLocaleString() + '</div>' + (rk ? '<div class="rk">🏆 本月' + rk + '</div>' : '') + whyHtml() + '<div class="row"><span>🎯 ' + mis.txt + '</span><span>' + (misDone ? '✅ 完成' : Math.floor(misV) + '/' + mis.n) + '</span></div><div class="row"><span>最高連吃</span><span>' + maxCombo + '</span></div>' + nextZone() + '<div class="row"><span>最佳</span><span>' + bestNow.toLocaleString() + ' 分</span></div><button class="go" id="againBtn" type="button">再玩一次</button>';
+  let rk = '', dr = DS ? KiteDaily.finish(DS, s) : null; try { const K = window.KiteCore; if (!DS && K && K.reportMini && s > 0) { const r = K.rankAround ? K.rankAround('swim', 'all', () => K.reportMini('swim', s)) : (K.reportMini('swim', s), null); rk = r && K.rankText ? K.rankText(r) : ''; } } catch (e) {}
+  const c = $('endCard'); c.innerHTML = '<img class="hero" src="assets/shark_hit.webp" alt="">' + (nb ? '<span class="nb">新紀錄！</span>' : '') + '<p style="margin:2px 0 0;font-weight:700">游了 ' + Math.floor(dist) + ' 公尺・到了' + theme.name + '</p><div class="big">' + s.toLocaleString() + '</div>' + (rk ? '<div class="rk">🏆 本月' + rk + '</div>' : '') + (DS ? KiteDaily.resultHtml(DS, dr, s) : '') + whyHtml() + '<div class="row"><span>🎯 ' + mis.txt + '</span><span>' + (misDone ? '✅ 完成' : Math.floor(misV) + '/' + mis.n) + '</span></div><div class="row"><span>最高連吃</span><span>' + maxCombo + '</span></div>' + nextZone() + '<div class="row"><span>最佳</span><span>' + bestNow.toLocaleString() + ' 分</span></div><button class="go" id="againBtn" type="button">再玩一次</button>';
+  if (DS) KiteDaily.wire(c, s);
   c.hidden = false; $('againBtn').onclick = () => { mis = MIS[Math.floor(Math.random() * MIS.length)]; start(); }; $('againBtn').disabled = true; setTimeout(() => { const b = $('againBtn'); if (b) b.disabled = false; }, 700);      // G98：結算先擋 0.7 秒，避免最後一下滑動誤按再玩 beep(nb ? [523, 659, 784, 1047] : [392, 330], 110);
 }
 /* G98-R01：結算告訴玩家最後撞到什麼、下次怎麼閃 */

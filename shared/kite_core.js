@@ -101,7 +101,8 @@
     stamp: { name: '港灣蓋章散步', levels: {} },
     merge: { name: '小鳶合成港', levels: {} },      // D119：放進遊戲大廳，不計分
     stack: { name: '小鳶疊貨櫃', levels: {} },
-    swim: { name: '鯨鯊快游', levels: {} }      // D136：3D 試玩版，只進排行榜
+    swim: { name: '鯨鯊快游', levels: {} },
+    daily: { name: '今日挑戰', levels: {} }      // G97：每日挑戰（只進今日榜）      // D136：3D 試玩版，只進排行榜
   };
 
   function rd(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
@@ -368,6 +369,14 @@
   function reportMini(game, score) {      // D123：合成港、疊貨櫃只進排行榜（不換點、不佔次數、不算總分）
     var m = member(); m.plays = m.plays || []; m.plays.unshift({ t: Date.now(), game: game, level: 'all', score: Math.max(0, Math.round(score || 0)), counted: false, lbOnly: true, raw: 0, bank: 0 }); m.plays = m.plays.slice(0, 800); saveMember(m); if (cloudStatus().url && typeof cloudPush === 'function') try { cloudPush(); } catch (e) {}
   }
+  /* G97：每日挑戰——正式場次記成 game:'daily'、level:日期（只進今日榜，不換點、不佔次數、不算月榜總分）。開始時先記 0 分扣次，結束再補分數 */
+  function reportDaily(date, game, score, id) {
+    var m = member(); m.plays = m.plays || []; var p = id ? m.plays.filter(function (x) { return x.did === id; })[0] : null;
+    if (p) p.score = Math.max(p.score || 0, Math.max(0, Math.round(score || 0)));
+    else { id = 'D' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); m.plays.unshift({ t: Date.now(), game: 'daily', level: date, sub: game, did: id, score: Math.max(0, Math.round(score || 0)), counted: false, lbOnly: true, raw: 0, bank: 0 }); m.plays = m.plays.slice(0, 800); }
+    saveMember(m); if (cloudStatus().url && typeof cloudPush === 'function') try { cloudPush(); } catch (e) {} return id;
+  }
+  function dailyUsed(date) { return (member().plays || []).filter(function (p) { return p.game === 'daily' && p.level === date; }).length; }
   /* D133：結算畫面顯示「本月第 N 名」——記下這局前後的名次，fn 是送成績的動作 */
   function rankAround(game, level, fn) { var m0 = null, out; try { m0 = leaderboard(game, level, 'month', 1).mine; } catch (e) {} out = fn(); var m1 = null; try { m1 = leaderboard(game, level, 'month', 1).mine; } catch (e) {} return { res: out, rank: m1 ? m1.rank : 0, was: m0 ? m0.rank : 0 }; }
   function rankText(r) { if (!r || !r.rank) return ''; return '第 ' + r.rank + ' 名' + (!r.was ? '・新上榜！' : r.was > r.rank ? '・上升 ' + (r.was - r.rank) + ' 名！' : ''); }
@@ -744,7 +753,7 @@
     cloudPull: cloudPull, cloudPush: cloudPush, cloudSync: cloudSync, cloudOp: cloudOp, cloudWipe: cloudWipe, cloudStatus: cloudStatus, onCloud: function (f) { CL.subs.push(f); }, cloudStart: cloudStart, cloudMarkAll: function () { CL.cfgDirty = CL.imgDirty = true; }, liffStart: liffStart, linkLine: linkLine, liffId: liffId,
     member: member, peekMember: function () { return rd(K_MEM); }, saveMember: saveMember, dayKey: dayKey, rid: rid, hmac: hmac, sha256: sha256, utf8: utf8,
     pointsForSpend: pointsForSpend, makeEarnCode: makeEarnCode, claimEarn: claimEarn, storeLog: function () { return lg(K_STORE); }, storeById: storeById,
-    eventMult: eventMult, rankAround: rankAround, rankText: rankText, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore, tierPts: tierPts, nextTier: nextTier, gameToday: gameToday, leaderboard: leaderboard, reportMini: reportMini, travelBoard: travelBoard, lbMe: lbMe, setLbMe: setLbMe, lbSync: lbSync, sumBoard: sumBoard, fmtScore: fmtScore, setTravelStat: setTravelStat, claimGame: claimGame, settleGame: settleGame, storeBonusPts: storeBonusPts,
+    eventMult: eventMult, reportDaily: reportDaily, dailyUsed: dailyUsed, rankAround: rankAround, rankText: rankText, triesLeft: triesLeft, reportPlay: reportPlay, perPoint: perPoint, convertScore: convertScore, tierPts: tierPts, nextTier: nextTier, gameToday: gameToday, leaderboard: leaderboard, reportMini: reportMini, travelBoard: travelBoard, lbMe: lbMe, setLbMe: setLbMe, lbSync: lbSync, sumBoard: sumBoard, fmtScore: fmtScore, setTravelStat: setTravelStat, claimGame: claimGame, settleGame: settleGame, storeBonusPts: storeBonusPts,
     travelGift: travelGift, travelPtsThisMonth: function () { return travelPtsThisMonth(member()); }, myCoupons: myCoupons, couponCheck: couponCheck, couponUse: couponUse, couponStoreName: couponStoreName, couponIssued: couponIssued, couponImg: couponImg, couponUsedCount: couponUsedCount, couponFaceHTML: couponFaceHTML,
     prizeById: prizeById, stockLeft: stockLeft, makeRedeem: makeRedeem, maxQty: maxQty, perUserLeft: perUserLeft, cancelRedeem: cancelRedeem, deskCheck: deskCheck, deskGive: deskGive, findRedeem: findRedeem, pendingRedeems: pendingRedeems, memberName: memberName, markGiven: markGiven, deskLog: function () { return lg(K_DESK); },
     allMembers: allMembers, importMembers: importMembers, addAdj: addAdj, adjSum: adjSum, gap: gap, list: list, saveList: saveList, backfill: backfill, claimedRefs: claimedRefs, lookupTx: lookupTx, archiveFull: archiveFull, archives: function () { return (rd('kiteArchive1') || []).map(function (a) { return { id: a.id, t: a.t }; }); }, importPreview: importPreview, dataset: dataset, wipeTest: wipeTest, reissueEarn: reissueEarn, voidEarn: voidEarn, peekEarn: peekEarn, earnCheck: earnCheck, onHand: onHand, reservedCount: reservedCount, exportMe: exportMe, wipeMine: wipeMine, MINE_KEYS: MINE_KEYS, expiring: expiring, batches: batches, housekeep: housekeep, storeMult: storeMult, notices: function () { var d = dayKey(); return (cfg().notices || []).filter(function (n) { return n.on && (!n.from || d >= n.from) && (!n.to || d <= n.to); }); }
