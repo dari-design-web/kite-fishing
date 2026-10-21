@@ -61,7 +61,7 @@ async function load(url, bytes, name) {
     const axis = sz.x >= sz.z ? 'x' : 'z', len = axis === 'x' ? sz.x : sz.z, mn = axis === 'x' ? box.min.x : box.min.z;
     uLen.value = len; uMin.value = mn;
     root.traverse((o) => { if (o.isMesh) [].concat(o.material).forEach((m) => addSwim(m, axis)); });
-    const d = 1.25 / (Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * Math.min(1, cam.aspect)); cam.position.set(0, d * 0.25, d); ctl.target.set(0, 0, 0); ctl.update();
+    const d = 1.25 / (Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * Math.min(1, cam.aspect)); cam.position.set(0, d * 0.25, d); ctl.target.set(0, -0.45, 0); ctl.update();      // 下方有資訊框，模型往上放
     const mb = bytes ? bytes / 1048576 : null, triC = tri <= 30000 ? 'ok' : tri <= 80000 ? 'warn' : 'bad', mbC = mb == null ? '' : mb <= 5 ? 'ok' : mb <= 12 ? 'warn' : 'bad';
     $('info').innerHTML = '<b>' + (name || '模型') + '</b><br>三角面 <span class="' + triC + '">' + fmt(Math.round(tri)) + '</span>（手機建議 3 萬以內）・網格 ' + mesh + ' 個' + (mb != null ? '・檔案 <span class="' + mbC + '">' + mb.toFixed(1) + ' MB</span>（建議 5 MB 內）' : '') + '<br>貼圖 ' + (tex.size ? [...tex.values()].join('、') : '沒有') + '・長寬高比 ' + [sz.x, sz.y, sz.z].map((v) => (v * k).toFixed(2)).join('：') + '・身體長軸 ' + axis.toUpperCase() + (g.animations.length ? '・內建動畫 ' + g.animations.length + ' 段' : '') + '<br><small>拖曳旋轉、兩指縮放；「游動」是程式做的擺尾（遊戲裡也會用同一種方式）</small>';
   } catch (e) { $('info').innerHTML = '<span class="bad">讀不到這個檔案：' + (e && e.message || e) + '</span><br>請確認是 Meshy 匯出的 .glb'; }

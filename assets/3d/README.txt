@@ -1,0 +1,1 @@
+- assets/3d/kite_v1.glb（遊戲用：1.9 萬面、1024 貼圖、0.7MB）、kite_v1_hd.glb（展示用：4.7 萬面、2048 貼圖、1.6MB）：Dari 10/21 用 Meshy 生成的小鳶（原檔 51MB 在 G 槽 3D 資料夾），Claude 用 gltf-transform 減面、貼圖轉 webp、量化。
