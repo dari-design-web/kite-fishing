@@ -307,7 +307,7 @@
     m.plays.unshift({ t: Date.now(), id: id, game: o.game, level: String(o.level), sub: o.wg || undefined, did: o.did || undefined, score: o.score || 0, capped: !!capped, sec: Math.round(o.sec || 0), counted: counted, lbOnly: o.lbAll ? true : undefined, mult: ev.mult, cp: ev.id || undefined, raw: counted ? sc : 0, bank: tier ? 0 : add }); m.plays = m.plays.slice(0, 800);
     if (!tier) { m.scoreBank[o.game] = (m.scoreBank[o.game] || 0) + add; saveMember(m); return { counted: counted, add: add, mult: ev.mult, event: ev.title, bank: m.scoreBank[o.game], left: triesLeft(o.game, o.level), id: id }; }
     var r = tierSync(m, o.game); saveMember(m);
-    return Object.assign(r, { counted: counted, add: counted ? sc : 0, mult: ev.mult, event: ev.title, left: triesLeft(o.game, o.level), id: id });
+    return Object.assign(r, { counted: counted, add: counted ? sc : 0, w: scoreW(o.wg || o.game), mult: ev.mult, event: ev.title, left: triesLeft(o.game, o.level), id: id });
   }
   /* D97／D102：階梯制——把今天累計的點數補到應得的數字（只增不減，當天上限內）；點亮制只點亮格子，回樂園領 */
   function tierSync(m, game) {
@@ -317,7 +317,7 @@
     return { tier: true, tap: tap, today: g.total, pts: g.pts, gain: gain, lit: lit, claim: tap ? Math.max(0, g.pts - g.got) : 0, cap: g.cap, next: g.next, total: m.points };
   }
   /* 結算一行字（捕魚、飛行、小遊戲共用）：今天累計多少分、幾點、這局新亮幾格 */
-  function tierLine(rp) { if (!rp) return ''; if (!rp.tier) return rp.counted ? '分數存摺 +' + rp.add : ''; if (!rp.counted) return '今天這款的算分次數用完了，這局只進排行榜'; return '今日積分 ' + rp.today.toLocaleString() + ' 分＝' + rp.pts + ' 點' + (rp.tap ? (rp.lit ? '・新亮 ' + rp.lit + ' 格' : '') + (rp.claim ? '・回樂園領 ' + rp.claim + ' 點' : '') : rp.gain ? '（+' + rp.gain + ' 點）' : '') + (rp.next ? '・再 ' + rp.next.need.toLocaleString() + ' 分多 1 點' : rp.pts >= rp.cap ? '・今天已滿' : ''); }
+  function tierLine(rp) { if (!rp) return ''; if (!rp.tier) return rp.counted ? '分數存摺 +' + rp.add : ''; if (!rp.counted) return '今天這款的算分次數用完了，這局只進排行榜'; return (rp.w && rp.w !== 1 && rp.add ? '本局計入 ' + rp.add.toLocaleString() + ' 分（這款 ×' + rp.w + '）・' : '') + (rp.left != null ? '今天還能算分 ' + rp.left + ' 局・' : '') + '今日積分 ' + rp.today.toLocaleString() + ' 分＝' + rp.pts + ' 點' + (rp.tap ? (rp.lit ? '・新亮 ' + rp.lit + ' 格' : '') + (rp.claim ? '・回樂園領 ' + rp.claim + ' 點' : '') : rp.gain ? '（+' + rp.gain + ' 點）' : '') + (rp.next ? '・再 ' + rp.next.need.toLocaleString() + ' 分多 1 點' : rp.pts >= rp.cap ? '・今天已滿' : ''); }
   /* D102：小鳶樂園點亮的格子點一下入帳（n＝要領幾點，不給就全部領）；點數記在今天分數最多的遊戲名下，報表才分得出來 */
   function topGame(m, d) { var by = {}; (m.plays || []).forEach(function (p) { if (p.counted && dayKey(p.t) === d) by[p.game] = (by[p.game] || 0) + (p.raw || 0); }); return Object.keys(by).sort(function (a, b) { return by[b] - by[a]; })[0] || 'fish'; }
   function claimGame(n) {
