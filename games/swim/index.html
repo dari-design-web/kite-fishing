@@ -105,14 +105,16 @@ const rnd = (a, b) => a + Math.random() * (b - a), clamp = (v, a, b) => Math.max
 const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 const RM = matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches, Q = new URLSearchParams(location.search);
 /* 數值：速度每 10 秒 +1（11→28 m/s）；障礙間距 30→14 公尺；每 450 公尺換場景；能量 260 分滿 */
-const CFG = { lanes: [-2.4, 0, 2.4], yMid: 1.9, yUp: 3.6, yDown: 0.5, hold: 0.9, v0: 11, vStep: 1, vEvery: 10, vMax: 28, gap0: 30, gap1: 14, hearts: 3, inv: 1.4, spawnZ: -74, zoneLen: 450, feverNeed: 600, fever: 6, shield: 10, magnet: 8, dash: 3.5 };
+const CFG = { lanes: [-2.4, 0, 2.4], yMid: 1.9, yUp: 3.6, yDown: 0.5, hold: 0.9, v0: 14, vStep: 1.2, vEvery: 10, vMax: 32, gap0: 30, gap1: 14, hearts: 3, inv: 1.4, spawnZ: -74, zoneLen: 450, feverNeed: 600, fever: 6, shield: 10, magnet: 8, dash: 3.5 };
 
 let R; try { R = new THREE.WebGLRenderer({ canvas: cv, antialias: true }); } catch (e) { stage.innerHTML = '<div class="err">這支手機的瀏覽器不支援 3D 畫面 😢<br>可以先玩其他遊戲喔！</div>'; throw e; }
-R.setPixelRatio(Math.min(2, devicePixelRatio || 1));
+R.setPixelRatio(Math.min(1.5, devicePixelRatio || 1));      // D139：手機上 2 倍太吃效能，1.5 倍看起來差不多
 const W = makeWorld(THREE), S = new THREE.Scene(), seaC = new THREE.Color('#2AA5C4'); S.background = seaC; S.fog = new THREE.Fog(seaC, 24, 82);
 const cam = new THREE.PerspectiveCamera(58, 1, 0.1, 160); cam.position.set(0, 5.0, 8.2);
 const hemi = new THREE.HemisphereLight('#D6F7FF', '#0E3A4F', 1.9); S.add(hemi); const sun = new THREE.DirectionalLight('#FFFFFF', 1.8); sun.position.set(3, 10, 6); S.add(sun);
 const add = (o) => { W.bendAll(o); S.add(o); return o; };
+/* D139：拿掉的東西把幾何、材質還給顯示卡（共用的標了 keep 不還），手機才不會越玩越卡、換場景黑掉 */
+function drop(o) { if (!o) return; S.remove(o); o.traverse((x) => { if (x.geometry && !x.geometry.userData.keep) x.geometry.dispose(); const ms = x.material ? (Array.isArray(x.material) ? x.material : [x.material]) : []; ms.forEach((m) => { if (!m.userData.keep) m.dispose(); }); }); }
 const shark = makeShark(THREE); shark.scale.setScalar(0.74); add(shark);
 const glowM = new THREE.MeshBasicMaterial({ color: '#9CF0FF', transparent: true, opacity: 0.22, depthWrite: false }), aura = new THREE.Mesh(new THREE.SphereGeometry(2.1, 28, 20), glowM); aura.scale.set(0.62, 0.48, 1.1); aura.visible = false; add(aura);
 /* 海底：沙地＋流動光斑、兩側斜坡、水面、光柱、氣泡 */
@@ -129,7 +131,7 @@ let zone = 0, theme = W.THEMES[0];
 const deco = []; let decoSide = 1;
 function decoAt(z) { decoSide = -decoSide; const near = Math.random() < 0.7, g = W.deco(theme, false, near); g.position.set(decoSide * (near ? rnd(4.4, 6) : rnd(6.5, 10)), -0.65, z); g.scale.multiplyScalar(near ? rnd(1.05, 1.4) : rnd(1.6, 2.4)); g.userData.near = near; g.rotation.y = rnd(0, 6); S.add(g); deco.push(g);
   if (Math.random() < 0.35) { const sm = W.deco(theme, true); sm.position.set(pick([-1.2, 1.2]) + rnd(-0.2, 0.2), -0.66, z + rnd(-1, 1)); S.add(sm); sm.userData.small = 1; deco.push(sm); } return g; }      // 水道之間的地上也放小珊瑚、小石頭
-for (let z = 6; z > -130; z -= 2.2) decoAt(z);
+for (let z = 6; z > -130; z -= 2.8) decoAt(z);
 /* 背景魚群（小丑魚、藍倒吊、銀色小魚）在兩側游 */
 const amb = []; function ambFish() { const kinds = theme.life; const k = pick(kinds); if (k === 'glow') return null; const n = k === 'school' ? 10 : 3, g = new THREE.Group(); for (let i = 0; i < n; i++) { const f = W.fish(k === 'school' ? 'small' : k); f.position.set(rnd(-1, 1), rnd(-0.5, 0.5), rnd(-1, 1)); g.add(f); } const side = Math.random() < 0.5 ? -1 : 1; g.position.set(side * rnd(3.2, 6.5), rnd(1.5, 5.5), -rnd(20, 70)); g.userData.vx = -side * rnd(0.3, 1); g.rotation.y = side > 0 ? Math.PI : 0; add(g); amb.push(g); return g; }
 let big = null;
@@ -138,23 +140,25 @@ const tgtC = { sea: new THREE.Color(theme.sea), sand: new THREE.Color(theme.sand
 function setZone(i, instant) { zone = i; theme = W.THEMES[i % W.THEMES.length]; tgtC.sea.set(theme.sea); tgtC.sand.set(theme.sand); tgtC.fog = theme.fog.slice(); tgtC.light = theme.light;
   if (instant) { seaC.copy(tgtC.sea); sandM.color.copy(tgtC.sand); S.fog.near = tgtC.fog[0]; S.fog.far = tgtC.fog[1]; }
   else { const z = document.createElement('div'); z.className = 'zone'; z.innerHTML = theme.name + '<small>第 ' + (i + 1) + ' 區</small>'; stage.appendChild(z); setTimeout(() => z.remove(), 2500); beep([523, 784, 1047], 120, 'triangle'); }
-  if (big) { S.remove(big); big = null; } big = W.bigCreature(theme.big); const side = Math.random() < 0.5 ? -1 : 1; big.userData.side = side; if (theme.big === 'whale') big.position.set(side * 18, 7, -70); else big.position.set(side * 10, rnd(5, 7), -40); big.rotation.y = side > 0 ? -Math.PI / 2 - 0.4 : Math.PI / 2 + 0.4; S.add(big); }
+  if (big) { drop(big); big = null; } big = W.bigCreature(theme.big); const side = Math.random() < 0.5 ? -1 : 1; big.userData.side = side; if (theme.big === 'whale') big.position.set(side * 18, 7, -70); else big.position.set(side * 10, rnd(5, 7), -40); big.rotation.y = side > 0 ? -Math.PI / 2 - 0.4 : Math.PI / 2 + 0.4; S.add(big); }
 setZone(0, true);
+/* D139：先把四種場景、所有障礙的材質編譯好，換場景時才不會卡住或黑一下 */
+(() => { const pre = new THREE.Group(); W.THEMES.forEach((th) => { for (let i = 0; i < 6; i++) pre.add(W.deco(th, false, i % 2 === 0)); pre.add(W.deco(th, true)); pre.add(W.bigCreature(th.big)); }); Object.keys(W.O).forEach((k) => { try { pre.add(W.O[k](1).g); } catch (e) {} }); ['clown', 'tang', 'small'].forEach((k) => pre.add(W.fish(k))); pre.position.z = -20; W.bendAll(pre); S.add(pre); try { R.compile(S, cam); } catch (e) {} drop(pre); })();
 
 /* ---------- 東西 ---------- */
 const objs = [];
 function addObj(o, kind, extra) { add(o); const b = Object.assign({ o, kind }, extra || {}); objs.push(b); return b; }
 const FOOD = { plank: 5, krill: 15, roe: 20, fish: 30 };
-const plankM = new THREE.PointsMaterial({ map: W.dot, size: 0.55, color: '#FFE45C', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
-const krillM = W.T('#FF8FB8', { emissive: '#7A1F45' }), roeM = new THREE.MeshToonMaterial({ color: '#FF9A3C', gradientMap: W.ramp, emissive: '#7A3300', transparent: true, opacity: 0.9 }), fishM = W.T('#D9E6EE', { emissive: '#203040' });
+const plankM = W.keep(new THREE.PointsMaterial({ map: W.dot, size: 0.55, color: '#FFE45C', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+const krillM = W.T('#FF8FB8', { emissive: '#7A1F45' }), roeM = W.T('#FF9A3C', { emissive: '#7A3300', transparent: true, opacity: 0.9 }), krillG = W.keep(new THREE.CapsuleGeometry(0.05, 0.16, 3, 6)), roeG = W.keep(new THREE.SphereGeometry(0.09, 8, 6));
 function food(kind, x, y, z) { let o;
   if (kind === 'plank') { const n = 10, g = new THREE.BufferGeometry(), p = new Float32Array(n * 3); for (let i = 0; i < n; i++) { p[i * 3] = rnd(-0.3, 0.3); p[i * 3 + 1] = rnd(-0.25, 0.25); p[i * 3 + 2] = rnd(-0.3, 0.3); } g.setAttribute('position', new THREE.BufferAttribute(p, 3)); o = new THREE.Points(g, plankM); }
-  else if (kind === 'krill') { o = new THREE.Group(); for (let i = 0; i < 5; i++) { const k = new THREE.Mesh(new THREE.CapsuleGeometry(0.05, 0.16, 3, 6), krillM); k.position.set(rnd(-0.3, 0.3), rnd(-0.2, 0.2), rnd(-0.3, 0.3)); k.rotation.set(rnd(0, 3), rnd(0, 3), 0); o.add(k); } }
-  else if (kind === 'roe') { o = new THREE.Group(); for (let i = 0; i < 9; i++) { const k = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), roeM); k.position.set(rnd(-0.22, 0.22), rnd(-0.18, 0.18), rnd(-0.22, 0.22)); o.add(k); } }
+  else if (kind === 'krill') { o = new THREE.Group(); for (let i = 0; i < 5; i++) { const k = new THREE.Mesh(krillG, krillM); k.position.set(rnd(-0.3, 0.3), rnd(-0.2, 0.2), rnd(-0.3, 0.3)); k.rotation.set(rnd(0, 3), rnd(0, 3), 0); o.add(k); } }
+  else if (kind === 'roe') { o = new THREE.Group(); for (let i = 0; i < 9; i++) { const k = new THREE.Mesh(roeG, roeM); k.position.set(rnd(-0.22, 0.22), rnd(-0.18, 0.18), rnd(-0.22, 0.22)); o.add(k); } }
   else { o = new THREE.Group(); for (let i = 0; i < 6; i++) { const f = W.fish('small'); f.position.set(rnd(-0.4, 0.4), rnd(-0.25, 0.25), rnd(-0.3, 0.3)); f.rotation.y = Math.PI / 2; o.add(f); } }
   o.position.set(x, y, z); return addObj(o, 'food', { food: kind, r: 1.0, spin: kind === 'fish' ? 0 : rnd(-1.5, 1.5) }); }
-const ringM = new THREE.MeshBasicMaterial({ color: '#FFD23A', fog: false }), ringG = new THREE.TorusGeometry(1.0, 0.12, 10, 30);
-function ring(ln, y, z) { const g = new THREE.Group(), r = new THREE.Mesh(ringG, ringM); g.add(r); const sp = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.04, 6, 30), new THREE.MeshBasicMaterial({ color: '#FFFFFF', fog: false })); sp.scale.setScalar(0.82); g.add(sp); g.position.set(CFG.lanes[ln], y, z); return addObj(g, 'ring', { lane: ln, ry: y }); }
+const ringM = W.keep(new THREE.MeshBasicMaterial({ color: '#FFD23A', fog: false })), ringG = W.keep(new THREE.TorusGeometry(1.0, 0.12, 10, 30)), ringM2 = W.keep(new THREE.MeshBasicMaterial({ color: '#FFFFFF', fog: false })), ringG2 = W.keep(new THREE.TorusGeometry(1.0, 0.04, 6, 30));
+function ring(ln, y, z) { const g = new THREE.Group(), r = new THREE.Mesh(ringG, ringM); g.add(r); const sp = new THREE.Mesh(ringG2, ringM2); sp.scale.setScalar(0.82); g.add(sp); g.position.set(CFG.lanes[ln], y, z); return addObj(g, 'ring', { lane: ln, ry: y }); }
 const PW = { shield: { icon: '🫧', name: '泡泡盾', c: '#9CF0FF' }, magnet: { icon: '🪶', name: '小鳶幫手', c: '#FFD36B' }, dash: { icon: '⚡', name: '衝刺', c: '#FFF07A' } };
 const iconTex = {}; function emojiTex(e, ring) { const k = e + ring; if (iconTex[k]) return iconTex[k]; return (iconTex[k] = W.tex(128, 128, (c) => { c.fillStyle = ring; c.globalAlpha = 0.92; c.beginPath(); c.arc(64, 64, 58, 0, 7); c.fill(); c.globalAlpha = 1; c.lineWidth = 8; c.strokeStyle = '#10293D'; c.stroke(); c.font = '64px system-ui,"Apple Color Emoji","Segoe UI Emoji"'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(e, 64, 70); })); }
 function powerup(kind, x, y, z) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: emojiTex(PW[kind].icon, PW[kind].c), fog: false })); sp.scale.setScalar(1.2); sp.position.set(x, y, z); return addObj(sp, 'pw', { pw: kind, r: 1.2 }); }
@@ -165,7 +169,7 @@ let state = 'ready', v = CFG.v0, dist = 0, score = 0, bonus = 0, hearts = CFG.he
 const pos = { x: 0, y: CFG.yMid }, P = { shield: 0, magnet: 0, dash: 0, fever: 0 }, curve = { x: 0, y: 0, tx: 0, ty: 0, next: 6 };
 let bestNow = (() => { try { return +localStorage.getItem('kiteSwimBest1') || 0; } catch (e) { return 0; } })();
 function resize() { const w = stage.clientWidth, h = stage.clientHeight; R.setSize(w, h, false); cam.aspect = w / h; cam.fov = w / h < 0.62 ? 64 : 58; cam.updateProjectionMatrix(); } addEventListener('resize', resize); resize();
-function reset() { objs.splice(0).forEach((b) => S.remove(b.o)); v = CFG.v0; dist = 0; score = 0; bonus = 0; hearts = CFG.hearts; inv = 0; nextRow = 22; combo = 0; playT = 0; lane = 1; vstate = 'mid'; vT = 0; step = 0; pos.x = 0; pos.y = CFG.yMid; Object.keys(P).forEach((k) => (P[k] = 0)); seen = {}; feverE = 0; curve.tx = curve.ty = 0; curve.next = 8; if (zone !== 0) setZone(0, true); hud(); }
+function reset() { objs.splice(0).forEach((b) => drop(b.o)); v = CFG.v0; dist = 0; score = 0; bonus = 0; hearts = CFG.hearts; inv = 0; nextRow = 22; combo = 0; playT = 0; lane = 1; vstate = 'mid'; vT = 0; step = 0; pos.x = 0; pos.y = CFG.yMid; Object.keys(P).forEach((k) => (P[k] = 0)); seen = {}; feverE = 0; curve.tx = curve.ty = 0; curve.next = 8; if (zone !== 0) setZone(0, true); hud(); }
 const speedLv = () => Math.min(Math.floor(playT / CFG.vEvery) + 1, CFG.vMax - CFG.v0 + 1);
 const mult = () => Math.min(5, (combo >= 50 ? 4 : combo >= 25 ? 3 : combo >= 10 ? 2 : 1) * (P.dash > 0 ? 2 : 1) * (P.fever > 0 ? 3 : 1));      // 最多 ×5
 function hud() { $('sc').textContent = score.toLocaleString(); $('dist').textContent = Math.floor(dist) + ' 公尺'; $('spd').textContent = '速度 ' + speedLv(); $('hp').textContent = '💙'.repeat(Math.max(0, hearts)) + '🤍'.repeat(Math.max(0, CFG.hearts - hearts)); const m = mult(); $('cb').hidden = combo < 3 && m < 2; $('cb').textContent = (combo >= 3 ? '連吃 ' + combo : '') + (m > 1 ? '・×' + m : '');
@@ -228,21 +232,21 @@ function update(dt) {
       b.o.children.forEach((c) => { if (c.userData.jelly != null) c.position.y += Math.sin(t * 2 + c.userData.jelly) * dt * 0.3; });
       if (b.tip && !b.tipped && z1 > -28) { b.tipped = true; const n = (seen[b.name] = (seen[b.name] || 0) + 1); if (n === 1 || dist < 350) tip(b.tip, false, 1.3); }
       if (z0 < -0.2 && z1 >= -0.2 && !b.done) { b.done = true; if (blocked(b)) hit(b); else if (b.net || b.name === 'harpoon' || b.name === 'arch') { bonus += 20 * mult(); pop('閃過 +' + 20 * mult(), pos.x, pos.y + 1.1, 0); beep([660, 990], 60); } } }
-    else if (b.kind === 'ring') { if (z0 < -0.2 && z1 >= -0.2) { if (Math.abs(pos.x - L[b.lane]) < 1.0 && Math.abs(pos.y - b.ry) < 1.0) { bonus += 50 * mult(); P.dash = Math.max(P.dash, 1.2); feverE += 20; pop('💫 +' + 50 * mult(), pos.x, pos.y + 1.2, 0, 'gold'); beep([880, 1320], 60, 'triangle'); S.remove(b.o); objs.splice(i, 1); continue; } } b.o.rotation.z += dt * 2; }
+    else if (b.kind === 'ring') { if (z0 < -0.2 && z1 >= -0.2) { if (Math.abs(pos.x - L[b.lane]) < 1.0 && Math.abs(pos.y - b.ry) < 1.0) { bonus += 50 * mult(); P.dash = Math.max(P.dash, 1.2); feverE += 20; pop('💫 +' + 50 * mult(), pos.x, pos.y + 1.2, 0, 'gold'); beep([880, 1320], 60, 'triangle'); drop(b.o); objs.splice(i, 1); continue; } } b.o.rotation.z += dt * 2; }
     else { if ((P.magnet > 0 || P.fever > 0) && b.kind === 'food' && z1 > -18 && z1 < 0.5) { b.o.position.x = lerp(b.o.position.x, pos.x, 1 - Math.exp(-dt * 6)); b.o.position.y = lerp(b.o.position.y, pos.y, 1 - Math.exp(-dt * 6)); }
       if (z1 > -1.6 && z1 < 1.2) { const dx = b.o.position.x - pos.x, dy = b.o.position.y - pos.y; if (dx * dx + dy * dy < b.r * b.r * 1.5) {
         if (b.kind === 'pw') { P[b.pw] = CFG[b.pw]; pop(PW[b.pw].icon + ' ' + PW[b.pw].name + '！', pos.x, pos.y + 1.2, 0, 'pw'); beep([660, 880, 1100], 70, 'triangle'); }
         else { combo++; const add = FOOD[b.food] * mult(); bonus += add; if (P.fever <= 0) feverE += FOOD[b.food]; pop('+' + add, b.o.position.x, b.o.position.y + 0.3, z1); beep([880 + Math.min(combo, 20) * 25], 50, 'triangle', 0.07);
           if (feverE >= CFG.feverNeed && P.fever <= 0) { P.fever = CFG.fever; feverE = 0; tip('🔥 鯨鯊狂歡！撞飛一切！', true, 1.6); beep([523, 659, 784, 1047, 1319], 70, 'square', 0.06); } }
-        S.remove(b.o); objs.splice(i, 1); hud(); continue; } } }
-    if (z1 > 12) { S.remove(b.o); objs.splice(i, 1); } }
-  for (let i = deco.length - 1; i >= 0; i--) { const o = deco[i]; o.position.z += dz; if (o.position.z > 12) { S.remove(o); deco.splice(i, 1); if (!o.userData.small) decoAt(o.position.z - 136); } }
+        drop(b.o); objs.splice(i, 1); hud(); continue; } } }
+    if (z1 > 12) { drop(b.o); objs.splice(i, 1); } }
+  for (let i = deco.length - 1; i >= 0; i--) { const o = deco[i]; o.position.z += dz; if (o.position.z > 12) { drop(o); deco.splice(i, 1); if (!o.userData.small) decoAt(o.position.z - 136); } }
   W.sand.offset.y += dz / 170 * 30; W.caustic.offset.y += dz / 170 * 22; W.caustic.offset.x += dt * 0.02; caus2.material.map.offset.y += dz / 170 * 17; caus2.material.map.offset.x -= dt * 0.03;
   const a = bubG.attributes.position; for (let i = 0; i < NB; i++) { a.array[i * 3 + 1] += dt * 0.6; a.array[i * 3 + 2] += dz * 0.7; if (a.array[i * 3 + 2] > 9) a.array[i * 3 + 2] -= 88; if (a.array[i * 3 + 1] > 9) a.array[i * 3 + 1] = -0.5; } a.needsUpdate = true;
   const gp = glowP.geometry.attributes.position; for (let i = 0; i < gp.count; i++) { gp.array[i * 3 + 2] += dz * 0.8; if (gp.array[i * 3 + 2] > 9) gp.array[i * 3 + 2] -= 88; } gp.needsUpdate = true;
   nextAmb -= dt; if (nextAmb <= 0) { nextAmb = rnd(1.2, 2.6); if (amb.length < 7) ambFish(); }
-  for (let i = amb.length - 1; i >= 0; i--) { const g = amb[i]; g.position.z += dz * 0.85; g.position.x += g.userData.vx * dt; if (g.position.z > 12) { S.remove(g); amb.splice(i, 1); } }
-  if (big) { big.position.z += dz * 0.35 + dt * 3; big.position.x -= big.userData.side * dt * (theme.big === 'whale' ? 1.2 : 2.2); if (big.position.z > 20) { S.remove(big); big = null; } }
+  for (let i = amb.length - 1; i >= 0; i--) { const g = amb[i]; g.position.z += dz * 0.85; g.position.x += g.userData.vx * dt; if (g.position.z > 12) { drop(g); amb.splice(i, 1); } }
+  if (big) { big.position.z += dz * 0.35 + dt * 3; big.position.x -= big.userData.side * dt * (theme.big === 'whale' ? 1.2 : 2.2); if (big.position.z > 20) { drop(big); big = null; } }
   if (Math.floor(t * 8) !== Math.floor((t - dt) * 8)) hud();
 }
 const helper = $('helper');
@@ -255,7 +259,7 @@ function pose(dt) {
   shark.position.set(pos.x, pos.y, 0); shark.rotation.y = (pos.x - L[lane]) * 0.18 - curve.x * 40; shark.rotation.z = (pos.x - L[lane]) * 0.22 + curve.x * 60; shark.rotation.x = clamp((pos.y - tyv) * 0.25, -0.4, 0.4);
   shark.visible = !(inv > 0 && P.shield <= 0 && Math.floor(inv * 12) % 2 === 0);
   aura.visible = P.shield > 0 || P.dash > 0 || P.fever > 0; aura.position.set(pos.x, pos.y, -0.1); glowM.color.set(P.fever > 0 ? '#FFB13C' : P.dash > 0 ? '#FFF07A' : '#9CF0FF'); glowM.opacity = 0.13 + Math.sin(t * 8) * 0.04;
-  deco.forEach((o) => o.traverse((c) => { if (c.userData.sway != null) c.rotation.z = Math.sin(t * 1.4 + c.userData.sway) * 0.12; if (c.userData.anemone) c.userData.anemone.forEach((s, i) => { s.rotation.x = Math.sin(t * 1.8 + i) * 0.15; s.rotation.z = Math.cos(t * 1.5 + i) * 0.15; }); if (c.userData.clowns) c.userData.clowns.forEach((f, i) => { const a = t * 1.6 + i * Math.PI; f.position.set(Math.cos(a) * 0.7, 0.8 + Math.sin(t * 2 + i) * 0.15, Math.sin(a) * 0.7); f.rotation.y = -a; }); if (c.userData.jelly != null) c.position.y += Math.sin(t * 1.5 + c.userData.jelly) * 0.004; }));
+  for (const o of deco) { const an = o.userData.anim; if (!an) continue; for (const c of an) { if (c.userData.sway != null) c.rotation.z = Math.sin(t * 1.4 + c.userData.sway) * 0.12; if (c.userData.anemone) c.userData.anemone.forEach((q, i) => { q.rotation.x = Math.sin(t * 1.8 + i) * 0.15; q.rotation.z = Math.cos(t * 1.5 + i) * 0.15; }); if (c.userData.clowns) c.userData.clowns.forEach((f, i) => { const a = t * 1.6 + i * Math.PI; f.position.set(Math.cos(a) * 0.7, 0.8 + Math.sin(t * 2 + i) * 0.15, Math.sin(a) * 0.7); f.rotation.y = -a; }); if (c.userData.jelly != null) c.position.y += Math.sin(t * 1.5 + c.userData.jelly) * 0.004; } }
   amb.forEach((g) => g.children.forEach((f) => { f.rotation.z = Math.sin(t * 10 + f.userData.ph) * 0.15; }));
   if (big && big.userData.flap) big.userData.flap.forEach((w, i) => { w.rotation.z = Math.sin(t * 2.2) * 0.35 * (i ? -1 : 1); });
   /* 小鳶幫手：2D 小鳶貼在泡泡裡，飛在鯨鯊旁邊 */
@@ -264,8 +268,8 @@ function pose(dt) {
   rays.forEach((r, i) => { r.material.opacity = 0.05 + Math.sin(t * 0.7 + i) * 0.025; });
 }
 function frame(now) {
-  const dt = clamp((now - last) / 1000, 0, 0.05); last = now;      // rAF 的時間可能比剛按開始的時間早一點，不能是負的
-  if (state === 'play') { const TS = +Q.get('ts') || 1; for (let k = 0; k < TS && state === 'play'; k++) update(dt); }      // ?ts=4：測試用快轉
+  const dt = clamp((now - last) / 1000, 0, 0.1); last = now;      // rAF 的時間可能比剛按開始的時間早一點，不能是負的
+  if (state === 'play') { const TS = +Q.get('ts') || 1; for (let k = 0; k < TS && state === 'play'; k++) { let rem = dt; while (rem > 0 && state === 'play') { const st = Math.min(rem, 0.034); update(st); rem -= st; } } }      // ?ts=4：測試用快轉；D139：手機卡一下也不會變慢（拆成小步算）
   else { t += dt; pos.x = lerp(pos.x, Math.sin(t * 0.5) * 1.4, 0.02); pos.y = lerp(pos.y, CFG.yMid + Math.sin(t * 0.8) * 0.4, 0.02); if (state === 'ready') deco.forEach((o) => { o.position.z += dt * 3; }); }
   pose(dt); R.render(S, cam); requestAnimationFrame(frame);
 }
@@ -290,6 +294,6 @@ function end() {
 }
 $('goBtn').onclick = start;
 if (window.KiteLB) KiteLB.button($('lbSlot'), () => Object.assign({ cat: 'swim' }, (KiteLB.CATS.filter((c) => c[0] === 'swim')[0] || [])[2] || {}));
-window.__swim = { get state() { return state; }, get score() { return score; }, get dist() { return dist; }, set dist(x) { dist = x; }, get hearts() { return hearts; }, set hearts(x) { hearts = x; }, get lane() { return lane; }, get pos() { return pos; }, get theme() { return theme && theme.id; }, regen() { deco.splice(0).forEach((o) => S.remove(o)); for (let z = 6; z > -130; z -= 2.2) decoAt(z); }, get speed() { return speedLv(); }, P, objs, start, end, move, L, setZone };
+window.__swim = { get state() { return state; }, get score() { return score; }, get dist() { return dist; }, set dist(x) { dist = x; }, get hearts() { return hearts; }, set hearts(x) { hearts = x; }, get lane() { return lane; }, get pos() { return pos; }, get theme() { return theme && theme.id; }, regen() { deco.splice(0).forEach((o) => drop(o)); for (let z = 6; z > -130; z -= 2.8) decoAt(z); }, get speed() { return speedLv(); }, P, objs, start, end, move, L, setZone };
 </script>
 </body></html>
