@@ -44,7 +44,7 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
 .lvl span{font-size:12px;font-weight:900;width:30px;text-align:center;border-radius:8px;padding:3px 0;background:rgba(10,34,54,.45);color:rgba(255,255,255,.55)}
 .lvl span.on{background:#FFE45C;color:var(--ink);box-shadow:0 2px 0 rgba(0,0,0,.25)}
 .lvl[hidden]{display:none}
-.pause{position:absolute;right:10px;top:52px;height:38px;padding:0 12px;border-radius:999px;border:2px solid #fff;background:rgba(10,34,54,.7);color:#fff;font:inherit;font-size:14px;font-weight:900;display:flex;align-items:center;gap:6px}
+.pause{position:absolute;right:10px;top:82px;height:36px;padding:0 12px;border-radius:999px;border:2px solid #fff;background:rgba(10,34,54,.7);color:#fff;font:inherit;font-size:14px;font-weight:900;display:flex;align-items:center;gap:6px}
 .pause i{display:inline-block;width:10px;height:12px;border-left:4px solid #fff;border-right:4px solid #fff;box-sizing:border-box}
 .pause[hidden]{display:none}
 .mis{display:block;margin:8px 0 0;background:#EAF6F4;border-radius:10px;padding:6px 10px;font-size:13px;font-weight:800;color:var(--ink)}
@@ -250,7 +250,7 @@ const buzz = (ms) => { try { navigator.vibrate && navigator.vibrate(ms); } catch
 const L = CFG.lanes;
 function trail(ln, z, n, kind, yy) { if (DS && DS.td.key === 'food') n = Math.round(n * 1.8); for (let i = 0; i < n; i++) food(kind || 'plank', L[ln], yy == null ? CFG.yMid : yy, z - i * 2.4); }
 function ringRow(z) { let ln = Math.floor(gR() * 3), y = CFG.yMid; for (let i = 0; i < 4; i++) { ring(ln, y, z - i * 6); if (gR() < 0.5) ln = clamp(ln + gpick([-1, 1]), 0, 2); else y = gpick([CFG.yMid, CFG.yUp, CFG.yDown]); } }
-const TUT = [() => { trail(1, CFG.spawnZ, 6); }, () => { obstacle('trash', 1); trail(0, CFG.spawnZ, 5, 'krill'); }, () => { ringRow(CFG.spawnZ); }, () => { obstacle('arch'); trail(1, CFG.spawnZ + 3, 3, 'roe', CFG.yDown); }, () => { obstacle('harpoon'); trail(2, CFG.spawnZ, 4, 'fish', CFG.yUp); }];
+const TUT = [() => { trail(1, CFG.spawnZ, 6); }, () => { obstacle('trash', 1); trail(0, CFG.spawnZ, 5, 'krill'); }, () => { ringRow(CFG.spawnZ); }, () => { obstacle('arch'); trail(1, CFG.spawnZ + 3, 3, 'roe', CFG.yMid); }, () => { obstacle('harpoon'); trail(2, CFG.spawnZ, 4, 'fish', CFG.yUp); }];
 function row() {
   if (step < TUT.length) { TUT[step++](); return; }
   const d = smooth(300, 2400, dist), z = CFG.spawnZ, free = Math.floor(gR() * 3), W0 = theme.obst;
@@ -260,7 +260,8 @@ function row() {
   if (['netWall', 'kelpwall'].includes(nm)) { obstacle(nm, free); trail(free, z - 1, 4, gpick(['plank', 'krill', 'roe'])); }
   else if (['trash', 'tire', 'drum', 'pillar', 'container'].includes(nm)) { const busy = [0, 1, 2].filter((i) => i !== free); const n = d > 0.35 && gR() < 0.6 ? 2 : 1; busy.slice(0, n).forEach((i, j) => { const b = obstacle(j ? gpick(['trash', 'tire', 'drum', 'pillar'].filter((x) => W0[x])) : nm, i); b.o.position.z -= j * 3; }); trail(free, z, 5, gpick(['plank', 'krill', 'fish'])); }
   else if (nm === 'jelly') { const ls = [0, 1, 2].filter((i) => i !== free); obstacle('jelly', d > 0.3 ? ls : [gpick(ls)]); trail(free, z, 4, 'krill'); }
-  else { obstacle(nm); const yy = nm === 'netTop' || nm === 'arch' ? CFG.yDown : nm === 'netLow' ? CFG.yUp : gpick([CFG.yUp, CFG.yDown]); trail(free, z + 2, 3, gpick(['roe', 'fish', 'krill']), yy); }
+  else if (nm === 'arch') { obstacle('arch'); trail(1, z + 2, 3, gpick(['roe', 'fish', 'krill']), CFG.yMid); }
+  else { obstacle(nm); const yy = nm === 'netTop' ? CFG.yDown : nm === 'netLow' ? CFG.yUp : gpick([CFG.yUp, CFG.yDown]); trail(free, z + 2, 3, gpick(['roe', 'fish', 'krill']), yy); }
   if (gR() < 0.12 + (dist > 600 ? 0.05 : 0)) powerup(gpick(['shield', 'magnet', 'dash']), L[free], CFG.yMid + (gR() < 0.3 ? 1.4 : 0), z - 9);
   else if (hearts < CFG.hearts && dist - lastHeal > 500 && gR() < 0.25) { lastHeal = dist; powerup('heal', L[free], CFG.yMid, z - 9); }      // D142 補血：少一條命以上、距離上次 500 公尺以上才偶爾出現
 }
@@ -357,7 +358,7 @@ function end() {
   c.hidden = false; $('againBtn').onclick = () => { mis = MIS[Math.floor(Math.random() * MIS.length)]; start(); }; $('againBtn').disabled = true; setTimeout(() => { const b = $('againBtn'); if (b) b.disabled = false; }, 700);      // G98：結算先擋 0.7 秒，避免最後一下滑動誤按再玩 beep(nb ? [523, 659, 784, 1047] : [392, 330], 110);
 }
 /* G98-R01：結算告訴玩家最後撞到什麼、下次怎麼閃 */
-const WHY = { netTop: ['ob_net', '浮網：看到「⬇ 潛」往下滑'], netLow: ['ob_net', '底網：看到「⬆ 游高」往上滑'], netWall: ['ob_net', '圍網：往綠色圈圈的缺口換水道'], kelpwall: ['seagrass_tall', '海草牆：往綠色圈圈的缺口換水道'], arch: ['ob_reef_arch', '礁石拱門：要往下潛才過得去'], pillar: ['ob_reef_pillar', '礁石柱：提早左右滑換水道'], trash: ['ob_bottle', '巨大垃圾：左右換水道，或上下閃'], tire: ['ob_tire', '大輪胎：換水道或往上游'], drum: ['ob_oil_barrel', '油桶：換水道或往上游'], container: ['ob_cargo', '貨櫃：只能左右換水道'], harpoon: ['ob_harpoon', '魚叉：紅光一閃就往上或往下'], jelly: ['ob_jellyfish_group', '水母群：換水道或上下閃'] };
+const WHY = { netTop: ['ob_net', '浮網：看到「⬇ 潛」往下滑'], netLow: ['ob_net', '底網：看到「⬆ 游高」往上滑'], netWall: ['ob_net', '圍網：往綠色圈圈的缺口換水道'], kelpwall: ['seagrass_tall', '海草牆：往綠色圈圈的缺口換水道'], arch: ['ob_reef_arch', '礁石拱門：從中間的洞（綠色圈圈）穿過，兩邊是柱子'], pillar: ['ob_reef_pillar', '礁石柱：提早左右滑換水道'], trash: ['ob_bottle', '巨大垃圾：左右換水道，或上下閃'], tire: ['ob_tire', '大輪胎：換水道或往上游'], drum: ['ob_oil_barrel', '油桶：換水道或往上游'], container: ['ob_cargo', '貨櫃：只能左右換水道'], harpoon: ['ob_harpoon', '魚叉：紅光一閃就往上或往下'], jelly: ['ob_jellyfish_group', '水母群：換水道或上下閃'] };
 function whyHtml() { const w = WHY[lastHit]; return w ? '<div class="why"><img src="assets/' + w[0] + '.webp" alt="">最後撞到 ' + w[1] + '</div>' : ''; }
 function nextZone() { const nz = W.THEMES[(zone + 1) % W.THEMES.length], left = Math.ceil((zone + 1) * CFG.zoneLen - dist); return '<div class="row"><span>下一站 ' + nz.name + '</span><span>還差 ' + left + ' 公尺</span></div>'; }
 /* G98-R08：暫停 */
@@ -366,6 +367,6 @@ function resume() { if (state !== 'pause') return; $('pauseCard').hidden = true;
 $('pauseBtn').onclick = pause; $('resumeBtn').onclick = resume;
 goBtn.onclick = start;
 if (window.KiteLB) KiteLB.button($('lbSlot'), () => Object.assign({ cat: 'swim' }, (KiteLB.CATS.filter((c) => c[0] === 'swim')[0] || [])[2] || {}));
-window.__swim = { get state() { return state; }, get score() { return score; }, get dist() { return dist; }, set dist(x) { dist = x; }, get hearts() { return hearts; }, set hearts(x) { hearts = x; }, get lane() { return lane; }, get pos() { return pos; }, get theme() { return theme && theme.id; }, regen() { deco.splice(0).forEach((o) => drop(o)); for (let z = 6; z > -130; z -= 2.6) decoAt(z); }, get speed() { return speedLv(); }, P, objs, start, end, move, L, setZone };
+window.__swim = { ob: (n, l) => obstacle(n, l), get state() { return state; }, get score() { return score; }, get dist() { return dist; }, set dist(x) { dist = x; }, get hearts() { return hearts; }, set hearts(x) { hearts = x; }, get lane() { return lane; }, get pos() { return pos; }, get theme() { return theme && theme.id; }, regen() { deco.splice(0).forEach((o) => drop(o)); for (let z = 6; z > -130; z -= 2.6) decoAt(z); }, get speed() { return speedLv(); }, P, objs, start, end, move, L, setZone };
 </script>
 </body></html>
