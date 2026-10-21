@@ -647,6 +647,10 @@
   var CL = { busy: false, timer: 0, lastPull: 0, lastPush: 0, err: '', subs: [], cfgDirty: false, imgDirty: false };
   function cloudUrl() { try { return localStorage.getItem('kiteCloudUrl') || CLOUD_URL; } catch (e) { return CLOUD_URL; } }
   function cloudAdminKey() { try { return localStorage.getItem('kiteCloudAdminKey') || ''; } catch (e) { return ''; } }
+  /* D149（Dari 10/21：「下載失敗：key」看不懂、而且整個下載不到）：雲端錯誤一律中文；後台金鑰不對時先用一般金鑰照樣下載精簡資料 */
+  var KEYBAD = '後台金鑰不對：和 Apps Script 程式裡 ADMIN_KEY 那串不一樣（或 ADMIN_KEY 還是 CHANGE-ME-ADMIN 沒改、改了沒重新部署）';
+  function keyBad() { var k = cloudAdminKey(); return !!k && CL.badKey === k; }
+  function errZh(m) { return { key: KEYBAD, admin: '這個動作要先填對後台金鑰', epoch: '雲端資料已經清空過，請按「立即同步」重新下載', busy: '雲端正在忙，等一下會自動再試', json: '送出的資料格式不對', a: '雲端程式版本太舊，請重新部署最新版' }[m] || ('雲端回應：' + (m || '沒有回應')); }
   function devId() { var d = rd('kiteDev1'); if (!d) { d = 'D' + rid(8); wr('kiteDev1', d); } return d; }
   function devRole() { try { var p = location.pathname; return /admin/.test(p) ? 'admin' : /store/.test(p) ? 'store' : /desk/.test(p) ? 'desk' : 'player'; } catch (e) { return ''; } }
   function memberWorthPush(m) { return m && ((m.ledger || []).length || (m.plays || []).length || (m.redeems || []).length || (m.coupons || []).length || m.name); }
@@ -667,7 +671,7 @@
     return cloudPost(b).then(function (r) {
       CL.lastPush = Date.now();
       if (r && r.msg === 'epoch') { back(); CL.pending = true; return again ? r : cloudPull(true).then(function () { return cloudPush(true); }); }      // 雲端已清空換新一輪：先同步再重送
-      if (!r || !r.ok) { CL.err = '上傳失敗：' + (r && r.msg || '?'); CL.pending = true; back(); return r; }
+      if (!r || !r.ok) { if (r && r.msg === 'key' && cloudAdminKey()) CL.badKey = cloudAdminKey(); CL.err = '上傳失敗：' + errZh(r && r.msg); CL.pending = true; back(); return r; }
       CL.err = ''; CL.pending = false;
       if (r.stale && r.member && r.member.id) { localStorage.setItem(K_MEM, JSON.stringify(r.member)); CL.subs.forEach(function (f) { try { f({ stale: true }); } catch (e) {} }); }      // 別台裝置有較新的這位會員資料：換成雲端那份
       return r;
@@ -699,8 +703,8 @@
   function cloudPull(force) {
     var u = cloudUrl(); if (!u || typeof fetch === 'undefined') return Promise.resolve(null);
     if (CL.busy && !force) return Promise.resolve(null); CL.busy = true; var seq = CL.seq = (CL.seq || 0) + 1;
-    return tfetch(u + (u.indexOf('?') < 0 ? '?' : '&') + 'k=' + encodeURIComponent(cloudAdminKey() || CLOUD_PLAYER_KEY) + '&imgVer=' + (rd('kiteCloudImgVer') || '') + (devRole() === 'admin' ? '&full=1' : '') + '&_=' + Date.now()).then(function (r) {
-      CL.busy = false; if (!r || !r.ok) { CL.err = '下載失敗：' + (r && r.msg || '?'); return null; }
+    return tfetch(u + (u.indexOf('?') < 0 ? '?' : '&') + 'k=' + encodeURIComponent(cloudAdminKey() && !keyBad() ? cloudAdminKey() : CLOUD_PLAYER_KEY) + '&imgVer=' + (rd('kiteCloudImgVer') || '') + (devRole() === 'admin' && !keyBad() ? '&full=1' : '') + '&_=' + Date.now()).then(function (r) {
+      CL.busy = false; if (!r || !r.ok) { if (r && r.msg === 'key' && cloudAdminKey() && !keyBad()) { CL.badKey = cloudAdminKey(); return cloudPull(true); } CL.err = '下載失敗：' + errZh(r && r.msg); return null; }
       if (seq !== CL.seq || (CL.wipeT && Date.now() - CL.wipeT < 3000 && r.epoch < (rd('kiteCloudEpoch') || 0))) return null;      // 比較晚送出的下載或剛清空後的舊回應：丟掉
       CL.pulling = true; var wiped = false, changed = false;
       try {
@@ -715,7 +719,7 @@
         if (r.images && !CL.imgDirty) { localStorage.setItem('kitePrizeImg1', JSON.stringify(r.images)); localStorage.setItem('kiteCloudImgVer', JSON.stringify(r.imgVer)); }
         changed = applyToMe({ logs: logs, ops: r.ops || [] });
       } finally { CL.pulling = false; }
-      CL.lastPull = Date.now(); CL.err = '';
+      CL.lastPull = Date.now(); CL.err = keyBad() ? KEYBAD : '';
       if (wiped || changed || CL.pending) cloudPush(true);      // 後台的調整、服務台發放回寫後、或之前斷網沒傳上去的：再上傳一次
       CL.subs.forEach(function (f) { try { f({ wiped: wiped }); } catch (e) {} }); return r;
     }).catch(function (e) { CL.busy = false; CL.err = '連不上雲端'; return null; });
@@ -754,7 +758,7 @@
       m.line = { uid: lp.uid, name: lp.name, pic: lp.pic, t: Date.now() }; if (!m.name) m.name = lp.name; saveMember(m); return m;
     });
   }
-  function cloudStatus() { var c = rd('kiteCloud1') || {}; return { url: cloudUrl(), admin: !!cloudAdminKey(), lastPull: CL.lastPull, lastPush: CL.lastPush, err: CL.err, members: (c.members || []).length, epoch: rd('kiteCloudEpoch') || 0, dev: devId() }; }
+  function cloudStatus() { var c = rd('kiteCloud1') || {}; return { url: cloudUrl(), admin: !!cloudAdminKey() && !keyBad(), keyBad: keyBad(), lastPull: CL.lastPull, lastPush: CL.lastPush, err: CL.err, members: (c.members || []).length, epoch: rd('kiteCloudEpoch') || 0, dev: devId() }; }
   if (typeof document !== 'undefined' && typeof fetch !== 'undefined') setTimeout(function () { cloudStart(); }, 50);
 
   G.KiteCore = {
