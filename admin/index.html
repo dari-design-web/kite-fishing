@@ -110,7 +110,7 @@ svg text{font-family:inherit}
     ms.forEach(function (m) { (m.plays || []).forEach(function (p) { plays.push(Object.assign({ mid: m.id }, p)); }); (m.ledger || []).forEach(function (e) { led.push(Object.assign({ mid: m.id }, e)); }); (m.redeems || []).forEach(function (r) { red.push(Object.assign({ mid: m.id }, r)); }); });
     led.sort(function (a, b) { return b.t - a.t; }); plays.sort(function (a, b) { return b.t - a.t; });
     var pcnt = function (d) { return plays.filter(function (p) { return K.dayKey(p.t) === d; }).length + ms.reduce(function (n, m) { return n + (!(m.plays || []).length && m.pc ? +m.pc[d] || 0 : 0); }, 0); };      // D145：雲端別人的精簡資料沒有遊玩明細，用每日局數補
-    return { pcnt: pcnt, lite: ms.some(function (m) { return m.lite && !m.pc; }), ms: ms, plays: plays, led: led, red: red, desk: dm ? dm.desk : K.deskLog(), tx: dm ? [] : K.storeLog(), cfg: K.cfg(), demo: !!dm };
+    return { pcnt: pcnt, lite: ms.some(function (m) { return m.lite && !m.pc; }), ms: ms, plays: plays, led: led, red: red, desk: dm ? dm.desk : K.deskLog(), tx: dm ? led.filter(function (e) { return e.type === 'store'; }).map(function (e) { return { t: e.t - 60000, store: e.store, amount: e.amount || 0, pts: e.pts, nonce: e.ref, demo: true }; }) : K.storeLog(), cfg: K.cfg(), demo: !!dm };
   }
   function alerts(D) {
     var a = [], c = D.cfg, al = c.alerts || {};

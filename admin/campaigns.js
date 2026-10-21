@@ -95,7 +95,7 @@
       const hin = wd * winH, hout = Math.max(1, nd * 24 - hin), r1 = hin ? P1.length / hin : 0, r0 = P0.length / hout;
       const ppl = A.K ? Object.keys(P1.reduce((o, p) => (o[p.mid] = 1, o), {})).length : 0, boosted = P1.filter((p) => (p.mult || 1) > 1).length;
       const young = !P1.length && f0 && f0 >= addD(td, -1);      // 剛開始、還沒有資料：不要算成「成效比平常低」
-      return { from, to, nd, kind: 'game', main: P1.length, mainL: '活動時段局數', ppl, pplL: '參與玩家', r1, r0, lift: young || P1.length + P0.length < 10 || hin < 6 ? null : r0 ? (r1 - r0) / r0 : null, thin: P1.length + P0.length < 10 || hin < 6, n0: P0.length, exact: D.plays.filter((p) => p.cp === e.id && inr(p.t)).length, boosted, liftL: '活動時段每小時局數 vs 平常', P1, hin };
+      return { from, to, nd, kind: 'game', main: P1.length, mainL: '活動時段局數', ppl, pplL: '參與玩家', r1, r0, lift: young || P1.length + P0.length < 10 || hin < 6 ? null : r0 ? (r1 - r0) / r0 : null, thin: P1.length + P0.length < 10 || hin < 6, n0: P0.length, exact: D.plays.filter((p) => p.cp === e.id && inr(p.t)).length, boosted, liftL: '活動時段每小時局數 vs 平常', P1, hin, hout };
     }
     const sids = e.stores && e.stores.length ? e.stores : null, ok = (x) => (x.type === 'store' || x.type === 'backfill') && (!sids || sids.indexOf(x.store) >= 0);
     const pf = addD(from, -nd), pt = addD(from, -1), inp = (t) => { const d = K.dayKey(t); return d >= pf && d <= pt; };
@@ -243,7 +243,7 @@
     let h = '<h2 style="margin:0">📈 ' + esc(it.e.title) + '</h2><p class="small muted" style="margin:4px 0 12px">' + esc(rule(cfg, it)) + '<br>看的是 ' + md(ef.from) + '～' + md(ef.to) + '（' + ef.nd + ' 天）' + (ef.pf ? '，對照前一段 ' + md(ef.pf) + '～' + md(ef.pt) : '') + '</p>';
     const box = (l, v, s) => '<div class="akpi"><div class="l">' + l + '</div><div class="v">' + v + '</div>' + (s ? '<div class="s">' + s + '</div>' : '') + '</div>';
     if (ef.kind === 'game') {
-      h += '<div class="akpis" style="grid-template-columns:repeat(3,1fr)">' + box(ef.mainL, num(ef.main), '其中加倍入帳 ' + num(ef.boosted) + ' 局') + box(ef.pplL, num(ef.ppl) + ' 人', '') + box('每小時局數', ef.r1.toFixed(2), '平常 ' + ef.r0.toFixed(2) + '（' + num(ef.n0) + ' 局／' + num(Math.round(ef.hin)) + ' 活動小時）・' + liftTxt(ef.lift)) + '</div>';
+      h += '<div class="akpis" style="grid-template-columns:repeat(3,1fr)">' + box(ef.mainL, num(ef.main), '其中加倍入帳 ' + num(ef.boosted) + ' 局') + box(ef.pplL, num(ef.ppl) + ' 人', '') + box('每小時局數', ef.r1.toFixed(2), '活動 ' + num(ef.main) + ' 局／' + num(Math.round(ef.hin)) + ' 活動小時；平常 ' + ef.r0.toFixed(2) + '（' + num(ef.n0) + ' 局／' + num(Math.round(ef.hout || 0)) + ' 非活動小時）・' + liftTxt(ef.lift))      // G96-R01：活動、平常各自列分子分母，可以自己重算 + '</div>';
       const gs = it.e.game === 'all' ? ['fish', 'fly'] : [it.e.game], P = D.plays.filter((p) => gs.indexOf(p.game) >= 0 && !p.lbOnly);
       h += ui.card('每天局數：活動時段 vs 其他時段', ui.line([{ name: '活動時段', color: ui.C.orange, vals: days.map((d) => ef.P1.filter((p) => K.dayKey(p.t) === d).length) }, { name: '其他時段', color: ui.C.blue, vals: days.map((d) => P.filter((p) => K.dayKey(p.t) === d && ef.P1.indexOf(p) < 0).length) }], days.map(md), { h: 190 }));
       const hrs = new Array(24).fill(0); ef.P1.forEach((p) => { hrs[new Date(p.t).getHours()]++; });
