@@ -38,7 +38,7 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
 .pw i{font-style:normal;font-size:18px}
 .pw b{display:block;width:46px;height:6px;border-radius:3px;background:rgba(255,255,255,.25);overflow:hidden}
 .pw b em{display:block;height:100%;background:#FFE45C}
-.tip{position:absolute;left:50%;top:92px;transform:translateX(-50%);font-size:16px!important;padding:6px 14px!important;background:#FFE45C;color:var(--ink);border:3px solid var(--ink);border-radius:18px;padding:8px 16px;font-weight:900;font-size:19px;white-space:nowrap;pointer-events:none;box-shadow:0 5px 0 rgba(0,0,0,.25)}
+.tip{position:absolute;left:50%;top:128px;transform:translateX(-50%);font-size:16px!important;padding:6px 14px!important;background:#FFE45C;color:var(--ink);border:3px solid var(--ink);border-radius:18px;padding:8px 16px;font-weight:900;font-size:19px;white-space:nowrap;pointer-events:none;box-shadow:0 5px 0 rgba(0,0,0,.25)}
 .tip[hidden]{display:none}
 .lvl{position:absolute;left:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:4px;pointer-events:none}
 .lvl span{font-size:12px;font-weight:900;width:30px;text-align:center;border-radius:8px;padding:3px 0;background:rgba(10,34,54,.45);color:rgba(255,255,255,.55)}
@@ -53,7 +53,7 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
 .card .why img{width:40px;height:40px;object-fit:contain;flex:none}
 .card .go2{display:block;width:100%;min-height:44px;margin-top:8px;border:2px solid var(--ink);border-radius:999px;background:#fff;color:var(--ink);font:inherit;font-weight:800;font-size:16px}
 .tip.info{background:rgba(255,248,234,.95)}
-.zone{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);font-weight:900;font-size:30px;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.35),0 0 18px rgba(0,0,0,.25);white-space:nowrap;pointer-events:none;animation:zone 2.4s ease-out forwards}
+.zone{position:absolute;left:50%;top:22%;transform:translate(-50%,-50%);font-weight:900;font-size:30px;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.35),0 0 18px rgba(0,0,0,.25);white-space:nowrap;pointer-events:none;animation:zone 2.4s ease-out forwards}
 .zone small{display:block;font-size:14px;text-align:center;opacity:.9}
 @keyframes zone{0%{opacity:0;transform:translate(-50%,-30%) scale(.8)}15%{opacity:1;transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0}}
 .pop{position:absolute;font-weight:900;font-size:18px;color:#FFF3A8;text-shadow:0 2px 0 rgba(0,0,0,.4);pointer-events:none;transform:translate(-50%,-50%);animation:pop .8s ease-out forwards;white-space:nowrap}
@@ -72,6 +72,8 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
 .card .rk{color:var(--teal);font-weight:900;margin:6px 0 2px}
 .card .nb{display:inline-block;background:#E8674A;color:#fff;border-radius:999px;padding:2px 12px;font-weight:900;font-size:14px;margin-bottom:4px}
 .card .go{display:block;width:100%;min-height:52px;margin-top:12px;border:3px solid var(--ink);border-radius:999px;background:#4FBF88;color:var(--ink);font:inherit;font-weight:900;font-size:20px;box-shadow:0 4px 0 var(--ink)}
+.card{max-height:calc(100% - 20px);overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y}.card .go{position:sticky;bottom:0;z-index:2}      /* QA：小手機開始／再玩一次按鈕永遠看得到 */
+.post img{max-height:110px;object-fit:cover;border-radius:10px}
 .card .go:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
 .card .ctl{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0 0;font-size:13px;font-weight:700;text-align:left}
 .card .ctl div{background:#F3EAD8;border-radius:10px;padding:6px 8px;display:flex;gap:6px;align-items:center}
@@ -184,11 +186,12 @@ bubG.setAttribute('position', new THREE.BufferAttribute(bp, 3)); add(new THREE.P
 let zone = 0, theme = W.THEMES[0];
 const deco = []; let decoSide = 1;
 function decoAt(z) { decoSide = -decoSide; const near = Math.random() < 0.65, g = W.deco(theme); g.position.x = decoSide * (near ? rnd(4.3, 6) : rnd(6.5, 10)); if (!g.userData.float) g.position.y = floorH(g.position.x); g.position.z = z; if (!near) g.scale.multiplyScalar(1.4); S.add(g); deco.push(g);
-  if (Math.random() < 0.35) { const sm = W.deco(theme, true); sm.position.set(pick([-1.2, 1.2]) + rnd(-0.2, 0.2), -0.7, z + rnd(-1, 1)); sm.userData.small = 1; S.add(sm); deco.push(sm); } }
+  if (Math.random() < 0.35) { const sm = W.deco(theme, true); sm.position.set(pick([-1, 1]) * rnd(3.7, 4.1), floorH(3.9), z + rnd(-1, 1));      /* QA：小裝飾不再擺在水道中間，免得看起來像障礙或食物 */ sm.userData.small = 1; S.add(sm); deco.push(sm); } }
 for (let z = 6; z > -130; z -= 2.6) decoAt(z);
 let big = null;
 const tgtC = { sea: new THREE.Color(theme.sea), sand: new THREE.Color(theme.sand), fog: theme.fog.slice() };
-function setZone(i, instant) { zone = i; theme = W.THEMES[i % W.THEMES.length]; tgtC.sea.set(theme.sea); tgtC.sand.set(theme.sand); tgtC.fog = theme.fog.slice();
+function setZone(i, instant) { if (!instant && state === 'play') nextRow = Math.max(nextRow, v * 1.6); zone = i;      /* QA：換區時先空 1.6 秒，地名橫幅不會蓋住迎面來的障礙 */
+  theme = W.THEMES[i % W.THEMES.length]; tgtC.sea.set(theme.sea); tgtC.sand.set(theme.sand); tgtC.fog = theme.fog.slice();
   if (instant) { seaC.copy(tgtC.sea); sandM.color.copy(tgtC.sand); S.fog.near = tgtC.fog[0]; S.fog.far = tgtC.fog[1]; bgs.forEach((b, k) => b.userData.m.forEach((m) => (m.opacity = k === i % 4 ? 1 : 0))); }
   else { music(); const z = document.createElement('div'); z.className = 'zone'; z.innerHTML = theme.name + '<small>' + theme.place + '・第 ' + (i + 1) + ' 區</small>'; stage.appendChild(z); setTimeout(() => z.remove(), 2500); beep([523, 784, 1047], 120, 'triangle'); }
   if (big) { drop(big); big = null; } big = W.bigCreature(theme); const side = Math.random() < 0.5 ? -1 : 1; big.userData.side = side; big.position.set(side * 10, rnd(4.2, 6), -40); if (side > 0) { big.scale.x *= -1; big.userData.sx *= -1; } S.add(big); }
@@ -207,7 +210,7 @@ const markTex = W.tex(64, 64, (c) => { const g = c.createRadialGradient(32, 32, 
 const foodGlowM = W.keep(new THREE.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })), dangerM = W.keep(new THREE.SpriteMaterial({ map: dangerTex, transparent: true, depthWrite: false }));
 const bandM = W.keep(new THREE.MeshBasicMaterial({ map: bandTex, transparent: true, depthWrite: false })), markM = W.keep(new THREE.MeshBasicMaterial({ map: markTex, transparent: true, depthWrite: false })), bandG = W.keep(new THREE.PlaneGeometry(2.3, 4)), markG = W.keep(new THREE.PlaneGeometry(1.3, 1.3));
 function glowFor(b, size) { const g = new THREE.Sprite(foodGlowM); g.scale.set(size, size, 1); g.renderOrder = -1; add(g); b.glow = g; const m = new THREE.Mesh(markG, markM); m.rotation.x = -Math.PI / 2; add(m); b.mark = m; }
-function dangerFor(b) { if (b.lanes.length >= 3) return; b.lanes.forEach((l) => { const band = new THREE.Mesh(bandG, bandM); band.rotation.x = -Math.PI / 2; band.position.set(CFG.lanes[l], -0.62, 0.6); b.o.add(band); if (b.y[1] - b.y[0] < 9) { const d = new THREE.Sprite(dangerM); d.scale.set(3, 3, 1); d.position.set(CFG.lanes[l], 1.9, -0.05); d.renderOrder = -1; d.userData.danger = 1; b.o.add(d); } }); W.bendAll(b.o); }
+function dangerFor(b) { if (b.lanes.length >= 3) return; const upOK = b.y[1] < CFG.yUp - 0.2; b.lanes.forEach((l) => { const band = upOK ? null : new THREE.Mesh(bandG, bandM); if (band) { band.rotation.x = -Math.PI / 2; band.position.set(CFG.lanes[l], -0.62, 0.6); b.o.add(band); }      /* QA：往上游就過得去的（油桶、輪胎、貨櫃）不畫「整條擋住」的紅黃地帶 */ if (b.y[1] - b.y[0] < 9) { const d = new THREE.Sprite(dangerM); d.scale.set(3, 3, 1); d.position.set(CFG.lanes[l], 1.9, -0.05); d.renderOrder = -1; d.userData.danger = 1; b.o.add(d); } }); W.bendAll(b.o); }
 const heartTex = W.tex(128, 128, (c) => { c.translate(64, 70); c.beginPath(); c.moveTo(0, 38); c.bezierCurveTo(-60, 0, -40, -52, 0, -22); c.bezierCurveTo(40, -52, 60, 0, 0, 38); c.fillStyle = '#FF5C7A'; c.fill(); c.lineWidth = 7; c.strokeStyle = '#10293D'; c.stroke(); c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.ellipse(-18, -14, 9, 6, -0.6, 0, 7); c.fill(); });
 W.TX.heart = heartTex; W.AR.heart = 1;
 const FOOD = { plank: [5, 'food_plankton', 1.1], krill: [15, 'food_krill', 1.2], roe: [20, 'food_roe', 1.0], fish: [30, 'food_small_fish', 1.5] };
@@ -286,7 +289,7 @@ function update(dt) {
   if (vstate !== 'mid') { vT -= dt; if (vT <= 0) vstate = 'mid'; }
   const ty = vstate === 'up' ? CFG.yUp : vstate === 'down' ? CFG.yDown : CFG.yMid;
   pos.x = lerp(pos.x, L[lane], 1 - Math.exp(-dt * 11)); pos.y = lerp(pos.y, ty, 1 - Math.exp(-dt * 9));
-  nextRow -= dz; if (nextRow <= 0) { row(); nextRow = lerp(CFG.gap0, CFG.gap1, smooth(150, 2000, dist)) * grnd(0.9, 1.15); }
+  nextRow -= dz; if (nextRow <= 0) { row(); nextRow = Math.max(lerp(CFG.gap0, CFG.gap1, smooth(150, 2000, dist)) * grnd(0.9, 1.15), v * 0.62); }      /* QA：最快時每排至少間隔 0.62 秒，來得及反應 */
   if (tipT > 0) { tipT -= dt; if (tipT <= 0) $('tip').hidden = true; }
   for (let i = objs.length - 1; i >= 0; i--) { const b = objs[i], z0 = b.o.position.z; b.o.position.z += dz; const z1 = b.o.position.z;
     if (b.glow) { b.glow.position.set(b.o.position.x, b.o.position.y, z1 - 0.08); b.mark.position.set(b.o.position.x, -0.63, z1); const k = 1 + Math.sin(t * 6 + (b.ph || 0)) * 0.07; b.o.scale.set(b.sx * k, b.sy * (2 - k), 1); b.mark.scale.setScalar(1.25 - (b.o.position.y - 0.5) * 0.12); }
@@ -341,12 +344,12 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 /* ---------- 操作：滑動；輕點左右三分之一也可換水道；方向鍵 ---------- */
-function move(dir) { if (state !== 'play') return; if (dir === 'L') lane = Math.max(0, lane - 1); else if (dir === 'R') lane = Math.min(2, lane + 1); else { vstate = dir === 'U' ? 'up' : 'down'; vT = CFG.hold; } beep([dir === 'U' ? 700 : dir === 'D' ? 400 : 560], 40, 'sine', 0.05); }
+function move(dir) { if (state !== 'play') return; if (dir === 'L') lane = Math.max(0, lane - 1); else if (dir === 'R') lane = Math.min(2, lane + 1); else { vstate = dir === 'U' ? 'up' : 'down'; vT = Math.max(CFG.hold, 30 / Math.max(1, v));      /* QA：看到提示馬上滑也能撐到障礙物過去（原本 0.9 秒就掉回中間被撞） */ } beep([dir === 'U' ? 700 : dir === 'D' ? 400 : 560], 40, 'sine', 0.05); }
 let sw = null;
 cv.addEventListener('pointerdown', (e) => { if (state !== 'play') return; sw = { x: e.clientX, y: e.clientY, t: performance.now(), done: false }; cv.setPointerCapture && cv.setPointerCapture(e.pointerId); });
 cv.addEventListener('pointermove', (e) => { if (!sw || sw.done) return; const dx = e.clientX - sw.x, dy = e.clientY - sw.y; if (Math.hypot(dx, dy) < 26) return; sw.done = true; move(Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'L' : 'R') : (dy < 0 ? 'U' : 'D')); });
 cv.addEventListener('pointerup', (e) => { if (sw && !sw.done && performance.now() - sw.t < 300) { const r = cv.getBoundingClientRect(), u = (e.clientX - r.left) / r.width; if (u < 0.33) move('L'); else if (u > 0.67) move('R'); } sw = null; });
-addEventListener('keydown', (e) => { if (state !== 'play') { if ((e.key === 'Enter' || e.key === ' ') && state !== 'end') { e.preventDefault(); start(); } return; } const k = { ArrowLeft: 'L', ArrowRight: 'R', ArrowUp: 'U', ArrowDown: 'D', a: 'L', d: 'R', w: 'U', s: 'D' }[e.key]; if (k) { e.preventDefault(); move(k); } });
+addEventListener('keydown', (e) => { if (state === 'pause') { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); resume(); } return; } if (state !== 'play') { if ((e.key === 'Enter' || e.key === ' ') && state !== 'end') { e.preventDefault(); start(); } return; } const k = { ArrowLeft: 'L', ArrowRight: 'R', ArrowUp: 'U', ArrowDown: 'D', a: 'L', d: 'R', w: 'U', s: 'D' }[e.key]; if (k) { e.preventDefault(); move(k); } });
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') pause(); });      // 切到背景就暫停，回來按「繼續」
 
 function start() { reset(); if (DS) { gR = KiteDaily.rng(DS.td.seed); if (DS.official && KiteDaily.left() <= 0) { DS.official = false; DS.practice = true; } KiteDaily.begin(DS); if (DS.td.key === 'shield') P.shield = CFG.shield; dailyTag(); } $('startCard').hidden = true; $('endCard').hidden = true; $('pauseCard').hidden = true; $('hud').hidden = false; $('fever').hidden = false; $('lvl').hidden = false; $('pauseBtn').hidden = false; state = 'play'; last = performance.now(); music(); beep([523, 659, 784], 90); tip('左右滑換水道 👈👉', true, 2.0); }
@@ -354,24 +357,25 @@ function end() {
   state = 'end'; music(); $('hud').hidden = true; $('fever').hidden = true; $('lvl').hidden = true; $('pauseBtn').hidden = true; $('tip').hidden = true; $('pw').innerHTML = ''; helper.style.display = 'none'; $('feverfx').classList.remove('on'); stage.querySelectorAll('.pop,.zone').forEach((e) => e.remove());
   const s = score, nb = s > bestNow; if (nb) { bestNow = s; try { localStorage.setItem('kiteSwimBest1', String(s)); } catch (e) {} }
   let rk = '', tl = '', dr = DS ? KiteDaily.finish(DS, s) : null; try { const K = window.KiteCore; if (!DS && K && K.reportPlay && s > 0) { const rep = () => K.reportPlay({ game: 'swim', level: 'all', score: s, sec: playT, lbAll: true }); const r = K.rankAround ? K.rankAround('swim', 'all', rep) : { res: rep() }; rk = r && K.rankText ? K.rankText(r) : ''; tl = K.tierLine ? K.tierLine(r.res) : ''; } } catch (e) {}      // D141：前 3 局算進今日積分
-  const c = $('endCard'); c.innerHTML = '<img class="hero" src="assets/shark_hit.webp" alt="">' + (nb ? '<span class="nb">新紀錄！</span>' : '') + '<p style="margin:2px 0 0;font-weight:700">游了 ' + Math.floor(dist) + ' 公尺・到了' + theme.name + '</p><div class="big">' + s.toLocaleString() + '</div>' + postHtml() + (rk ? '<div class="rk">🏆 本月' + rk + '</div>' : '') + (tl ? '<div class="row" style="background:#FFF1D6"><span>🪙 ' + tl + '</span></div>' : '') + (DS ? KiteDaily.resultHtml(DS, dr, s) : '') + whyHtml() + '<div class="row"><span>🎯 ' + mis.txt + '</span><span>' + (misDone ? '✅ 完成' : Math.floor(misV) + '/' + mis.n) + '</span></div><div class="row"><span>最高連吃</span><span>' + maxCombo + '</span></div>' + nextZone() + '<div class="book">' + bookHtml() + '</div><div class="row"><span>最佳</span><span>' + bestNow.toLocaleString() + ' 分</span></div><button class="go" id="againBtn" type="button">再玩一次</button>';
+  const c = $('endCard'); c.innerHTML = '<img class="hero" src="assets/shark_hit.webp" alt="">' + (nb ? '<span class="nb">新紀錄！</span>' : '') + '<p style="margin:2px 0 0;font-weight:700">游了 ' + Math.floor(dist) + ' 公尺・到了' + theme.name + '</p><div class="big">' + s.toLocaleString() + '</div>' + postHtml() + (rk ? '<div class="rk">🏆 本月' + rk + '</div>' : '') + (tl ? '<div class="row" style="background:#FFF1D6"><span>🪙 ' + tl + '</span></div>' : '') + (DS ? KiteDaily.resultHtml(DS, dr, s) : '') + whyHtml() + '<div class="row"><span>🎯 ' + mis.txt + '</span><span>' + (misDone ? '✅ 完成' : Math.floor(misV) + '/' + mis.n) + '</span></div><div class="row"><span>最高連吃</span><span>' + maxCombo + '</span></div>' + nextZone() + (bookNew.length ? '<div class="book">' + bookHtml() + '</div>' : bookLine()) + '<div class="row"><span>最佳</span><span>' + bestNow.toLocaleString() + ' 分</span></div><button class="go" id="againBtn" type="button">再玩一次</button>';
   if (DS) KiteDaily.wire(c, s);
-  c.hidden = false; $('againBtn').onclick = () => { mis = MIS[Math.floor(Math.random() * MIS.length)]; start(); }; $('againBtn').disabled = true; setTimeout(() => { const b = $('againBtn'); if (b) b.disabled = false; }, 700);      // G98：結算先擋 0.7 秒，避免最後一下滑動誤按再玩 beep(nb ? [523, 659, 784, 1047] : [392, 330], 110);
+  c.hidden = false; $('againBtn').onclick = () => { mis = MIS[Math.floor(Math.random() * MIS.length)]; start(); }; $('againBtn').disabled = true; setTimeout(() => { const b = $('againBtn'); if (b) b.disabled = false; }, 700); /* G98：結算先擋 0.7 秒，避免最後一下滑動誤按再玩；QA：結束音效原本被註解吃掉 */ beep(nb ? [523, 659, 784, 1047] : [392, 330], 110);
 }
 /* G98-M2＋G100：五地旅行冊（GPT 地點卡）。一局游到該地的距離就點亮；只存在這支手機，不給點數 */
 const BOOK = [{ id: 'chaojing', n: '潮境', at: 150, t: '巨石相框旁的珊瑚礁' }, { id: 'badouzi', n: '八斗子', at: 450, t: '望幽谷草坡下的海草森林' }, { id: 'zhengbin', n: '正濱', at: 900, t: '彩色屋倒影下的港區' }, { id: 'heping', n: '和平島', at: 1150, t: '蕈狀岩旁的礁岸' }, { id: 'keelung_islet', n: '基隆嶼', at: 1350, t: '小島下的發光深海' }];
 let bookHave = (() => { try { return JSON.parse(localStorage.getItem('kiteSwimBook1') || '[]'); } catch (e) { return []; } })(), bookNew = [];
 function bookCheck() { BOOK.forEach((c) => { if (dist >= c.at && !bookHave.includes(c.id)) { bookHave.push(c.id); bookNew.push(c.id); try { localStorage.setItem('kiteSwimBook1', JSON.stringify(bookHave)); } catch (e) {} pop('📮 點亮旅行冊：' + c.n, 0, 4.2, -8, 'gold'); beep([660, 880, 1100], 80, 'triangle', 0.07); } }); }
 function bookHtml() { const nx = BOOK.find((c) => !bookHave.includes(c.id)); return '<b>📮 五地旅行冊<small>' + bookHave.length + '／5</small></b><div class="bk">' + BOOK.map((c) => '<div class="' + (bookHave.includes(c.id) ? '' : 'off') + (bookNew.includes(c.id) ? ' nw' : '') + '"><img src="assets/place_' + c.id + '.webp" alt="">' + c.n + '</div>').join('') + '</div>' + (nx ? '<div class="nx">下一張：' + nx.n + '（一局游到 ' + nx.at.toLocaleString() + ' 公尺）</div>' : '<div class="nx">🎉 五地都點亮了！</div>'); }
+function bookLine() { const nx = BOOK.find((c) => !bookHave.includes(c.id)); return '<div class="row"><span>📮 旅行冊 ' + bookHave.length + '／5</span><span>' + (nx ? '下一張 ' + nx.n + '（' + nx.at.toLocaleString() + ' 公尺）' : '全部點亮') + '</span></div>'; }
 function postHtml() { const c = BOOK.find((x) => x.id === bookNew[bookNew.length - 1]); return c ? '<div class="post"><img src="assets/place_' + c.id + '.webp" alt="' + c.n + '"><b>🎉 新明信片：' + c.n + '</b><small>' + c.t + '</small></div>' : ''; }
 $('bookStart').innerHTML = bookHtml();
 /* G98-R01：結算告訴玩家最後撞到什麼、下次怎麼閃 */
-const WHY = { netTop: ['ob_net', '浮網：看到「⬇ 潛」往下滑'], netLow: ['ob_net', '底網：看到「⬆ 游高」往上滑'], netWall: ['ob_net', '圍網：往綠色圈圈的缺口換水道'], kelpwall: ['seagrass_tall', '海草牆：往綠色圈圈的缺口換水道'], arch: ['ob_reef_arch', '礁石拱門：從中間的洞（綠色圈圈）穿過，兩邊是柱子'], pillar: ['ob_reef_pillar', '礁石柱：提早左右滑換水道'], trash: ['ob_bottle', '巨大垃圾：左右換水道，或上下閃'], tire: ['ob_tire', '大輪胎：換水道或往上游'], drum: ['ob_oil_barrel', '油桶：換水道或往上游'], container: ['ob_cargo', '貨櫃：只能左右換水道'], harpoon: ['ob_harpoon', '魚叉：紅光一閃就往上或往下'], jelly: ['ob_jellyfish_group', '水母群：換水道或上下閃'] };
+const WHY = { netTop: ['ob_net', '浮網：看到「⬇ 潛」往下滑'], netLow: ['ob_net', '底網：看到「⬆ 游高」往上滑'], netWall: ['ob_net', '圍網：往綠色圈圈的缺口換水道'], kelpwall: ['seagrass_tall', '海草牆：往綠色圈圈的缺口換水道'], arch: ['ob_reef_arch', '礁石拱門：從中間的洞（綠色圈圈）穿過，兩邊是柱子'], pillar: ['ob_reef_pillar', '礁石柱：提早左右滑換水道'], trash: ['ob_bottle', '巨大垃圾：左右換水道，或上下閃'], tire: ['ob_tire', '大輪胎：換水道或往上游'], drum: ['ob_oil_barrel', '油桶：換水道或往上游'], container: ['ob_cargo', '貨櫃：左右換水道，或往上游過去'], harpoon: ['ob_harpoon', '魚叉：紅光一閃就往上或往下'], jelly: ['ob_jellyfish_group', '水母群：換水道或上下閃'] };
 function whyHtml() { const w = WHY[lastHit]; return w ? '<div class="why"><img src="assets/' + w[0] + '.webp" alt="">最後撞到 ' + w[1] + '</div>' : ''; }
 function nextZone() { const nz = W.THEMES[(zone + 1) % W.THEMES.length], left = Math.ceil((zone + 1) * CFG.zoneLen - dist); return '<div class="row"><span>下一站 ' + nz.name + '</span><span>還差 ' + left + ' 公尺</span></div>'; }
 /* G98-R08：暫停 */
 function pause() { if (state !== 'play') return; state = 'pause'; music(); $('pauseMis').textContent = '🎯 ' + mis.txt + '（' + (misDone ? '完成' : Math.floor(misV) + '/' + mis.n) + '）'; $('pauseCard').hidden = false; }
-function resume() { if (state !== 'pause') return; $('pauseCard').hidden = true; last = performance.now(); state = 'play'; music(); }
+function resume() { if (state !== 'pause') return; $('pauseCard').hidden = true; last = performance.now(); state = 'play'; inv = Math.max(inv, 1.2); music(); }      /* QA：繼續後 1.2 秒無敵，不會一回來就撞 */
 $('pauseBtn').onclick = pause; $('resumeBtn').onclick = resume;
 goBtn.onclick = start;
 if (window.KiteLB) KiteLB.button($('lbSlot'), () => Object.assign({ cat: 'swim' }, (KiteLB.CATS.filter((c) => c[0] === 'swim')[0] || [])[2] || {}));
