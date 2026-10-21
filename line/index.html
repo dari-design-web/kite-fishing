@@ -228,6 +228,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
 <script src="../shared/vendor/jsQR.js"></script>
 <script src="../shared/kite_core.js"></script>
 <script src="../shared/kite_lb.js"></script>
+<script src="../shared/kite_daily.js"></script>
 <script src="../shared/kite_scan.js"></script>
 <script>
 /* 客戶官方 LINE 系統（示意）v2（工作單 25，D75）。正式版：選單是 LINE 圖文選單（一張圖＋點擊區），點進去的頁面是 LIFF。
@@ -305,6 +306,14 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
     { id: 'swim', href: '../games/swim/index.html', icon: '../hub/btn/m/btn_swim.webp', tip: '穿越四種海底，滑動躲障礙' }      // D136
   ];
   function gameLink(g) { return g.href + (g.href.indexOf('?') < 0 ? '?' : '&') + 'from=line'; }
+  /* G97：小鳶樂園最上方「今日挑戰」卡（每天一題、正式 3 次、可練習、不給點數） */
+  function dailyCard() {
+    var D = window.KiteDaily; if (!D) return ''; var td = D.today(), n = D.left(), u = td.url;
+    var b = 'display:flex;align-items:center;justify-content:center;min-height:40px;border-radius:999px;font-weight:800;font-size:14px;text-decoration:none;border:2px solid #10293D;';
+    return '<div style="margin:0 0 12px;padding:12px;border-radius:16px;background:linear-gradient(135deg,#FFF1D6,#FFE45C);color:#10293D;box-shadow:0 3px 0 rgba(0,0,0,.15)">' +
+      '<div style="display:flex;align-items:center;gap:10px"><img src="../hub/btn/m/btn_' + td.game + '.webp" alt="" style="width:52px;height:52px;border-radius:12px"><div style="flex:1"><b style="font-size:16px">📅 今日挑戰・' + esc(td.name) + '</b><div style="font-size:13px;margin-top:2px">' + esc(td.vary) + '</div><div style="font-size:12px;opacity:.8;margin-top:2px">今天大家條件都一樣・正式還有 ' + n + ' / ' + D.TRIES + ' 次・不換點數</div></div></div>' +
+      '<div style="display:flex;gap:6px;margin-top:10px">' + (n > 0 ? '<a href="' + u + 'official" style="' + b + 'flex:1.3;background:#4FBF88;color:#10293D">正式挑戰</a>' : '<span style="' + b + 'flex:1.3;background:#eee;color:#888;border-color:#ccc">今天正式挑戰完成</span>') + '<a href="' + u + 'practice" style="' + b + 'flex:1;background:#fff;color:#10293D">先練習</a><button type="button" data-lb="daily" style="' + b + 'flex:1;background:#fff;color:#10293D;font-family:inherit">今日榜</button></div></div>';
+  }
   R.park = function () {
     var st0 = K.settleGame ? K.settleGame() : 0;
     var c = K.cfg(), m = K.member(), P = progress(), bank = Object.keys(m.scoreBank || {}).reduce(function (s, k) { return s + (m.scoreBank[k] || 0); }, 0), TIER = c.gamePointMode === 'tier', gt = K.gameToday();
@@ -326,6 +335,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
       '<div class="lb-title"><small>KITE PARK・GAME LOBBY</small><b>小鳶樂園</b></div></div>' +
       (TIER ? '<div class="lb-player"><img src="' + KITE + '" alt=""><div class="s"><b>' + esc(K.displayName(m)) + '</b><span>我的點數 <b style="display:inline;font-size:14px;color:var(--orange)">' + (m.points || 0) + '</b> 點</span></div><button class="mg" id="toMG"><img class="gi" src="assets/ic_records.png" alt="">遊戲紀錄</button></div>' + (st0 ? '<div class="st-note"><img class="gi" src="assets/ic_gift.png" alt="">漏領的 ' + st0 + ' 點，幫你收好囉！</div>' : '') + (c.gameClaim === 'tap' ? track(gt) : '<div class="trk"><div class="trk-h"><b>今天遊戲點 ' + gt.pts + ' / ' + gt.cap + '</b></div>' + tierTable(gt.total) + '</div>') : '<div class="lb-player"><img src="' + KITE + '" alt=""><div class="s"><b>' + esc(K.displayName(m)) + '</b><span>今天還能算分 ' + left + ' 次・每 ' + c.scorePerPoint.toLocaleString() + ' 分換 1 點</span></div><div class="bank">分數存摺<b>' + bank.toLocaleString() + '</b></div></div>') +
       (evs.length ? '<div class="lb-ev"><img class="gi" src="assets/ic_event.png" alt="">今天的活動：' + evs.map(function (x) { return esc(x.e.title) + '（' + esc(K.GAMES[x.g.id].name) + ' ×' + x.e.mult + '）'; }).join('、') + '</div>' : '') +
+      dailyCard() +
       '<div class="lbrow"><button type="button" data-lb="fish" style="flex:1"><img class="gi" src="../shared/assets/rank_btn.png" alt="">排行榜<small style="font-weight:600;opacity:.75;margin-left:6px">捕魚・飛行・合成港・疊貨櫃・鯨鯊・旅行・總分</small></button></div>' + '<div class="lb-sec">' + (evs.length ? '今日推薦' : '人氣遊戲') + '</div><div class="lb-grid">' + booth(fg, 0, true) + '</div>' +
       '<div class="lb-sec">全部遊戲</div><div class="lb-grid">' + GL.filter(function (g) { return g.id !== feat; }).map(function (g, i) { return booth(g, i + 1); }).join('') +
       '</div>' +      // D83：港口朋友已併進港灣蓋章散步（每站住一位朋友）

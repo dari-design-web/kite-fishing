@@ -38,6 +38,7 @@ canvas{height:100%;max-width:100%;aspect-ratio:360/600;border-radius:18px;touch-
 
 <script src="../../shared/kite_core.js"></script>
 <script src="../../shared/kite_lb.js"></script>
+<script src="../../shared/kite_daily.js"></script>
 <script>
 (() => {
 'use strict';
@@ -46,6 +47,10 @@ const DPR = Math.min(2, window.devicePixelRatio || 1); cv.width = W * DPR; cv.he
 const C = { ink: '#10293D', paper: '#FFF8EA', sea: '#1E6F86', dusk: '#F4B37A', kite: '#8A5A3A', belly: '#F2DDB8', leaf: '#4FBF88', warn: '#E8674A', gold: '#FFD66B', wood: '#B9814E', woodD: '#8C5A33' };
 const FONT = (s, w) => (w || 700) + ' ' + s + "px 'Zen Maru Gothic','Noto Sans TC',system-ui,sans-serif";
 const rnd = (a, b) => a + Math.random() * (b - a), clamp = (v, a, b) => Math.max(a, Math.min(b, v)), pick = (a) => a[Math.floor(Math.random() * a.length)], lerp = (a, b, k) => a + (b - a) * k;
+/* G97 每日挑戰：?daily=official／practice → 掉落順序、風和事件用當天固定亂數 */
+const DS = window.KiteDaily ? KiteDaily.session() : null; let gR = Math.random; const grnd = (a, b) => a + gR() * (b - a), gpick = (a) => a[Math.floor(gR() * a.length)];
+function dailyBegin() { if (!DS) return; if (DS.official && KiteDaily.left() <= 0) { DS.official = false; DS.practice = true; } KiteDaily.begin(DS); dailyTag(); }
+function dailyTag(extra) { if (!DS) return; const h = document.getElementById('how'); h.innerHTML = '<span class="kd-banner">' + (DS.official ? '📅 今日挑戰・正式（今天還有 ' + KiteDaily.left() + ' 次）' : '📅 今日挑戰・練習（不計榜）') + '</span><br>' + DS.td.vary + (extra || ''); }
 const RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const HOW = {
   merge: '<b>左右滑</b>移動小鳶，<b>放手</b>海鮮就掉下去。一樣的碰在一起會<b>合成</b>，一路合到<b>鯨鯊</b>！堆過紅線就結束。',
@@ -186,7 +191,7 @@ function buildMergeBG() {
 const MF = { spd0: 60, spdUp: 36, spdMax: 380, steer: 900, fast: 1000, grav: 1800, gravUp: 0.06, gravMax: 2.3, hold0: 2.6, holdStep: 0.22, holdMin: 0.8, needBase: 3, needStep: 1 };      // D121：hold＝小鳶抓著海鮮最多幾秒就自己放手
 function makeMerge() {
   const g = { balls: [], fall: null, q: [], score: 0, done: false, over: 0, say: '', sayT: 0, top: 0, t: 0, lv: 1, merges: 0, mergesAll: 0, need: MF.needBase + MF.needStep, chain: 0, chainT: 0, bestChain: 0, tx: W / 2, wait: 0.5, banner: '', bannerT: 0, tap: null, found: null, newFound: [] };
-  const gen = () => Math.floor(rnd(0, g.lv >= 4 ? 4 : 3) + (g.lv >= 7 && Math.random() < 0.25 ? 1 : 0));
+  const gen = () => Math.floor(grnd(0, g.lv >= 4 ? 4 : 3) + (g.lv >= 7 && gR() < 0.25 ? 1 : 0));
   g.q = [gen(), gen()];
   g.spd = () => Math.min(MF.spdMax, MF.spd0 + (g.lv - 1) * MF.spdUp);
   /* D121（Dari 10/19 12:01「應該是小鳶腳放開海鮮掉下來，而不是小鳶跟著下來」）：小鳶一直在上方飛，腳抓著海鮮左右移動；
@@ -361,11 +366,11 @@ function makeStack() {
     const n = g.blocks.length, top = g.blocks[n - 1], fromL = n % 2 === 0;
     let ev = null;
     if (g.rush > 0) { g.rush--; ev = 'rush'; }
-    else if (n >= ST.evFrom && g.focus <= 0 && Math.random() < ST.evChance) {
-      ev = pick([['wind', 12], ['rush', 16], ['fog', 22], ['rev', 28]].filter((e) => n >= e[1]).map((e) => e[0]));
+    else if (n >= ST.evFrom && g.focus <= 0 && gR() < ST.evChance) {
+      ev = gpick([['wind', 12], ['rush', 16], ['fog', 22], ['rev', 28]].filter((e) => n >= e[1]).map((e) => e[0]));
       if (ev === 'rush') { g.rush = ST.rushN - 1; g.say = '趕船！接下來 ' + ST.rushN + ' 個變快，完美多 ' + ST.rushBonus + ' 分'; g.sayT = 1.8; }
     }
-    g.mv = { x: fromL ? -top.w : W, w: top.w, c: n % BOXC.length, gold: n % ST.goldEvery === 0, wind: ev === 'wind', fog: ev === 'fog', rev: ev === 'rev', rush: ev === 'rush', flipAt: rnd(W * 0.3, W * 0.7), ph: rnd(0, 6.28) };
+    g.mv = { x: fromL ? -top.w : W, w: top.w, c: n % BOXC.length, gold: n % ST.goldEvery === 0, wind: ev === 'wind', fog: ev === 'fog', rev: ev === 'rev', rush: ev === 'rush', flipAt: grnd(W * 0.3, W * 0.7), ph: rnd(0, 6.28) };
     g.dir = fromL ? 1 : -1; g.speed = Math.min(ST.spdMax, ST.spd0 + n * ST.spdUp) * (g.focus > 0 ? ST.focusK : 1) * (g.mv.rush ? ST.rushK : 1);
     if (g.focus > 0) g.focus--;
     if (g.mv.wind) { g.say = '起風了！速度忽快忽慢'; g.sayT = 1.2; }
@@ -514,7 +519,7 @@ function drawEnd(e) {
   e.rows.forEach((r, i) => { const y = 232 + i * 34; rrect(50, y - 14, W - 100, 28, 10, '#F3EAD8'); text(r[0], 64, y, 13, '#3A5568', 'left', 700, false); text(r[1], W - 64, y, 14, C.ink, 'right', 900, false);
     if (i === 0 && e.icon != null) { ctx.font = FONT(14, 900); drawSea(e.icon, W - 64 - ctx.measureText(r[1]).width - 16, y, 11, 0); } });
   if (e.found && e.found.length) text('新發現：' + e.found.map((l) => SEAF[l][0]).join('、'), W / 2, 232 + e.rows.length * 34 + 4, 13, C.warn, 'center', 900, false);
-  if (e.rank) text('🏆 本月' + e.rank, W / 2, e.found && e.found.length ? 390 : 232 + e.rows.length * 34 + 4, 13, '#2F7F86', 'center', 900, false);      // D133
+  if (e.rank) text((DS ? '📅 ' : '🏆 本月') + e.rank, W / 2, e.found && e.found.length ? 390 : 232 + e.rows.length * 34 + 4, 13, '#2F7F86', 'center', 900, false);      // D133
   text('最佳 ' + (best[mode] || e.s) + ' 分', W / 2, 408, 13, '#6A7F8E', 'center', 700, false);
   endBtnR = btn('再玩一次', 426);
   ctx.restore(); ctx.globalAlpha = 1;
@@ -522,7 +527,7 @@ function drawEnd(e) {
 
 /* ---------- 主迴圈 ---------- */
 let mode = 'merge', G = null, state = 'ready', down = false, last = performance.now(), clock = 0, endInfo = null;
-function newGame() { floats = []; parts = []; rings = []; G = { merge: makeMerge, stack: makeStack }[mode](); }
+function newGame() { if (DS) gR = KiteDaily.rng(DS.td.seed); floats = []; parts = []; rings = []; G = { merge: makeMerge, stack: makeStack }[mode](); }
 function setMode(m) {
   mode = m; document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.m === m))); document.getElementById('how').innerHTML = HOW[m]; state = 'ready'; newGame();
   const A = m === 'merge' ? ['bg_merge', 'kite_hold', 'kite_hold_fly', 'fx_merge'].concat(SEAF.map((_, i) => 'sea_' + i)) : ['bg_stack_base', 'bg_stack_sky', 'ship', 'kite_carry', 'kite_carry_fly', 'box_gold', 'far_mtn', 'cloud_0', 'cloud_1', 'cloud_2', 'gull', 'wind_0', 'wind_1', 'wind_2', 'fog_bank'].concat(BOXC.map((_, i) => 'box_' + i));
@@ -532,8 +537,8 @@ document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('cli
 function pos(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height }; }
 cv.addEventListener('pointerdown', (e) => {
   e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (er) {} const p = pos(e);
-  if (state === 'ready') { state = 'play'; beep(660, 0.08); if (mode === 'merge') { down = true; G.down(p.x, p.y); G.tap = null; } return; }
-  if (state === 'end') { const r = endBtnR, onBtn = e.kbd || (r && p.x > r.x - 14 && p.x < r.x + r.w + 14 && p.y > r.y - 14 && p.y < r.y + r.h + 14); if (endInfo && endInfo.t > 0.8 && onBtn) { newGame();      /* 玩家角度：結算畫面只有按「再玩一次」才重開，避免疊貨櫃連點時一下就跳過成績 */ state = 'play'; beep(660, 0.08); if (mode === 'merge') { down = true; G.down(p.x, p.y); G.tap = null; } } return; }
+  if (state === 'ready') { state = 'play'; dailyBegin(); beep(660, 0.08); if (mode === 'merge') { down = true; G.down(p.x, p.y); G.tap = null; } return; }
+  if (state === 'end') { const r = endBtnR, onBtn = e.kbd || (r && p.x > r.x - 14 && p.x < r.x + r.w + 14 && p.y > r.y - 14 && p.y < r.y + r.h + 14); if (endInfo && endInfo.t > 0.8 && onBtn) { newGame();      /* 玩家角度：結算畫面只有按「再玩一次」才重開，避免疊貨櫃連點時一下就跳過成績 */ state = 'play'; dailyBegin(); beep(660, 0.08); if (mode === 'merge') { down = true; G.down(p.x, p.y); G.tap = null; } } return; }
   down = true; G.down(p.x, p.y);
 });
 cv.addEventListener('pointermove', (e) => { if (state !== 'play') return; const p = pos(e); if (down || mode === 'merge') G.move(p.x, p.y); });
@@ -542,10 +547,11 @@ cv.addEventListener('pointerup', upH); cv.addEventListener('pointercancel', upH)
 document.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { if (state !== 'play') { const ev = new PointerEvent('pointerdown', { clientX: 0, clientY: 0 }); ev.kbd = true; cv.dispatchEvent(ev); upH(); } else if (mode === 'stack') G.tap(); else if (G.fall) G.release(); e.preventDefault(); } if (mode === 'merge' && state === 'play' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { G.tx = clamp(G.tx + (e.key === 'ArrowLeft' ? -30 : 30), 0, W); } });
 function finish() {
   const s = Math.round(G.score), nb = saveBest(mode, s);
-  let rk = null; try { if (window.KiteCore && KiteCore.reportMini && s > 0) { if (KiteCore.rankAround) rk = KiteCore.rankAround(mode, 'all', () => KiteCore.reportMini(mode, s)); else KiteCore.reportMini(mode, s); } } catch (e) {}      // D123：進排行榜；D133：記下名次
+  let rk = null, dr = DS ? KiteDaily.finish(DS, s) : null; try { if (!DS && window.KiteCore && KiteCore.reportMini && s > 0) { if (KiteCore.rankAround) rk = KiteCore.rankAround(mode, 'all', () => KiteCore.reportMini(mode, s)); else KiteCore.reportMini(mode, s); } } catch (e) {}      // D123：進排行榜；D133：記下名次
   if (mode === 'merge') endInfo = { s, nb, t: 0, title: G.over > 1.6 ? '堆過紅線了' : '魚艙塞滿了', rows: [['最大合到', SEAF[G.top][0]], ['撐到', '第 ' + G.lv + ' 關'], ['合成次數', G.mergesAll + ' 次'], ['最長連鎖', '×' + Math.max(1, G.bestChain)]], icon: G.top, found: G.newFound };
   else { const h = G.blocks.length - 1; if (h > (best.stackH || 0)) { best.stackH = h; store.set('kiteMiniBest1', best); } endInfo = { s, nb, t: 0, title: '貨櫃掉下去了', rows: [['疊了', h + ' 層'], ['裝滿貨船', G.ships + ' 艘'], ['完美', G.perfects + ' 次'], ['最長完美連擊', '×' + G.bestCombo]] }; }
-  endInfo.rank = rk && KiteCore.rankText ? KiteCore.rankText(rk) : '';
+  endInfo.rank = DS ? (DS.official && dr && dr.rank ? '今日挑戰第 ' + dr.rank + ' 名' : DS.official ? '' : '練習不計榜') : rk && KiteCore.rankText ? KiteCore.rankText(rk) : '';
+  if (DS) { const h = document.getElementById('how'); h.innerHTML = KiteDaily.resultHtml(DS, dr, s); KiteDaily.wire(h, s); }
   state = 'end'; jingle(nb ? [523, 659, 784, 1047] : [392, 330], 110);
 }
 function frame(now) {
@@ -558,7 +564,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 let tab = 'stack';      // D119：放進遊戲大廳的單一遊戲版（不計分・隨時玩）
-setMode(HOW[tab] ? tab : 'merge'); requestAnimationFrame(frame);
+setMode(HOW[tab] ? tab : 'merge'); requestAnimationFrame(frame); dailyTag();
 window.__mini = { get G() { return G; }, get state() { return state; }, setMode, IMG, SEAF };
 })();
 </script>

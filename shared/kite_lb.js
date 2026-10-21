@@ -29,7 +29,7 @@
   function row(r, sub, val) { return '<li class="' + (r.me ? 'me' : '') + '"><span class="rk ' + (r.rank <= 3 ? 'r' + r.rank + ' ri' : '') + '">' + (r.rank <= 3 ? '<img src="' + BASE + 'assets/rank_' + r.rank + '.png" alt="第 ' + r.rank + ' 名">' : r.rank) + '</span><span class="nm">' + esc(r.name) + (r.me ? '（你' + (r.hide ? '・不公開' : '') + '）' : '') + (sub ? '<small>' + sub + '</small>' : '') + '</span><span class="sc">' + val + '</span></li>'; }
   /* D123（Dari 10/19 14:46）：只留一顆排行榜按鈕，進去再分類：捕魚／飛行／合成港／疊貨櫃／旅行／總分 */
   var CATS = [['fish', '捕魚', { title: '小鳶捕魚排行榜', game: 'fish', tabs: [['keelung', '基隆港'], ['s2', '八斗子'], ['s3', '和平島'], ['s4', '基隆嶼']] }], ['fly', '飛行', { title: '飛行冒險排行榜', game: 'fly', tabs: [['1', '第 1 關'], ['2', '第 2 關'], ['3', '第 3 關'], ['4', '第 4 關'], ['5', '第 5 關'], ['6', '第 6 關'], ['7', '第 7 關'], ['8', '第 8 關']] }],
-    ['merge', '合成港', { title: '小鳶合成港排行榜', game: 'merge', mini: true, tabs: [['all', '合成港']] }], ['stack', '疊貨櫃', { title: '小鳶疊貨櫃排行榜', game: 'stack', mini: true, tabs: [['all', '疊貨櫃']] }], ['swim', '鯨鯊', { title: '鯨鯊快游排行榜', game: 'swim', mini: true, tabs: [['all', '鯨鯊快游']] }], ['travel', '旅行', { title: '小鳶旅行收藏排行', travel: true }], ['sum', '總分', { title: '累積總分排行榜', sum: true }]];
+    ['merge', '合成港', { title: '小鳶合成港排行榜', game: 'merge', mini: true, tabs: [['all', '合成港']] }], ['stack', '疊貨櫃', { title: '小鳶疊貨櫃排行榜', game: 'stack', mini: true, tabs: [['all', '疊貨櫃']] }], ['swim', '鯨鯊', { title: '鯨鯊快游排行榜', game: 'swim', mini: true, tabs: [['all', '鯨鯊快游']] }], ['daily', '今日', { title: '今日挑戰排行', game: 'daily', mini: true, daily: true, tabs: [['__today', '今天']] }], ['travel', '旅行', { title: '小鳶旅行收藏排行', travel: true }], ['sum', '總分', { title: '累積總分排行榜', sum: true }]];
   function catOf(o) { return o.cat || (o.sum ? 'sum' : o.travel ? 'travel' : o.game) || 'fish'; }
   function render(box, o) {
     var cat = catOf(o), h = '<div class="klb-h"><b>🏆 排行榜</b><button class="klb-x" type="button" aria-label="關閉">✕</button></div>', R, sy = K.lbSync ? K.lbSync() : { st: 'ok' };
@@ -52,11 +52,13 @@
     } else {
       var tab = o.tabs[Math.min(st.tab, o.tabs.length - 1)];
       if (o.tabs.length > 1) h += '<div class="klb-tabs">' + o.tabs.map(function (t, i) { return '<button type="button" data-t="' + i + '" aria-pressed="' + (t === tab) + '">' + esc(t[1]) + '</button>'; }).join('') + '</div>';
-      h += '<div class="klb-per"><button type="button" data-p="month" aria-pressed="' + (st.period === 'month') + '">本月</button><button type="button" data-p="all" aria-pressed="' + (st.period === 'all') + '">全部</button></div>';
-      R = K.leaderboard(o.game, tab[0], st.period, 10);
-      h += R.top.length ? '<ol>' + R.top.map(function (r) { return row(r, '', K.fmtScore(r.score) + ' 分'); }).join('') + '</ol>' : '<div class="klb-empty">' + (st.period === 'month' ? '這個月' : '') + '還沒有人上榜，快來搶第一！</div>';
-      h += R.mine ? (R.mine.rank > 10 ? '<div class="klb-me">你目前第 <b>' + R.mine.rank + '</b> 名・最高 ' + K.fmtScore(R.mine.score) + ' 分</div>' : '') : '<div class="klb-me">你這關還沒有成績</div>';
-      if (o.mini) h += '<p class="klb-note">每人取最高一局</p>';
+      if (!o.daily) h += '<div class="klb-per"><button type="button" data-p="month" aria-pressed="' + (st.period === 'month') + '">本月</button><button type="button" data-p="all" aria-pressed="' + (st.period === 'all') + '">全部</button></div>';
+      var td = o.daily && G.KiteDaily ? G.KiteDaily.today() : null; if (td) h += '<div class="klb-sync" style="background:#EAF6F4;color:#10293D">📅 ' + esc(td.date) + '・' + esc(td.name) + '：' + esc(td.vary) + '</div>';
+      R = K.leaderboard(o.game, tab[0] === '__today' ? K.dayKey() : tab[0], o.daily ? 'all' : st.period, 10);
+      h += R.top.length ? '<ol>' + R.top.map(function (r) { return row(r, '', K.fmtScore(r.score) + ' 分'); }).join('') + '</ol>' : '<div class="klb-empty">' + (st.period === 'month' && !o.daily ? '這個月' : o.daily ? '今天' : '') + '還沒有人上榜，快來搶第一！</div>';
+      h += R.mine ? (R.mine.rank > 10 ? '<div class="klb-me">你目前第 <b>' + R.mine.rank + '</b> 名・最高 ' + K.fmtScore(R.mine.score) + ' 分</div>' : '') : '<div class="klb-me">' + (o.daily ? '你今天還沒正式挑戰' : '你這關還沒有成績') + '</div>';
+      if (o.daily) h += '<p class="klb-note">只比今天同一題的正式挑戰，同分同名次</p>';
+      else if (o.mini) h += '<p class="klb-note">每人取最高一局</p>';
       else h += '<button type="button" class="klb-sumlk" data-sum="1">看累積總分 ›</button>';
       if (!o.mini) h += '<p class="klb-note">每人取這關最高一局</p>';
     }
