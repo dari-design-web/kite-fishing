@@ -381,7 +381,7 @@
   /* G97：每日挑戰——正式場次記成 game:'daily'、level:日期（進今日榜；D141 起也算今日積分；不佔一般次數、不算月榜總分）。開始時先記 0 分扣次，結束再補分數 */
   function reportDaily(date, game, score, id) {      // D141：今日挑戰的正式局也算進每日累計（照該遊戲的換算比例），每天最多 3 局
     var m = member(); m.plays = m.plays || []; var p = id ? m.plays.filter(function (x) { return x.did === id; })[0] : null;
-    if (!p) { id = 'D' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); reportPlay({ game: 'daily', level: date, score: 0, wg: game, did: id, lbAll: true, counted: dailyUsed(date) < 3 }); return id; }
+    if (!p) { id = 'D' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); reportPlay({ game: 'daily', level: date, score: 0, wg: game, did: id, lbAll: true, counted: dailyUsed(date) < Math.max(1, Math.min(10, +((cfg().daily || {}).tries) || 3)) }); return id; }
     var sc = Math.max(0, Math.round(score || 0)); p.score = Math.max(p.score || 0, sc); if (p.counted) p.raw = Math.max(p.raw || 0, Math.round(sc * scoreW(game)));
     var r = cfg().gamePointMode === 'tier' ? tierSync(m, 'daily') : null; saveMember(m); if (cloudStatus().url && typeof cloudPush === 'function') try { cloudPush(); } catch (e) {} return r ? Object.assign(r, { counted: p.counted }) : id;
   }

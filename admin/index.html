@@ -64,6 +64,7 @@ svg text{font-family:inherit}
 <div id="root"></div>
 <div class="toast" id="toast"></div>
 <script src="../shared/kite_core.js"></script>
+<script src="../shared/kite_daily.js"></script>
 <script src="analytics.js"></script>
 <script src="campaigns.js"></script>
 <script src="demo.js"></script>
@@ -371,6 +372,7 @@ svg text{font-family:inherit}
       '<div class="grid g21" style="margin-top:14px"><div class="card"><h2>各遊戲各關統計</h2>' + table('t_gs', [{ k: 'g', t: '遊戲／關卡' }, { k: 'n', t: '局數', num: 1 }, { k: 'people', t: '人數', num: 1 }, { k: 'avg', t: '平均分', num: 1, f: function (r) { return num(r.avg); } }, { k: 'best', t: '最高分', num: 1, f: function (r) { return num(r.best); } }, { k: 'sec', t: '平均時間', num: 1, f: function (r) { return r.sec + ' 秒'; } }, { k: 'counted', t: '算分局數', num: 1 }, { k: 'capped', t: '超過上限', num: 1 }], srows) + '</div>' +
       '<div class="card"><h2>分數分布 <select id="hs" style="margin-left:auto">' + ['fish', 'fly'].map(function (x) { return '<option value="' + x + '"' + (x === sel ? ' selected' : '') + '>' + GN(x) + '</option>'; }).join('') + '</select></h2>' + bars(bins, bins.map(function (_, i) { return Math.round(mx * (i + 1) / 10); })) + '<p class="small muted">用來看難度：大多數人集中在哪個分數。</p></div></div>' +
       '<div class="card" style="margin-top:14px"><h2>排行榜（全期間前 20 名・只在後台看，U-38）</h2>' + table('t_top', [{ k: 't', t: '時間', f: function (r) { return dt(r.t); } }, { k: 'mid', t: '會員' }, { k: 'game', t: '遊戲', f: function (r) { return GN(r.game) + '・' + LN(r.game, r.level); } }, { k: 'score', t: '分數', num: 1, f: function (r) { return num(r.score); } }], top) + '</div>';
+    dailyAdmin(c);
     $('hs').onchange = function () { V.games.sel = this.value; app(); }; wireTable('t_gs', app);
     $('sv').onclick = function () {
       var x = K.cfg(); c.querySelectorAll('[data-g]').forEach(function (el) { var id = el.dataset.g, k = el.dataset.k; x.games[id] = x.games[id] || {};
@@ -378,6 +380,24 @@ svg text{font-family:inherit}
       K.saveCfg(x, '遊戲設定'); toast('已儲存'); app();
     };
   };
+  /* D143：今日挑戰設定（開關、每天正式次數、輪替題目與文字） */
+  function dailyAdmin(c) {
+    var KD = window.KiteDaily; if (!KD) return; var cf = KD.conf(), raw = (K.cfg().daily || {}).list, rows = V.games.dl || (raw && raw.length ? raw.map(function (x) { return { game: x.game, key: x.key, vary: x.vary || '' }; }) : KD.DEF.map(function (x) { return { game: x[0], key: x[1], vary: '' }; })); V.games.dl = rows;
+    var td = KD.today(), idx = (function () { var n = Math.floor(Date.parse(td.date + 'T00:00:00+08:00') / 864e5); return ((n % cf.list.length) + cf.list.length) % cf.list.length; })();
+    var gopt = function (v) { return Object.keys(KD.GM).map(function (g) { return '<option value="' + g + '"' + (g === v ? ' selected' : '') + '>' + KD.GM[g].name + '</option>'; }).join(''); };
+    var kopt = function (g, v) { return Object.keys(KD.VARY[g] || {}).map(function (k) { return '<option value="' + k + '"' + (k === v ? ' selected' : '') + '>' + esc(KD.VARY[g][k].split('：')[0]) + '</option>'; }).join(''); };
+    c.innerHTML += '<div class="card" style="margin-top:14px" id="dCard"><h2>📅 今日挑戰<span class="sp"></span><button class="btn alt" id="dAdd">＋新增一天</button><button class="btn alt" id="dDef">還原預設</button><button class="btn" id="dSv">儲存</button></h2>' +
+      '<div class="form" style="grid-template-columns:140px 1fr;max-width:720px"><label>開啟</label><label style="display:flex;align-items:center;gap:6px;font-weight:400"><input type="checkbox" id="dOn"' + (cf.on ? ' checked' : '') + '>關掉後官方 LINE 樂園不顯示今日挑戰卡</label><label>每人每天正式次數</label><span><input type="number" min="1" max="10" id="dTr" value="' + cf.tries + '" style="width:70px"> 次<div class="small muted">正式局分數照該遊戲換算比例算進今日積分；練習不限次數、不計榜</div></span></div>' +
+      '<p class="small" style="margin:10px 0 4px"><b>輪替順序</b>（每天換下一題，排完再從第 1 題開始；全館同一天同一題、同樣的亂數）。今天是第 <b>' + (idx + 1) + '</b> 題：' + esc(td.name) + '・' + esc(td.vary) + '</p>' +
+      '<div class="scroll"><table class="tbl" id="dT"><tr><th>第幾題</th><th>遊戲</th><th>今日變化</th><th>卡片上的說明（空白＝用預設文字）</th><th></th></tr>' + rows.map(function (r, i) { var g = KD.GM[r.game] ? r.game : 'swim'; return '<tr data-i="' + i + '"' + (i === idx ? ' style="background:#FFF6E0"' : '') + '><td>' + (i + 1) + (i === idx ? ' <span class="pill g">今天</span>' : '') + '</td><td><select data-k="game">' + gopt(g) + '</select></td><td><select data-k="key">' + kopt(g, r.key) + '</select></td><td><input data-k="vary" value="' + esc(r.vary || '') + '" placeholder="' + esc((KD.VARY[g] || {})[r.key] || Object.values(KD.VARY[g])[0]) + '" style="min-width:300px"></td><td><button class="btn alt sm" data-ddel="' + i + '">刪除</button></td></tr>'; }).join('') + '</table></div>' +
+      '<p class="small muted">合成港、疊貨櫃的變化是「大家同樣的開場／風向」；鯨鯊快游可選金圈多一倍、開場泡泡盾、食物多一倍。改了順序，今天的題目可能會換（已用掉的正式次數照算）。</p></div>';
+    var read = function () { $('dT').querySelectorAll('tr[data-i]').forEach(function (tr) { var r = rows[+tr.dataset.i]; tr.querySelectorAll('[data-k]').forEach(function (el) { r[el.dataset.k] = el.value; }); }); };
+    $('dT').querySelectorAll('[data-k=game]').forEach(function (el) { el.onchange = function () { read(); var r = rows[+el.closest('tr').dataset.i]; r.key = Object.keys(KD.VARY[r.game])[0]; app(); }; });
+    $('dT').querySelectorAll('[data-ddel]').forEach(function (b) { b.onclick = function () { read(); if (rows.length <= 1) return toast('至少要留一題'); rows.splice(+b.dataset.ddel, 1); app(); }; });
+    $('dAdd').onclick = function () { read(); rows.push({ game: 'swim', key: 'rings', vary: '' }); app(); };
+    $('dDef').onclick = function () { V.games.dl = KD.DEF.map(function (x) { return { game: x[0], key: x[1], vary: '' }; }); app(); };
+    $('dSv').onclick = function () { read(); var x = K.cfg(); x.daily = { on: $('dOn').checked, tries: Math.max(1, Math.min(10, +$('dTr').value || 3)), list: rows.map(function (r) { var o = { game: r.game, key: r.key }; if ((r.vary || '').trim()) o.vary = r.vary.trim(); return o; }) }; K.saveCfg(x, '今日挑戰設定'); V.games.dl = null; toast('已儲存'); app(); };
+  }
   /* ---------- 活動與公告 ---------- */
   /* D101：活動依遊戲分類（分頁籤）；公告獨立一頁 */
   var EVT = [['fish', '🎣 小鳶捕魚'], ['fly', '🛩️ 飛行冒險'], ['all', '🎮 全部遊戲一起'], ['travel', '🧳 小鳶去旅行'], ['store', '🧾 消費集點']];

@@ -6,28 +6,28 @@
    KiteDaily.today() → { date, game, name, vary, key, seed, url }；KiteDaily.rng(seed) → 0～1 的固定亂數；KiteDaily.left() → 今天剩幾次 */
 (function (G) {
   'use strict';
-  var K = G.KiteCore, TRIES = 3;
+  var K = G.KiteCore;
   var BASE = (function () { var sc = document.currentScript; return sc && sc.src ? sc.src.replace(/shared\/kite_daily\.js.*$/, '') : '../'; })();
-  /* 輪替題目：每題只改一個條件（文字一句） */
-  var LIST = [
-    { game: 'swim', name: '鯨鯊快游', vary: '金圈日：今天的金色加速圈多一倍', key: 'rings', path: 'games/swim/index.html' },
-    { game: 'merge', name: '小鳶合成港', vary: '同款開場：今天大家掉下來的海鮮順序都一樣', key: 'same', path: 'games/merge/index.html' },
-    { game: 'stack', name: '小鳶疊貨櫃', vary: '同一陣風：今天的風和事件大家都一樣', key: 'same', path: 'games/stack/index.html' },
-    { game: 'swim', name: '鯨鯊快游', vary: '泡泡護航：今天一開始就有泡泡盾', key: 'shield', path: 'games/swim/index.html' },
-    { game: 'merge', name: '小鳶合成港', vary: '同款開場：今天大家掉下來的海鮮順序都一樣', key: 'same', path: 'games/merge/index.html' },
-    { game: 'swim', name: '鯨鯊快游', vary: '大餐日：今天食物多一倍', key: 'food', path: 'games/swim/index.html' },
-    { game: 'stack', name: '小鳶疊貨櫃', vary: '同一陣風：今天的風和事件大家都一樣', key: 'same', path: 'games/stack/index.html' }
-  ];
+  /* 輪替題目：每題只改一個條件（文字一句）。D143：後台「遊戲 → 今日挑戰」可改開關、每天次數、輪替順序與文字（cfg.daily） */
+  var GM = { swim: { name: '鯨鯊快游', path: 'games/swim/index.html' }, merge: { name: '小鳶合成港', path: 'games/merge/index.html' }, stack: { name: '小鳶疊貨櫃', path: 'games/stack/index.html' } };
+  var VARY = { swim: { rings: '金圈日：今天的金色加速圈多一倍', shield: '泡泡護航：今天一開始就有泡泡盾', food: '大餐日：今天食物多一倍' }, merge: { same: '同款開場：今天大家掉下來的海鮮順序都一樣' }, stack: { same: '同一陣風：今天的風和事件大家都一樣' } };
+  var DEF = [['swim', 'rings'], ['merge', 'same'], ['stack', 'same'], ['swim', 'shield'], ['merge', 'same'], ['swim', 'food'], ['stack', 'same']];
+  function conf() { var c = (K && K.cfg && K.cfg().daily) || {}, raw = c.list && c.list.length ? c.list : DEF.map(function (x) { return { game: x[0], key: x[1] }; });
+    var list = raw.filter(function (x) { return x && GM[x.game]; }).map(function (x) { var key = VARY[x.game][x.key] ? x.key : Object.keys(VARY[x.game])[0]; return { game: x.game, key: key, name: GM[x.game].name, path: GM[x.game].path, vary: (x.vary || '').trim() || VARY[x.game][key] }; });
+    if (!list.length) list = DEF.map(function (x) { return { game: x[0], key: x[1], name: GM[x[0]].name, path: GM[x[0]].path, vary: VARY[x[0]][x[1]] }; });
+    return { on: c.on !== false, tries: Math.max(1, Math.min(10, +c.tries || 3)), list: list }; }
+  function tries() { return conf().tries; }
+  function on() { return conf().on; }
   function dayKey() { return K && K.dayKey ? K.dayKey() : new Date().toISOString().slice(0, 10); }
   function hash(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
-  function today() { var d = dayKey(), n = Math.floor(Date.parse(d + 'T00:00:00+08:00') / 864e5), f = (function () { try { return localStorage.getItem('kiteDailyForce'); } catch (e) { return null; } })(), c = LIST[f != null && f !== '' ? +f % LIST.length : ((n % LIST.length) + LIST.length) % LIST.length];      // kiteDailyForce：測試用，指定題目
+  function today() { var LIST = conf().list, d = dayKey(), n = Math.floor(Date.parse(d + 'T00:00:00+08:00') / 864e5), f = (function () { try { return localStorage.getItem('kiteDailyForce'); } catch (e) { return null; } })(), c = LIST[f != null && f !== '' ? +f % LIST.length : ((n % LIST.length) + LIST.length) % LIST.length];      // kiteDailyForce：測試用，指定題目
     return { date: d, game: c.game, name: c.name, vary: c.vary, key: c.key, seed: hash('kite-daily|' + d + '|' + c.game), url: BASE + c.path + '?daily=' }; }
   function rng(seed) { var a = seed >>> 0; return function () { a = (a + 0x6D2B79F5) >>> 0; var t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
   function used() { return K && K.dailyUsed ? K.dailyUsed(dayKey()) : 0; }
-  function left() { return Math.max(0, TRIES - used()); }
+  function left() { return Math.max(0, tries() - used()); }
   /* 遊戲頁：?daily=official／practice。回傳本局資訊或 null */
   function session() {
-    var q = new URLSearchParams(location.search).get('daily'); if (!q) return null;
+    var q = new URLSearchParams(location.search).get('daily'); if (!q || !on()) return null;
     var td = today(), here = location.pathname.indexOf('/games/' + td.game + '/') >= 0; if (!here) return null;
     var official = q === 'official' && left() > 0;
     return { td: td, official: official, practice: !official, id: null, rnd: rng(td.seed) };
@@ -55,5 +55,5 @@
   var css = '.kd-res{margin:8px 0;padding:8px 10px;border-radius:12px;background:#FFF1D6;color:#10293D;font-size:13px;font-weight:700;text-align:left;line-height:1.6}.kd-res b{display:block;font-size:14px}.kd-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.kd-b{flex:1 1 40%;min-height:38px;border:2px solid #10293D;border-radius:999px;background:#fff;color:#10293D;font:inherit;font-weight:800;font-size:13px;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center}' +
     '.kd-banner{display:inline-block;margin:6px auto 0;padding:4px 12px;border-radius:999px;background:#FFE45C;color:#10293D;font-weight:900;font-size:13px}';
   if (document.head) { var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st); }
-  G.KiteDaily = { TRIES: TRIES, today: today, rng: rng, used: used, left: left, session: session, begin: begin, finish: finish, shareText: shareText, copyShare: copyShare, resultHtml: resultHtml, wire: wire, LIST: LIST };
+  G.KiteDaily = { tries: tries, on: on, conf: conf, GM: GM, VARY: VARY, DEF: DEF, today: today, rng: rng, used: used, left: left, session: session, begin: begin, finish: finish, shareText: shareText, copyShare: copyShare, resultHtml: resultHtml, wire: wire };
 })(window);
