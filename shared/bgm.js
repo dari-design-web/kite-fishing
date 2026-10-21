@@ -24,9 +24,14 @@ const BGM = (() => {
     travel_garden: { key: 62, scale: 'major', bpm: 96, prog: [0, 3, 0, 4, 5, 3, 4, 0], lead: 'flute', bass: 'long', bw: 'sine', arp: 8, birds: 1, drum: { h: '..x...x.' }, dens: 0.6, seed: 139, g: 1.28 },
     travel_school: { key: 64, scale: 'major', bpm: 116, prog: [0, 3, 4, 0, 0, 3, 4, 0], lead: 'bell', bass: 'root', bw: 'triangle', drum: { k: 'x...x...', c: '..x...x.' }, dens: 0.75, seed: 151, g: 0.91 },
     stamp_walk:    { key: 62, scale: 'major', bpm: 100, prog: [0, 4, 3, 0, 5, 3, 4, 0], lead: 'flute', bass: 'walk', bw: 'triangle', drum: { k: 'x...x...', h: '..x...x.' }, birds: 1, amb: 'sea', dens: 0.65, seed: 163, g: 1.2 },
-    photo_room:    { key: 67, scale: 'major', bpm: 92, prog: [0, 5, 3, 4, 0, 5, 3, 4], lead: 'pluck', bass: 'long', bw: 'sine', pad: 1, arp: 8, drum: { c: '....x...' }, dens: 0.7, seed: 179, g: 1.5 }
+    photo_room:    { key: 67, scale: 'major', bpm: 92, prog: [0, 5, 3, 4, 0, 5, 3, 4], lead: 'pluck', bass: 'long', bw: 'sine', pad: 1, arp: 8, drum: { c: '....x...' }, dens: 0.7, seed: 179, g: 1.5 },
+    /* D142：鯨鯊快游四個海底場景（輕快、有海浪環境音；深海比較神秘） */
+    swim_reef:     { key: 62, scale: 'major', bpm: 128, prog: [0, 4, 5, 3, 0, 4, 3, 4], lead: 'pluck', bass: 'oompah', bw: 'triangle', arp: 16, drum: { k: 'x...x...', s: '....x...', h: '.x.x.x.x' }, amb: 'sea', dens: 0.8, seed: 211, g: 1.1 },
+    swim_kelp:     { key: 64, scale: 'major', mscale: 'penta', bpm: 122, prog: [0, 3, 4, 0, 5, 3, 4, 0], lead: 'flute', bass: 'walk', bw: 'triangle', drum: { k: 'x...x...', h: '..x...x.' }, amb: 'sea', dens: 0.75, seed: 223, g: 1.2 },
+    swim_wreck:    { key: 60, scale: 'mixo', bpm: 132, swing: 0.15, prog: [0, 6, 3, 0, 0, 6, 4, 0], lead: 'reed', bass: 'root', bw: 'sawtooth', drum: { k: 'x..x..x.', s: '....x...', h: 'xxxxxxxx' }, dens: 0.8, seed: 239, g: 1.0 },
+    swim_deep:     { key: 57, scale: 'dorian', bpm: 118, prog: [0, 0, 3, 3, 0, 0, 6, 4], lead: 'bell', bass: 'long', bw: 'sine', pad: 1, arp: 8, drum: { k: 'x...x...', h: '..x...x.' }, amb: 'night', dens: 0.6, seed: 251, g: 1.3 }
   };
-  const FILE = {};      // 場景 → false（確定沒有音樂檔）
+  const FILE = { swim_reef: false, swim_kelp: false, swim_wreck: false, swim_deep: false };      // 場景 → false（確定沒有音樂檔）
   let ac = null, out = null, bus = null, timer = null, cur = null, step = 0, next = 0, audio = null, song = null, noise = null, amb = [];
   const hz = (m) => 440 * Math.pow(2, (m - 69) / 12);
   function rng(s) { return () => { s = (s * 1103515245 + 12345) % 2147483648; return s / 2147483648; }; }

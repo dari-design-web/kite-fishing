@@ -43,8 +43,13 @@ export async function makeWorld(THREE, base, onProgress) {
       deco: [['coral_glow', 3.0], ['deep_rock', 3.0], ['tube_sponge_glow', 3.0], ['jellyfish_glow', 2.4, 'float'], ['anglerfish', 2.0, 'float']], small: [['shells_glow', 0.9], ['coral_glow', 0.9]],
       obst: { jelly: 2.2, pillar: 1.2, arch: 1.2, net: 1, harpoon: 1.2, trash: 1 } }
   ];
-  function deco(th, small) { const list = small ? th.small : th.deco, [n, h, f] = pick(list), s = spr(n, h * rnd(0.85, 1.15), !f); if (f) { s.position.y = rnd(2.5, 5.5); s.userData.float = rnd(0, 6); } if (Math.random() < 0.5) s.material = s.material; bendAll(s); return s; }
-  function bigCreature(th) { const s = spr(th.big, th.big === 'anglerfish' ? 2.6 : 3.4); bendAll(s); return s; }
+  /* D142：會動的裝飾——海草、海葵、扇珊瑚以底部為軸左右擺；漂浮的水母、燈籠魚上下浮、身體一縮一放 */
+  const SWAY = { seagrass_tall: 0.12, seagrass_cluster: 0.08, seagrass_bent: 0.1, anemone_clownfish: 0.06, coral_fan: 0.05, kelp_rock: 0.04, algae_pebbles: 0.04 };
+  function deco(th, small) { const list = small ? th.small : th.deco, [n, h, f] = pick(list), s = spr(n, h * rnd(0.85, 1.15), !f);
+    if (f) { s.position.y = rnd(2.5, 5.5); s.userData.float = rnd(0, 6); s.userData.pulse = 1; s.userData.sy = s.scale.y; }
+    if (SWAY[n] && !small) { s.material = s.material.clone(); s.userData.sway = SWAY[n]; s.userData.ph = rnd(0, 6); }
+    bendAll(s); return s; }
+  function bigCreature(th) { const s = spr(th.big, th.big === 'anglerfish' ? 2.6 : 3.6); s.material = s.material.clone(); s.userData.sy = s.scale.y; s.userData.sx = s.scale.x; bendAll(s); return s; }      // D142：材質各自一份，才能各自擺動
 
   /* ---- 警告牌（文字） ---- */
   const tex = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return keep(t); };
