@@ -244,7 +244,7 @@
       ['－ 兌換扣點（實體＋便當）', -g((e) => e.type === 'redeem'), 'neg'], ['－ 到期失效', -g((e) => e.type === 'expire'), 'neg'], ['－ 後台扣點', -g((e) => e.type === 'adjust' && e.pts < 0), 'neg'], ['＝ 期末餘額（' + md(rg.to) + ' 24:00 或現在）', close, 'tot']];
     const diff = now - ledNow, ok = !diff;
     return card('🧮 點數對帳（期間流量 vs 餘額）', '<div class="scroll"><table class="tbl" style="max-width:620px">' + rows.map((r) => '<tr' + (r[2] === 'tot' ? ' style="font-weight:800;background:#F7FAF9"' : '') + '><td>' + r[0] + '</td><td style="text-align:right;font-variant-numeric:tabular-nums" class="' + r[2] + '">' + (r[2] === 'neg' && r[1] ? '−' : '') + num(Math.abs(r[1])) + ' 點</td></tr>').join('') + '</table></div>' +
-      '<p class="small" style="margin:8px 0 0;color:' + (ok ? '#1E8A4C' : '#C8442F') + '">' + (ok ? '✓ 帳本加總 ' + num(ledNow) + ' 點＝全部會員目前餘額 ' + num(now) + ' 點，對得起來。' : '⚠ 帳本加總 ' + num(ledNow) + ' 點，但會員目前餘額合計 ' + num(now) + ' 點，差 ' + num(diff) + ' 點（可能有舊資料沒有帳本明細，或匯入時只帶了餘額）。') + '</p>',
+      '<p class="small" style="margin:8px 0 0;color:' + (ok ? '#1E8A4C' : '#C8442F') + '">' + (ok ? '✓ 帳本加總 ' + num(ledNow) + ' 點＝全部會員目前餘額 ' + num(now) + ' 點，對得起來。' : '⚠ 帳本加總 ' + num(ledNow) + ' 點，但會員目前餘額合計 ' + num(now) + ' 點，差 ' + num(diff) + ' 點（最常見：後台沒填金鑰，雲端只給精簡資料、看不到兌換和遊戲換點；或舊資料沒有帳本明細，或匯入時只帶了餘額）。') + '</p>',
       { hint: '「發出／用掉」是這段期間的流量；「期初／期末」是當下的存量，兩者不要混在一起看。期末餘額由帳本推算；若期間包含今天，就是截至現在。' });
   }
 
