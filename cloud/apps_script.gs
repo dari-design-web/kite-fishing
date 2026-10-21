@@ -1,4 +1,4 @@
-/* 小鳶來港・測試期雲端資料（Google 試算表＋Apps Script）v9（10/21 後台看得到每日遊戲局數）｜v8（10/20 修排行榜）｜原 v2（D100，Dari 10/17；夜間獨立複查後修正）
+/* 小鳶來港・測試期雲端資料（Google 試算表＋Apps Script）v9.1（10/21 金鑰防呆）｜v9（10/21 後台看得到每日遊戲局數）｜v8（10/20 修排行榜）｜原 v2（D100，Dari 10/17；夜間獨立複查後修正）
    用法：在 Google 雲端硬碟新增一份 Google 試算表 → 擴充功能 → Apps Script → 把這整份貼上 → 部署 → 網頁應用程式
          （執行身分：我；存取權：所有人）→ 複製網址給 Claude。詳細步驟見 Claude產出/雲端測試資料庫_設定步驟（最新版）.md。
    只放測試資料；正式上線前到後台按「清空全部測試資料」，之後改接正式資料庫。
@@ -6,7 +6,7 @@
 var PLAYER_KEY = 'kite-test-2026';
 var ADMIN_KEY = 'CHANGE-ME-ADMIN';   // ← 部署前改成你自己想的一串字，並在後台「系統 → 雲端同步」輸入同一串
 var CHUNK = 40000;
-function adminOk_(k) { return k === ADMIN_KEY && ADMIN_KEY !== 'CHANGE-ME-ADMIN'; }
+function adminOk_(k) { return !!k && k === ADMIN_KEY && ADMIN_KEY.indexOf('CHANGE' + '-ME') !== 0; }      // D150：用「全部取代」改金鑰時，這行不會被一起換掉（10/21 Dari 遇到）
 
 function sheet_(name, head) {
   var ss = SpreadsheetApp.getActiveSpreadsheet(), sh = ss.getSheetByName(name);
