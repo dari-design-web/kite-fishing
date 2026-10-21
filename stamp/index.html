@@ -48,7 +48,7 @@ header p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
 .route circle{fill:#B98A5A}
 .pcell{position:absolute;transform:translate(-50%,-50%);border:0;background:none;padding:0;font:inherit;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#A08A72}
 .pcell .q{font-size:30px;font-weight:700;color:#C8B79F;line-height:1}
-.pcell small{font-size:10.5px;line-height:1.35;text-align:center;padding:0 10%;margin-top:3px}
+.pcell small{font-size:9.5px;line-height:1.25;text-align:center;padding:0 14%;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .pcell .tag{position:absolute;top:103%;max-width:120%;white-space:nowrap;font-size:10.5px;font-weight:700;color:#fff;border-radius:999px;padding:1px 7px;box-shadow:0 1px 3px rgba(0,0,0,.25)}
 .pcell .lv{position:absolute;right:-2%;top:-2%;font-size:10px;font-weight:700;border-radius:999px;padding:1px 5px;color:#5A3A24;background:#E2E2E2;box-shadow:0 1px 2px rgba(0,0,0,.2)}
 .pcell .lv.l3{background:linear-gradient(135deg,#F7E08A,#D9A93A)}
@@ -192,6 +192,9 @@ summary{font-weight:700;font-size:14px;cursor:pointer}
 .pals{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin:6px 0 4px}.pals a,.pals span{display:flex;flex-direction:column;align-items:center;text-decoration:none;color:#5B3F25;min-height:44px}.pals img{width:100%;aspect-ratio:1;object-fit:contain}.pals img.no{filter:grayscale(1) brightness(1.3);opacity:.35}.pals small{font-size:10px;line-height:1.2;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}.palTip{color:#8A6E58;font-size:12px}
 /* C-124：短螢幕按鈕至少約 36～40 點高 */
 #noteBtn{min-height:38px}
+</style>
+<style>/* QA 10/21：小按鈕至少 44 點高，手指好按 */
+#skipBtn{min-height:44px;padding:0 14px;display:inline-flex;align-items:center}
 </style>
 </head>
 <body>
