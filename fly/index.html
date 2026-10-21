@@ -1173,8 +1173,8 @@ function update(dt) {
   friends = friends.filter((c) => (c.vx > 0 ? c.x < W + 90 : c.vx < 0 ? c.x > -90 : true) && c.y > -60);      // 依前進方向判斷：真的游出畫面才移除，還在畫面外等著進場的不算
   // 鯨鯊大招：慢動作起手 → 鯨鯊由左下游向右上、身後的大浪由下往上掃過 → 結算清掉幾件
   if (ult && ult.kind) updateUlt2(real);
-  if (booms.length) updateBooms(real);
-  else if (ult && ult.jiao) updateJiao(real);
+  if (booms.length) updateBooms(real);      // D152（Dari 10/21 鐵道車大招一直慢慢前進到魔王前）：大招打中東西會冒小爆炸，原本「有爆炸」就整個不更新大招，打越多停越久；改成爆炸和大招各自更新
+  if (ult && ult.jiao) updateJiao(real);
   else if (ult) {
     const u = ult; u.t += real;
     if (u.t >= 0.5) {
