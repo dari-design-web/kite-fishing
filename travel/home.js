@@ -277,11 +277,12 @@
     function end(e, cancel) {
       f._down = 0; if (!start) return; var s0 = start; start = null; s0.t.classList.remove('press');
       if (cancel || Math.hypot(e.clientX - s0.x, e.clientY - s0.y) > 24 || Date.now() - s0.at > 1500) return;
-      f._last = Date.now(); act(s0.t);
+      f._last = Date.now(); window.__hmGhost = Date.now() + 500; act(s0.t);      /* D167：手機放開後還會補一個 click，會點到剛跳出來的選單（種子被自動選走）→ 0.5 秒內擋掉 */
     }
     f.addEventListener('pointerup', function (e) { end(e); }); f.addEventListener('pointercancel', function (e) { end(e, true); });
     f.addEventListener('click', function (e) { var t = hit(e); if (!t) return; e.stopPropagation(); if (Date.now() - (f._last || 0) < 600) return; act(t); });      /* 鍵盤或沒有 pointer 事件時的備用 */
   }
+  document.addEventListener('click', function (e) { if (Date.now() < (window.__hmGhost || 0)) { var f0 = document.getElementById('hmFarm'); if (!f0 || !f0.contains(e.target)) { e.stopPropagation(); e.preventDefault(); } } }, true);
   function act(t) { if (t.classList.contains('hmPlot')) plotTap(+t.dataset.i); else if (t.classList.contains('hmAni')) aniTap(t.dataset.a); else kitchen(); }
   function render() {
     var room = $('room'); if (!room || typeof S === 'undefined') return;
