@@ -68,7 +68,7 @@ header h1{font-size:20px;margin:0;flex:1}
 .emote.float{animation:pop .35s ease-out,drift 1.6s ease-in .35s forwards}
 @keyframes drift{to{transform:translate(-50%,-180%);opacity:0}}
 @keyframes bob{50%{transform:translateY(-6px)}}
-.room.night::after{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(circle at 50% 18%,rgba(255,200,120,.28),rgba(255,200,120,0) 38%),linear-gradient(rgba(16,22,58,.55),rgba(16,22,58,.62))}
+.room.night::after{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(circle at 50% 18%,rgba(255,200,120,.28),rgba(255,200,120,0) 38%),linear-gradient(rgba(16,22,58,.22),rgba(16,22,58,.3))}
 .getfish{display:block;margin-top:6px;padding:10px 12px;border-radius:14px;border:2px dashed #3F8FB8;background:#EAF5FA;color:#1D4E66;text-decoration:none;font-size:14px;line-height:1.5}
 .getfish b{color:#1D6A88}.getfish small{display:block;font-size:12px;color:#4F6F80}
 .note .trip{display:block;margin-top:6px;font-size:12.5px;color:#6B5434}
@@ -334,7 +334,7 @@ header .back,.letter .skip{min-height:44px;min-width:44px;display:inline-flex;al
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.35',
+  version: '0.36',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 0,      // D80：遠行便當改用點數換，不再每 3 趟送 1 份（0＝關閉）
@@ -345,7 +345,12 @@ const CFG = {
     far:     { name: '遠行便當', note: '港口換禮', dists: ['near', 'mid', 'far'], hours: 5 },
     squid:   { name: '小卷便當', note: '港口換禮', dists: ['near', 'mid', 'far'], hours: 3 },
     hair:    { name: '白帶魚便當', note: '港口換禮；一定帶紀念品', dists: ['near', 'mid', 'far'], hours: 5, souvenir: true },
-    special: { name: '港邊特製便當', note: '港口換禮；可以去九份；一定帶紀念品', dists: ['near', 'mid', 'far', 'farthest'], hours: 8, souvenir: true }
+    special: { name: '港邊特製便當', note: '港口換禮；可以去九份；一定帶紀念品', dists: ['near', 'mid', 'far', 'farthest'], hours: 8, souvenir: true },
+    /* D164：小鳶在家廚房做的手作便當（home.js）。不抽伴手禮點數／券，去的地方比點數便當近一點 */
+    hb_egg:     { name: '雞蛋飯糰便當', note: '小屋手作', dists: ['near', 'mid'], hours: 2, home: true },
+    hb_chicken: { name: '雞腿便當', note: '小屋手作', dists: ['near', 'mid'], hours: 3, home: true },
+    hb_pork:    { name: '豬排便當', note: '小屋手作', dists: ['near', 'mid', 'far'], hours: 4, home: true },
+    hb_beef:    { name: '牛肉便當', note: '小屋手作；比較容易帶紀念品', dists: ['near', 'mid', 'far'], hours: 5, home: true, souvenir: true }
   },
   items: {
     camera:    { name: '相機', note: '多帶一張明信片回來', how: '飛行冒險過任一關' },
@@ -435,7 +440,7 @@ function locOpen(l) {
 function openHow(l) { return l.unlock === 'fly4' ? '飛行冒險第 4 關過關，或旅行滿 ' + CFG.autoOpenTrips + ' 次' : l.unlock === 'dex3' ? '捕魚圖鑑集滿 3 種，或旅行滿 ' + CFG.autoOpenTrips + ' 次' : l.unlock === 'special' ? '要帶港邊特製便當' : ''; }
 function bentoPriceLine() { try { const B = (window.KiteCore && KiteCore.cfg().bentos) || []; const nm = { far: '遠行', squid: '小卷', hair: '白帶魚', special: '港邊特製' }; return B.filter((b) => b.on !== false && nm[b.id]).map((b) => nm[b.id] + ' ' + b.points + ' 點').join('・'); } catch (e) { return ''; } }      // UX 走查：價格跟港口換禮同一份設定
 function riceLeft() { return S.riceDay === today() ? 0 : 1; }
-function bentoCount(k) { return k === 'walk' ? Infinity : k === 'rice' ? riceLeft() : S.bento[k] || 0; }
+function bentoCount(k) { return k === 'walk' ? Infinity : k === 'rice' ? riceLeft() : /^hb_/.test(k) ? (window.HOME ? HOME.hbCount(k) : 0) : S.bento[k] || 0; }
 function weekLoc() { const w = Math.floor((Date.now() / 86400000 + 3) / 7); return LOCS[w % LOCS.length]; }      // 每週一換一個主題地點
 function cardId(l, i) { return l.id + '-' + i; }
 const allCards = () => LOCS.flatMap((l) => l.cards.map((c, i) => cardId(l, i)));
@@ -505,11 +510,11 @@ const ROOMS = [      // v0.15：五間都換上 G-47 正式暫用底圖（1080×
   { id: 'garden', name: '花園', icon: '🌼', img: 'room_garden.jpg', acc: 'straw',
     looks: [[38, 78, -1, '花花長高了耶！'], [79, 79, 1, '我來澆水，你看～']],
     says: ['可以看到港口的船耶！', '草草軟軟的，好舒服。', '海風吹過來了～'] },
-  { id: 'school', name: '學校', icon: '🏫', img: 'room_school.jpg', acc: 'school',
-    looks: [[52, 78, 1, '黑板空空的，我來畫一隻鯨鯊！'], [79, 78, 1, '我的小書包在這裡～']],
-    says: ['我今天學會寫「港」了！', '老師說要舉手才能說話。', '下課了！來玩吧～'] }
+  { id: 'ranch', name: '牧場', icon: '🐔', img: 'room_garden.jpg', acc: 'straw', pet: 'garden',      /* D164：學校改牧場（底圖暫用花園，等 GPT 出牧場圖） */
+    looks: [[50, 64, 1, '小雞在叫我耶！'], [70, 64, 1, '今天也要好好照顧大家～']],
+    says: ['咕咕咕～雞蛋生好了嗎？', '小豬在打滾！', '牛牛慢慢吃草～'] }
 ];
-ROOMS.forEach((r) => { r.w = 1080; r.h = 1350; r.area = { x0: 15, x1: 85, y0: 75, y1: 95 }; });
+ROOMS.forEach((r) => { r.w = 1080; r.h = 1350; r.area = r.id === 'garden' || r.id === 'ranch' ? { x0: 15, x1: 85, y0: 62, y1: 66 } : { x0: 15, x1: 85, y0: 75, y1: 95 }; });      // D164：花園／牧場小鳶走在菜圃後面，不擋格子
 const ROOM = () => ROOMS.find((r) => r.id === S.room) || ROOMS[0];
 const ROOMDIM = { w: 1080, h: 1350 };
 let roomUserT = 0;
@@ -678,7 +683,7 @@ const PET = (() => {
       if (p.act !== 'walk' && p.t >= p.dur) next();
       if (calm) { bob = 0; rot = 0; sq = 1; }
       const scale = 0.86 + (p.y - AREA.y0) / (AREA.y1 - AREA.y0) * 0.16, w = 34 * scale;
-      const rid = ROOM().id, key = rid !== 'living' ? 'kite_' + rid + '_' + (p.act === 'nap' ? 'nap' : p.pose === 'wave' ? 'wave' : 'home') : p.act === 'nap' ? 'kite_nap' : p.pose === 'wave' ? 'kite_wave' : p.pose === 'pack' ? 'kite_pack' : p.pose === 'back' ? 'kite_back' : 'kite_home';      // v0.16：其他四間用 G-47 第二批換裝圖      // v0.14：打瞌睡換閉眼圖
+      const rid = ROOM().pet || ROOM().id, key = rid !== 'living' ? 'kite_' + rid + '_' + (p.act === 'nap' ? 'nap' : p.pose === 'wave' ? 'wave' : 'home') : p.act === 'nap' ? 'kite_nap' : p.pose === 'wave' ? 'kite_wave' : p.pose === 'pack' ? 'kite_pack' : p.pose === 'back' ? 'kite_back' : 'kite_home';      // v0.16：其他四間用 G-47 第二批換裝圖      // v0.14：打瞌睡換閉眼圖
       if (b.dataset.k !== key) { b.style.backgroundImage = 'url(assets/' + key + '.png)'; b.dataset.k = key; }
       const hPct = w * ROOMDIM.w / ROOMDIM.h;      // 舞台實際寬高（fitRoom 算的），換算成高度的百分比
       b.style.width = w + '%'; b.style.left = (p.x - w / 2) + '%'; b.style.top = (p.y - hPct * 0.92) + '%';
@@ -736,6 +741,7 @@ function startFirst() {
 /* 打包 */
 let pk = { bento: '', items: [], pick: '' };
 function bentoIcon(k) {
+  if (/^hb_/.test(k) && window.HOME) return HOME.bentoIcon(k);
   if (k === 'walk') return '<svg class="ic" viewBox="0 0 44 44"><circle cx="22" cy="22" r="20" fill="#9FD3C7"/><path d="M14 30c4-8 12-8 16-14" stroke="#4A3426" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-dasharray="3 4"/></svg>';
   return '<img class="ic" src="assets/bento_' + k + '.png" alt="">';      // 五種便當：ChatGPT G-39
 }
@@ -746,7 +752,7 @@ function packSay(slot, line) { const s = $(slot); if (s) { s.classList.remove('p
 function renderPack() {
   if (S.state !== 'home' || !S.firstDone) { go('home'); return; }
   const bl = $('bentoList'); bl.innerHTML = '';
-  for (const k of ['walk', 'rice', 'far', 'squid', 'hair', 'special']) {
+  for (const k of ['walk', 'rice', 'far', 'squid', 'hair', 'special'].concat(window.HOME ? HOME.bentoKeys().filter((x) => HOME.hbCount(x) > 0) : [])) {      // D164：手作便當有做才列出來
     const b = CFG.bentos[k], n = bentoCount(k), btn = document.createElement('button'); btn.className = 'opt'; btn.type = 'button'; btn.setAttribute('aria-pressed', String(pk.bento === k)); btn.disabled = n <= 0;
     btn.innerHTML = bentoIcon(k) + '<span class="tx">' + b.name + '<small>' + bentoNote(k, b.note) + '｜' + (k === 'walk' ? '只到東三東四' : '去' + b.dists.map((d) => DIST_NAME[d]).join('、') + '的地方') + '｜' + (b.hours < 1 ? b.hours * 60 + ' 分鐘' : b.hours + ' 小時') + '</small></span><span class="n">' + (k === 'walk' ? '' : '×' + n) + '</span>';
     btn.onclick = () => { const add = pk.bento !== k; pk.bento = add ? k : ''; if (k === 'walk') pk.items = []; pk.pick = ''; renderPack(); if (add) packSay('slot0', PACK_SAY[k]); };
@@ -787,7 +793,7 @@ function renderPack() {
 function depart() {
   const k = pk.bento; if (!k || bentoCount(k) <= 0) return;
   const r = rollTrip(k, pk.items, pk.pick || '');
-  if (k === 'rice') S.riceDay = today(); else if (k !== 'walk') S.bento[k]--;      // 按「出發」才扣便當
+  if (k === 'rice') S.riceDay = today(); else if (k !== 'walk' && !/^hb_/.test(k)) S.bento[k]--;      // 手作便當在 HOME.onDepart 扣      // 按「出發」才扣便當
   if (pk.pick) S.stamps -= CFG.stampsToPick;
   S.itemDay = S.itemDay || {}; pk.items.forEach((x) => { S.itemDay[x] = today(); });
   S.trip = Object.assign(r, { bento: k, items: pk.items.slice(), start: Date.now(), end: Date.now() + CFG.bentos[k].hours * HOUR, walk: k === 'walk', say: sayOne('away') });
@@ -846,7 +852,7 @@ function openLetter() {
   if (S.state !== 'back' || !S.trip) return;
   const tr = S.trip, l = LOCS.find((x) => x.id === tr.dest);
   /* D98：回家時抽一次伴手禮（點數、券），記在這趟旅行上，重開頁面不會重抽；散步與第一趟不抽 */
-  if (!tr.gift && window.KiteCore && !tr.walk && !tr.first) { try { tr.gift = KiteCore.travelGift(tr.bento, 'TR-' + tr.start); } catch (e) { tr.gift = { pts: 0 }; } save(); }
+  if (!tr.gift && window.KiteCore && !tr.walk && !tr.first && !/^hb_/.test(tr.bento || '')) {      /* D164：手作便當不抽點數／券 */ try { tr.gift = KiteCore.travelGift(tr.bento, 'TR-' + tr.start); } catch (e) { tr.gift = { pts: 0 }; } save(); }
   PET.hide(); const L = document.createElement('div'); L.className = 'letter';
   L.innerHTML = '<button class="skip" id="skipL">略過 ››</button><div class="env" id="envL"><img class="closed" src="assets/letter_env.png" alt=""><img class="opened" src="assets/letter_open.png" alt=""><img class="seal" src="assets/letter_seal.png" alt=""></div><p class="tapme" id="tapme">點一下打開信封</p>';
   document.body.appendChild(L);
@@ -1142,14 +1148,14 @@ const SND_ICON = (() => {
 <script>
 /* 小屋配樂：預設開，第一次點畫面才開始（瀏覽器規定）；右上音符可關，記在這支手機。v0.15（D58）：五個房間各一首，換房間就換曲子；圖示：開＝音符、關＝音符加圓圈斜線 */
 let travelBgmOn = SND_ICON.saved;
-function travelBgmSync() { if (travelBgmOn) BGM.play('travel_' + (S.room || 'living')); else BGM.stop(); }
+function travelBgmSync() { if (travelBgmOn) BGM.play('travel_' + ({ ranch: 'school' }[S.room] || S.room || 'living')); else BGM.stop(); }
 (() => {
   const b = document.getElementById('bgmBtn'), draw = () => { b.innerHTML = SND_ICON[travelBgmOn ? 'on' : 'off']; b.setAttribute('aria-pressed', String(!travelBgmOn)); b.setAttribute('aria-label', travelBgmOn ? '音樂開著，點一下關掉' : '音樂關著，點一下打開'); };
   draw(); b.onclick = (e) => { e.stopPropagation(); travelBgmOn = !travelBgmOn; SND_ICON.save(travelBgmOn); travelBgmSync(); draw(); };
   document.addEventListener('pointerdown', () => { if (travelBgmOn) travelBgmSync(); }, { passive: true });
 })();
 </script>
-<script src="home.js?v=0.35b"></script>
+<script src="home.js?v=0.36"></script>
 <script src="../shared/back_line.js"></script>
 <script>/* D104：旅行排行榜（明信片收藏數） */ if (window.KiteLB) { KiteLB.button(document.getElementById('lbSlot'), { title: '小鳶旅行收藏排行', travel: true }); setTimeout(function () { try { pushTravelStat(); } catch (e) {} }, 1500); }</script>
 </body>
