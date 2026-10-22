@@ -128,7 +128,7 @@
     if (side && !h.box[side]) side = '';
     return '<h3>配菜（可不帶）</h3><p class="pad muted" style="margin:0 16px 6px;font-size:12px">不帶也能照常出發。出發時才會從料理盒拿走一份。</p><div class="list">' + ks.map(function (k) { var d = DISH[k], on = side === k; return '<button type="button" class="opt" data-side="' + k + '" aria-pressed="' + on + '"><span class="ic em">' + dishImg(k) + '</span><span class="tx">' + d.name + '<small>' + (on ? '<b class="ok">已選帶 1 份・再點一次取消</b><br>' : '') + (h.stories[k] ? '已經拿過小記，再帶會多一段小故事' : '第一次帶出門，回來會有一張料理小記') + '</small></span><span class="n">' + h.box[k] + '</span></button>'; }).join('') + '</div>';
   }
-  function bindPack(rerender) { document.querySelectorAll('[data-side]').forEach(function (b) { b.onclick = function () { side = side === b.dataset.side ? '' : b.dataset.side; rerender(); };      // G103 UX：選中狀態寫在卡片上，不再跳浮動提示蓋住出發資訊 }); }
+  function bindPack(rerender) { document.querySelectorAll('[data-side]').forEach(function (b) { b.onclick = function () { side = side === b.dataset.side ? '' : b.dataset.side; rerender(); /* G103 UX：選中狀態寫在卡片上，不再跳浮動提示 */ }; }); }
   function onDepart(trip) { var h = H(); if (side && h.box[side] > 0) { h.box[side]--; trip.side = side; } side = ''; }
   function onReset() { side = ''; }
   function letterExtra(tr) {      // 回信時呼叫一次；第一次帶那道菜 → 收下料理小記
@@ -158,15 +158,15 @@
     var btns = '';
     if (rid === 'garden') btns = '<button type="button" id="hmG">' + img('button_garden', 'bi') + '菜園' + (ripe ? '<small>・可收成 ' + ripe + '</small><em>' + ripe + '</em>' : empty ? '<small>・可以種</small>' : '') + '</button>';
     else if (rid === 'kitchen') btns = '<button type="button" id="hmC">' + img('button_kitchen', 'bi') + '煮飯' + (cookable ? '<small>・材料齊了</small><em>!</em>' : '') + '</button><button type="button" id="hmB">📖 菜譜冊</button>';
-    else if (rid === 'living' && S.state === 'home' && (ripe || cookable)) btns = '<button type="button" id="hmL">' + (ripe ? img('button_garden', 'bi') + '菜長好了' : img('button_kitchen', 'bi') + '想煮一道嗎') + '</button>';
+    else if (rid === 'living') btns = '<button type="button" id="hmL">' + (ripe ? img('button_garden', 'bi') + '菜長好了<em>' + ripe + '</em>' : cookable && S.state === 'home' ? img('button_kitchen', 'bi') + '想煮一道嗎<em>!</em>' : img('button_garden', 'bi') + '種菜・煮飯') + '</button>';      // D163：客廳一直有入口（Dari 找不到種菜）
     b.innerHTML = btns;
     if ($('hmG')) $('hmG').onclick = garden;
     if ($('hmC')) $('hmC').onclick = kitchen;
     if ($('hmB')) $('hmB').onclick = book;
-    if ($('hmL')) $('hmL').onclick = function () { if (ripe) { setRoom('garden'); garden(); } else { setRoom('kitchen'); kitchen(); } };
+    if ($('hmL')) $('hmL').onclick = function () { if (ripe || !cookable || S.state !== 'home') { setRoom('garden'); garden(); } else { setRoom('kitchen'); kitchen(); } };
   }
   var css = document.createElement('style');
-  css.textContent = '#hmAct{position:absolute;right:10px;bottom:10px;z-index:4;display:flex;gap:8px}' +
+  css.textContent = '#hmAct{position:absolute;right:10px;top:52px;z-index:4;display:flex;gap:8px}' +
     '#hmAct button{position:relative;display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:6px 14px 6px 8px;border:0;border-radius:999px;background:#FFFDF8;color:#4A3426;font:700 15px/1 inherit;font-family:inherit;box-shadow:0 3px 10px rgba(0,0,0,.22);cursor:pointer}' +
     '#hmAct em{position:absolute;top:-6px;right:-4px;min-width:20px;height:20px;border-radius:10px;background:#E8674A;color:#fff;font:700 12px/20px sans-serif;font-style:normal;text-align:center;padding:0 4px}' +
     '#hmAct .bi{width:32px;height:32px}#hmAct small{font-size:12px;font-weight:700;color:#3E7B45}' +
