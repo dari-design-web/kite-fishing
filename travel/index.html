@@ -334,7 +334,7 @@ header .back,.letter .skip{min-height:44px;min-width:44px;display:inline-flex;al
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.37',
+  version: '0.38',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 0,      // D80：遠行便當改用點數換，不再每 3 趟送 1 份（0＝關閉）
@@ -514,7 +514,7 @@ const ROOMS = [      // v0.15：五間都換上 G-47 正式暫用底圖（1080×
     looks: [[50, 64, 1, '小雞在叫我耶！'], [70, 64, 1, '今天也要好好照顧大家～']],
     says: ['咕咕咕～雞蛋生好了嗎？', '小豬在打滾！', '牛牛慢慢吃草～'] }
 ];
-ROOMS.forEach((r) => { r.w = 1080; r.h = 1350; r.area = r.id === 'garden' || r.id === 'ranch' ? { x0: 15, x1: 85, y0: 62, y1: 66 } : { x0: 15, x1: 85, y0: 75, y1: 95 }; });      // D164：花園／牧場小鳶走在菜圃後面，不擋格子
+ROOMS.forEach((r) => { r.w = 1080; r.h = 1350; r.area = r.id === 'garden' ? { x0: 15, x1: 85, y0: 62, y1: 66 } : r.id === 'ranch' ? { x0: 20, x1: 80, y0: 92, y1: 96 } : { x0: 15, x1: 85, y0: 75, y1: 95 }; });      // D164：花園／牧場小鳶走在菜圃後面，不擋格子
 const ROOM = () => ROOMS.find((r) => r.id === S.room) || ROOMS[0];
 const ROOMDIM = { w: 1080, h: 1350 };
 let roomUserT = 0;
@@ -1155,7 +1155,8 @@ function travelBgmSync() { if (travelBgmOn) BGM.play('travel_' + ({ ranch: 'scho
   document.addEventListener('pointerdown', () => { if (travelBgmOn) travelBgmSync(); }, { passive: true });
 })();
 </script>
-<script src="home.js?v=0.37"></script>
+<script src="cook.js?v=0.38"></script>
+<script src="home.js?v=0.38"></script>
 <script src="../shared/back_line.js"></script>
 <script>/* D104：旅行排行榜（明信片收藏數） */ if (window.KiteLB) { KiteLB.button(document.getElementById('lbSlot'), { title: '小鳶旅行收藏排行', travel: true }); setTimeout(function () { try { pushTravelStat(); } catch (e) {} }, 1500); }</script>
 </body>

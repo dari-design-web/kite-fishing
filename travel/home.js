@@ -151,7 +151,7 @@
     Object.keys(PEN).forEach(function (k) {
       var P = PEN[k], ok = penOpen(k), st = h.pens[k], busy = st && st.t, ready = busy && Date.now() >= st.t, o = busy && P.opts.find(function (x) { return x.id === st.o; }), g = o && Object.keys(o.get)[0], meat = g && GOOD[g].meat;
       var lbl = !ok ? '🔒 ' + P.need + ' 次' : !busy ? '餵飼料' : ready ? (meat ? '備料箱到了！' : '可以收！') : mins(st.t - Date.now());
-      var an = ok ? img('animal_' + P.a + '_' + (ready && !meat ? 'ready' : busy && !ready ? 'eat' : 'idle'), 'ai') : '';
+      var mode = ready && !meat ? 'ready' : busy && !ready ? 'eat' : 'idle', an = ok ? '<span class="aw ' + P.a + ' ' + mode + '">' + img('animal_' + P.a + '_' + mode, 'ai') + '</span>' : '';
       html += '<button type="button" class="hmPen' + (!ok ? ' wild' : ready ? ' ripe' : '') + '" data-p="' + k + '" style="left:' + P.x + '%;top:76%" aria-label="' + P.name + '：' + lbl + '">' + img('pen_' + P.a + (ok ? '' : '_build'), 'pi') + an +
         (ready && !meat ? '<span class="bub">' + img('product_' + g, 'pb') + '</span>' : '') + (ready && meat ? '<span class="crate">📦' + img('product_' + g, 'pc') + '</span>' : '') + '<span class="lb">' + P.name + '・' + lbl + '</span></button>';
     });
@@ -177,22 +177,26 @@
   }
   function cook(type, k) {
     var d = type === 'd' ? DISH[k] : BENTO[k], prog = 0, done = false;
-    modal('<h3>做' + d.name + '</h3><p class="mu">點鍋子幫小鳶攪拌（也可以讓小鳶自己做好）</p><button type="button" class="pot" id="hmPot" aria-label="攪拌">' + img('pot_still', 'potI') + '</button><div class="bar"><i id="hmBar"></i></div><div class="row"><button class="btn ghost" id="hmAuto">請小鳶幫忙做好</button></div>');
-    function finish() {
+    function finish(stars) {
       if (done) return; done = true;
       var h = H(); if (!have(d.need)) { close(); return; }
       take(d.need); var first = false;
       if (type === 'd') { first = !h.book[k]; h.book[k] = h.book[k] || Date.now(); h.box[k] = (h.box[k] || 0) + 1; } else h.hb[k] = (h.hb[k] || 0) + 1;
+      h.best = h.best || {}; if (stars && stars > (h.best[k] || 0)) h.best[k] = stars;
       if (!sv()) { give(d.need); toast('手機存不下來，這次先不算'); return; }
-      modal('<div class="dish">' + (type === 'd' ? dishImg(k) : img(BIMG[k])) + '</div><h3 style="text-align:center">' + d.name + '做好了！</h3><p style="text-align:center">' + (first ? '第一次做，收進菜譜冊了！<br>' : '') + (type === 'd' ? '放進料理盒，打包出門時可以帶一份當配菜。' : '打包出門時，在「便當」裡選它就能帶小鳶去旅行。') + '</p><div class="row"><button class="btn" id="hmOk">好</button></div>');
+      modal('<div class="dish">' + (type === 'd' ? dishImg(k) : img(BIMG[k])) + '</div><h3 style="text-align:center">' + d.name + '做好了！' + (stars ? ' ' + '⭐'.repeat(stars) : '') + '</h3><p style="text-align:center">' + (first ? '第一次做，收進菜譜冊了！<br>' : '') + (type === 'd' ? '放進料理盒，打包出門時可以帶一份當配菜。' : '打包出門時，在「便當」裡選它就能帶小鳶去旅行。') + '</p><div class="row"><button class="btn" id="hmOk">好</button></div>');
       $('hmOk').onclick = function () { kitchen(); };
     }
+    if (window.COOK) { close(); COOK.start({ name: d.name, need: d.need, kind: type === 'd' ? 'dish' : 'bento', items: cookItems(d.need) }, function (stars) { finish(stars); }); return; }
+    modal('<h3>做' + d.name + '</h3><button type="button" class="pot" id="hmPot" aria-label="攪拌">' + img('pot_still', 'potI') + '</button><div class="bar"><i id="hmBar"></i></div><div class="row"><button class="btn ghost" id="hmAuto">請小鳶幫忙做好</button></div>');
     function bump() { prog = Math.min(100, prog + 9); var b = $('hmBar'); if (b) b.style.width = prog + '%'; var p = $('hmPot'); if (p) { var pi = p.querySelector('img'); pi.src = A + 'pot_stir.webp'; clearTimeout(bump.t); bump.t = setTimeout(function () { pi.src = A + 'pot_still.webp'; }, 220); p.classList.remove('stir'); void p.offsetWidth; p.classList.add('stir'); } if (prog >= 100) setTimeout(finish, 250); }
-    $('hmPot').onclick = bump; $('hmAuto').onclick = function () { prog = 100; finish(); };
+    $('hmPot').onclick = bump; $('hmAuto').onclick = function () { prog = 100; finish(0); };
   }
+  var EMO = { base: '🥬', rice: '🍚', grass: '🌿', s1: '🍠', s2: '🌽', s3: '🍅', s4: '🧅', s5: '🎃', s6: '🥕' };
+  function cookItems(need) { var o = {}; Object.keys(need).forEach(function (k) { o[k] = { name: itemName(k), e: EMO[k] || (GOOD[k] && GOOD[k].em) || '🍴', type: k === 'rice' ? 'rice' : CROP[k] ? 'chop' : 'cook' }; }); return o; }
   function book() {
     var h = H(), html = '<h3>📖 菜譜冊與料理小記</h3><div class="list" style="margin:0">';
-    DORDER.forEach(function (k) { var d = DISH[k], has = h.book[k], st = h.stories[k]; html += '<button type="button" class="opt"' + (st ? ' data-st="' + k + '"' : ' disabled') + (has ? '' : ' style="opacity:.5"') + '><span class="ic em">' + (st ? img('landmark_' + d.lm) : has ? dishImg(k) : '❔') + '</span><span class="tx">' + (has ? d.name : '還沒做過') + '<small>' + (st ? '<b>' + d.story[0] + '</b>・點一下看' : has ? '帶這道菜出門一趟，就會收到料理小記' : '') + '</small></span></button>'; });
+    DORDER.forEach(function (k) { var d = DISH[k], has = h.book[k], st = h.stories[k]; html += '<button type="button" class="opt"' + (st ? ' data-st="' + k + '"' : ' disabled') + (has ? '' : ' style="opacity:.5"') + '><span class="ic em">' + (st ? img('landmark_' + d.lm) : has ? dishImg(k) : '❔') + '</span><span class="tx">' + (has ? d.name + (h.best && h.best[k] ? ' ' + '⭐'.repeat(h.best[k]) : '') : '還沒做過') + '<small>' + (st ? '<b>' + d.story[0] + '</b>・點一下看' : has ? '帶這道菜出門一趟，就會收到料理小記' : '') + '</small></span></button>'; });
     html += '</div><p class="mu sm">小記存在這台手機，換手機或清除資料可能會看不到。</p><div class="row"><button class="btn ghost" id="hmK">回廚房</button></div>';
     modal(html); $('hmK').onclick = function () { kitchen(); };
     document.querySelectorAll('[data-st]').forEach(function (b) { b.onclick = function () { story(b.dataset.st); }; });
@@ -224,14 +228,34 @@
   }
 
   /* ===== 畫在房間底圖上 ===== */
+  /* D165：農地常要按好幾次 → 用 pointerdown/up 自己判斷（手指稍微滑動也算點），不靠 click；小鳶不會再擋到 */
+  function bindFarm(f) {
+    var start = null;
+    function hit(e) {      /* 菜圃用「離哪一格的土最近」來判斷（上一排的菜會疊到下一排，不再按錯格） */
+      var best = null, bd = 1e9;
+      f.querySelectorAll('.hmPlot .soil').forEach(function (so) { var r = so.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height * 0.45, dx = (e.clientX - cx) / (r.width * 0.6), dy = (e.clientY - cy) / (r.height * 0.9 + 20), d = dx * dx + dy * dy; if (d < bd) { bd = d; best = so.parentNode; } });
+      if (best && bd <= 1) return best;
+      var t = e.target && e.target.closest && e.target.closest('.hmPen,.hmStove'); return t && f.contains(t) ? t : null;
+    }
+    f.addEventListener('pointerdown', function (e) { var t = hit(e); if (!t) return; start = { t: t, x: e.clientX, y: e.clientY, at: Date.now() }; f._down = 1; t.classList.add('press'); }, { passive: true });
+    function end(e, cancel) {
+      f._down = 0; if (!start) return; var s0 = start; start = null; s0.t.classList.remove('press');
+      if (cancel || Math.hypot(e.clientX - s0.x, e.clientY - s0.y) > 24 || Date.now() - s0.at > 1500) return;
+      f._last = Date.now(); act(s0.t);
+    }
+    f.addEventListener('pointerup', function (e) { end(e); }); f.addEventListener('pointercancel', function (e) { end(e, true); });
+    f.addEventListener('click', function (e) { var t = hit(e); if (!t) return; e.stopPropagation(); if (Date.now() - (f._last || 0) < 600) return; act(t); });      /* 鍵盤或沒有 pointer 事件時的備用 */
+  }
+  function act(t) { if (t.classList.contains('hmPlot')) plotTap(+t.dataset.i); else if (t.classList.contains('hmPen')) penTap(t.dataset.p); else kitchen(); }
   function render() {
     var room = $('room'); if (!room || typeof S === 'undefined') return;
     var f = $('hmFarm'); if (!f) { f = document.createElement('div'); f.id = 'hmFarm'; room.appendChild(f); }
     var rid = S.room, h = H();
-    f.innerHTML = rid === 'garden' ? gardenHTML() : rid === 'ranch' ? ranchHTML() : rid === 'kitchen' ? kitchenHTML() : '';
-    f.querySelectorAll('.hmPlot').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); plotTap(+b.dataset.i); }; });
-    f.querySelectorAll('.hmPen').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); penTap(b.dataset.p); }; });
-    f.querySelectorAll('.hmStove').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); kitchen(); }; });
+    var html = rid === 'garden' ? gardenHTML() : rid === 'ranch' ? ranchHTML() : rid === 'kitchen' ? kitchenHTML() : '';
+    if (f._html !== html && !f._down) { f.innerHTML = html; f._html = html; }
+    if (rid === 'garden') { var RW = room.clientWidth, RH = room.clientHeight; f.querySelectorAll('.hmPlot').forEach(function (b) { var row = Math.floor(+b.dataset.i / 3), wpx = Math.min(RW * (0.26 + row * 0.015), RH * (0.2 + row * 0.012)); b.style.width = wpx + 'px'; }); }      /* D165：內容沒變就不重畫，按到一半不會被換掉 */
+    room.dataset.farm = rid === 'garden' || rid === 'ranch' ? '1' : '';
+    if (!f._bound) { f._bound = 1; bindFarm(f); }
     var a = $('hmAct'), wrap = document.querySelector('.roomwrap'); if (!a && wrap) { a = document.createElement('div'); a.id = 'hmAct'; wrap.appendChild(a); }
     if (!a) return;
     var ripe = h.plots.filter(function (p, i) { return landOpen(i) && stage(p) === 3; }).length, penReady = Object.keys(h.pens).filter(function (k) { var s = h.pens[k]; return s && s.t && Date.now() >= s.t; }).length;
@@ -248,7 +272,7 @@
   css.textContent = '#hmAct{position:absolute;right:10px;top:52px;z-index:4;display:flex;gap:8px}' +
     '#hmAct button{position:relative;display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:6px 14px;border:0;border-radius:999px;background:#FFFDF8;color:#4A3426;font:700 14px/1 inherit;font-family:inherit;box-shadow:0 3px 10px rgba(0,0,0,.22);cursor:pointer}' +
     '#hmAct em{position:absolute;top:-6px;right:-4px;min-width:20px;height:20px;border-radius:10px;background:#E8674A;color:#fff;font:700 12px/20px sans-serif;font-style:normal;text-align:center;padding:0 4px}' +
-    '#hmFarm{position:absolute;inset:0;z-index:3;pointer-events:none}#hmFarm>*{pointer-events:auto}' +
+    '#hmFarm{position:absolute;inset:0;z-index:200;pointer-events:none}#hmFarm>*{pointer-events:auto;touch-action:manipulation}.room[data-farm="1"] .bird{pointer-events:none}.hmPlot.press,.hmPen.press,.hmStove.press{filter:brightness(1.15);transform:translate(-50%,-100%) scale(.96)}' +
     '.hmPlot,.hmPen,.hmStove{position:absolute;transform:translate(-50%,-100%);border:0;background:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;font-family:inherit;-webkit-tap-highlight-color:transparent}' +
     '.hmPlot .soil{display:block;width:100%;aspect-ratio:2/1;position:relative}.hmPlot .si{width:100%;height:100%;object-fit:contain}' +
     '.hmPlot .crop{position:absolute;left:14%;right:14%;bottom:28%;aspect-ratio:1}.hmPlot .crop .hi{width:100%;height:100%}.hmPlot .crop .emo{font-size:min(9vw,40px);align-items:flex-end}' +
@@ -259,9 +283,14 @@
     '.hmPen{width:31%;aspect-ratio:1}.hmPen .pi{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}.hmPen .ai{position:absolute;left:22%;bottom:4%;width:56%;height:56%;object-fit:contain}' +
     '.hmPen .bub{position:absolute;left:42%;bottom:44%;width:16%;aspect-ratio:1;animation:hmB 1.2s infinite}.hmPen .bub img{width:100%;height:100%}' +
     '.hmPen .crate{position:absolute;right:-2%;bottom:2%;font-size:min(8vw,34px);line-height:1;animation:hmB 1.2s infinite}.hmPen .crate img{position:absolute;left:12%;top:-60%;width:80%}' +
+    '.hmPen .aw{position:absolute;left:22%;bottom:4%;width:56%;height:56%}.hmPen .aw .ai{position:static;width:100%;height:100%;display:block;transform-origin:50% 90%}' +
+    '.aw.idle{animation:awX 7s ease-in-out infinite}.aw.idle .ai{animation:awF 7s steps(1) infinite,awBob .6s ease-in-out infinite}.aw.chicken.idle .ai{animation:awF 5s steps(1) infinite,awPeck 1.6s ease-in-out infinite}.aw.chicken.idle{animation-duration:5s}.aw.cow.idle{animation-duration:11s}.aw.cow.idle .ai{animation:awF 11s steps(1) infinite,awBob 1.4s ease-in-out infinite}' +
+    '.aw.eat .ai{animation:awEat .9s ease-in-out infinite}.aw.ready .ai{animation:awJoy 1s ease-in-out infinite}' +
+    '@keyframes awX{0%,100%{transform:translateX(-14%)}45%,55%{transform:translateX(14%)}}@keyframes awF{0%{scale:1 1}50%{scale:-1 1}}' +
+    '@keyframes awBob{50%{translate:0 -3%}}@keyframes awPeck{0%,60%,100%{rotate:0deg}70%,85%{rotate:16deg;translate:4% 6%}}@keyframes awEat{50%{rotate:6deg;translate:0 3%}}@keyframes awJoy{0%,100%{translate:0 0}30%{translate:0 -10%}45%{translate:0 0}60%{translate:0 -5%}}' +
     '.hmPen .lb{position:absolute;left:50%;bottom:-8%;transform:translateX(-50%)}#hmAct .bi{width:28px;height:28px}' +
     '.hmStove{width:22%}.hmStove .si{width:100%;filter:drop-shadow(0 4px 4px rgba(0,0,0,.3));animation:hmB 2s ease-in-out infinite}' +
-    '.hmPop{position:absolute;z-index:5;transform:translate(-50%,-50%);font:800 14px/1.2 sans-serif;color:#2F7A3A;background:#fff;border-radius:10px;padding:3px 8px;box-shadow:0 2px 6px rgba(0,0,0,.2);animation:hmU 1.3s forwards;pointer-events:none;white-space:nowrap}@keyframes hmU{to{transform:translate(-50%,-180%);opacity:0}}' +
+    '.hmPop{position:absolute;z-index:210;transform:translate(-50%,-50%);font:800 14px/1.2 sans-serif;color:#2F7A3A;background:#fff;border-radius:10px;padding:3px 8px;box-shadow:0 2px 6px rgba(0,0,0,.2);animation:hmU 1.3s forwards;pointer-events:none;white-space:nowrap}@keyframes hmU{to{transform:translate(-50%,-180%);opacity:0}}' +
     '.hi{width:100%;height:100%;object-fit:contain;display:block}.opt .em .hi{width:44px;height:44px}.emo{display:flex;align-items:center;justify-content:center;font-size:32px;line-height:1}.emo.big{font-size:96px}.hbI{font-size:30px;width:44px;height:44px}' +
     '.fi{display:inline-flex;align-items:center;gap:2px;margin:0 8px 4px 0;white-space:nowrap}.fic{width:20px;height:20px;font-size:16px}' +
     '.hm .tm{font-style:normal;font-size:11px;background:#EEF7F6;color:#21585D;border-radius:6px;padding:1px 5px;margin-left:6px}.hmT{margin:0 0 8px}' +
