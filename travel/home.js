@@ -21,11 +21,19 @@
   var SEEDS = ['base', 'rice', 'grass', 's1', 's2', 's3', 's4', 's5', 's6'];
   /* ===== 牧場產品 ===== */
   var GOOD = { egg: { name: '雞蛋', em: '🥚' }, chicken: { name: '雞肉', em: '🍗', meat: 1 }, pork: { name: '豬肉', em: '🥩', meat: 1 }, milk: { name: '牛奶', em: '🥛' }, beef: { name: '牛肉', em: '🍖', meat: 1 } };      /* 圖：assets/home/product_*.webp（G104） */
-  var PEN = {
-    hen: { name: '雞舍', em: '🐔', a: 'chicken', need: 0, x: 18, says: ['咕咕，今天想種什麼呢？', '穀物香香的，謝謝你！', '蛋籃準備好了，一起收好吧。'], opts: [{ id: 'egg', label: '收雞蛋', feed: { rice: 1 }, min: 30, get: { egg: 2 } }, { id: 'chicken', label: '雞肉備料', feed: { rice: 2 }, min: 60, get: { chicken: 1 } }] },
-    pig: { name: '豬圈', em: '🐷', a: 'pig', need: 8, x: 50, says: ['哼哼，我在這裡陪你聊天。', '慢慢吃，吃完再一起玩。', '照顧完成囉，去看看備料箱吧。'], opts: [{ id: 'pork', label: '豬肉備料', feed: { base: 2 }, min: 90, get: { pork: 1 } }] },
-    cow: { name: '牛棚', em: '🐮', a: 'cow', need: 6, x: 82, says: ['哞，今天的風好舒服。', '牧草香香的，謝謝你！', '牛奶準備好了，來看看吧。'], opts: [{ id: 'milk', label: '收牛奶', feed: { grass: 2 }, min: 40, get: { milk: 1 } }, { id: 'beef', label: '牛肉備料', need: 18, feed: { grass: 3 }, min: 120, get: { beef: 1 } }] }
+  /* ===== D166（Dari 10/23）：牧場改成「一大片、大家和樂融融」——不分棚，動物在同一片草地走來走去，定時自己產東西，點一下就收。
+     雞：雞蛋 30 分、雞肉 2 小時；豬：豬肉 90 分；牛：牛奶 40 分、牛肉 2.5 小時。可以餵飼料讓下一批快一半（選做）。
+     動物要「領養」才會變多；條件先用收成次數暫代（之後改成任務／某種購買條件，Dari 還在想）。狗狗：全部產品時間少 25%。 */
+  var ANI = {
+    chicken: { name: '小雞', em: '🐔', make: { egg: 30, chicken: 120 }, feed: 'rice', says: ['咕咕，今天想種什麼呢？', '穀物香香的，謝謝你！', '咕咕！有東西可以收囉～'] },
+    pig: { name: '小豬', em: '🐷', make: { pork: 90 }, feed: 'base', says: ['哼哼，我在這裡陪你聊天。', '慢慢吃，吃完再一起玩。', '哼哼！快來看看～'] },
+    cow: { name: '牛牛', em: '🐮', make: { milk: 40, beef: 150 }, feed: 'grass', says: ['哞，今天的風好舒服。', '牧草香香的，謝謝你！', '哞～準備好了，來看看吧。'] },
+    dog: { name: '狗狗', em: '🐶', make: {}, says: ['汪！我幫大家顧牧場！', '汪汪，大家都乖乖的～', '汪！'] }
   };
+  var ADOPT = [      /* 領養清單：need＝收成／收集次數（暫代條件） */
+    { k: 'chicken', need: 0 }, { k: 'chicken', need: 4 }, { k: 'pig', need: 6 }, { k: 'cow', need: 10 },
+    { k: 'dog', need: 14, note: '狗狗會幫忙顧牧場：大家產東西的時間少 25%' }, { k: 'chicken', need: 18 }, { k: 'pig', need: 24 }, { k: 'cow', need: 30 }
+  ];
   /* ===== 菜圃 9 格（花園底圖上的位置，百分比）；前 3 格一開始就有，其他要「收成次數」到了才能開墾 ===== */
   var PLOT = [[20, 72], [50, 72], [80, 72], [19, 84], [50, 84], [81, 84], [18, 96], [50, 96], [82, 96]];
   var LAND = [0, 0, 0, 3, 6, 10, 15, 20, 28], CLEAR_MIN = 10;
@@ -129,34 +137,62 @@
     return html;
   }
 
-  /* ===== 牧場（原本的學校） ===== */
-  function penOpen(k) { return H().xp >= PEN[k].need; }
-  function penTap(k) {
-    var h = H(), P = PEN[k], st = h.pens[k];
-    if (!penOpen(k)) { say(P.name + '還沒蓋好。收成或收集 ' + P.need + ' 次就會蓋好（現在 ' + h.xp + ' 次）'); return; }
-    if (st && st.t) {
-      var o = P.opts.find(function (x) { return x.id === st.o; });
-      if (Date.now() >= st.t) { give(o.get); h.xp++; h.pens[k] = {}; sv(); pop(P.x, 56, '+' + Object.keys(o.get).map(function (g) { return GOOD[g].name + '×' + o.get[g]; }).join(' ')); render(); say(GOOD[Object.keys(o.get)[0]].meat ? '備料箱收好了，放進冰箱囉！' : P.says[2]); return; }
-      say(P.says[1] + '（還要 ' + mins(st.t - Date.now()) + '）'); return;
-    }
-    var html = '<h3>' + P.em + ' ' + P.name + '</h3><p class="mu sm">雞蛋和牛奶從牧場收好；肉品由合作農場處理好，再送到備料箱。這裡的動物朋友會一直陪你，不會餓壞，也不會不見。</p><div class="list" style="margin:0">';
-    P.opts.forEach(function (o) { var lock = o.need && h.xp < o.need, ok = !lock && have(o.feed); html += '<button type="button" class="opt' + (ok ? ' can' : '') + '" data-o="' + o.id + '"' + (ok ? '' : ' disabled') + '><span class="ic em">' + itemIc(Object.keys(o.get)[0]) + '</span><span class="tx">' + o.label + '<em class="tm">' + mins(o.min * MIN) + '</em><small>飼料：' + needLine(o.feed) + '<br>' + (lock ? '<b class="no">收成或收集 ' + o.need + ' 次後開放（現在 ' + h.xp + ' 次）</b>' : ok ? '<b class="ok">飼料夠了，點一下開始</b>' : '<b class="no">還缺 ' + lack(o.feed) + '（去花園種）</b>') + '</small></span><span class="n">' + Object.keys(o.get).map(function (g) { return GOOD[g].name + '×' + o.get[g]; }).join('') + '</span></button>'; });
-    html += '</div><p class="mu sm">冰箱：' + fridgeLine() + '</p><div class="row"><button class="btn ghost" id="hmX">關閉</button></div>';
-    modal(html);
-    document.querySelectorAll('.hm .opt[data-o]').forEach(function (b) { b.onclick = function () { var o = P.opts.find(function (x) { return x.id === b.dataset.o; }); if ((o.need && h.xp < o.need) || !have(o.feed)) return; take(o.feed); h.pens[k] = { o: o.id, t: Date.now() + o.min * MIN }; sv(); close(); say(P.says[1]); }; });
+  /* ===== 牧場：一大片草地，動物自由走動 ===== */
+  function zoo() { var h = H(); if (!h.zoo) { h.zoo = []; adoptAdd('chicken'); } return h.zoo; }
+  function adoptAdd(k) { var h = H(), t = {}, now = Date.now(); Object.keys(ANI[k].make).forEach(function (g) { t[g] = now; }); h.zoo = h.zoo || []; h.zoo.push({ id: 'a' + now.toString(36) + Math.floor(Math.random() * 99), k: k, t: t }); }
+  function hasDog() { return zoo().some(function (a) { return a.k === 'dog'; }); }
+  function period(g, k) { return ANI[k].make[g] * MIN * (hasDog() ? 0.75 : 1); }
+  function readyOf(a) { return Object.keys(ANI[a.k].make).filter(function (g) { return Date.now() - a.t[g] >= period(g, a.k); }); }
+  function nextOf(a) { var m = 1e15; Object.keys(ANI[a.k].make).forEach(function (g) { m = Math.min(m, a.t[g] + period(g, a.k) - Date.now()); }); return m; }
+  function zooReady() { return zoo().filter(function (a) { return readyOf(a).length; }).length; }
+  function aniTap(id) {
+    var h = H(), a = zoo().find(function (x) { return x.id === id; }); if (!a) return; var A0 = ANI[a.k], pos = POS[id] || { x: 50, y: 80 };
+    var r = readyOf(a);
+    if (r.length) { var got = {}; r.forEach(function (g) { got[g] = 1; a.t[g] = Date.now(); }); give(got); h.xp++; sv(); pop(pos.x, pos.y - 14, '+' + r.map(function (g) { return GOOD[g].name; }).join('＋')); say(A0.says[2]); zooRender(true); return; }
+    if (a.k === 'dog') { say(A0.says[Math.floor(Math.random() * 2)]); return; }
+    var lines = Object.keys(A0.make).map(function (g) { return '<span class="fi">' + itemIc(g, 'fic') + GOOD[g].name + '：還要 ' + mins(a.t[g] + period(g, a.k) - Date.now()) + '</span>'; }).join('<br>');
+    var fd = A0.feed, ok = (h.fridge[fd] || 0) >= 1;
+    modal('<h3>' + A0.em + ' ' + A0.name + '</h3><p>' + lines + '</p><p class="mu sm">餵一份' + itemName(fd) + '，下一批會快一半（可以不餵，時間到也會自己好）。' + (hasDog() ? '狗狗在顧牧場，大家都快了 25%。' : '') + '</p><div class="row"><button class="btn" id="hmFeed"' + (ok ? '' : ' disabled') + '>' + (ok ? '餵' + itemName(fd) + '×1' : '冰箱沒有' + itemName(fd)) + '</button><button class="btn ghost" id="hmX">關閉</button></div>');
+    $('hmFeed').onclick = function () { if ((h.fridge[fd] || 0) < 1) return; take(mk(fd, 1)); Object.keys(A0.make).forEach(function (g) { var left = a.t[g] + period(g, a.k) - Date.now(); if (left > 0) a.t[g] -= left / 2; }); sv(); close(); say(A0.says[1]); zooRender(true); };
     $('hmX').onclick = close;
   }
-  function ranchHTML() {
-    var h = H(), html = '';
-    Object.keys(PEN).forEach(function (k) {
-      var P = PEN[k], ok = penOpen(k), st = h.pens[k], busy = st && st.t, ready = busy && Date.now() >= st.t, o = busy && P.opts.find(function (x) { return x.id === st.o; }), g = o && Object.keys(o.get)[0], meat = g && GOOD[g].meat;
-      var lbl = !ok ? '🔒 ' + P.need + ' 次' : !busy ? '餵飼料' : ready ? (meat ? '備料箱到了！' : '可以收！') : mins(st.t - Date.now());
-      var mode = ready && !meat ? 'ready' : busy && !ready ? 'eat' : 'idle', an = ok ? '<span class="aw ' + P.a + ' ' + mode + '">' + img('animal_' + P.a + '_' + mode, 'ai') + '</span>' : '';
-      html += '<button type="button" class="hmPen' + (!ok ? ' wild' : ready ? ' ripe' : '') + '" data-p="' + k + '" style="left:' + P.x + '%;top:76%" aria-label="' + P.name + '：' + lbl + '">' + img('pen_' + P.a + (ok ? '' : '_build'), 'pi') + an +
-        (ready && !meat ? '<span class="bub">' + img('product_' + g, 'pb') + '</span>' : '') + (ready && meat ? '<span class="crate">📦' + img('product_' + g, 'pc') + '</span>' : '') + '<span class="lb">' + P.name + '・' + lbl + '</span></button>';
-    });
-    return html;
+  function adoptSheet() {
+    var h = H(), z = zoo(), html = '<h3>🐾 領養動物</h3><p class="mu sm">收成和收集越多次，就能領養越多動物朋友（條件之後會改成任務）。現在 ' + h.xp + ' 次。</p><div class="list" style="margin:0">';
+    ADOPT.forEach(function (o, i) { var have = (h.adopted || [0]).indexOf(i) >= 0 || (i === 0), can = !have && h.xp >= o.need; html += '<button type="button" class="opt' + (can ? ' can' : '') + '" data-ad="' + i + '"' + (can ? '' : ' disabled') + '><span class="ic em"><span class="hi emo">' + ANI[o.k].em + '</span></span><span class="tx">' + ANI[o.k].name + '<small>' + (o.note || Object.keys(ANI[o.k].make).map(function (g) { return GOOD[g].name + ' ' + ANI[o.k].make[g] + ' 分'; }).join('、')) + '<br>' + (have ? '<b class="ok">已經在牧場了</b>' : can ? '<b class="ok">可以領養！</b>' : '<b class="no">收成或收集 ' + o.need + ' 次後可以領養</b>') + '</small></span></button>'; });
+    html += '</div><p class="mu sm">牧場現在有 ' + z.length + ' 隻。</p><div class="row"><button class="btn ghost" id="hmX">關閉</button></div>';
+    modal(html);
+    document.querySelectorAll('[data-ad]').forEach(function (b) { b.onclick = function () { var i = +b.dataset.ad, o = ADOPT[i]; h.adopted = h.adopted || [0]; if (h.adopted.indexOf(i) >= 0 || h.xp < o.need) return; h.adopted.push(i); adoptAdd(o.k); sv(); close(); say('歡迎' + ANI[o.k].name + '加入牧場！'); zooRender(true); }; });
+    $('hmX').onclick = close;
   }
+  var POS = {}, zooT = 0;
+  function zooRender(force) {
+    var f = $('hmFarm'); if (!f || S.room !== 'ranch') return;
+    var box = f.querySelector('.hmZoo'); if (!box) { box = document.createElement('div'); box.className = 'hmZoo'; f.appendChild(box); }
+    var seen = {};
+    zoo().forEach(function (a, n) {
+      seen[a.id] = 1;
+      var e = box.querySelector('[data-a="' + a.id + '"]');
+      if (!e) { e = document.createElement('button'); e.type = 'button'; e.className = 'hmAni ' + a.k; e.dataset.a = a.id; box.appendChild(e); var p0 = POS[a.id] || { x: 15 + Math.random() * 70, y: 70 + Math.random() * 24, f: 1 }; POS[a.id] = p0; e.style.left = p0.x + '%'; e.style.top = p0.y + '%'; }
+      var r = readyOf(a), mode = r.length ? 'ready' : (POS[a.id].eat ? 'eat' : 'idle'), src = a.k === 'dog' ? '' : img('animal_' + a.k + '_' + (mode === 'ready' ? 'ready' : mode === 'eat' ? 'eat' : 'idle'), 'ai');
+      var key = mode + r.join(',');
+      if (force || e.dataset.key !== key) { e.dataset.key = key; e.classList.toggle('ready', !!r.length); e.innerHTML = '<span class="aw ' + a.k + ' ' + mode + '">' + (src || '<span class="dogE">🐶</span>') + '</span>' + (r.length ? '<span class="bub">' + r.map(function (g) { return img('product_' + g, 'pb'); }).join('') + '</span>' : ''); e.setAttribute('aria-label', ANI[a.k].name + (r.length ? '：可以收' : '')); }
+      e.style.zIndex = Math.round(POS[a.id].y);
+      e.style.setProperty('--fx', POS[a.id].f);
+    });
+    box.querySelectorAll('.hmAni').forEach(function (e) { if (!seen[e.dataset.a]) e.remove(); });
+  }
+  function zooWander() {
+    if (S.room !== 'ranch' || !$('home') || !$('home').classList.contains('on')) return;
+    var box = document.querySelector('#hmFarm .hmZoo'); if (!box) return;
+    zoo().forEach(function (a) {
+      var p0 = POS[a.id], e = box.querySelector('[data-a="' + a.id + '"]'); if (!p0 || !e || readyOf(a).length) return;
+      if (Math.random() < 0.45) { p0.eat = Math.random() < 0.35; zooRender(); return; }
+      var nx = Math.max(10, Math.min(90, p0.x + (Math.random() - 0.5) * (a.k === 'cow' ? 18 : a.k === 'dog' ? 40 : 28))), ny = Math.max(70, Math.min(95, p0.y + (Math.random() - 0.5) * 10));
+      p0.f = nx >= p0.x ? -1 : 1; p0.eat = false; p0.x = nx; p0.y = ny; zooRender();
+      e.style.transitionDuration = (a.k === 'cow' ? 4 : a.k === 'dog' ? 1.6 : 2.6) + 's'; e.style.left = nx + '%'; e.style.top = ny + '%';
+    });
+  }
+  setInterval(zooWander, 2200);
 
   /* ===== 廚房：配菜＋手作便當 ===== */
   function kitchen(tab) {
@@ -235,7 +271,7 @@
       var best = null, bd = 1e9;
       f.querySelectorAll('.hmPlot .soil').forEach(function (so) { var r = so.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height * 0.45, dx = (e.clientX - cx) / (r.width * 0.6), dy = (e.clientY - cy) / (r.height * 0.9 + 20), d = dx * dx + dy * dy; if (d < bd) { bd = d; best = so.parentNode; } });
       if (best && bd <= 1) return best;
-      var t = e.target && e.target.closest && e.target.closest('.hmPen,.hmStove'); return t && f.contains(t) ? t : null;
+      var t = e.target && e.target.closest && e.target.closest('.hmAni,.hmStove'); return t && f.contains(t) ? t : null;
     }
     f.addEventListener('pointerdown', function (e) { var t = hit(e); if (!t) return; start = { t: t, x: e.clientX, y: e.clientY, at: Date.now() }; f._down = 1; t.classList.add('press'); }, { passive: true });
     function end(e, cancel) {
@@ -246,26 +282,28 @@
     f.addEventListener('pointerup', function (e) { end(e); }); f.addEventListener('pointercancel', function (e) { end(e, true); });
     f.addEventListener('click', function (e) { var t = hit(e); if (!t) return; e.stopPropagation(); if (Date.now() - (f._last || 0) < 600) return; act(t); });      /* 鍵盤或沒有 pointer 事件時的備用 */
   }
-  function act(t) { if (t.classList.contains('hmPlot')) plotTap(+t.dataset.i); else if (t.classList.contains('hmPen')) penTap(t.dataset.p); else kitchen(); }
+  function act(t) { if (t.classList.contains('hmPlot')) plotTap(+t.dataset.i); else if (t.classList.contains('hmAni')) aniTap(t.dataset.a); else kitchen(); }
   function render() {
     var room = $('room'); if (!room || typeof S === 'undefined') return;
     var f = $('hmFarm'); if (!f) { f = document.createElement('div'); f.id = 'hmFarm'; room.appendChild(f); }
     var rid = S.room, h = H();
-    var html = rid === 'garden' ? gardenHTML() : rid === 'ranch' ? ranchHTML() : rid === 'kitchen' ? kitchenHTML() : '';
-    if (f._html !== html && !f._down) { f.innerHTML = html; f._html = html; }
+    var html = rid === 'garden' ? gardenHTML() : rid === 'ranch' ? '<span class="hmZooTag">牧場（底圖等 GPT 畫成一大片穀倉草地）</span>' : rid === 'kitchen' ? kitchenHTML() : '';
+    if (f._html !== html && !f._down) { var zb = f.querySelector('.hmZoo'); f.innerHTML = html; f._html = html; if (zb && rid === 'ranch') f.appendChild(zb); }
     if (rid === 'garden') { var RW = room.clientWidth, RH = room.clientHeight; f.querySelectorAll('.hmPlot').forEach(function (b) { var row = Math.floor(+b.dataset.i / 3), wpx = Math.min(RW * (0.26 + row * 0.015), RH * (0.2 + row * 0.012)); b.style.width = wpx + 'px'; }); }      /* D165：內容沒變就不重畫，按到一半不會被換掉 */
     room.dataset.farm = rid === 'garden' || rid === 'ranch' ? '1' : '';
     if (!f._bound) { f._bound = 1; bindFarm(f); }
+    if (rid === 'ranch') zooRender();
     var a = $('hmAct'), wrap = document.querySelector('.roomwrap'); if (!a && wrap) { a = document.createElement('div'); a.id = 'hmAct'; wrap.appendChild(a); }
     if (!a) return;
-    var ripe = h.plots.filter(function (p, i) { return landOpen(i) && stage(p) === 3; }).length, penReady = Object.keys(h.pens).filter(function (k) { var s = h.pens[k]; return s && s.t && Date.now() >= s.t; }).length;
+    var ripe = h.plots.filter(function (p, i) { return landOpen(i) && stage(p) === 3; }).length, penReady = zooReady();
     var btn = '';
     if (rid === 'kitchen') btn = '<button type="button" id="hmB">📖 菜譜冊</button>';
     else if (rid === 'living') btn = '<button type="button" id="hmL">' + (ripe ? '🥬 菜長好了<em>' + ripe + '</em>' : penReady ? '🐔 牧場可以收<em>' + penReady + '</em>' : '🌱 去花園種菜') + '</button>';
-    else if (rid === 'garden' || rid === 'ranch') btn = '<button type="button" id="hmF">' + img('icon_fridge', 'bi') + '冰箱</button>';
+    else if (rid === 'garden' || rid === 'ranch') btn = (rid === 'ranch' ? '<button type="button" id="hmAd">🐾 領養</button>' : '') + '<button type="button" id="hmF">' + img('icon_fridge', 'bi') + '冰箱</button>';
     a.innerHTML = btn;
     if ($('hmB')) $('hmB').onclick = book;
-    if ($('hmF')) $('hmF').onclick = function () { modal('<h3>冰箱</h3><p>' + fridgeLine() + '</p><p class="mu sm">收成和收集一共 ' + h.xp + ' 次。次數越多，可以開墾的菜圃越多；豬圈 ' + PEN.pig.need + ' 次、牛棚 ' + PEN.cow.need + ' 次蓋好（牛肉備料 18 次）。</p><div class="row"><button class="btn" id="hmK2">去廚房</button><button class="btn ghost" id="hmX">關閉</button></div>'); $('hmK2').onclick = function () { setRoom('kitchen'); kitchen(); }; $('hmX').onclick = close; };
+    if ($('hmAd')) $('hmAd').onclick = adoptSheet;
+    if ($('hmF')) $('hmF').onclick = function () { modal('<h3>冰箱</h3><p>' + fridgeLine() + '</p><p class="mu sm">收成和收集一共 ' + h.xp + ' 次。次數越多，可以開墾的菜圃越多，也能領養更多動物。</p><div class="row"><button class="btn" id="hmK2">去廚房</button><button class="btn ghost" id="hmX">關閉</button></div>'); $('hmK2').onclick = function () { setRoom('kitchen'); kitchen(); }; $('hmX').onclick = close; };
     if ($('hmL')) $('hmL').onclick = function () { setRoom(!ripe && penReady ? 'ranch' : 'garden'); };
   }
   var css = document.createElement('style');
@@ -288,6 +326,11 @@
     '.aw.eat .ai{animation:awEat .9s ease-in-out infinite}.aw.ready .ai{animation:awJoy 1s ease-in-out infinite}' +
     '@keyframes awX{0%,100%{transform:translateX(-14%)}45%,55%{transform:translateX(14%)}}@keyframes awF{0%{scale:1 1}50%{scale:-1 1}}' +
     '@keyframes awBob{50%{translate:0 -3%}}@keyframes awPeck{0%,60%,100%{rotate:0deg}70%,85%{rotate:16deg;translate:4% 6%}}@keyframes awEat{50%{rotate:6deg;translate:0 3%}}@keyframes awJoy{0%,100%{translate:0 0}30%{translate:0 -10%}45%{translate:0 0}60%{translate:0 -5%}}' +
+    '.hmZoo{position:absolute;inset:0;pointer-events:none}.hmAni{position:absolute;width:20%;aspect-ratio:1;transform:translate(-50%,-100%);border:0;background:none;padding:0;pointer-events:auto;cursor:pointer;transition-property:left,top;transition-timing-function:linear;-webkit-tap-highlight-color:transparent}.hmAni.cow{width:26%}.hmAni.pig{width:22%}.hmAni.chicken{width:16%}.hmAni.dog{width:15%}' +
+    '.hmAni .aw{position:absolute;inset:0;transform:scaleX(var(--fx,1));transition:transform .2s}.hmAni .aw .ai{width:100%;height:100%;object-fit:contain;display:block;transform-origin:50% 90%}.hmAni .dogE{display:flex;align-items:flex-end;justify-content:center;width:100%;height:100%;font-size:min(9vw,40px)}' +
+    '.hmAni .aw.idle .ai,.hmAni .aw.idle .dogE{animation:awBob .5s ease-in-out infinite}.hmAni.chicken .aw.idle .ai{animation:awPeck 1.4s ease-in-out infinite}.hmAni .aw.eat .ai{animation:awEat .8s ease-in-out infinite}.hmAni .aw.ready .ai{animation:awJoy 1s ease-in-out infinite}' +
+    '.hmAni .bub{position:absolute;left:50%;top:-14%;transform:translateX(-50%);display:flex;gap:2px;background:#fff;border-radius:12px;padding:2px 4px;box-shadow:0 2px 6px rgba(0,0,0,.25);animation:hmB 1.2s infinite}.hmAni .bub img{width:26px;height:26px}.hmAni.press{filter:brightness(1.15)}' +
+    '.hmZooTag{position:absolute;left:8px;bottom:6px;font-size:10px;background:rgba(0,0,0,.45);color:#fff;border-radius:6px;padding:2px 6px}' +
     '.hmPen .lb{position:absolute;left:50%;bottom:-8%;transform:translateX(-50%)}#hmAct .bi{width:28px;height:28px}' +
     '.hmStove{width:22%}.hmStove .si{width:100%;filter:drop-shadow(0 4px 4px rgba(0,0,0,.3));animation:hmB 2s ease-in-out infinite}' +
     '.hmPop{position:absolute;z-index:210;transform:translate(-50%,-50%);font:800 14px/1.2 sans-serif;color:#2F7A3A;background:#fff;border-radius:10px;padding:3px 8px;box-shadow:0 2px 6px rgba(0,0,0,.2);animation:hmU 1.3s forwards;pointer-events:none;white-space:nowrap}@keyframes hmU{to{transform:translate(-50%,-180%);opacity:0}}' +
