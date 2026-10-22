@@ -574,6 +574,6 @@ setMode(HOW[tab] ? tab : 'merge'); requestAnimationFrame(frame); dailyTag();
 window.__mini = { get G() { return G; }, get state() { return state; }, setMode, IMG, SEAF };
 })();
 </script>
-<script>(function () { var b = document.getElementById('backBtn'); b.addEventListener('click', function (e) { if (window.__mini && window.__mini.state === 'play' && !confirm('這局還在進行，確定要離開嗎？（分數不會記錄）')) e.preventDefault(); }); /* QA：遊戲中按返回先確認 */ if (!/[?&]from=line/.test(location.search)) { b.href = '../../hub/'; b.textContent = '← 入口'; } })();</script>
+<script>(function () { var b = document.getElementById('backBtn'); b.addEventListener('click', function (e) { if (window.__mini && window.__mini.state === 'play' && !confirm('這局還在進行，確定要離開嗎？（分數不會記錄）')) e.preventDefault(); }); /* QA：遊戲中按返回先確認 */ /* D161：一律回小鳶樂園（遊戲大廳），不再回舊版測試首頁 */ })();</script>
 <script>/* D123：排行榜按鈕（一顆，進去再分類） */ (function () { var tb = /stack/.test(location.pathname) ? 'stack' : 'merge'; if (window.KiteLB) KiteLB.button(document.getElementById('lbSlot'), { cat: tb, game: tb, mini: true, title: '', tabs: [['all', tb === 'stack' ? '疊貨櫃' : '合成港']] }); })();</script>
 </body></html>
