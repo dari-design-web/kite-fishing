@@ -306,6 +306,7 @@ header .back,.letter .skip{min-height:44px;min-width:44px;display:inline-flex;al
     <div class="list" id="bentoList"></div>
     <h3>道具</h3>
     <div class="list" id="itemList"></div>
+    <div id="sideBox"></div>
     <div id="stampBox"></div>
     <div class="dest" id="destInfo">選便當或散步，看看這趟可能去哪裡、大約幾點回來。</div>
     <div class="gobar"><button class="btn" id="goBtn" disabled>出發</button></div>
@@ -333,7 +334,7 @@ header .back,.letter .skip{min-height:44px;min-width:44px;display:inline-flex;al
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.32',
+  version: '0.33',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 0,      // D80：遠行便當改用點數換，不再每 3 趟送 1 份（0＝關閉）
@@ -531,6 +532,7 @@ function setRoom(id) {
   const acc = $('bird').querySelector('.acc') || $('bird').appendChild(Object.assign(document.createElement('div'), { className: 'acc' }));
   acc.innerHTML = '';      // v0.16：換裝圖已含帽子衣服，程式畫的配件收起來
   fitRoom();
+  if (window.HOME) HOME.render();      // D162：花園、廚房的按鈕
 }
 function fitRoom() {
   if (!$('home').classList.contains('on')) return;
@@ -763,6 +765,7 @@ function renderPack() {
     btn.onclick = () => { let add = false; if (on) pk.items = pk.items.filter((x) => x !== k); else if (pk.items.length < 2) { pk.items.push(k); add = true; } else toast('道具最多帶兩件'); renderPack(); if (add) packSay('slot' + pk.items.length, PACK_SAY[k]); };
     il.appendChild(btn);
   }
+  if (window.HOME) { $('sideBox').innerHTML = HOME.packHTML(); HOME.bindPack(renderPack); }      // D162：配菜（可不帶）
   // 背包三格
   const b = pk.bento && CFG.bentos[pk.bento];
   $('slot0').innerHTML = b ? bentoIcon(pk.bento) + '<span>' + (pk.bento === 'walk' ? '散步' : b.name) + '</span>' : '<b>便當或散步</b><span>選擇這趟的出門方式</span>'; $('slot0').classList.toggle('filled', !!b);
@@ -788,6 +791,7 @@ function depart() {
   if (pk.pick) S.stamps -= CFG.stampsToPick;
   S.itemDay = S.itemDay || {}; pk.items.forEach((x) => { S.itemDay[x] = today(); });
   S.trip = Object.assign(r, { bento: k, items: pk.items.slice(), start: Date.now(), end: Date.now() + CFG.bentos[k].hours * HOUR, walk: k === 'walk', say: sayOne('away') });
+  if (window.HOME) HOME.onDepart(S.trip);      // D162：帶配菜出門才扣
   S.state = 'away'; pk = { bento: '', items: [], pick: '' }; save(); departAnim();
 }
 function departAnim() {      // v0.20：回頭揮手 0.5 秒 → 背包飛走 1.3 秒（留下小虛線）→ 淡出；點一下跳過
@@ -852,6 +856,7 @@ function openLetter() {
   /* v0.30（C-177）：信的最後多一句「這是小鳶寄給你的第 N 封信」，第 5、10、20、30 封加一句特別的話（只記封數 S.letters；文字是建議） */
   const nL = (S.letters || 0) + 1, LM = { 5: '已經第 5 封了，謝謝你一直幫我準備便當！', 10: '第 10 封！你的收藏冊越來越厚了～', 20: '第 20 封！我們一起去過好多地方喔！', 30: '第 30 封！你是小鳶最好的旅伴！' };
   const extras = ['💌 這是小鳶寄給你的第 ' + nL + ' 封信' + (LM[nL] ? '——' + LM[nL] : '')]; if (tr.stamps) extras.push('重複的明信片換成 ' + tr.stamps + ' 枚小鳶郵票'); if (tr.souvenir) extras.push('還帶回了紀念品：' + l.souvenir); if (tr.friend) extras.push('在' + l.name + '遇到了 ' + tr.friend + '！'); const pl = palLine(); if (pl) extras.push(pl);
+  if (window.HOME) { const hx = HOME.letterExtra(tr); if (hx) extras.push(hx); }      // D162：配菜料理小記
   const finish = () => { S.letters = nL; const news = commitTrip(); L.remove(); if (S.titles && Object.keys(S.titles).length) {} go('home'); toast(news.length ? '收進收藏冊了！' : '小鳶回來了'); };
   $('skipL').onclick = finish;
   let step = 0;
@@ -1144,6 +1149,7 @@ function travelBgmSync() { if (travelBgmOn) BGM.play('travel_' + (S.room || 'liv
   document.addEventListener('pointerdown', () => { if (travelBgmOn) travelBgmSync(); }, { passive: true });
 })();
 </script>
+<script src="home.js"></script>
 <script src="../shared/back_line.js"></script>
 <script>/* D104：旅行排行榜（明信片收藏數） */ if (window.KiteLB) { KiteLB.button(document.getElementById('lbSlot'), { title: '小鳶旅行收藏排行', travel: true }); setTimeout(function () { try { pushTravelStat(); } catch (e) {} }, 1500); }</script>
 </body>
