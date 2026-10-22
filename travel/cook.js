@@ -5,6 +5,8 @@
 (function () {
   var CHOP = 5, COOK_MS = 3500, GOOD_MS = 3200, LIMIT = 45;
   function $(id) { return document.getElementById(id); }
+  /* D167：手機上按下去就算（pointerdown），連點切菜才跟得上；click 只當備用，避免同一下算兩次 */
+  function tap(e0, fn) { var last = 0; e0.addEventListener('pointerdown', function (e) { if (e.button > 0) return; e.preventDefault(); last = Date.now(); fn(); }); e0.addEventListener('click', function () { if (Date.now() - last < 700) return; fn(); }); }
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   var css = el('style');
   css.textContent = '.ck{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;justify-content:flex-end;max-width:430px;margin:0 auto;background:linear-gradient(rgba(30,20,10,.15),rgba(30,20,10,.55) 45%);font-family:inherit;touch-action:manipulation;-webkit-user-select:none;user-select:none}' +
@@ -50,7 +52,7 @@
         var btn = el('button', '', '<span class="e">' + x.it.e + '</span>' + x.it.name + (x.it.type === 'chop' ? '・要切' : x.it.type === 'rice' ? '・裝飯' : '・下鍋'));
         btn.type = 'button';
         btn.disabled = (x.it.type === 'chop' && !!board) || (x.it.type === 'cook' && pot.st !== 'idle') || (x.it.type === 'rice' && false);
-        btn.onclick = function () { take(i, btn); };
+        tap(btn, function () { if (!btn.disabled && btn.isConnected) take(i, btn); });
         b.appendChild(btn);
       });
       hl();
@@ -66,13 +68,14 @@
       order(); basket(); boxState();
     }
     function maybeCook() { if (pot.st === 'idle' && potItems >= potNeed && potNeed > 0) { pot.st = 'cooking'; pot.t = Date.now(); tip('開火！顧好鍋子，好了就點鍋子起鍋'); } potState(); }
-    $('ckBoard').onclick = function () {
+    tap($('ckBoard'), function () {
       if (!board) { tip('先從下面的籃子拿要切的菜'); return; }
+      if (board.st === 'cut') { tip(board.it.name + '切好了，點鍋子放進去'); return; }
       chop++; chopsTotal++; var bd = $('ckBoard'); bd.classList.add('chop'); setTimeout(function () { bd.classList.remove('chop'); }, 80);
       $('ckCB').style.width = Math.min(100, chop / CHOP * 100) + '%';
-      if (chop >= CHOP) { board.st = 'cut'; tip(board.it.name + '切好了，點鍋子放進去'); }
-    };
-    $('ckPot').onclick = function () {
+      if (chop >= CHOP && board.st !== 'cut') { board.st = 'cut'; tip(board.it.name + '切好了，點鍋子放進去'); hl(); }
+    });
+    tap($('ckPot'), function () {
       if (board && board.st === 'cut') { if (pot.st !== 'idle') { tip('鍋子在用，等一下'); return; } board.st = 'pot'; potItems++; fly($('ckBoard'), 'ckPot', board.it.e); board = null; chop = 0; $('ckCB').style.width = '0'; order(); basket(); maybeCook(); return; }
       if (pot.st === 'ready' || pot.st === 'burn') {
         if (pot.st === 'burn') burnt = true;
@@ -80,8 +83,8 @@
       }
       if (pot.st === 'cooking') { tip('還在煮，再等一下下'); return; }
       tip(potNeed ? '把食材放進鍋子' : '這道不用開火喔');
-    };
-    $('ckBox').onclick = function () { check(true); };
+    });
+    tap($('ckBox'), function () { check(true); });
     function potState() {
       var p = $('ckPot'); p.classList.remove('cooking', 'ready', 'burn'); var s = $('ckPS'), b = $('ckPB');
       if (pot.st === 'idle') { s.textContent = potItems + ' / ' + potNeed + ' 樣食材'; b.style.width = potNeed ? potItems / potNeed * 100 + '%' : '0'; }
@@ -106,7 +109,7 @@
         w.appendChild(d); setTimeout(function () { w.remove(); onDone(Math.max(1, stars)); }, 1600);
       }
     }
-    $('ckHelp').onclick = function () { if (ended) return; ended = true; clearInterval(tickT); w.remove(); onDone(0); };
+    tap($('ckHelp'), function () { if (ended) return; ended = true; clearInterval(tickT); w.remove(); onDone(0); });
     tickT = setInterval(function () {
       var sec = Math.floor((Date.now() - t0) / 1000), tk = $('ckT'); if (!tk) { clearInterval(tickT); return; }
       tk.textContent = sec + ' 秒'; tk.classList.toggle('hurry', sec > LIMIT - 10);
