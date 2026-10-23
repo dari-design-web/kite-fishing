@@ -165,12 +165,33 @@
     $('hmX').onclick = close;
   }
   function adoptSheet() {
-    var h = H(), z = zoo(), html = '<h3>🐾 領養動物</h3><p class="mu sm">收成和收集越多次，就能領養越多動物朋友（條件之後會改成任務）。現在 ' + h.xp + ' 次。</p><div class="list" style="margin:0">';
-    ADOPT.forEach(function (o, i) { var have = (h.adopted || [0]).indexOf(i) >= 0 || (i === 0), can = !have && h.xp >= o.need; html += '<button type="button" class="opt' + (can ? ' can' : '') + '" data-ad="' + i + '"' + (can ? '' : ' disabled') + '><span class="ic em"><span class="hi emo">' + ANI[o.k].em + '</span></span><span class="tx">' + ANI[o.k].name + '<small>' + (o.note || Object.keys(ANI[o.k].make).map(function (g) { return GOOD[g].name + ' ' + ANI[o.k].make[g] + ' 分'; }).join('、')) + '<br>' + (have ? '<b class="ok">已經在牧場了</b>' : can ? '<b class="ok">可以領養！</b>' : '<b class="no">收成或收集 ' + o.need + ' 次後可以領養</b>') + '</small></span></button>'; });
+    var h = H(), z = zoo(), ad = h.adopted || [0], html = '<h3>💌 港口朋友的照護委託</h3><p class="mu sm">收成和收集越多次，朋友就會寄來新的介紹信（現在 ' + h.xp + ' 次）。完成一個照護小故事，再邀請動物來牧場住。</p><div class="list" style="margin:0">';
+    ADOPT.forEach(function (o, i) { if (!i) return; var c = CARE[i], has = ad.indexOf(i) >= 0, can = !has && h.xp >= o.need; html += '<button type="button" class="opt' + (can ? ' can' : '') + '" data-ad="' + i + '"' + (can ? '' : ' disabled') + '><span class="ic em">' + (has || can ? spP(o.k) : '<span class="hi emo">✉️</span>') + '</span><span class="tx">' + (has ? ANI[o.k].name + '<small><b class="ok">已經住進牧場了</b>・' + FR[c.f].n + '介紹的</small>' : can ? FR[c.f].n + '的介紹信<small>' + c.story.slice(0, 18) + '…<br><b class="ok">點一下打開</b></small>' : '還沒寄來的介紹信<small>收成或收集 ' + o.need + ' 次後寄來' + (o.note ? '<br>' + o.note : '') + '</small>') + '</span></button>'; });
     html += '</div><p class="mu sm">牧場現在有 ' + z.length + ' 隻。</p><div class="row"><button class="btn ghost" id="hmX">關閉</button></div>';
     modal(html);
-    document.querySelectorAll('[data-ad]').forEach(function (b) { b.onclick = function () { var i = +b.dataset.ad, o = ADOPT[i]; h.adopted = h.adopted || [0]; if (h.adopted.indexOf(i) >= 0 || h.xp < o.need) return; h.adopted.push(i); adoptAdd(o.k); sv(); close(); say('歡迎' + ANI[o.k].name + '加入牧場！'); zooRender(true); }; });
+    document.querySelectorAll('[data-ad]').forEach(function (b) { b.onclick = function () { careOpen(+b.dataset.ad); }; });
     $('hmX').onclick = close;
+  }
+  function careOpen(i) {
+    var h = H(), o = ADOPT[i], c = CARE[i], F = FR[c.f]; h.care = h.care || {};
+    if ((h.adopted || [0]).indexOf(i) >= 0 || h.xp < o.need) return;
+    if (h.care[i]) return careInvite(i);
+    var opts = DORDER.filter(function (k) { return h.box[k]; }).concat(BORDER.filter(function (k) { return h.hb[k]; }));
+    var html = '<div class="vCard">' + vimg(c.f) + '<div class="vMood">' + spP(o.k) + '<b>' + ANI[o.k].name + '</b></div></div><h3>💌 ' + F.n + '的介紹信</h3><p>「' + c.story + '」</p><p><b>' + c.ask + '</b></p><div class="list" style="margin:0">' + c.ch.map(function (t, n) { return '<button type="button" class="opt" data-ch="' + n + '"><span class="ic em"><span class="hi emo">' + ['🌿', '🌬️', '🎵'][n] + '</span></span><span class="tx">' + t + '<small>照護小故事・不用材料</small></span></button>'; }).join('') + '</div>';
+    if (opts.length) html += '<p class="mu sm">也可以送' + F.n + '一份料理當謝禮（可以不送）：</p><div class="list" style="margin:0">' + opts.map(function (k) { var fd = food(k); return '<button type="button" class="opt" data-cf="' + k + '"><span class="ic em">' + fd.pic + '</span><span class="tx">' + fd.name + '<small>送給' + F.n + '・用掉 1 份</small></span></button>'; }).join('') + '</div>';
+    html += '<div class="row"><button class="btn ghost" id="hmBk">回委託板</button></div>';
+    modal(html);
+    function done(line) { h.care[i] = Date.now(); rec(c.f).h++; sv(); careInvite(i, line); }
+    document.querySelectorAll('[data-ch]').forEach(function (b) { b.onclick = function () { done('你選了「' + c.ch[+b.dataset.ch] + '」。' + c.end); }; });
+    document.querySelectorAll('[data-cf]').forEach(function (b) { b.onclick = function () { var k = b.dataset.cf; if (DISH[k]) { if (!(h.box[k] > 0)) return; h.box[k]--; } else { if (!(h.hb[k] > 0)) return; h.hb[k]--; } done(F.n + '吃了' + food(k).name + '：「' + F.yum + '」' + c.end); }; });
+    $('hmBk').onclick = adoptSheet;
+  }
+  function careInvite(i, line) {
+    var o = ADOPT[i], c = CARE[i], A0 = ANI[o.k], prof = Object.keys(A0.make).map(function (g) { return GOOD[g].name + ' ' + A0.make[g] + ' 分'; }).join('、') || o.note || '';
+    modal('<div class="vCard">' + vimg(c.f) + '<div class="vMood">' + spP(o.k) + '<b>' + A0.name + '</b></div></div><h3>' + A0.em + ' ' + A0.name + '</h3>' + (line ? '<p>' + line + '</p>' : '') + '<p class="mu sm" id="hmProf" style="display:none">' + A0.name + '的小檔案：' + (o.note || prof) + '。來了以後會在牧場跟大家一起走來走去' + (prof && o.k !== 'dog' ? '，定時產' + Object.keys(A0.make).map(function (g) { return GOOD[g].name; }).join('和') : '') + '。</p><div class="row"><button class="btn ghost" id="hmLook">先看看牠</button><button class="btn" id="hmInv">邀請來住</button></div><div class="row" style="margin-top:6px"><button class="btn ghost" id="hmLater">晚點再說</button></div>');
+    $('hmLook').onclick = function () { $('hmProf').style.display = ''; say(A0.says[0]); };
+    $('hmInv').onclick = function () { var h = H(); h.adopted = h.adopted || [0]; if (h.adopted.indexOf(i) >= 0) return; h.adopted.push(i); adoptAdd(o.k); sv(); close(); say('歡迎' + A0.name + '加入牧場！謝謝' + FR[c.f].n + '～'); zooRender(true); };
+    $('hmLater').onclick = adoptSheet;
   }
   var POS = {}, zooT = 0;
   /* D168：G105 共居牧場（room_ranch_v2）＋五種動物 10 格動作圖（sprite_*.webp）。雞豬牛羊：走0–3 吃4–5 睡6–7 開心8–9；狗：走0–3 坐4–5 搖尾6–9。
@@ -220,12 +241,12 @@
     } else {
       DORDER.forEach(function (k) { var d = DISH[k], o = open(k), ok = o && have(d.need); html += '<button type="button" class="opt' + (ok ? ' can' : '') + '" data-k="' + k + '"' + (ok ? '' : ' disabled') + '><span class="ic em">' + (o ? dishImg(k) : '❔') + '</span><span class="tx">' + (o ? d.name + (h.book[k] ? '' : ' <em class="nw">新菜</em>') : '還沒學會的招牌菜') + '<small>' + (o ? needLine(d.need) + '<br>' + (ok ? '<b class="ok">材料齊了，點一下開始做</b>' : '<b class="no">還缺 ' + lack(d.need) + '</b>') : '認識' + CROP[k].from.split('的').pop() + '後就會學到') + '</small></span><span class="n">' + (h.box[k] ? '料理盒 ' + h.box[k] : '') + '</span></button>'; });
     }
-    html += '</div><p class="mu sm">' + (tab === 'bento' ? '手作便當可以帶小鳶出門旅行（打包時在「便當」裡選）。手作便當的旅行不會撿到點數或券；點數便當還是到港口換禮換。' : '配菜帶出門，第一次帶回來會有一張料理小記。') + '</p><p class="mu sm">冰箱：' + fridgeLine() + '</p><div class="row"><button class="btn ghost" id="hmBook">📖 菜譜冊</button><button class="btn ghost" id="hmX">關閉</button></div>';
+    html += '</div><p class="mu sm">' + (tab === 'bento' ? '手作便當可以帶小鳶出門旅行（打包時在「便當」裡選）。手作便當的旅行不會撿到點數或券；點數便當還是到港口換禮換。' : '配菜帶出門，第一次帶回來會有一張料理小記。') + '</p><p class="mu sm">冰箱：' + fridgeLine() + '</p><div class="row"><button class="btn ghost" id="hmOrd">📋 港邊訂單</button><button class="btn ghost" id="hmBook">📖 菜譜冊</button><button class="btn ghost" id="hmX">關閉</button></div>';
     modal(html);
     document.querySelectorAll('.hmT button').forEach(function (b) { b.onclick = function () { kitchen(b.dataset.t); }; });
     document.querySelectorAll('.hm .opt[data-k]').forEach(function (b) { b.onclick = function () { cook('d', b.dataset.k); }; });
     document.querySelectorAll('.hm .opt[data-b]').forEach(function (b) { b.onclick = function () { cook('b', b.dataset.b); }; });
-    $('hmBook').onclick = book; $('hmX').onclick = close;
+    $('hmBook').onclick = book; $('hmOrd').onclick = ordersSheet; $('hmX').onclick = close;
   }
   function cook(type, k) {
     var d = type === 'd' ? DISH[k] : BENTO[k], prog = 0, done = false;
@@ -279,6 +300,116 @@
     return tr.sideDone === 'new' ? '帶了' + d.name + '，收到一張「' + d.story[0] + '」（在廚房菜譜冊）' : '路上吃了' + d.name + '，小鳶說好好吃！';
   }
 
+  /* ===== D169（G105 A3／A4／A5＋C 方案一，GPT 14 張圖）：朋友帶著心情敲門、港邊兩張小訂單（雙爐）、我的港景小房間、朋友的照護委託
+     紅線不變：不產生點數或券、沒有新貨幣；朋友不會因為沒招待而生氣；每個委託都有一條不用材料的照護小故事。 */
+  var FR = {
+    1: { n: '探頭小鳶', mood: ['share', 'warm'], knock: '叩叩！我從牆後面探頭過來囉～', yum: '就是這個！下次換我帶你去旅客中心，看看大家今天想去哪裡。', ok: '謝謝招待，肚子飽飽的！', chat: '我們一起數港口的船，數到第 12 艘就忘記了，哈哈。' },
+    2: { n: '打盹小鳶', mood: ['warm', 'share'], knock: '呼啊……我睡醒就聞到香味，走過來了。', yum: '暖暖的……吃完好想再睡一下，好幸福。', ok: '嗯嗯，好吃。謝謝你叫醒我。', chat: '牠說了一個夢：夢裡港口的船都會唱歌。' },
+    3: { n: '剛到港口的小鳶', mood: ['colorful', 'share'], knock: '我剛下船！背包裡有一張明信片要給你。', yum: '哇，顏色跟明信片一樣漂亮！我要寫進旅行日記。', ok: '謝謝！旅行的累都不見了。', chat: '牠拿出明信片，說下一站想去看海邊的彩色小屋。' },
+    4: { n: '鯨鯊', mood: ['fresh', 'colorful'], knock: '我游過來敲門了～（尾巴拍拍）', yum: '清清爽爽，好像游在早上的海裡！', ok: '謝謝，我要游回去跟大家說。', chat: '鯨鯊說海裡有好多小魚，今天也一起游了一圈。' },
+    5: { n: '海龜', mood: ['fresh', 'warm'], knock: '慢慢走……終於走到你家了。', yum: '剛剛好的味道，慢慢吃最好吃。', ok: '謝謝你，我會慢慢消化的。', chat: '海龜說港口的垃圾變少了，謝謝大家幫忙。' },
+    6: { n: '小卷', mood: ['colorful', 'fresh'], knock: '叩叩叩叩叩叩！（六隻腳一起敲）', yum: '好吃到我都發光了！你看你看！', ok: '謝謝招待，我要回去發光了～', chat: '小卷說晚上發光的時候，會想起今天。' }
+  };
+  var MOOD = { warm: '暖暖的', fresh: '清爽的', colorful: '好多顏色', share: '一起吃' };
+  var DMOOD = { base: 'fresh', s1: 'warm', s2: 'warm', s3: 'colorful', s4: 'fresh', s5: 'warm', s6: 'colorful' };
+  function moodOf(k) { return BENTO[k] ? 'share' : DMOOD[k]; }
+  function met(f) { var fr = rd('kiteFriends1') || {}, st = rd('kiteStamp1') || {}; if (fr[f]) return true; for (var n in PAL_OF) if (PAL_OF[n] === f && st.spots && st.spots[n]) return true; return false; }
+  function friends() { var a = [1, 2, 3, 4, 5, 6].filter(met); if (a.indexOf(1) < 0) a.unshift(1); return a; }      /* 探頭小鳶是小屋常客，還沒去現場也會來；其他朋友在港灣蓋章認識後才會來 */
+  function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+  function vimg(f, cls) { return img('visitor_f' + f, cls || 'vi'); }
+  function mimg(m, cls) { return img('mood_' + m, cls || 'mi'); }
+  function rec(f) { var h = H(); h.fr = h.fr || {}; return h.fr[f] = h.fr[f] || { n: 0, h: 0 }; }
+  function food(k) { return DISH[k] ? { name: DISH[k].name, pic: dishImg(k) } : { name: BENTO[k].name, pic: img(BIMG[k]) }; }
+  /* --- A3 朋友帶著心情敲門 --- */
+  var VIS_MIN = 180;
+  function visTick() { var h = H(); h.vis = h.vis || { next: Date.now() + MIN }; if (!h.vis.cur && Date.now() >= h.vis.next) { var f = pick(friends()); h.vis.cur = { f: f, m: pick(FR[f].mood) }; sv(); } return h.vis.cur; }
+  function visDone(line, gain, f, extra) {
+    var h = H(), r0 = rec(f); r0.n++; r0.h += gain; h.vis.cur = null; h.vis.next = Date.now() + VIS_MIN * MIN; sv();
+    modal('<div class="vCard">' + vimg(f) + '</div><h3 style="text-align:center">' + FR[f].n + '</h3><p style="text-align:center">「' + line + '」</p>' + (extra || '') + '<p class="mu sm" style="text-align:center">' + (gain ? '💛 +' + gain + '（和' + FR[f].n + '的回憶 ' + r0.h + '）' : '一起度過了一段時間') + '・' + FR[f].n + '來玩過 ' + r0.n + ' 次</p><div class="row"><button class="btn" id="hmOk">好</button></div>');
+    $('hmOk').onclick = close; say(gain > 1 ? '朋友好開心！' : '下次還要再來喔～');
+  }
+  function visitSheet() {
+    var h = H(), v = visTick(); if (!v) { say('現在沒有人敲門，等等再看看。'); return; }
+    var F = FR[v.f], opts = DORDER.filter(function (k) { return h.box[k]; }).concat(BORDER.filter(function (k) { return h.hb[k]; }));
+    var html = '<div class="vCard">' + vimg(v.f) + '<div class="vMood">' + mimg(v.m) + '<b>' + MOOD[v.m] + '</b></div></div><h3>' + F.n + '來敲門了！</h3><p>「' + F.knock + '今天想吃<b>' + MOOD[v.m] + '</b>的東西。」</p>';
+    if (opts.length) html += '<p class="mu sm">從料理盒或手作便當挑一份招待（配合心情的有 💛💛）：</p><div class="list" style="margin:0">' + opts.map(function (k) { var fd = food(k), m = moodOf(k) === v.m; return '<button type="button" class="opt' + (m ? ' can' : '') + '" data-vk="' + k + '"><span class="ic em">' + fd.pic + '</span><span class="tx">' + fd.name + '<small>' + MOOD[moodOf(k)] + (m ? '・<b class="ok">剛好是今天的心情 💛💛</b>' : '・💛') + '</small></span><span class="n">' + (DISH[k] ? h.box[k] : h.hb[k]) + '</span></button>'; }).join('') + '</div>';
+    else html += '<p class="mu sm">料理盒和手作便當都空空的。到廚房做一道配菜，下次就能招待朋友（不招待也沒關係）。</p>';
+    html += '<div class="row"><button class="btn ghost" id="hmChat">陪牠聊聊天</button><button class="btn ghost" id="hmX">晚點再說</button></div>';
+    modal(html);
+    document.querySelectorAll('[data-vk]').forEach(function (b) { b.onclick = function () { var k = b.dataset.vk, m = moodOf(k) === v.m; if (DISH[k]) { if (!(h.box[k] > 0)) return; h.box[k]--; } else { if (!(h.hb[k] > 0)) return; h.hb[k]--; } visDone(m ? F.yum : F.ok, m ? 2 : 1, v.f, '<div class="dish" style="width:96px;height:96px">' + food(k).pic + '</div>'); }; });
+    $('hmChat').onclick = function () { visDone(F.chat, 0, v.f); }; $('hmX').onclick = close;
+  }
+  /* --- A4 港邊兩張小訂單（回禮＝房間裝飾，一次性，不發點券） --- */
+  var GIFT = { rug: { n: '圓編織地毯', r: [386.7581, 828.803, 446.8828], z: 1 }, lamp: { n: '小燈塔燈', r: [141.8055, 442.5037, 172.3691], z: 2 }, planter: { n: '窗台小盆栽', r: [281.5863, 470.6269, 84.467], z: 2 }, frame: { n: '港景木框畫', r: [553.2842, 452.5316, 261.3895], z: 2 } };
+  var GORDER = ['rug', 'lamp', 'planter', 'frame'], ORD_MIN = 90, osel = [];
+  function recipeOf(k) { return DISH[k] || BENTO[k]; }
+  function ordTick() {
+    var h = H(), o = h.ord = h.ord || { list: [], next: 0, done: 0 }, now = Date.now(), ch = false;
+    if (!o.init) { o.init = 1; ch = true; }
+    for (var guard = 0; guard < 3 && o.list.length < 2; guard++) {
+      if (o.next && now < o.next) break;
+      var fs = friends().filter(function (f) { return !o.list.some(function (x) { return x.f === f; }); }), ks = DORDER.filter(open).concat(BORDER).filter(function (k) { return !o.list.some(function (x) { return x.k === k; }); });
+      var f = pick(fs.length ? fs : friends()), k = pick(ks); o.list.push({ id: 'o' + now.toString(36) + guard, f: f, k: k, m: moodOf(k) }); o.next = 0; ch = true;
+    }
+    if (o.list.length < 2 && !o.next) { o.next = now + ORD_MIN * MIN; ch = true; }
+    if (ch) sv();
+    return o;
+  }
+  function needSum(ks) { var t = {}; ks.forEach(function (k) { var n = recipeOf(k).need; Object.keys(n).forEach(function (v) { t[v] = (t[v] || 0) + n[v]; }); }); return t; }
+  function ordersSheet() {
+    var h = H(); if (S.state !== 'home' && S.state !== 'back') { modal('<h3>📋 港邊訂單</h3><p>小鳶出門了，等牠回家再一起接訂單吧！</p><div class="row"><button class="btn" id="hmX">好</button></div>'); $('hmX').onclick = close; return; }
+    var o = ordTick(); osel = osel.filter(function (id) { return o.list.some(function (x) { return x.id === id; }); });
+    var gl = GORDER.filter(function (g) { return !(h.deco || {})[g]; });
+    var html = '<h3>📋 港邊兩張小訂單</h3><p class="mu sm">挑一張或兩張一起做。兩張一起做時，①用左爐、②用右爐，自己安排先後。完成可以拿到朋友的回禮（擺進客廳）。</p><div class="list" style="margin:0">';
+    o.list.forEach(function (x, n) { var d = recipeOf(x.k), on = osel.indexOf(x.id) >= 0, gi = gl[n] ; html += '<button type="button" class="opt ordC" data-o="' + x.id + '" aria-pressed="' + on + '"><span class="ic em">' + vimg(x.f, 'hi') + '</span><span class="tx">' + FR[x.f].n + '：「想要' + MOOD[x.m] + '的' + d.name + '」<small>' + needLine(d.need) + '<br>' + (gi ? '回禮：' + GIFT[gi].n : '回禮：朋友的感謝 💛') + (on ? '<br><b class="ok">已選・再點一次取消</b>' : '') + '</small></span><span class="ic em">' + food(x.k).pic + '</span></button>'; });
+    if (o.list.length < 2) html += '<p class="mu sm">下一張訂單大約 ' + mins(o.next - Date.now()) + '後來。</p>';
+    var ks = osel.map(function (id) { return o.list.find(function (x) { return x.id === id; }).k; }), need = needSum(ks), ok = ks.length && have(need);
+    html += '</div><p class="mu sm">' + (ks.length ? (ok ? '<b class="ok">材料夠了！</b>' : '<b class="no">還缺 ' + lack(need) + '</b>') : '先點訂單選起來') + '</p><div class="row"><button class="btn" id="hmGo"' + (ok ? '' : ' disabled') + '>' + (ks.length > 1 ? '兩張一起做（雙爐）' : '開始做') + '</button><button class="btn ghost" id="hmX">關閉</button></div>';
+    modal(html);
+    document.querySelectorAll('[data-o]').forEach(function (b) { b.onclick = function () { var id = b.dataset.o, i = osel.indexOf(id); if (i >= 0) osel.splice(i, 1); else osel.push(id); ordersSheet(); }; });
+    $('hmGo').onclick = function () { if (ok) cookOrders(osel.slice()); }; $('hmX').onclick = close;
+  }
+  function cookOrders(ids) {
+    var h = H(), os = ids.map(function (id) { return h.ord.list.find(function (x) { return x.id === id; }); }).filter(Boolean); if (!os.length) return;
+    var need = needSum(os.map(function (x) { return x.k; }));
+    var rs = os.map(function (x) { var d = recipeOf(x.k); return { name: d.name, need: d.need, kind: BENTO[x.k] ? 'bento' : 'dish', items: cookItems(d.need) }; });
+    close(); osel = [];
+    function fin(stars) {
+      if (!have(need)) { close(); return; }
+      take(need); var gifts = [];
+      os.forEach(function (x) { h.ord.list = h.ord.list.filter(function (y) { return y.id !== x.id; }); h.deco = h.deco || {}; h.decoOn = h.decoOn || {}; var g = GORDER.find(function (q) { return !h.deco[q]; }); if (g) { h.deco[g] = Date.now(); h.decoOn[g] = 1; gifts.push(g); } rec(x.f).h++; h.ord.done = (h.ord.done || 0) + 1; });
+      if (!h.ord.next) h.ord.next = Date.now() + ORD_MIN * MIN;
+      if (!sv()) { give(need); toast('手機存不下來，這次先不算'); return; }
+      modal('<div class="vRow">' + os.map(function (x) { return vimg(x.f); }).join('') + '</div><h3 style="text-align:center">訂單送到了！' + (stars ? ' ' + '⭐'.repeat(stars) : '') + '</h3><p style="text-align:center">' + os.map(function (x) { return FR[x.f].n + '：「' + FR[x.f].yum + '」'; }).join('<br>') + '</p>' + (gifts.length ? '<div class="vRow gifts">' + gifts.map(function (g) { return img('gift_' + g); }).join('') + '</div><p style="text-align:center"><b>收到回禮：' + gifts.map(function (g) { return GIFT[g].n; }).join('、') + '</b><br>已經擺進客廳了（客廳的「佈置」可以收起來）。</p>' : '<p style="text-align:center">朋友說謝謝 💛</p>') + '<div class="row">' + (gifts.length ? '<button class="btn" id="hmSee">去客廳看看</button>' : '') + '<button class="btn ghost" id="hmOk">好</button></div>');
+      if ($('hmSee')) $('hmSee').onclick = function () { $('modal').classList.remove('on'); setRoom('living'); render(); };
+      $('hmOk').onclick = close;
+    }
+    COOK.start(rs.length > 1 ? { dual: rs, name: '兩張訂單', kind: 'dish', need: need } : rs[0], fin);
+  }
+  /* --- A5 我的港景小房間（G105 擺放點 v2：整張透明 PNG 的繪製矩形，1080×1350 底圖） --- */
+  function decoHTML() { var h = H(), d = h.deco || {}, on = h.decoOn || {}; return GORDER.filter(function (g) { return d[g] && on[g]; }).map(function (g) { var r = GIFT[g].r; return '<img class="hmDeco ' + g + '" src="' + A + 'gift_' + g + '.webp" alt="' + GIFT[g].n + '" style="left:' + (r[0] / 10.8) + '%;top:' + (r[1] / 13.5) + '%;width:' + (r[2] / 10.8) + '%;z-index:' + GIFT[g].z + '">'; }).join(''); }
+  function decoSheet() {
+    var h = H(), d = h.deco || {}, on = h.decoOn = h.decoOn || {};
+    var html = '<h3>🪴 佈置小房間</h3><p class="mu sm">朋友的回禮可以擺在客廳固定的位置，點一下擺出來或收起來。</p><div class="list" style="margin:0">' + GORDER.map(function (g) { var has = d[g]; return '<button type="button" class="opt" data-dc="' + g + '" aria-pressed="' + !!(has && on[g]) + '"' + (has ? '' : ' disabled') + '><span class="ic em">' + (has ? img('gift_' + g) : '❔') + '</span><span class="tx">' + (has ? GIFT[g].n : '還沒拿到') + '<small>' + (has ? (on[g] ? '<b class="ok">擺在客廳・點一下收起來</b>' : '收在櫃子裡・點一下擺出來') : '完成廚房的港邊訂單，朋友會送回禮') + '</small></span></button>'; }).join('') + '</div><div class="row"><button class="btn ghost" id="hmX">關閉</button></div>';
+    modal(html);
+    document.querySelectorAll('[data-dc]').forEach(function (b) { b.onclick = function () { var g = b.dataset.dc; on[g] = on[g] ? 0 : 1; sv(); decoRender(); decoSheet(); }; });
+    $('hmX').onclick = close;
+  }
+  function decoRender() { var room = $('room'); if (!room) return; var l = $('hmDecoL'); if (!l) { l = document.createElement('div'); l.id = 'hmDecoL'; room.insertBefore(l, room.firstChild); } var html = S.room === 'living' ? decoHTML() : ''; if (l._h !== html) { l.innerHTML = html; l._h = html; } }
+  /* --- C 方案一：港口朋友的照護委託（取代單純「收成次數到了就領養」；次數仍決定介紹信什麼時候寄來） --- */
+  var CARE = [null,
+    { f: 1, story: '港邊有一隻迷路的小雞，一直跟在我後面。可以幫牠找回家的路嗎？', ask: '小雞要往哪裡走？', ch: ['沿著石板路', '跟著海風', '聽咕咕聲'], end: '小雞找到路了，還回頭跟你咕咕兩聲。' },
+    { f: 2, story: '我午睡的時候，有隻小豬靠過來一起睡……牠想找個涼快的地方。', ask: '幫小豬選一個午睡的地方', ch: ['大樹下', '穀倉門邊', '草地中間'], end: '小豬翻個身，打了一個好大的呼嚕。' },
+    { f: 5, story: '有一頭牛牛每天站在岸邊看海，好像很想交朋友。', ask: '要怎麼跟牛牛打招呼？', ch: ['輕輕揮手', '唱一首歌', '坐在旁邊陪牠'], end: '牛牛慢慢走過來，用鼻子碰碰你的手。' },
+    { f: 3, story: '我的背包裡跳出一隻狗狗！牠說牠很會顧家。', ask: '幫狗狗準備什麼？', ch: ['軟軟的墊子', '一顆球', '一個小名牌'], end: '狗狗搖著尾巴，在牧場門口坐好。' },
+    { f: 6, story: '晚上我發光的時候，有隻小雞看得好入迷，想去有燈光的地方住。', ask: '晚上要怎麼讓小雞安心？', ch: ['掛一盞小燈', '數星星給牠聽', '把窩鋪厚一點'], end: '小雞窩在稻草裡，眼睛亮晶晶的。' },
+    { f: 4, story: '我游過來的時候，看到一隻小豬在岸邊玩水，牠說好想要好朋友。', ask: '要跟小豬玩什麼？', ch: ['踩水花', '追泡泡', '滾泥巴'], end: '小豬開心地轉了一圈，濺了大家一身水。' },
+    { f: 1, story: '我又從牆後面看到一頭小牛，牠在找可以吃牧草的地方。', ask: '帶小牛去哪裡？', ch: ['最綠的那片草', '有樹蔭的地方', '牛牛旁邊'], end: '小牛一口一口吃得好認真。' },
+    { f: 5, story: '海風把一隻綿羊的毛吹得蓬蓬的，牠想找個地方好好整理一下。', ask: '怎麼幫綿羊？', ch: ['用梳子梳梳', '找一塊擋風的地方', '陪牠曬太陽'], end: '綿羊變得軟綿綿，咩了一聲說謝謝。' }
+  ];
+  function spP(k) { return '<span class="spP" style="background-image:url(' + A + 'sprite_' + k + '.webp)"></span>'; }
+  function careCan() { var h = H(), ad = h.adopted || [0]; return ADOPT.filter(function (o, i) { return i && ad.indexOf(i) < 0 && h.xp >= o.need; }).length; }
+
   /* ===== 畫在房間底圖上 ===== */
   /* D165：農地常要按好幾次 → 用 pointerdown/up 自己判斷（手指稍微滑動也算點），不靠 click；小鳶不會再擋到 */
   function bindFarm(f) {
@@ -287,7 +418,7 @@
       var best = null, bd = 1e9;
       f.querySelectorAll('.hmPlot').forEach(function (so) { var r = so.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, dx = (e.clientX - cx) / (r.width / 2 + 12), dy = (e.clientY - cy) / (r.height / 2 + 12), d = Math.max(Math.abs(dx), Math.abs(dy)); if (d < bd) { bd = d; best = so; } });      /* 九格不重疊：在格子框內（含 12px 容錯）才算 */
       if (best && bd <= 1) return best;
-      var t = e.target && e.target.closest && e.target.closest('.hmAni,.hmStove'); return t && f.contains(t) ? t : null;
+      var t = e.target && e.target.closest && e.target.closest('.hmAni,.hmStove,.hmDoor'); return t && f.contains(t) ? t : null;
     }
     f.addEventListener('pointerdown', function (e) { var t = hit(e); if (!t) return; start = { t: t, x: e.clientX, y: e.clientY, at: Date.now() }; f._down = 1; t.classList.add('press'); }, { passive: true });
     function end(e, cancel) {
@@ -299,12 +430,13 @@
     f.addEventListener('click', function (e) { var t = hit(e); if (!t) return; e.stopPropagation(); if (Date.now() - (f._last || 0) < 600) return; act(t); });      /* 鍵盤或沒有 pointer 事件時的備用 */
   }
   document.addEventListener('click', function (e) { if (Date.now() < (window.__hmGhost || 0)) { var f0 = document.getElementById('hmFarm'); if (!f0 || !f0.contains(e.target)) { e.stopPropagation(); e.preventDefault(); } } }, true);
-  function act(t) { if (t.classList.contains('hmPlot')) plotTap(+t.dataset.i); else if (t.classList.contains('hmAni')) aniTap(t.dataset.a); else kitchen(); }
+  function act(t) { if (t.classList.contains('hmPlot')) plotTap(+t.dataset.i); else if (t.classList.contains('hmAni')) aniTap(t.dataset.a); else if (t.classList.contains('hmDoor')) visitSheet(); else kitchen(); }
   function render() {
     var room = $('room'); if (!room || typeof S === 'undefined') return;
     var f = $('hmFarm'); if (!f) { f = document.createElement('div'); f.id = 'hmFarm'; room.appendChild(f); }
     var rid = S.room, h = H();
-    var html = rid === 'garden' ? gardenHTML() : rid === 'ranch' ? '' : rid === 'kitchen' ? kitchenHTML() : '';
+    var vis = visTick(), html = rid === 'garden' ? gardenHTML() : rid === 'ranch' ? '' : rid === 'kitchen' ? kitchenHTML() : rid === 'living' && vis ? '<button type="button" class="hmDoor" aria-label="' + FR[vis.f].n + '來敲門">' + vimg(vis.f) + '<span class="lb">叩叩！</span></button>' : '';
+    decoRender();
     if (f._html !== html && !f._down) { var zb = f.querySelector('.hmZoo'); f.innerHTML = html; f._html = html; if (zb && rid === 'ranch') f.appendChild(zb); }
     room.dataset.farm = rid === 'garden' || rid === 'ranch' ? '1' : '';
     if (!f._bound) { f._bound = 1; bindFarm(f); }
@@ -313,12 +445,14 @@
     if (!a) return;
     var ripe = h.plots.filter(function (p, i) { return landOpen(i) && stage(p) === 3; }).length, penReady = zooReady();
     var btn = '';
-    if (rid === 'kitchen') btn = '<button type="button" id="hmB">📖 菜譜冊</button>';
-    else if (rid === 'living') btn = '<button type="button" id="hmL">' + (ripe ? '🥬 菜長好了<em>' + ripe + '</em>' : penReady ? '🐔 牧場可以收<em>' + penReady + '</em>' : '🌱 去花園種菜') + '</button>';
-    else if (rid === 'garden' || rid === 'ranch') btn = (rid === 'ranch' ? '<button type="button" id="hmAd">🐾 領養</button>' : '') + '<button type="button" id="hmF">' + img('icon_fridge', 'bi') + '冰箱</button>';
+    var ol = ordTick().list.length, cc = careCan(), hasDeco = GORDER.some(function (g) { return (h.deco || {})[g]; });
+    if (rid === 'kitchen') btn = '<button type="button" id="hmO">📋 訂單' + (ol ? '<em>' + ol + '</em>' : '') + '</button><button type="button" id="hmB">📖 菜譜冊</button>';
+    else if (rid === 'living') btn = (vis ? '<button type="button" id="hmV">🚪 有人敲門<em>!</em></button>' : '<button type="button" id="hmL">' + (ripe ? '🥬 菜長好了<em>' + ripe + '</em>' : penReady ? '🐔 牧場可以收<em>' + penReady + '</em>' : '🌱 去花園種菜') + '</button>') + (hasDeco ? '<button type="button" id="hmDc">🪴 佈置</button>' : '');
+    else if (rid === 'garden' || rid === 'ranch') btn = (rid === 'ranch' ? '<button type="button" id="hmAd">💌 委託' + (cc ? '<em>' + cc + '</em>' : '') + '</button>' : '') + '<button type="button" id="hmF">' + img('icon_fridge', 'bi') + '冰箱</button>';
     a.innerHTML = btn;
     if ($('hmB')) $('hmB').onclick = book;
     if ($('hmAd')) $('hmAd').onclick = adoptSheet;
+    if ($('hmO')) $('hmO').onclick = ordersSheet; if ($('hmV')) $('hmV').onclick = visitSheet; if ($('hmDc')) $('hmDc').onclick = decoSheet;
     if ($('hmF')) $('hmF').onclick = function () { modal('<h3>冰箱</h3><p>' + fridgeLine() + '</p><p class="mu sm">收成和收集一共 ' + h.xp + ' 次。次數越多，可以開墾的菜圃越多，也能領養更多動物。</p><div class="row"><button class="btn" id="hmK2">去廚房</button><button class="btn ghost" id="hmX">關閉</button></div>'); $('hmK2').onclick = function () { setRoom('kitchen'); kitchen(); }; $('hmX').onclick = close; };
     if ($('hmL')) $('hmL').onclick = function () { setRoom(!ripe && penReady ? 'ranch' : 'garden'); };
   }
@@ -367,7 +501,14 @@
     '.opt .em,.hm .em{font-size:34px;line-height:44px;text-align:center}.hm .nw{font-style:normal;font-size:11px;background:#E8674A;color:#fff;border-radius:6px;padding:1px 5px;margin-left:4px}' +
     '.pot{display:block;margin:6px auto;padding:0;background:none;border:0;cursor:pointer;min-height:96px}.pot.stir{animation:hmS .3s}@keyframes hmS{50%{transform:rotate(-14deg) scale(1.05)}}' +
     '.bar{height:12px;border-radius:6px;background:#EADFCB;overflow:hidden}.bar i{display:block;height:100%;width:0;background:#E39A1F;transition:width .2s}' +
-    '.dish{width:160px;height:160px;margin:0 auto;animation:hmD .6s}@keyframes hmD{0%{transform:scale(.3)}70%{transform:scale(1.15)}}';
+    '.dish{width:160px;height:160px;margin:0 auto;animation:hmD .6s}@keyframes hmD{0%{transform:scale(.3)}70%{transform:scale(1.15)}}' +
+    '#hmDecoL{position:absolute;inset:0;pointer-events:none;z-index:1}#hmDecoL .hmDeco{position:absolute;aspect-ratio:1;object-fit:contain;animation:hmD .5s}' +
+    '.hmDoor{position:absolute;left:83%;top:50%;width:24%;aspect-ratio:1;transform:translate(-50%,-100%);border:3px solid #F4BB42;border-radius:50%;background:#FFFDF8;padding:4%;box-shadow:0 4px 12px rgba(0,0,0,.3);cursor:pointer;-webkit-tap-highlight-color:transparent;animation:hmK 1.4s ease-in-out infinite}.hmDoor .vi{width:100%;height:100%;object-fit:contain;display:block}.hmDoor .lb{position:absolute;left:50%;top:-4%;transform:translateX(-50%);white-space:nowrap;font-size:12px;font-weight:800;background:#FFFDF8;color:#4A3426;border-radius:10px;padding:3px 8px;box-shadow:0 2px 6px rgba(0,0,0,.25)}.hmDoor.press{filter:brightness(1.12)}' +
+    '@keyframes hmK{0%,100%{rotate:0deg}10%{rotate:-4deg}20%{rotate:4deg}30%{rotate:0deg}}' +
+    '.vCard{position:relative;width:62%;max-width:220px;margin:0 auto 4px}.vCard .vi{width:100%;display:block}.vMood{position:absolute;right:-30%;top:4%;width:46%;background:#FFFDF8;border-radius:14px;padding:4px 4px 6px;box-shadow:0 3px 10px rgba(0,0,0,.2);text-align:center;transform:rotate(4deg)}.vMood .mi{width:100%;display:block}.vMood b{font-size:12px}.vMood .spP{width:100%;height:auto;aspect-ratio:1}' +
+    '.vRow{display:flex;justify-content:center;gap:8px}.vRow .vi{width:40%;max-width:150px}.vRow.gifts .hi{width:84px;height:84px;animation:hmD .6s}' +
+    '.spP{display:inline-block;width:44px;height:44px;background-repeat:no-repeat;background-size:1000% 100%;background-position:0 0;vertical-align:middle}.opt .em .spP{width:44px;height:44px}' +
+    '.ordC[aria-pressed="true"]{border-color:#E39A1F;background:#FFF6E0}';
   document.head.appendChild(css);
   window.HOME = { render: render, kitchen: kitchen, book: book, packHTML: packHTML, bindPack: bindPack, onDepart: onDepart, letterExtra: letterExtra, bentoKeys: function () { return BORDER; }, hbCount: hbCount, bentoIcon: bentoIcon, _H: H };
   setInterval(function () { if ($('home') && $('home').classList.contains('on') && !$('modal').classList.contains('on')) render(); }, FAST ? 1000 : 15000);
