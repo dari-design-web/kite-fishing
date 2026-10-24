@@ -453,12 +453,12 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.45',
+  version: '0.46',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
   bg: { harbor: 24, market: 45, pier: 40, rail: 50, blend: 90, closeAt: 60 },   // 整張手繪底圖：第 1 關、第 2 關每秒捲多少、兩張圖交疊淡接的高度、第 2 關幾秒後換收攤街段
-  kite: { hearts: 5, r: 12, safe: 1.6, followLift: 64, followSpeed: 16, minY: 130, maxY: 600 },   // r 是小鳶的碰撞半徑
+  kite: { hearts: 5, r: 12, safe: 1.6, followLift: 64, followSpeed: 16, minY: 130, maxY: 560 },      /* D173：600→560，小鳶不會飛到右下大招鈕底下看不見 */   // r 是小鳶的碰撞半徑
   feather: { every: 0.18, speed: 540, r: 6, powerTime: 9, galeTime: 6 },                          // 風之羽：發射間隔、速度、碰撞半徑、強化與疾風的持續秒數
   combo: { window: 1.6, bonusFrom: 5 },                                                           // 連清：幾秒內沒再清掉就中斷；連到第幾件起，鯨鯊多集 1 分
   ult: { need: 90, bossDamage: 50 },                                                              // 鯨鯊：集滿需要幾分、對大垃圾團的清除量
@@ -1195,7 +1195,7 @@ function update(dt) {
   if (shake > 0) shake = Math.max(0, shake - real);
   // 畫面資訊
   const total = CONFIG.boss.at + 14, sb = $('stageBar');      // v0.20：魔王出場後，上方長條改成魔王血量（D51：第 4 關血量顯示和上方長條疊在一起）
-  if (boss && !won) { sb.classList.add('hp'); sb.style.transform = 'scaleX(' + Math.max(0, Math.min(1, boss.hp / (boss.maxHp || 1))) + ')'; } else { sb.classList.remove('hp'); sb.style.transform = 'scaleX(' + Math.min(1, t / total) + ')'; }
+  if (boss && !won) { sb.classList.add('hp'); sb.style.transform = 'scaleX(' + Math.max(0, Math.min(1, barRatio(boss))) + ')'; } else { sb.classList.remove('hp'); sb.style.transform = 'scaleX(' + Math.min(1, t / total) + ')'; }
   $('stageText').textContent = boss && boss.phased ? bossGoalText(boss) + '　' + Math.max(0, Math.ceil(BTIME() - (t - boss.born))) + ' 秒' : boss ? (T.boss.short || T.boss.name) + ' ' + Math.max(0, Math.ceil(boss.hp)) + ' / ' + boss.maxHp + '　剩 ' + Math.max(0, Math.ceil(BTIME() - (t - boss.born))) + ' 秒' : '分數 ' + scoreNow() + (stats.combo >= 3 ? '　連清 ' + stats.combo : '');
   const ub = $('ultBtn'), full = gauge >= CONFIG.ult.need; ub.disabled = !full || !!ult; ub.style.setProperty('--fill', Math.round(gauge / CONFIG.ult.need * 100) + '%'); ub.classList.toggle('ready', full && !ult); const tag = $('ultTag'), word = full && !ult ? (NM() ? '祈福！' : '出動！') : ULTN(); if (tag.textContent !== word) tag.textContent = word;
   if (full && !toldUlt && !ult) { toldUlt = true; banner(ULTN() + '準備好了！按右下角'); jingle([659, 880], 120); }
@@ -1548,6 +1548,11 @@ function rageRatio(f) {
   if (!RM() && f.phase === 3) return 0.1;
   let s = 0, m = 0; for (const k in f.pools) { s += Math.max(0, f.pools[k]); m += Math.max(0, (f.poolMax || {})[k] || 0); }
   return m ? s / m : 1;
+}
+function barRatio(f) {      /* D173：分階段魔王的血條照「這一段還剩多少」算，一出場是滿的（原本第 1 關魔王出場就只剩 58%） */
+  if (!f.phased) return f.hp / (f.maxHp || 1);
+  if (!RM() && f.phase === 3) { const ms = foes.filter((o) => o.type === 'minib'); const m = ms.reduce((a, o) => a + (o.maxHp || 0), 0); return m ? ms.reduce((a, o) => a + Math.max(0, o.hp), 0) / m : 0; }
+  return rageRatio(f);
 }
 function rageK(f) { return CONFIG.rage.speed[(f && f.rage) || 0]; }
 function rageMore(f) { return CONFIG.rage.more[(f && f.rage) || 0]; }
@@ -2512,9 +2517,9 @@ function drawCine() {      // 登場與換階段的字卡
   ctx.restore();
 }
 function bossGoalText(f) {
-  if (!f.phased) return null; const n = '第 ' + f.phase + ' 階段　';
-  if (RM()) return n + (f.phase === 1 ? '打碎手臂的礦石 ' + ((f.pools.armL <= 0) + (f.pools.armR <= 0)) + '/2' : f.phase === 2 ? '跨進鐵軌打頭' : '打胸口的煤核');
-  return n + (f.phase === 1 ? '剝掉外殼 ' + (3 - f.layers) + '/3' : f.phase === 2 ? '別讓它吸垃圾，打核心' : '打掉小團 ' + (3 - foes.filter((o) => o.type === 'minib').length) + '/3');
+  if (!f.phased) return null; const n = ['①', '②', '③'][f.phase - 1] + ' ';      /* D173：上方欄位太窄，「第 1 階段」縮成①，秒數才看得到 */
+  if (RM()) return n + (f.phase === 1 ? '打手臂礦石 ' + ((f.pools.armL <= 0) + (f.pools.armR <= 0)) + '/2' : f.phase === 2 ? '跨進鐵軌打頭' : '打胸口的煤核');
+  return n + (f.phase === 1 ? '剝掉外殼 ' + (3 - f.layers) + '/3' : f.phase === 2 ? '打核心' : '打掉小團 ' + (3 - foes.filter((o) => o.type === 'minib').length) + '/3');
 }
 
 const SEA = { deep: '#2877A0', base: '#2F88AF', lite: '#3D99BE', wave: '#A5D9E8', foam: '#E6F6F9' };
@@ -3269,7 +3274,7 @@ function finish() { BGM.stop();
   /* v0.41（C-185，D71）：把這局分數送進官方 LINE 的「遊戲分數存摺」（每關每天前幾次才算、活動時段乘倍數；規則在後台改）。G 槽複本沒有共用資料層就跳過 */
   window.__lastRank = null; if (window.KiteCore) { try { const rk = KiteCore.rankAround ? KiteCore.rankAround('fly', String(id), () => KiteCore.reportPlay({ game: 'fly', level: String(id), score: sc, sec: t })) : { res: KiteCore.reportPlay({ game: 'fly', level: String(id), score: sc, sec: t }) }, rp = rk.res; window.__lastRank = rk;
     add(rp.tier ? '官方 LINE 點數' : '官方 LINE 分數存摺', (rp.tier ? (rp.counted ? '今天累計 ' + rp.today.toLocaleString() + ' 分＝' + rp.pts + ' 點' + (rp.tap ? (rp.lit ? '・這局新亮 ' + rp.lit + ' 格' : '') + (rp.claim ? '，回樂園領 ' + rp.claim + ' 點！' : '') : rp.gain ? '（這局 +' + rp.gain + ' 點）' : '') + (rp.next ? '・再 ' + rp.next.need.toLocaleString() + ' 分多 1 點' : rp.pts >= rp.cap ? '・今天已拿滿' : '') + (rp.mult > 1 ? '・' + rp.event + ' ×' + rp.mult : '') : '今天這關已經算過分了（明天再來）') : rp.counted ? '+' + rp.add + ' 分' + (rp.mult > 1 ? '（' + rp.event + ' ×' + rp.mult + '）' : '') + '・存摺 ' + rp.bank + ' 分' : '今天這關已經算過分了（明天再來）')); } catch (e) {} }
-  if (window.KiteCore && KiteCore.rankText && window.__lastRank) { const tx = KiteCore.rankText(window.__lastRank); if (tx) add('本月排名', tx + ' 🏆'); }      // D133：結算直接看到名次
+  if (won && window.KiteCore && KiteCore.rankText && window.__lastRank) {      /* D173：過關才秀名次，輸了不恭喜 */ const tx = KiteCore.rankText(window.__lastRank); if (tx) add('本月排名', tx + ' 🏆'); }      // D133：結算直接看到名次
   const un = $('unlockNote'); un.hidden = true;
   if (won && progress.unlocked <= id && STAGES[id] && !STAGES[id].locked) { progress.unlocked = id + 1; un.textContent = '第 ' + (id + 1) + ' 關「' + STAGES[id].name + '」已開放！'; un.hidden = false; }
   saveProgress();
