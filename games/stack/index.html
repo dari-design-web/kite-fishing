@@ -190,7 +190,7 @@ function buildMergeBG() {
   x.fillStyle = '#E8C58A'; for (const px of [BOX.l - 6, BOX.r + 6]) for (let py = BOX.line - 20; py < BOX.floor; py += 70) { x.beginPath(); x.arc(px, py, 2.5, 0, 6.283); x.fill(); }
   return c;
 }
-const MF = { spd0: 60, spdUp: 36, spdMax: 380, steer: 900, fast: 1000, grav: 1800, gravUp: 0.06, gravMax: 2.3, hold0: 2.6, holdStep: 0.22, holdMin: 0.8, needBase: 3, needStep: 1 };      // D121：hold＝小鳶抓著海鮮最多幾秒就自己放手
+const MF = { spd0: 60, spdUp: 36, spdMax: 380, steer: 900, fast: 1000, grav: 1800, gravUp: 0.06, gravMax: 2.3, hold0: 2.6, holdStep: 0.22, holdMin: 1.0, needBase: 3, needStep: 1 };      // D121：hold＝小鳶抓著海鮮最多幾秒就自己放手
 function makeMerge() {
   const g = { balls: [], fall: null, q: [], score: 0, done: false, over: 0, say: '', sayT: 0, top: 0, t: 0, lv: 1, merges: 0, mergesAll: 0, need: MF.needBase + MF.needStep, chain: 0, chainT: 0, bestChain: 0, tx: W / 2, wait: 0.5, banner: '', bannerT: 0, tap: null, found: null, newFound: [] };
   const gen = () => Math.floor(grnd(0, g.lv >= 4 ? 4 : 3) + (g.lv >= 7 && gR() < 0.25 ? 1 : 0));
@@ -200,7 +200,7 @@ function makeMerge() {
      點一下（或時間到）腳放開，海鮮自己往下掉，掉下去就不能再改位置。關卡越後面，小鳶抓得越短就自己放手。 */
   const KF = 86;      // 小鳶腳尖的高度
   g.kx = W / 2;
-  g.holdT = () => Math.max(g.lv > 12 ? 0.6 : MF.holdMin, MF.hold0 - (g.lv - 1) * MF.holdStep);
+  g.holdT = () => Math.max(MF.holdMin,      /* D173：後面關卡也至少抓 1 秒，小朋友不會覺得「我沒放啊」 */ MF.hold0 - (g.lv - 1) * MF.holdStep);
   g.spawn = () => {
     const lv = g.q[0], r = SEAF[lv][1], x = clamp(g.kx, BOX.l + r, BOX.r - r), y = KF + r - 2;
     /* QA 10/21：剛放下還在掉的海鮮擋住出生點，不算塞滿（原本 10 局有 10 局是這樣誤判結束）；等它掉下去再出。真的堆過頭交給紅線判定，等太久（3 秒）才算塞滿 */
@@ -209,7 +209,7 @@ function makeMerge() {
     g.fall = { lv, x, y, r, held: true, hold: g.holdT(), hold0: g.holdT(), vy: 0, fast: false };
     if (g.pendingDrop != null) { g.dropAt = g.pendingDrop; g.pendingDrop = null; }      // 海鮮還在掉時先點的位置，下一隻出來就照那裡放
   };
-  g.release = () => { const f = g.fall; if (!f || !f.held) return; f.held = false; f.vy = 80; f.fast = true; beep(520, 0.06, 'triangle', 0.05, -120); };
+  g.release = () => { const f = g.fall; if (!f || !f.held) return; f.held = false; g.chain = 0; g.chainT = 0;      /* D173：連鎖只算同一隻放下去引發的連續合成（原本 1.3 秒比放一隻還久，亂點也能 ×5） */ f.vy = 80; f.fast = true; beep(520, 0.06, 'triangle', 0.05, -120); };
   g.lock = (f) => { g.balls.push({ lv: f.lv, x: f.x, y: f.y, vx: 0, vy: f.fast ? 260 : g.spd(), r: f.r, age: 0, rot: 0, sq: 0.18 }); g.fall = null; g.wait = 0.18; beep(220 + f.lv * 30, 0.07, 'sine', 0.05, -60); };
   g.discover = (lv) => { if (mdex[lv]) return; mdex[lv] = Date.now(); store.set('kiteMiniDex1', mdex); g.newFound.push(lv); g.found = { lv, t: 2.4 }; jingle([784, 988, 1175], 80); };
   g.discover(0); g.discover(1); g.discover(2); g.found = null; g.newFound = [];      // 一開始會掉的三種算已經認識
@@ -292,7 +292,7 @@ function makeMerge() {
     if (f && f.held) { const k = clamp(f.hold / f.hold0, 0, 1); ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(f.x, f.y, f.r + 6, 0, 6.283); ctx.stroke(); ctx.strokeStyle = k < 0.3 ? C.warn : C.gold; ctx.beginPath(); ctx.arc(f.x, f.y, f.r + 6, -1.571, -1.571 + 6.283 * k); ctx.stroke(); }
     drawKiteCarry(kx, ky, 0.85, tt * 9, 'kite_hold', f && f.held);
     // 下一個
-    const nbA = kx > W - 110 ? 0.3 : 1; ctx.globalAlpha = nbA; pill(W - 74, 84, 62, 72, 'rgba(16,41,61,.62)'); rrect(W - 74, 84, 62, 72, 14, null, 'rgba(255,255,255,.35)', 1.5);
+    const nbA = kx > W - 130 ? 0.12 : 1; ctx.globalAlpha = nbA; pill(W - 74, 84, 62, 72, 'rgba(16,41,61,.62)'); rrect(W - 74, 84, 62, 72, 14, null, 'rgba(255,255,255,.35)', 1.5);
     text('下一個', W - 43, 96, 11, '#CFE3EC', 'center', 700, false);
     drawSea(g.q[0], W - 43, 120, Math.min(15, SEAF[g.q[0]][1]), 0); ctx.globalAlpha = 0.55 * nbA; drawSea(g.q[1], W - 43, 146, Math.min(9, SEAF[g.q[1]][1]), 0); ctx.globalAlpha = 1;      // QA：小鳶飛到右邊時「下一個」變淡，不擋住手上的海鮮
     // 合成路線（底部）：這局合到的亮起來，從沒合過的是剪影
@@ -375,7 +375,7 @@ function makeStack() {
       ev = gpick([['wind', 12], ['rush', 16], ['fog', 22], ['rev', 28]].filter((e) => n >= e[1]).map((e) => e[0]));
       if (ev === 'rush') { g.rush = ST.rushN - 1; g.say = '趕船！接下來 ' + ST.rushN + ' 個變快，完美多 ' + ST.rushBonus + ' 分'; g.sayT = 1.8; }
     }
-    g.mv = { x: fromL ? -top.w : W, w: top.w, c: n % BOXC.length, gold: n % ST.goldEvery === 0, wind: ev === 'wind', fog: ev === 'fog', rev: ev === 'rev', rush: ev === 'rush', flipAt: grnd(W * 0.3, W * 0.7), ph: rnd(0, 6.28) };
+    g.mv = { x: fromL ? -top.w * 0.5 : W - top.w * 0.5,      /* D173：貨櫃一出場就有一半在畫面裡 */ w: top.w, c: n % BOXC.length, gold: n % ST.goldEvery === 0, wind: ev === 'wind', fog: ev === 'fog', rev: ev === 'rev', rush: ev === 'rush', flipAt: grnd(W * 0.3, W * 0.7), ph: rnd(0, 6.28) };
     g.dir = fromL ? 1 : -1; g.speed = Math.min(ST.spdMax, ST.spd0 + n * ST.spdUp) * (g.focus > 0 ? ST.focusK : 1) * (g.mv.rush ? ST.rushK : 1);
     if (g.focus > 0) g.focus--;
     if (g.mv.wind) { g.say = '起風了！速度忽快忽慢'; g.sayT = 1.2; }
@@ -421,7 +421,7 @@ function makeStack() {
       const k = g.mv.wind ? 1 + 0.55 * Math.sin(g.t * 3.2 + g.mv.ph) : 1;
       g.mv.x += g.dir * g.speed * k * dt;
       if (g.mv.rev && !g.mv.flipped) { const c = g.mv.x + g.mv.w / 2; if ((g.dir > 0 && c > g.mv.flipAt) || (g.dir < 0 && c < g.mv.flipAt)) { g.mv.flipped = true; g.dir = -g.dir; } }
-      if (g.mv.x > W - g.mv.w * 0.2 && g.dir > 0) g.dir = -1; if (g.mv.x < -g.mv.w * 0.8 && g.dir < 0) g.dir = 1;
+      if (g.mv.x > W - g.mv.w * 0.6 && g.dir > 0) g.dir = -1; if (g.mv.x < -g.mv.w * 0.4 && g.dir < 0) g.dir = 1;      /* D173：往回彈時至少 6 成在畫面裡（原本 8 成躲在外面） */
     }
     if (g.ship) { g.ship.t += dt; g.ship.x += 60 * dt; if (g.ship.x > W + 160) g.ship = null; }
     for (const c of g.cut) { c.vy += 900 * dt; c.y += c.vy * dt; c.rot = (c.rot || 0) + (c.vr || 0) * dt; }
@@ -523,7 +523,7 @@ function drawEnd(e) {
   text(String(e.s), W / 2, 178, 46, C.ink, 'center', 900, false); text('分', W / 2 + ctx.measureText(String(e.s)).width / 2 + 30, 186, 15, C.ink, 'center', 700, false);
   e.rows.forEach((r, i) => { const y = 232 + i * 34; rrect(50, y - 14, W - 100, 28, 10, '#F3EAD8'); text(r[0], 64, y, 13, '#3A5568', 'left', 700, false); text(r[1], W - 64, y, 14, C.ink, 'right', 900, false);
     if (i === 0 && e.icon != null) { ctx.font = FONT(14, 900); drawSea(e.icon, W - 64 - ctx.measureText(r[1]).width - 16, y, 11, 0); } });
-  if (e.found && e.found.length) text('新發現：' + e.found.map((l) => SEAF[l][0]).join('、'), W / 2, 232 + e.rows.length * 34 + 4, 13, C.warn, 'center', 900, false);
+  if (e.found && e.found.length) text('新發現 ' + e.found.length + ' 種海鮮！', W / 2, 232 + e.rows.length * 34 + 4, 13, C.warn, 'center', 900, false);
   if (e.rank) text((DS ? '📅 ' : '🏆 本月') + e.rank, W / 2, e.found && e.found.length ? 390 : 232 + e.rows.length * 34 + 4, 13, '#2F7F86', 'center', 900, false);      // D133
   text('最佳 ' + (best[mode] || e.s) + ' 分', W / 2, 408, 13, '#6A7F8E', 'center', 700, false);
   endBtnR = btn('再玩一次', 426);
