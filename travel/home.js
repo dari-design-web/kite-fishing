@@ -302,13 +302,13 @@
 
   /* ===== D169（G105 A3／A4／A5＋C 方案一，GPT 14 張圖）：朋友帶著心情敲門、港邊兩張小訂單（雙爐）、我的港景小房間、朋友的照護委託
      紅線不變：不產生點數或券、沒有新貨幣；朋友不會因為沒招待而生氣；每個委託都有一條不用材料的照護小故事。 */
-  var FR = {
-    1: { n: '探頭小鳶', mood: ['share', 'warm'], knock: '叩叩！我從牆後面探頭過來囉～', yum: '就是這個！下次換我帶你去旅客中心，看看大家今天想去哪裡。', ok: '謝謝招待，肚子飽飽的！', chat: '我們一起數港口的船，數到第 12 艘就忘記了，哈哈。' },
-    2: { n: '打盹小鳶', mood: ['warm', 'share'], knock: '呼啊……我睡醒就聞到香味，走過來了。', yum: '暖暖的……吃完好想再睡一下，好幸福。', ok: '嗯嗯，好吃。謝謝你叫醒我。', chat: '牠說了一個夢：夢裡港口的船都會唱歌。' },
-    3: { n: '剛到港口的小鳶', mood: ['colorful', 'share'], knock: '我剛下船！背包裡有一張明信片要給你。', yum: '哇，顏色跟明信片一樣漂亮！我要寫進旅行日記。', ok: '謝謝！旅行的累都不見了。', chat: '牠拿出明信片，說下一站想去看海邊的彩色小屋。' },
-    4: { n: '鯨鯊', mood: ['fresh', 'colorful'], knock: '我游過來敲門了～（尾巴拍拍）', yum: '清清爽爽，好像游在早上的海裡！', ok: '謝謝，我要游回去跟大家說。', chat: '鯨鯊說海裡有好多小魚，今天也一起游了一圈。' },
-    5: { n: '海龜', mood: ['fresh', 'warm'], knock: '慢慢走……終於走到你家了。', yum: '剛剛好的味道，慢慢吃最好吃。', ok: '謝謝你，我會慢慢消化的。', chat: '海龜說港口的垃圾變少了，謝謝大家幫忙。' },
-    6: { n: '小卷', mood: ['colorful', 'fresh'], knock: '叩叩叩叩叩叩！（六隻腳一起敲）', yum: '好吃到我都發光了！你看你看！', ok: '謝謝招待，我要回去發光了～', chat: '小卷說晚上發光的時候，會想起今天。' }
+  var FR = {      /* D171：台詞換 GPT D169 逐句修訂 v1 */
+    1: { n: "探頭小鳶", mood: ["share", "warm"], knock: "叩叩！我從牆後面探頭過來囉～", yum: "就是這個！有你陪我吃，心裡暖暖的！", ok: "謝謝招待，肚子飽飽的！", chat: "我們一起數港口的船，數到第 12 艘就忘記了，哈哈。" },
+    2: { n: "打盹小鳶", mood: ["warm", "share"], knock: "呼啊……我睡醒就聞到香味，走過來了。", yum: "好好吃……有你陪我，好幸福。", ok: "嗯嗯，好吃。謝謝你陪我吃。", chat: "我夢見港口的船都會唱歌耶！" },
+    3: { n: "剛到港口的小鳶", mood: ["colorful", "share"], knock: "我剛下船！背包裡有張明信片，給你看看！", yum: "哇，好好吃！今天又多了一件開心的事！", ok: "謝謝！吃飽飽，我又有精神了！", chat: "你看這張明信片！下次想一起去看海邊的彩色小屋。" },
+    4: { n: "鯨鯊", mood: ["fresh", "colorful"], knock: "我游過來敲門了～（尾巴拍拍）", yum: "哇，真好吃！尾巴都忍不住擺呀擺！", ok: "謝謝，我要游回去跟大家說。", chat: "今天和小魚一起游泳，好開心！" },
+    5: { n: "海龜", mood: ["fresh", "warm"], knock: "慢慢走……終於走到你家了。", yum: "剛剛好的味道，慢慢吃最好吃。", ok: "謝謝你，我會慢慢消化的。", chat: "我喜歡乾乾淨淨的海。小魚游呀游，看多久都不膩。" },
+    6: { n: "小卷", mood: ["colorful", "fresh"], knock: "叩叩！我來找你玩囉～（輕輕揮揮觸腕）", yum: "好好吃！我的心情像小燈一樣亮亮的！", ok: "謝謝招待！我要去看看港邊的燈囉～", chat: "晚上看港邊的燈亮起來，我就會想起今天！" }
   };
   var MOOD = { warm: '暖暖的', fresh: '清爽的', colorful: '好多顏色', share: '一起吃' };
   var DMOOD = { base: 'fresh', s1: 'warm', s2: 'warm', s3: 'colorful', s4: 'fresh', s5: 'warm', s6: 'colorful' };
@@ -361,7 +361,7 @@
     var o = ordTick(); osel = osel.filter(function (id) { return o.list.some(function (x) { return x.id === id; }); });
     var gl = GORDER.filter(function (g) { return !(h.deco || {})[g]; });
     var html = '<h3>📋 港邊兩張小訂單</h3><p class="mu sm">挑一張或兩張一起做。兩張一起做時，①用左爐、②用右爐，自己安排先後。完成可以拿到朋友的回禮（擺進客廳）。</p><div class="list" style="margin:0">';
-    o.list.forEach(function (x, n) { var d = recipeOf(x.k), on = osel.indexOf(x.id) >= 0, gi = gl[n] ; html += '<button type="button" class="opt ordC" data-o="' + x.id + '" aria-pressed="' + on + '"><span class="ic em">' + vimg(x.f, 'hi') + '</span><span class="tx">' + FR[x.f].n + '：「想要' + MOOD[x.m] + '的' + d.name + '」<small>' + needLine(d.need) + '<br>' + (gi ? '回禮：' + GIFT[gi].n : '回禮：朋友的感謝 💛') + (on ? '<br><b class="ok">已選・再點一次取消</b>' : '') + '</small></span><span class="ic em">' + food(x.k).pic + '</span></button>'; });
+    o.list.forEach(function (x, n) { var d = recipeOf(x.k), on = osel.indexOf(x.id) >= 0, gi = gl[n] ; html += '<button type="button" class="opt ordC" data-o="' + x.id + '" aria-pressed="' + on + '"><span class="ic em">' + vimg(x.f, 'hi') + '</span><span class="tx">' + FR[x.f].n + '：「今天想吃' + d.name + '！」<small>心情：' + MOOD[x.m] + '<br>' + needLine(d.need) + '<br>' + (gi ? '回禮：' + GIFT[gi].n : '回禮：朋友的感謝 💛') + (on ? '<br><b class="ok">已選・再點一次取消</b>' : '') + '</small></span><span class="ic em">' + food(x.k).pic + '</span></button>'; });
     if (o.list.length < 2) html += '<p class="mu sm">下一張訂單大約 ' + mins(o.next - Date.now()) + '後來。</p>';
     var ks = osel.map(function (id) { return o.list.find(function (x) { return x.id === id; }).k; }), need = needSum(ks), ok = ks.length && have(need);
     html += '</div><p class="mu sm">' + (ks.length ? (ok ? '<b class="ok">材料夠了！</b>' : '<b class="no">還缺 ' + lack(need) + '</b>') : '先點訂單選起來') + '</p><div class="row"><button class="btn" id="hmGo"' + (ok ? '' : ' disabled') + '>' + (ks.length > 1 ? '兩張一起做（雙爐）' : '開始做') + '</button><button class="btn ghost" id="hmX">關閉</button></div>';
@@ -397,15 +397,15 @@
   }
   function decoRender() { var room = $('room'); if (!room) return; var l = $('hmDecoL'); if (!l) { l = document.createElement('div'); l.id = 'hmDecoL'; room.insertBefore(l, room.firstChild); } var html = S.room === 'living' ? decoHTML() : ''; if (l._h !== html) { l.innerHTML = html; l._h = html; } }
   /* --- C 方案一：港口朋友的照護委託（取代單純「收成次數到了就領養」；次數仍決定介紹信什麼時候寄來） --- */
-  var CARE = [null,
-    { f: 1, story: '港邊有一隻迷路的小雞，一直跟在我後面。可以幫牠找回家的路嗎？', ask: '小雞要往哪裡走？', ch: ['沿著石板路', '跟著海風', '聽咕咕聲'], end: '小雞找到路了，還回頭跟你咕咕兩聲。' },
-    { f: 2, story: '我午睡的時候，有隻小豬靠過來一起睡……牠想找個涼快的地方。', ask: '幫小豬選一個午睡的地方', ch: ['大樹下', '穀倉門邊', '草地中間'], end: '小豬翻個身，打了一個好大的呼嚕。' },
-    { f: 5, story: '有一頭牛牛每天站在岸邊看海，好像很想交朋友。', ask: '要怎麼跟牛牛打招呼？', ch: ['輕輕揮手', '唱一首歌', '坐在旁邊陪牠'], end: '牛牛慢慢走過來，用鼻子碰碰你的手。' },
-    { f: 3, story: '我的背包裡跳出一隻狗狗！牠說牠很會顧家。', ask: '幫狗狗準備什麼？', ch: ['軟軟的墊子', '一顆球', '一個小名牌'], end: '狗狗搖著尾巴，在牧場門口坐好。' },
-    { f: 6, story: '晚上我發光的時候，有隻小雞看得好入迷，想去有燈光的地方住。', ask: '晚上要怎麼讓小雞安心？', ch: ['掛一盞小燈', '數星星給牠聽', '把窩鋪厚一點'], end: '小雞窩在稻草裡，眼睛亮晶晶的。' },
-    { f: 4, story: '我游過來的時候，看到一隻小豬在岸邊玩水，牠說好想要好朋友。', ask: '要跟小豬玩什麼？', ch: ['踩水花', '追泡泡', '滾泥巴'], end: '小豬開心地轉了一圈，濺了大家一身水。' },
-    { f: 1, story: '我又從牆後面看到一頭小牛，牠在找可以吃牧草的地方。', ask: '帶小牛去哪裡？', ch: ['最綠的那片草', '有樹蔭的地方', '牛牛旁邊'], end: '小牛一口一口吃得好認真。' },
-    { f: 5, story: '海風把一隻綿羊的毛吹得蓬蓬的，牠想找個地方好好整理一下。', ask: '怎麼幫綿羊？', ch: ['用梳子梳梳', '找一塊擋風的地方', '陪牠曬太陽'], end: '綿羊變得軟綿綿，咩了一聲說謝謝。' }
+  var CARE = [null,      /* D171：介紹信換 GPT D169 逐句修訂 v1（結尾停在「想先看看牧場」，邀不邀請由玩家決定） */
+    { f: 1, story: "欸，我在港邊遇到一隻小雞！牠一直探頭，想知道牧場是什麼樣子。", ask: "想怎麼陪小雞認識新地方？", ch: ["慢慢走一小段", "停下來聽咕咕聲", "陪牠看看四周"], end: "小雞咕咕兩聲，放鬆了些，想先看看牧場。" },
+    { f: 2, story: "呼啊……有隻小豬來找我一起打盹。牠想找個可以安心休息的地方。", ask: "想怎麼陪小豬休息一下？", ch: ["輕輕哼一小段歌", "安靜坐著陪牠", "陪牠伸個懶腰"], end: "小豬伸個懶腰，哼哼兩聲，想先看看牧場。" },
+    { f: 5, story: "有一頭牛牛每天站在岸邊看海，好像很想交朋友。", ask: "要怎麼跟牛牛打招呼？", ch: ["輕輕揮手", "唱一首歌", "坐在旁邊陪牠"], end: "牛牛慢慢走近，輕輕哞了一聲，想先看看牧場。" },
+    { f: 3, story: "剛下船時，一隻狗狗跑來聞聞我的背包。牠一路東看看、西看看，對新地方很好奇。", ask: "想怎麼跟狗狗熟悉一下？", ch: ["陪牠走一小段", "輕聲跟牠說話", "陪牠看看四周"], end: "狗狗搖搖尾巴，想先看看牧場。" },
+    { f: 6, story: "晚上，我和一隻小雞一起看港口的燈光。牠想找個舒服的地方休息。", ask: "晚上要怎麼讓小雞安心？", ch: ["掛一盞小燈", "數星星給牠聽", "把窩鋪厚一點"], end: "小雞安心地咕咕叫，想先看看牧場。" },
+    { f: 4, story: "我游過來的時候，看到一隻小豬在岸邊玩水，牠說好想要好朋友。", ask: "要跟小豬玩什麼？", ch: ["踩水花", "追泡泡", "滾泥巴"], end: "小豬開心地哼哼叫，想先看看牧場。" },
+    { f: 1, story: "我又從牆後面看到一頭小牛，牠在找可以吃牧草的地方。", ask: "帶小牛去哪裡？", ch: ["最綠的那片草", "有樹蔭的地方", "牛牛旁邊"], end: "小牛跟著你慢慢走，想先看看牧場。" },
+    { f: 5, story: "海風把一隻綿羊的毛吹得蓬蓬的，牠想找個地方好好整理一下。", ask: "怎麼幫綿羊？", ch: ["用梳子梳梳", "找一塊擋風的地方", "陪牠曬太陽"], end: "綿羊輕輕咩了一聲，想先看看牧場。" }
   ];
   function spP(k) { return '<span class="spP" style="background-image:url(' + A + 'sprite_' + k + '.webp)"></span>'; }
   function careCan() { var h = H(), ad = h.adopted || [0]; return ADOPT.filter(function (o, i) { return i && ad.indexOf(i) < 0 && h.xp >= o.need; }).length; }
