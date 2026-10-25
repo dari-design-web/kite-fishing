@@ -257,6 +257,7 @@ body:not(.qa) #ask, body:not(.qa) #copyBtn{display:none!important}
 </div>
 
 <script src="../shared/kite_core.js"></script>
+<script src="../shared/kite_board.js"></script>
 <script src="../shared/kite_lb.js"></script>
 <script>
 /* ===== 暫用配樂（C-70）：用程式即時產生，不用音檔、沒有版權問題。正式配樂來源待 Dari 決定 ===== */
@@ -462,7 +463,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.47',
+  version: '0.48',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -759,7 +760,7 @@ function clearFoe(f, how) {      // how：'' 羽毛或墨汁、'blast' 被炸到
   const calmClear = how === 'ult' || how === 'sweep';      // 這兩種不分裂、不爆炸、不掉道具
   const i = foes.indexOf(f); if (i < 0) return; foes.splice(i, 1);
   const d = T[f.type];
-  if (!f.noCount) { stats.cleared++; stats.byType[f.type] = (stats.byType[f.type] || 0) + 1; } stats.score += d.score;
+  if (!f.noCount) { window.KiteBoard && KiteBoard.emit('fly_clear', { g: 'fly', run: window.__runId }); stats.cleared++; stats.byType[f.type] = (stats.byType[f.type] || 0) + 1; } stats.score += d.score;
   if (how !== 'sweep') { stats.combo++; stats.comboT = CONFIG.combo.window; stats.bestCombo = Math.max(stats.bestCombo, stats.combo); }
   if (!calmClear) gauge = Math.min(CONFIG.ult.need, gauge + d.score + (stats.combo >= CONFIG.combo.bonusFrom ? 1 : 0));      // 鯨鯊清掉的不再幫鯨鯊集氣
   if (stats.combo >= 5 && stats.combo % 5 === 0) say('連清 ' + stats.combo + '！', f.x, f.y - 26, '#BFF0D0');
@@ -3138,7 +3139,7 @@ function frame(now) {
 
 /* ====== 流程與操作 ====== */
 function show(id) { for (const p of ['mapPanel', 'startPanel', 'pausePanel', 'resultPanel']) $(p).hidden = p !== id; }
-function start() { reset(); if (soundOn) BGM.play('fly_' + stageNo); const ub = $('ultBtn'), im = ub.querySelector('img'); if (im) im.src = 'assets/' + (NM() ? 'jiao_pair.png' : RM() ? (img.ult_icon_rail ? 'ult_icon_rail.png' : 'rail_ult.png') : PM() ? (img.fx_keel ? 'ult_icon_pier.png' : 'pier_ult.png') : 'whaleshark_top.png'); if (im && RM() && !img.ult_icon_rail) im.src = crabIconURL(); ub.setAttribute('aria-label', NM() ? '擲筊祈福' : RM() ? '呼叫鐵道車' : PM() ? '彩虹鏡海' : '呼叫鯨鯊'); mode = 'play'; show(null); $('hud').hidden = false; $('hint').hidden = false; $('ultBtn').hidden = false; banner('第 ' + stageNo + ' 關　' + ST().name); beep(523, 0.12, 'triangle', 0.06, 260); }
+function start() { reset(); window.__runId = 'y' + Date.now(); window.KiteBoard && KiteBoard.emit('run_start', { g: 'fly', run: window.__runId });      /* D175 告示板 */ if (soundOn) BGM.play('fly_' + stageNo); const ub = $('ultBtn'), im = ub.querySelector('img'); if (im) im.src = 'assets/' + (NM() ? 'jiao_pair.png' : RM() ? (img.ult_icon_rail ? 'ult_icon_rail.png' : 'rail_ult.png') : PM() ? (img.fx_keel ? 'ult_icon_pier.png' : 'pier_ult.png') : 'whaleshark_top.png'); if (im && RM() && !img.ult_icon_rail) im.src = crabIconURL(); ub.setAttribute('aria-label', NM() ? '擲筊祈福' : RM() ? '呼叫鐵道車' : PM() ? '彩虹鏡海' : '呼叫鯨鯊'); mode = 'play'; show(null); $('hud').hidden = false; $('hint').hidden = false; $('ultBtn').hidden = false; banner('第 ' + stageNo + ' 關　' + ST().name); beep(523, 0.12, 'triangle', 0.06, 260); }
 function pause() { if (mode !== 'play') return; mode = 'pause'; BGM.stop(); kite.drag = false; pauseInfo(); show('pausePanel'); }
 /* v0.35（C-140）：暫停時看得到這一關的三顆星條件，和「照現在這樣過關的話」拿不拿得到；還有體力 */
 function pauseInfo() {
@@ -3269,7 +3270,7 @@ function mapRail(mt) {      // 河豚自行車載豆腐君、象鼻君、山野�
   ['tofu', 'ele', 'forest'].forEach((m, i) => { const hop = stop ? Math.abs(Math.sin(mt * 7 + i * 1.2)) * 8 : Math.abs(Math.sin(mt * 10 + i * 1.9)) * 3; g.save(); g.translate(-30 - i * 20, 20 - hop); if (back) g.scale(-1, 1); drawMascot(m, 0.5); g.restore(); });      // 吉祥物跟在車後面走      // 騎車時一顛一顛，停下來就跳一跳
   g.restore();
 }
-function finish() { BGM.stop();
+function finish() { BGM.stop(); window.KiteBoard && KiteBoard.emit('run_end', { g: 'fly', run: window.__runId });
   mode = 'result'; $('hud').hidden = true; $('banner').hidden = true; $('hint').hidden = true; $('ultBtn').hidden = true;
   const ok = kite.hearts > 0, pct = cleanPct(); jingle(ok ? [523, 659, 784] : [392, 330, 262], 120);
   $('resTitle').textContent = stats.boatSunk ? '小船沉了' : !ok ? '小鳶累了' : stats.bossCleared ? '過關' : '時間到'; $('rank').textContent = won ? rankOf(pct) : '還沒過關';      /* QA：沒過關不顯示最高稱號（原本輸了也寫「基隆鳶王」） */ $('cleanPct').textContent = scoreFinal();

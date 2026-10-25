@@ -39,6 +39,7 @@ canvas{height:100%;max-width:100%;aspect-ratio:360/600;border-radius:18px;touch-
 <div class="dres" id="dres" hidden></div>
 
 <script src="../../shared/kite_core.js"></script>
+<script src="../../shared/kite_board.js"></script>
 <script src="../../shared/kite_lb.js"></script>
 <script src="../../shared/kite_daily.js"></script>
 <script>
@@ -258,7 +259,7 @@ function makeMerge() {
   };
   g.merge = (a, b) => {
     const lv = a.lv + 1, x = (a.x + b.x) / 2, y = (a.y + b.y) / 2;
-    g.chain = g.chainT > 0 ? g.chain + 1 : 1; g.chainT = 1.3; g.bestChain = Math.max(g.bestChain, g.chain); const mul = g.chain >= 2 ? Math.min(5, g.chain) : 1;      // QA：連鎖倍數最多 ×5，亂丟快丟不會比用心放分數高
+    g.chain = g.chainT > 0 ? g.chain + 1 : 1; g.chainT = 1.3; window.KiteBoard && KiteBoard.emit('merge', { g: 'merge', run: window.__runId }); window.KiteBoard && KiteBoard.emit('merge_chain', { g: 'merge', run: window.__runId, v: g.chain }); g.bestChain = Math.max(g.bestChain, g.chain); const mul = g.chain >= 2 ? Math.min(5, g.chain) : 1;      // QA：連鎖倍數最多 ×5，亂丟快丟不會比用心放分數高
     burst(x, y, 8 + lv * 2, SEAF[Math.min(9, lv)][2]); burst(x, y, 4 + lv, '#FFFFFF', 'star'); ring(x, y, SEAF[Math.min(9, lv)][1], '#FFFFFF');
     g.mergesAll++; beep(440 + lv * 70, 0.12, 'triangle', 0.07, 120); buzz(lv >= 6 ? 30 : 12);
     if (lv > 9) { g.score += 200 * mul; pop('兩隻鯨鯊游回大海 +' + 200 * mul, W / 2, 230, C.gold, true); g.say = '哇——鯨鯊回家了！'; g.sayT = 2; jingle([523, 659, 784, 1047, 1319], 90); }
@@ -408,7 +409,7 @@ function makeStack() {
       g.blocks.push({ x: nx, w: nw, c: m.c, gold: m.gold, sq: 0.2 }); g.score += ST.layerPts; g.shake = 0.18; beep(300, 0.09, 'sine', 0.06, -80); buzz(8);
       const cx = m.x < l ? m.x : r, cw = m.x < l ? l - m.x : m.x + m.w - r; g.cut.push({ x: cx, w: cw, y: Y0 - g.blocks.length * BH + BH, vy: 0, c: m.c, gold: m.gold, vr: m.x < l ? -2 : 2, rot: 0 });
     }
-    const n = g.blocks.length - 1;
+    const n = g.blocks.length - 1; window.KiteBoard && KiteBoard.emit('stack_place', { g: 'stack', run: window.__runId });
     if (n % ST.shipEvery === 0 && n > 0) { g.ships++; g.score += ST.shipBonus; g.ship = { x: 60, t: 0 }; pop('第 ' + g.ships + ' 艘船裝滿出港！+' + ST.shipBonus, W / 2, 150, C.gold, true); g.say = '嗚——船出港囉！'; g.sayT = 1.8; jingle([392, 523, 659], 120); }
     else if ([15, 25, 35, 45].includes(n)) { g.say = { 15: '看得到基隆嶼了！', 25: '雲在腳下耶～', 35: '好高好高！', 45: '快碰到星星了！' }[n]; g.sayT = 2; }
     g.spawn();
@@ -532,7 +533,7 @@ function drawEnd(e) {
 
 /* ---------- 主迴圈 ---------- */
 let mode = 'merge', G = null, state = 'ready', down = false, last = performance.now(), clock = 0, endInfo = null;
-function newGame() { if (DS) gR = KiteDaily.rng(DS.td.seed); floats = []; parts = []; rings = []; G = { merge: makeMerge, stack: makeStack }[mode](); }
+function newGame() { window.__runId = mode[0] + Date.now(); window.KiteBoard && KiteBoard.emit('run_start', { g: mode, run: window.__runId });      /* D175 告示板 */ if (DS) gR = KiteDaily.rng(DS.td.seed); floats = []; parts = []; rings = []; G = { merge: makeMerge, stack: makeStack }[mode](); }
 function setMode(m) {
   mode = m; document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.m === m))); document.getElementById('how').innerHTML = HOW[m]; state = 'ready'; newGame();
   const A = m === 'merge' ? ['bg_merge', 'kite_hold', 'kite_hold_fly', 'fx_merge'].concat(SEAF.map((_, i) => 'sea_' + i)) : ['bg_stack_base', 'bg_stack_sky', 'ship', 'kite_carry', 'kite_carry_fly', 'box_gold', 'far_mtn', 'cloud_0', 'cloud_1', 'cloud_2', 'gull', 'wind_0', 'wind_1', 'wind_2', 'fog_bank'].concat(BOXC.map((_, i) => 'box_' + i));
