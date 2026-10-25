@@ -21,21 +21,21 @@
   /* 題目（GPT 題庫 v5 的 18 題；每題一個主題＋一個簡單的替代題）。ev：要聽的事件；n：要幾次；run：同一局內才算；uniq：要不同魚種；chain：同一次放下連著合幾次 */
   var C1 = { ev: 'run_end', n: 1 };
   var Q = [
-    ['PB-FISH-01', 'fish', '幫小鳶找一條魚吧！', '抓到任意 1 條魚', { ev: 'fish_catch', n: 1 }, '和小鳶釣一趟魚吧！', '新開一局，玩到結算（沒抓到也算）', C1],
+    ['PB-FISH-01', 'fish', '幫小鳶找一條魚吧！', '抓到任意 1 條魚', { ev: 'fish_catch', n: 1 }, '和小鳶釣一趟魚吧！', '新開一局，玩到結束（沒抓到也算）', C1],
     ['PB-FISH-02', 'fish', '幫港口找到三條魚！', '累計抓到 3 條魚（可以分好幾局）', { ev: 'fish_catch', n: 3 }, '幫小鳶找一條魚吧！', '抓到任意 1 條魚', { ev: 'fish_catch', n: 1 }],
-    ['PB-FISH-03', 'fish', '找找兩種不一樣的魚！', '抓到 2 種不同的魚', { ev: 'fish_catch', n: 2, uniq: 1 }, '幫小鳶找一條魚吧！', '抓到任意 1 條魚', { ev: 'fish_catch', n: 1 }],
-    ['PB-MERGE-01', 'merge', '讓兩個小夥伴合在一起！', '合成 1 次', { ev: 'merge', n: 1 }, '來港口玩一小趟！', '新開一局，玩到結算（沒合成也算）', C1],
+    ['PB-FISH-03', 'fish', '抓到兩種不一樣的魚！', '抓到 2 種不同的魚', { ev: 'fish_catch', n: 2, uniq: 1 }, '幫小鳶找一條魚吧！', '抓到任意 1 條魚', { ev: 'fish_catch', n: 1 }],
+    ['PB-MERGE-01', 'merge', '讓兩個小夥伴合在一起！', '合成 1 次', { ev: 'merge', n: 1 }, '來港口玩一小趟！', '新開一局，玩到結束（沒合成也算）', C1],
     ['PB-MERGE-02', 'merge', '讓小夥伴合成三次！', '累計合成 3 次', { ev: 'merge', n: 3 }, '讓兩個小夥伴合在一起！', '合成 1 次', { ev: 'merge', n: 1 }],
     ['PB-MERGE-03', 'merge', '放一個，看看能不能連著合兩次！', '同一次放下，連著合成 2 次', { ev: 'merge', n: 1, chain: 2 }, '讓兩個小夥伴合在一起！', '合成 1 次', { ev: 'merge', n: 1 }],
-    ['PB-STACK-01', 'stack', '幫港口放好一個貨櫃！', '放好 1 個貨櫃', { ev: 'stack_place', n: 1 }, '陪小鳶疊一趟吧！', '新開一局，玩到結算（倒了也算）', C1],
+    ['PB-STACK-01', 'stack', '幫港口放好一個貨櫃！', '放好 1 個貨櫃', { ev: 'stack_place', n: 1 }, '陪小鳶疊一趟吧！', '新開一局，玩到結束（倒了也算）', C1],
     ['PB-STACK-02', 'stack', '慢慢放好三個貨櫃！', '累計放好 3 個貨櫃', { ev: 'stack_place', n: 3 }, '幫港口放好一個貨櫃！', '放好 1 個貨櫃', { ev: 'stack_place', n: 1 }],
     ['PB-STACK-03', 'stack', '把這座小塔再疊高三層！', '同一局疊好 3 層', { ev: 'stack_place', n: 3, run: 1 }, '幫港口放好一個貨櫃！', '放好 1 個貨櫃', { ev: 'stack_place', n: 1 }],
-    ['PB-FLY-01', 'fly', '幫港口清掉一個小麻煩！', '清掉 1 個垃圾或小怪', { ev: 'fly_clear', n: 1 }, '陪小鳶飛一趟吧！', '新開一局，飛到結算（沒過關也算）', C1],
+    ['PB-FLY-01', 'fly', '幫港口清掉一個小麻煩！', '清掉 1 個垃圾或小怪', { ev: 'fly_clear', n: 1 }, '陪小鳶飛一趟吧！', '新開一局，飛到結束（沒過關也算）', C1],
     ['PB-FLY-02', 'fly', '一起清掉三個小麻煩！', '累計清掉 3 個垃圾或小怪', { ev: 'fly_clear', n: 3 }, '先清掉一個就好！', '清掉 1 個垃圾或小怪', { ev: 'fly_clear', n: 1 }],
-    ['PB-FLY-03', 'fly', '陪小鳶飛一趟吧！', '新開一局，飛到結算（沒過關也算）', C1, '先清掉一個就好！', '清掉 1 個垃圾或小怪', { ev: 'fly_clear', n: 1 }],
-    ['PB-SWIM-01', 'swim', '陪鯨鯊游一趟吧！', '新開一局，游到結算（撞到也算）', C1, '陪鯨鯊換一層水道！', '滑一下，換 1 次水道', { ev: 'swim_lane', n: 1 }],
+    ['PB-FLY-03', 'fly', '陪小鳶飛一趟吧！', '新開一局，飛到結束（沒過關也算）', C1, '先清掉一個就好！', '清掉 1 個垃圾或小怪', { ev: 'fly_clear', n: 1 }],
+    ['PB-SWIM-01', 'swim', '陪鯨鯊游一趟吧！', '新開一局，游到結束（撞到也算）', C1, '陪鯨鯊換一層水道！', '滑一下，換 1 次水道', { ev: 'swim_lane', n: 1 }],
     ['PB-SWIM-02', 'swim', '陪鯨鯊換兩次水道！', '換 2 次水道', { ev: 'swim_lane', n: 2 }, '陪鯨鯊換一層水道！', '滑一下，換 1 次水道', { ev: 'swim_lane', n: 1 }],
-    ['PB-SWIM-03', 'swim', '陪鯨鯊游二十秒！', '累計游 20 秒（可以分幾趟）', { ev: 'swim_time', n: 20 }, '陪鯨鯊游一趟吧！', '新開一局，游到結算（撞到也算）', C1],
+    ['PB-SWIM-03', 'swim', '陪鯨鯊游二十秒！', '累計游 20 秒（可以分幾趟）', { ev: 'swim_time', n: 20 }, '陪鯨鯊游一趟吧！', '新開一局，游到結束（撞到也算）', C1],
     ['PB-HOME-01', 'home', '種下一顆卡上畫的基本種子！', '在小鳶在家的菜圃種下 1 顆「{crop}」', { ev: 'home_plant', n: 1, crop: 1 }, '把長好的菜收回家吧！', '收成 1 次任何長好的菜', { ev: 'home_harvest', n: 1 }],
     ['PB-HOME-02', 'home', '把長好的菜收回家吧！', '收成 1 次任何長好的菜', { ev: 'home_harvest', n: 1 }, '種下一顆卡上畫的基本種子！', '在小鳶在家的菜圃種下 1 顆「{crop}」', { ev: 'home_plant', n: 1, crop: 1 }],
     ['PB-HOME-03', 'home', '一起做卡上這道飯！', '在小鳶在家的廚房做 1 份「青菜飯」（照原本的材料）', { ev: 'home_cook', n: 1, dish: 'base' }, '把長好的菜收回家吧！', '收成 1 次任何長好的菜', { ev: 'home_harvest', n: 1 }]
@@ -124,19 +124,19 @@
     if (q) {
       var c = sel.c, g = q.game;
       h += '<div class="kb-on"><img src="' + icon(g) + '" alt=""><div class="t"><small>' + esc(GAME[g].name) + (sel.vi ? '・簡單版' : '') + '</small><b>' + esc(q.v[sel.vi].line) + '</b><span>' + esc(condText(q, sel.vi, sel.crop)) + '</span>' +
-        (c.n > 1 ? '<span class="kb-bar"><i style="width:' + Math.round(100 * sel.n / c.n) + '%"></i></span><span class="kb-n">' + sel.n + '／' + c.n + (c.ev === 'swim_time' ? ' 秒' : '') + '</span>' : '') +
+        (c.n > 1 ? '<span class="kb-bar"><i style="width:' + Math.round(100 * sel.n / c.n) + '%"></i></span><span class="kb-n">' + sel.n + '／' + c.n + (c.ev === 'swim_time' ? ' 秒' : c.uniq ? ' 種' : '') + '</span>' : '') +
         (sel.full ? '<span class="kb-n">做好了！明天打開就收進來</span>' : '') + '</div></div>' +
-        '<div class="kb-btns"><a class="go" href="' + link(g) + '">去玩</a>' + (sel.vi ? '' : '<button type="button" data-kb="easy">換簡單的</button>') + '<button type="button" data-kb="drop">換別張</button></div>';
+        '<div class="kb-btns"><a class="go" href="' + link(g) + '">去玩</a>' + (sel.vi ? '' : '<button type="button" data-kb="easy">換簡單題</button>') + '<button type="button" data-kb="drop">重選一張</button></div>' + (sel.vi ? '' : '<p class="kb-tip kb-sm">換成簡單題，進度會從 0 開始。</p>');
     } else if (doneOn(s, d)) {
       h += '<div class="kb-done">' + sticker(s.recs.filter(function (r) { return r.day === d; })[0], 56) + '<div><b>今天的貼紙收好了！</b><span>明天告示板會貼新的委託。遊戲還是可以照常玩喔。</span></div></div>';
     } else {
       var cs = candidates(d);
-      h += cs.length ? '<p class="kb-tip">選一張喜歡的，玩的時候小鳶會幫你記著（不用三張都做）</p><div class="kb-list">' + cs.map(function (q) {
+      h += cs.length ? '<p class="kb-tip">挑一張喜歡的來玩，小鳶幫你記！<br>今天完成一張，就有一枚貼紙。</p><div class="kb-list">' + cs.map(function (q) {
         var crop = target(q, 0, d);
         return '<button type="button" class="kb-q" data-kb="pick" data-id="' + q.id + '"><img src="' + icon(q.game) + '" alt=""><span><small>' + esc(GAME[q.game].name) + '</small><b>' + esc(q.v[0].line) + '</b><em>' + esc(condText(q, 0, crop)) + '</em></span><i>選這張</i></button>';
       }).join('') + '</div>' : '<p class="kb-tip">今天暫時沒有可以做的委託。</p>';
     }
-    h += '<div class="kb-foot">' + (fr >= POSTER_N ? '🎉 貼紙夠了！點「我的港口記憶」做一張港口海報' : '集到 ' + POSTER_N + ' 枚不同天的貼紙，就能做一張港口海報（現在 ' + fr + '／' + POSTER_N + '）') + '・不換點數</div></div>';
+    h += '<div class="kb-foot">' + (fr >= POSTER_N ? '🎉 貼紙夠了！點「我的港口記憶」做一張港口海報' : '集到 ' + POSTER_N + ' 枚貼紙，就能做海報！<br>一天最多 1 枚，不用連續來。') + '<br>目前 ' + fr + '／' + POSTER_N + ' 枚・貼紙不換點數</div></div>';
     return h;
   }
   function wire(root, rerender) {
@@ -158,9 +158,9 @@
   }
   function book(after) {
     var s = state(), fr = free(s), ov = document.createElement('div'); ov.className = 'kb-ov';
-    var h = '<div class="kb-sheet"><h3>我的港口記憶</h3><p class="kb-tip">每完成一張告示板委託，就留下一枚貼紙。貼紙不會過期，也不會被用掉。</p>';
+    var h = '<div class="kb-sheet"><h3>我的港口記憶</h3><p class="kb-tip">每天完成一張卡，就有一枚貼紙。一天最多 1 枚，貼紙不會過期，也不會被用掉。</p>';
     h += s.recs.length ? '<div class="kb-grid">' + s.recs.slice().reverse().map(function (r) { return '<div class="kb-cell">' + sticker(r, 64) + '<small>' + esc(r.day.slice(5).replace('-', '/')) + '</small><span>' + esc(r.line) + '</span></div>'; }).join('') + '</div>' : '<p class="kb-tip"><b>還沒有貼紙。</b>回樂園選一張告示板委託試試看！</p>';
-    h += fr.length >= POSTER_N ? '<button type="button" class="kb-make" data-kb2="make">用 ' + POSTER_N + ' 枚貼紙做一張港口海報</button>' : '<p class="kb-tip">再 ' + (POSTER_N - fr.length) + ' 枚貼紙就能做一張海報（不用連續天數）</p>';
+    h += fr.length >= POSTER_N ? '<button type="button" class="kb-make" data-kb2="make">集滿 ' + POSTER_N + ' 枚，做港口海報</button><p class="kb-tip kb-sm" style="text-align:center">做成海報，貼紙也會留著喔！</p>' : '<p class="kb-tip">再集 ' + (POSTER_N - fr.length) + ' 枚，就能做' + (s.posters.length ? '下一張' : '') + '海報！不用連續來。</p>';
     if (s.posters.length) h += '<h3>我的海報</h3>' + s.posters.slice().reverse().map(function (p) { return posterHtml(p, s); }).join('');
     h += '<button type="button" class="kb-x" data-kb2="x">關閉</button></div>';
     ov.innerHTML = h; document.body.appendChild(ov);
@@ -171,7 +171,7 @@
   }
   var css = '.kb-card{margin:12px 12px 0;padding:12px;border-radius:18px;background:linear-gradient(135deg,#E9F6FB,#CDEBF5);color:#10293D;box-shadow:0 6px 16px rgba(0,0,0,.18);font-size:13px}' +
     '.kb-h{display:flex;align-items:center;justify-content:space-between;gap:8px}.kb-h b{font-size:15px}.kb-bk{border:2px solid #10293D;border-radius:999px;background:#fff;color:#10293D;font:inherit;font-weight:800;font-size:12px;padding:4px 10px;min-height:32px}' +
-    '.kb-tip{margin:6px 0;font-size:12px;opacity:.85;line-height:1.5}.kb-list{display:flex;flex-direction:column;gap:6px}' +
+    '.kb-tip{margin:6px 0;font-size:12px;opacity:.85;line-height:1.5}.kb-tip.kb-sm{font-size:11px;margin:4px 0 0}.kb-list{display:flex;flex-direction:column;gap:6px}' +
     '.kb-q{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:2px solid #9CC9DA;border-radius:14px;background:#fff;color:#10293D;font:inherit;padding:6px 8px;min-height:56px}.kb-q img{width:42px;height:42px;flex:none}.kb-q span{flex:1;min-width:0;display:flex;flex-direction:column}.kb-q small{font-size:11px;opacity:.7}.kb-q b{font-size:14px}.kb-q em{font-style:normal;font-size:11px;opacity:.75}.kb-q i{font-style:normal;flex:none;background:#FFE45C;border-radius:999px;padding:4px 10px;font-weight:900;font-size:12px}' +
     '.kb-on{display:flex;gap:8px;align-items:flex-start;margin-top:6px;background:#fff;border-radius:14px;padding:8px}.kb-on img{width:46px;height:46px;flex:none}.kb-on .t{display:flex;flex-direction:column;min-width:0;flex:1}.kb-on small{font-size:11px;opacity:.7}.kb-on b{font-size:15px}.kb-on span{font-size:12px}' +
     '.kb-bar{display:block;height:8px;border-radius:99px;background:#DDEFF5;margin-top:4px;overflow:hidden}.kb-bar i{display:block;height:100%;background:#2E9CC0;border-radius:99px}.kb-n{font-weight:800;font-size:12px;margin-top:2px}' +
