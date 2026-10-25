@@ -138,13 +138,13 @@
   function gardenHTML() {
     var h = H(), html = '';
     PLOTG.forEach(function (g, i) {
-      var p = h.plots[i], ok = landOpen(i), s = ok ? stage(p) : -2, lbl = '';
-      if (!ok) lbl = h.land[i] ? ic('a10', 'lbs lbv') + sm(h.land[i] - Date.now()) : h.xp >= LAND[i] ? ic('a10', 'lbs lbv') : ic('a11', 'lbk');
+      var p = h.plots[i], ok = landOpen(i), s = ok ? stage(p) : -2, lbl = '', lc = '';
+      if (!ok) { if (h.land[i]) lbl = ic('a10', 'lbs lbv') + sm(h.land[i] - Date.now()); else if (h.xp >= LAND[i]) { lbl = ic('a10', 'lbs lbv'); lc = ' lbc'; } else lbl = ic('a11', 'lbk'); }
       else if (s < 0) lbl = '＋'; else if (s === 3) lbl = '<img class="lbi" src="../shared/assets/icons/a08.webp" alt="">'; else lbl = ic('a09') + sm(p.t + grow(p.v) - Date.now());
       var bw = g[2] - g[0], bh = g[3] - g[1], cx = (g[4] - g[0]) / bw * 100, cw = g[6] / bw * 100;
-      html += '<button type="button" class="hmPlot' + (!ok ? ' wild' : s === 3 ? ' ripe' : '') + '" data-i="' + i + '" style="left:' + g[0] + '%;top:' + g[1] + '%;width:' + bw + '%;height:' + bh + '%" aria-label="菜圃 ' + (i + 1) + '：' + (!ok ? '還沒開墾' : s < 0 ? '空地，點一下種菜' : s === 3 ? '可以收成' : '長大中') + '">' +
+      html += '<button type="button" class="hmPlot' + (!ok ? ' wild' : s === 3 ? ' ripe' : '') + '" data-i="' + i + '" style="left:' + g[0] + '%;top:' + g[1] + '%;width:' + bw + '%;height:' + bh + '%" aria-label="菜圃 ' + (i + 1) + '：' + (!ok ? (h.land[i] ? '開墾中' : h.xp >= LAND[i] ? '可以開墾' : '還沒開墾') : s < 0 ? '空地，點一下種菜' : s === 3 ? '可以收成' : '長大中') + '">' +
         (!ok ? '<span class="cover">' + img(h.land[i] ? 'soil_clearing' : 'soil_weeds', 'si') + '</span>' : '') +
-        (ok && s >= 0 ? '<span class="crop" style="left:' + cx + '%;width:' + cw + '%;bottom:' + ((g[3] - g[5]) / bh * 100) + '%">' + cropImg(p.v, s) + '</span>' : '') + '<span class="lb">' + lbl + '</span></button>';
+        (ok && s >= 0 ? '<span class="crop" style="left:' + cx + '%;width:' + cw + '%;bottom:' + ((g[3] - g[5]) / bh * 100) + '%">' + cropImg(p.v, s) + '</span>' : '') + '<span class="lb' + lc + '">' + lbl + '</span></button>';
     });
     return html;
   }
@@ -503,7 +503,7 @@
     '.hmPlot,.hmPen,.hmStove{position:absolute;transform:translate(-50%,-100%);border:0;background:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;font-family:inherit;-webkit-tap-highlight-color:transparent}' +
     '.hmPlot{transform:none!important}.hmPlot .cover{position:absolute;inset:-6% -4%}.hmPlot .cover .si{width:100%;height:100%;object-fit:fill;opacity:.95}' +
     '.hmPlot .crop{position:absolute;transform:translateX(-50%);aspect-ratio:1;pointer-events:none}.hmPlot .crop .hi{width:100%;height:100%;object-fit:contain;object-position:50% 100%}.hmPlot .crop .emo{font-size:min(9vw,40px);align-items:flex-end}' +
-    '.hmPlot .lb,.hmStove .lb{white-space:nowrap;font-size:11px;font-weight:700;background:rgba(255,253,248,.92);color:#4A3426;border-radius:8px;padding:2px 6px;box-shadow:0 1px 3px rgba(0,0,0,.2)}.hmPlot .lb{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);z-index:2;pointer-events:none;margin:0;font-size:10.5px;padding:1px 6px;border-radius:999px;opacity:.92}.hmPlot.ripe .lb{font-size:15px;padding:2px 5px;bottom:58%;animation:hmB 1.2s ease-in-out infinite;box-shadow:0 0 0 2px #fff,0 2px 6px rgba(0,0,0,.3)}.hmPlot.wild .lb{background:rgba(0,0,0,.45);color:#fff}.hmPlot.press{filter:brightness(1.12)}' +
+    '.hmPlot .lb,.hmStove .lb{white-space:nowrap;font-size:11px;font-weight:700;background:rgba(255,253,248,.92);color:#4A3426;border-radius:8px;padding:2px 6px;box-shadow:0 1px 3px rgba(0,0,0,.2)}.hmPlot .lb{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);z-index:2;pointer-events:none;margin:0;font-size:10.5px;padding:1px 6px;border-radius:999px;opacity:.92}.hmPlot.ripe .lb{font-size:15px;padding:2px 5px;bottom:58%;animation:hmB 1.2s ease-in-out infinite;box-shadow:0 0 0 2px #fff,0 2px 6px rgba(0,0,0,.3)}.hmPlot.wild .lb{background:rgba(0,0,0,.45);color:#fff}.hmPlot.wild .lb.lbc{background:rgba(255,253,248,.92);color:#4A3426}.hmPlot.press{filter:brightness(1.12)}' +
     '.hmPlot.ripe .lb,.hmPen.ripe .lb{background:#3E9B4F;color:#fff}.hmPlot.ripe .lb{background:none;padding:0;opacity:1;bottom:4%}.hmPlot .lb .lbs{display:inline-block;width:18px;height:18px;vertical-align:-5px;margin:-2px 0 -2px -3px}.hmPlot .lb .lbv{width:24px;height:24px;vertical-align:-7px;margin:-4px -1px -4px -5px}.hmPlot .lb .lbk{display:block;width:24px;height:24px;margin:-3px -4px}.hmPlot .lb .lbi{display:block;width:34px;height:34px;filter:drop-shadow(0 0 2px #FFF8E8) drop-shadow(0 1px 2px rgba(60,40,20,.45))}.hmPlot.ripe .crop{animation:hmB 1.6s ease-in-out infinite}' +
     '@keyframes hmB{50%{transform:translateY(-4%) scale(1.04)}}' +
     '.hmPen{width:31%;aspect-ratio:1}.hmPen .pi{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}.hmPen .ai{position:absolute;left:22%;bottom:4%;width:56%;height:56%;object-fit:contain}' +
