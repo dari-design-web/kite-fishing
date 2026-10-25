@@ -63,7 +63,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .card h1{font-family:var(--display);font-size:34px;line-height:1.1;margin:0;text-wrap:balance}
 .card h2{font-family:var(--display);font-size:24px;line-height:1.2;margin:0}
 .card p{margin:0;color:var(--muted);font-size:14px}
-.chips{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:4px 0 2px}.chips>div{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:6px;align-items:center;text-align:left;background:#F3EAD8;border-radius:12px;padding:7px 9px}.chips i{grid-row:1/3;font-style:normal;font-size:22px;line-height:1}.chips b{font-size:14px}.chips span{font-size:11.5px;color:#5B6B78;line-height:1.3}.chips>div:not(#howRule){grid-template-columns:1fr;text-align:center;justify-items:center;padding:6px 4px}.chips>div:not(#howRule) i{grid-row:auto}#howRule{grid-column:1/-1}
+.chips{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:4px 0 2px}.chips>div{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:6px;align-items:center;text-align:left;background:#F3EAD8;border-radius:12px;padding:7px 9px}.chips i{grid-row:1/3;font-style:normal;font-size:22px;line-height:1}.chips i img{display:block;width:36px;height:36px}.chips b{font-size:14px}.chips span{font-size:11.5px;color:#5B6B78;line-height:1.3}.chips>div:not(#howRule){grid-template-columns:1fr;text-align:center;justify-items:center;padding:6px 4px}.chips>div:not(#howRule) i{grid-row:auto}#howRule{grid-column:1/-1}
 .more{text-align:left;font-size:13px;margin:2px 0}.more summary{cursor:pointer;color:#2F7F86;font-weight:700;list-style:none;text-align:center;padding:4px}.more summary::after{content:' ▾'}.more[open] summary::after{content:' ▴'}.more .how{margin-top:6px}
 .rows .xr{display:none}.rows.open .xr{display:block}.moreRows{display:block;margin:4px auto 0;border:0;background:none;color:#2F7F86;font:700 13px/1.4 inherit;font-family:inherit;cursor:pointer;padding:4px 10px}
 .how{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;text-align:left;font-size:14px}
@@ -196,10 +196,10 @@ body:not(.qa) #ask, body:not(.qa) #copyBtn{display:none!important}
       <div class="pick" id="sessionPick" role="group" aria-label="選擇關卡" hidden></div>
       <div class="dexline" id="dexLine"></div>
       <div class="chips" aria-label="怎麼玩">      <!-- D174：玩法改成四張小卡，長說明收進「更多說明」 -->
-        <div id="howRule"><i>🐟</i><b>越深越高分</b><span>小卷成群、白帶魚扭著游</span></div>
-        <div><i>👆</i><b>點魚</b><span>小鳶俯衝去抓</span></div>
-        <div><i>🔥</i><b>連抓加分</b><span>連 3 條起每條 +20</span></div>
-        <div><i>🦈</i><b>鯨鯊加倍</b><span>能量滿了按右下角</span></div>
+        <div id="howRule"><i><img src="shared/assets/icons/a02.webp" alt=""></i><b>越深越高分</b><span>小卷成群、白帶魚扭著游</span></div>
+        <div><i><img src="shared/assets/icons/a01.webp" alt=""></i><b>點魚</b><span>小鳶俯衝去抓</span></div>
+        <div><i><img src="shared/assets/icons/a03.webp" alt=""></i><b>連抓加分</b><span>連 3 條起每條 +20</span></div>
+        <div><i><img src="shared/assets/icons/a04.webp" alt=""></i><b>鯨鯊加倍</b><span>能量滿了按右下角</span></div>
       </div>
       <details class="more"><summary>更多說明</summary>
       <ul class="how">
@@ -248,7 +248,7 @@ body:not(.qa) #ask, body:not(.qa) #copyBtn{display:none!important}
 
 <script src="shared/kite_core.js"></script>
 <script src="shared/kite_lb.js"></script>
-<script src="shared/kite_board.js?v=1"></script>
+<script src="shared/kite_board.js?v=2"></script>
 <script>
 /* ===== 暫用配樂（C-70）：用程式即時產生，不用音檔、沒有版權問題。正式配樂來源待 Dari 決定 ===== */
 /* BGM-START｜配樂 v3（C-87，Dari 10/13 09:39：主動加強畫面、配樂、動畫）
@@ -449,7 +449,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.32',
+  version: '0.33',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光

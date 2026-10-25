@@ -139,7 +139,7 @@
     PLOTG.forEach(function (g, i) {
       var p = h.plots[i], ok = landOpen(i), s = ok ? stage(p) : -2, lbl = '';
       if (!ok) lbl = h.land[i] ? '⛏️' + sm(h.land[i] - Date.now()) : h.xp >= LAND[i] ? '⛏️' : '🔒';
-      else if (s < 0) lbl = '＋'; else if (s === 3) lbl = '🧺'; else lbl = '⏱' + sm(p.t + grow(p.v) - Date.now());
+      else if (s < 0) lbl = '＋'; else if (s === 3) lbl = '<img class="lbi" src="../shared/assets/icons/a08.webp" alt="">'; else lbl = '⏱' + sm(p.t + grow(p.v) - Date.now());
       var bw = g[2] - g[0], bh = g[3] - g[1], cx = (g[4] - g[0]) / bw * 100, cw = g[6] / bw * 100;
       html += '<button type="button" class="hmPlot' + (!ok ? ' wild' : s === 3 ? ' ripe' : '') + '" data-i="' + i + '" style="left:' + g[0] + '%;top:' + g[1] + '%;width:' + bw + '%;height:' + bh + '%" aria-label="菜圃 ' + (i + 1) + '：' + (!ok ? '還沒開墾' : s < 0 ? '空地，點一下種菜' : s === 3 ? '可以收成' : '長大中') + '">' +
         (!ok ? '<span class="cover">' + img(h.land[i] ? 'soil_clearing' : 'soil_weeds', 'si') + '</span>' : '') +
@@ -503,7 +503,7 @@
     '.hmPlot{transform:none!important}.hmPlot .cover{position:absolute;inset:-6% -4%}.hmPlot .cover .si{width:100%;height:100%;object-fit:fill;opacity:.95}' +
     '.hmPlot .crop{position:absolute;transform:translateX(-50%);aspect-ratio:1;pointer-events:none}.hmPlot .crop .hi{width:100%;height:100%;object-fit:contain;object-position:50% 100%}.hmPlot .crop .emo{font-size:min(9vw,40px);align-items:flex-end}' +
     '.hmPlot .lb,.hmStove .lb{white-space:nowrap;font-size:11px;font-weight:700;background:rgba(255,253,248,.92);color:#4A3426;border-radius:8px;padding:2px 6px;box-shadow:0 1px 3px rgba(0,0,0,.2)}.hmPlot .lb{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);z-index:2;pointer-events:none;margin:0;font-size:10.5px;padding:1px 6px;border-radius:999px;opacity:.92}.hmPlot.ripe .lb{font-size:15px;padding:2px 5px;bottom:58%;animation:hmB 1.2s ease-in-out infinite;box-shadow:0 0 0 2px #fff,0 2px 6px rgba(0,0,0,.3)}.hmPlot.wild .lb{background:rgba(0,0,0,.45);color:#fff}.hmPlot.press{filter:brightness(1.12)}' +
-    '.hmPlot.ripe .lb,.hmPen.ripe .lb{background:#3E9B4F;color:#fff}.hmPlot.ripe .crop{animation:hmB 1.6s ease-in-out infinite}' +
+    '.hmPlot.ripe .lb,.hmPen.ripe .lb{background:#3E9B4F;color:#fff}.hmPlot .lb .lbi{display:block;width:26px;height:26px;margin:-3px -2px}.hmPlot.ripe .crop{animation:hmB 1.6s ease-in-out infinite}' +
     '@keyframes hmB{50%{transform:translateY(-4%) scale(1.04)}}' +
     '.hmPen{width:31%;aspect-ratio:1}.hmPen .pi{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}.hmPen .ai{position:absolute;left:22%;bottom:4%;width:56%;height:56%;object-fit:contain}' +
     '.hmPen .bub{position:absolute;left:42%;bottom:44%;width:16%;aspect-ratio:1;animation:hmB 1.2s infinite}.hmPen .bub img{width:100%;height:100%}' +
