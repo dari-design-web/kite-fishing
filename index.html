@@ -242,6 +242,7 @@ body:not(.qa) #ask, body:not(.qa) #copyBtn{display:none!important}
 
 <script src="shared/kite_core.js"></script>
 <script src="shared/kite_lb.js"></script>
+<script src="shared/kite_board.js?v=1"></script>
 <script>
 /* ===== 暫用配樂（C-70）：用程式即時產生，不用音檔、沒有版權問題。正式配樂來源待 Dari 決定 ===== */
 /* BGM-START｜配樂 v3（C-87，Dari 10/13 09:39：主動加強畫面、配樂、動畫）
@@ -678,6 +679,7 @@ function resolveDive() {
     const def = CONFIG.fish[best.type], inEvent = EVENT(), mult = inEvent ? CONFIG.ult.mult : 1, lucky = best.type === LK(), gain = def.kg * mult * (lucky ? LUCKY_MUL : 1);
     kg += gain; stats.hits++; stats.counts[best.type]++; if (inEvent) stats.kgInEvent += gain; else { energy = Math.min(CONFIG.ult.need, energy + (def.rare ? 3 : def.kg >= 1.5 ? 2 : 1)); ultUI(); } kite.carry = watch ? null : best.type; firstCatchDone = true; if (watch) { stars(best.x, best.y, 8, 55, '#FFFFFF'); flash = Math.max(flash, 0.18); } if (best.jp === 'air') { stats.jumps = (stats.jumps || 0) + 1; }
     stats.combo++; stats.bestCombo = Math.max(stats.bestCombo, stats.combo); stats.missRun = 0;
+    if (window.KiteBoard) KiteBoard.ev('fish_catch', { sp: best.type });      /* D174：告示板委託 */
     if (!dex[best.type]) { dex[best.type] = true; stats.newDex.push(best.type); try { localStorage.setItem('kiteFishingDex2', JSON.stringify(dex)); } catch (e) {} }
     say((lucky ? '幸運魚！' : '') + (watch ? '記錄 ' : best.jp === 'air' ? '空中抓到 ' : '') + def.name + ' +' + PTS(gain) + (mult > 1 ? ' ×' + mult : ''), tx, ty - 18, mult > 1 || def.rare || lucky ? '#FFE08A' : '#fff'); if (lucky) stars(tx, ty, 6, 60, '#FFE08A');
     if (stats.combo >= CONFIG.combo.from) { kg += CONFIG.combo.bonus; stats.comboBonus += CONFIG.combo.bonus; if (stats.combo === CONFIG.combo.from || stats.combo % 5 === 0) say('連抓 ' + stats.combo + '！', tx, ty - 48, '#BFF0D0'); stars(tx, ty, 5, 50, '#9FF0C8'); }      /* C-94：連抓只在第 3、5、10…條跳字，其他用徽章；薄荷綠小水花（ChatGPT C-88 建議） */
@@ -1317,7 +1319,7 @@ function fmFrame(now) {
   const R = FMFX.route, seg = R.length - 1, cyc = 16, p = (mt % cyc) / cyc, fpos = p * seg, k = Math.min(seg - 1, Math.floor(fpos)), u = fpos - k, A = R[k], B = R[k + 1], x = A[0] + (B[0] - A[0]) * u, y = A[1] + (B[1] - A[1]) * u - 26 + Math.sin(mt * 3) * 4;
   if (fmKite && fmKite.complete && fmKite.naturalWidth) { const fw = fmKite.naturalWidth / 4, fr = Math.floor(mt * 8) % 4, fa = Math.min(1, p * 12, (1 - p) * 12), sw = 66, shh = sw * fmKite.naturalHeight / fw; g.save(); g.globalAlpha = fa; g.translate(x, y); if (B[0] < A[0]) g.scale(-1, 1); g.drawImage(fmKite, fr * fw, 0, fw, fmKite.naturalHeight, -sw / 2, -shh / 2, sw, shh); g.restore(); }
 }
-function start() { reset(); mode = 'play'; $('hint').textContent = LVL().tip || '點水裡的魚，小鳶會俯衝去抓'; if (soundOn) BGM.play('fish_' + session); show(null); $('hud').hidden = false; $('hint').hidden = false; ultUI(); stage.classList.toggle('dark', !!SES().light); const bt = LVL().name + '・' + SES().name, bn = $('banner'); bn.textContent = bt; bn.hidden = false; setTimeout(() => { if (bn.textContent === bt) { bn.hidden = true; bn.textContent = '鯨鯊來了！分數加倍'; } }, 1600); beep(523, 0.12, 'triangle', 0.06, 260); }
+function start() { reset(); mode = 'play'; if (window.KiteBoard) KiteBoard.start('fish'); $('hint').textContent = LVL().tip || '點水裡的魚，小鳶會俯衝去抓'; if (soundOn) BGM.play('fish_' + session); show(null); $('hud').hidden = false; $('hint').hidden = false; ultUI(); stage.classList.toggle('dark', !!SES().light); const bt = LVL().name + '・' + SES().name, bn = $('banner'); bn.textContent = bt; bn.hidden = false; setTimeout(() => { if (bn.textContent === bt) { bn.hidden = true; bn.textContent = '鯨鯊來了！分數加倍'; } }, 1600); beep(523, 0.12, 'triangle', 0.06, 260); }
 function pause() { if (mode !== 'play') return; mode = 'pause'; BGM.stop(); show('pausePanel'); ultUI(); }
 /* D118：鯨鯊絕招鍵 */
 function ultUI() { const b = $('ultBtn'); if (!b) return; const ready = energy >= CONFIG.ult.need && !EVENT(); b.hidden = mode !== 'play'; b.disabled = !ready; b.classList.toggle('ready', ready);
@@ -1362,7 +1364,7 @@ function record() {
     taps: stats.taps, dives: stats.dives, hits: stats.hits, misses: stats.misses, hitRate: acc, assist: CONFIG.assist.on, bento: stats.bento || [], tapsDuringCooldown: stats.blocked, tapsOnSky: stats.skyTaps, trash: stats.trash, tapsOnWhaleShark: stats.sharkTaps,
     stage: LVL().name, startTod: CONFIG.sessions[todStart].name, whales: stats.whales || 0, answers, assets: Object.keys(img), screen: innerWidth + 'x' + innerHeight, ua: navigator.userAgent };
 }
-function finish() { BGM.stop();
+function finish() { BGM.stop(); if (window.KiteBoard) KiteBoard.ev('run_end', { game: 'fish' });
   mode = 'result'; ultUI(); $('hud').hidden = true; $('banner').hidden = true; $('hint').hidden = true; jingle([523, 659, 784], 110);
   $('totalKg').textContent = '0'; $('rank').textContent = rankOf(kg);
   { const tgt = PTS(kg), el = $('totalKg'), t0 = performance.now(), dur = Math.min(1100, 350 + tgt / 4); let lastTick = 0;      // 玩家角度：結算分數從 0 往上跳（跟飛行、合成港一致），最後彈一下

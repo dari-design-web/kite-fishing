@@ -120,7 +120,7 @@
     if (h.land[i] && h.land[i] !== 'ok') { h.land[i] = 'ok'; sv(); }
     var s = stage(p);
     if (s < 0) return seedPick(i);
-    if (s === 3) { var nm = CROP[p.v].name, yy = CROP[p.v].y || 2; give(mk(p.v, yy)); h.xp++; h.plots[i] = { v: '', t: 0 }; sv(); pop(xy[0], xy[1] - 8, '+' + yy + ' ' + nm); render(); say(['收成' + nm + '！放進冰箱囉～', '好大一個' + nm + '！', '又長好了耶！'][Math.floor(Math.random() * 3)]); return; }
+    if (s === 3) { var nm = CROP[p.v].name, yy = CROP[p.v].y || 2; give(mk(p.v, yy)); h.xp++; h.plots[i] = { v: '', t: 0 }; sv(); if (window.KiteBoard) KiteBoard.ev('home_harvest', { crop: p.v }); pop(xy[0], xy[1] - 8, '+' + yy + ' ' + nm); render(); say(['收成' + nm + '！放進冰箱囉～', '好大一個' + nm + '！', '又長好了耶！'][Math.floor(Math.random() * 3)]); return; }
     say(CROP[p.v].name + '還要 ' + mins(p.t + grow(p.v) - Date.now()) + '，我幫它澆澆水～'); pop(xy[0], xy[1] - 6, '💧');
   }
   function seedPick(i) {
@@ -128,7 +128,7 @@
     SEEDS.forEach(function (k) { var o = open(k), c = CROP[k]; html += '<button type="button" class="opt" data-k="' + k + '"' + (o ? '' : ' disabled') + '><span class="ic em">' + (o ? cropImg(k, 3) : '❔') + '</span><span class="tx">' + (o ? c.name + '<em class="tm">' + mins(c.min * MIN) + '</em><em class="tm">收 ' + (c.y || 2) + ' 份</em>' : '還沒拿到的種子') + '<small>' + c.from + '</small></span></button>'; });
     html += '</div><div class="row"><button class="btn ghost" id="hmX">關閉</button></div>';
     modal(html);
-    document.querySelectorAll('.hm .opt[data-k]').forEach(function (b) { b.onclick = function () { H().plots[i] = { v: b.dataset.k, t: Date.now() }; sv(); close(); pop(PLOT[i][0], PLOT[i][1] - 6, '🌱'); say('種好了，' + CROP[b.dataset.k].name + '加油！'); }; });
+    document.querySelectorAll('.hm .opt[data-k]').forEach(function (b) { b.onclick = function () { H().plots[i] = { v: b.dataset.k, t: Date.now() }; sv(); if (window.KiteBoard) KiteBoard.ev('home_plant', { crop: b.dataset.k }); close(); pop(PLOT[i][0], PLOT[i][1] - 6, '🌱'); say('種好了，' + CROP[b.dataset.k].name + '加油！'); }; });
     $('hmX').onclick = close;
   }
   function gardenHTML() {
@@ -240,12 +240,14 @@
       BORDER.forEach(function (k) { var b = BENTO[k], ok = have(b.need), c = (window.__travel && __travel.CFG.bentos[k]) || {}; html += '<button type="button" class="opt' + (ok ? ' can' : '') + '" data-b="' + k + '"' + (ok ? '' : ' disabled') + '><span class="ic em">' + img(BIMG[k]) + '</span><span class="tx">' + b.name + '<small>' + needLine(b.need) + (c.note ? '<br>' + c.note : '') + '<br>' + (ok ? '<b class="ok">材料齊了，點一下開始做</b>' : '<b class="no">還缺 ' + lack(b.need) + '</b>') + '</small></span><span class="n">' + (h.hb[k] ? '有 ' + h.hb[k] : '') + '</span></button>'; });
     } else {
       DORDER.forEach(function (k) { var d = DISH[k], o = open(k), ok = o && have(d.need); html += '<button type="button" class="opt' + (ok ? ' can' : '') + '" data-k="' + k + '"' + (ok ? '' : ' disabled') + '><span class="ic em">' + (o ? dishImg(k) : '❔') + '</span><span class="tx">' + (o ? d.name + (h.book[k] ? '' : ' <em class="nw">新菜</em>') : '還沒學會的招牌菜') + '<small>' + (o ? needLine(d.need) + '<br>' + (ok ? '<b class="ok">材料齊了，點一下開始做</b>' : '<b class="no">還缺 ' + lack(d.need) + '</b>') : '認識' + CROP[k].from.split('的').pop() + '後就會學到') + '</small></span><span class="n">' + (h.box[k] ? '料理盒 ' + h.box[k] : '') + '</span></button>'; });
+      html += fishOpt(h);      /* D174：香煎白帶魚小碟（練習） */
     }
     html += '</div><p class="mu sm">' + (tab === 'bento' ? '手作便當可以帶小鳶出門旅行（打包時在「便當」裡選）。手作便當的旅行不會撿到點數或券；點數便當還是到港口換禮換。' : '配菜帶出門，第一次帶回來會有一張料理小記。') + '</p><p class="mu sm">冰箱：' + fridgeLine() + '</p><div class="row"><button class="btn ghost" id="hmOrd">📋 港邊訂單</button><button class="btn ghost" id="hmBook">📖 菜譜冊</button><button class="btn ghost" id="hmX">關閉</button></div>';
     modal(html);
     document.querySelectorAll('.hmT button').forEach(function (b) { b.onclick = function () { kitchen(b.dataset.t); }; });
     document.querySelectorAll('.hm .opt[data-k]').forEach(function (b) { b.onclick = function () { cook('d', b.dataset.k); }; });
     document.querySelectorAll('.hm .opt[data-b]').forEach(function (b) { b.onclick = function () { cook('b', b.dataset.b); }; });
+    if ($('hmFish')) $('hmFish').onclick = fishDish;
     $('hmBook').onclick = book; $('hmOrd').onclick = ordersSheet; $('hmX').onclick = close;
   }
   function cook(type, k) {
@@ -257,6 +259,7 @@
       if (type === 'd') { first = !h.book[k]; h.book[k] = h.book[k] || Date.now(); h.box[k] = (h.box[k] || 0) + 1; } else h.hb[k] = (h.hb[k] || 0) + 1;
       h.best = h.best || {}; if (stars && stars > (h.best[k] || 0)) h.best[k] = stars;
       if (!sv()) { give(d.need); toast('手機存不下來，這次先不算'); return; }
+      if (window.KiteBoard && type === 'd') KiteBoard.ev('home_cook', { dish: k });      /* D174：告示板委託 */
       modal('<div class="dish">' + (type === 'd' ? dishImg(k) : img(BIMG[k])) + '</div><h3 style="text-align:center">' + d.name + '做好了！' + (stars ? ' ' + '⭐'.repeat(stars) : '') + '</h3><p style="text-align:center">' + (first ? '第一次做，收進菜譜冊了！<br>' : '') + (type === 'd' ? '放進料理盒，打包出門時可以帶一份當配菜。' : '打包出門時，在「便當」裡選它就能帶小鳶去旅行。') + '</p><div class="row"><button class="btn" id="hmOk">好</button></div>');
       $('hmOk').onclick = function () { kitchen(); };
     }
@@ -278,6 +281,30 @@
     var d = DISH[k];
     modal('<div class="stc"><div class="stIn">' + img('landmark_' + d.lm, 'stL') + dishImg(k).replace('class="hi"', 'class="stD"') + '<b>' + d.story[0] + '</b><p>' + d.story[1] + '</p></div></div><div class="row"><button class="btn" id="hmBk">回菜譜冊</button></div>');
     $('hmBk').onclick = book;
+  }
+  /* ===== D174（GPT G105 0330 方案 2 縮小版）：捕魚認識白帶魚以後，廚房多一道「香煎白帶魚小碟」免費練習 =====
+     只看捕魚圖鑑（kiteFishingDex2）有沒有白帶魚；不扣材料、不發食材、不放進料理盒、不能帶出門，只留一句紀念。 */
+  function knowHairtail() { var dx = rd('kiteFishingDex2') || {}; return !!dx.hairtail; }
+  function fishOpt(h) {
+    var ok = knowHairtail(), n = (h.fishDish && h.fishDish.n) || 0;
+    return '<button type="button" class="opt' + (ok ? ' can' : '') + '" id="hmFish"' + (ok ? '' : ' disabled') + '><span class="ic em">' + img('dish_hairtail') + '</span><span class="tx">香煎白帶魚小碟 <em class="nw">練習</em><small>' + (ok ? '你在捕魚認識了白帶魚！<br><b class="ok">免費練習做做看（不用材料）</b>' : '先在「小鳶捕魚」抓到一次白帶魚，就能來練習') + '</small></span><span class="n">' + (n ? '做過 ' + n + ' 次' : '') + '</span></button>';
+  }
+  function fishDish() {
+    if (!knowHairtail()) return;
+    var step = 0;
+    function show() {
+      var h = H(), tip = '<p class="mu sm" style="text-align:center">這是練習：不用材料，也不會放進料理盒。</p>';
+      if (step === 0) modal('<h3 style="text-align:center">香煎白帶魚小碟</h3><div class="dish"><img class="hi" src="../assets/fish_hairtail_v2.png" alt="" style="width:100%;max-width:260px;height:auto" draggable="false"></div><p style="text-align:center">在港口認識的白帶魚，回家做成一道小菜吧！</p>' + tip + '<div class="row"><button class="btn" id="hmGo">🔪 請小鳶切成三段</button><button class="btn ghost" id="hmX">先不要</button></div>');
+      else if (step === 1) modal('<h3 style="text-align:center">切好了！</h3><div class="dish">' + img('hairtail_cut') + '</div><p style="text-align:center">銀亮亮的三段，放進鍋子煎吧。</p><div class="row"><button class="btn" id="hmGo">🍳 放進鍋子</button><button class="btn ghost" id="hmX">先不做了</button></div>');
+      else if (step === 2) modal('<h3 style="text-align:center">🔥 滋滋滋……</h3><div class="dish"><img class="hi" src="' + A + 'hairtail_cut.webp" alt="" draggable="false" style="filter:sepia(.45) saturate(1.5) brightness(1.02)"></div><p style="text-align:center">一面煎得金黃了，幫它翻個面！</p><div class="row"><button class="btn" id="hmGo">🔄 翻面</button><button class="btn ghost" id="hmX">先不做了</button></div>');
+      else {
+        var n = ((h.fishDish && h.fishDish.n) || 0) + 1; h.fishDish = { n: n, t: Date.now(), first: (h.fishDish && h.fishDish.first) || Date.now() }; sv();
+        modal('<div class="dish">' + img('dish_hairtail') + '</div><h3 style="text-align:center">香煎白帶魚小碟做好了！</h3><p style="text-align:center">' + (n === 1 ? '第一次做就好香！' : '這是第 ' + n + ' 次練習，越來越熟練了！') + '<br>今天會做的小菜：<b>香煎白帶魚</b></p>' + tip + '<div class="row"><button class="btn" id="hmOk">回廚房</button></div>');
+        $('hmOk').onclick = function () { kitchen('dish'); }; return;
+      }
+      $('hmGo').onclick = function () { step++; show(); }; $('hmX').onclick = function () { kitchen('dish'); };
+    }
+    show();
   }
   function kitchenHTML() { return '<button type="button" class="hmStove" style="left:72%;top:62%" aria-label="煮飯">' + img('pot_still', 'si') + '<span class="lb">點鍋子煮飯</span></button>'; }
 

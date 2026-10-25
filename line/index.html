@@ -230,6 +230,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
 <script src="../shared/kite_core.js"></script>
 <script src="../shared/kite_lb.js"></script>
 <script src="../shared/kite_daily.js"></script>
+<script src="../shared/kite_board.js?v=1"></script>
 <script src="../shared/kite_scan.js"></script>
 <script>
 /* 客戶官方 LINE 系統（示意）v2（工作單 25，D75）。正式版：選單是 LINE 圖文選單（一張圖＋點擊區），點進去的頁面是 LIFF。
@@ -335,12 +336,13 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
       '<div class="lb-title"><small>KITE PARK・GAME LOBBY</small><b>小鳶樂園</b></div></div>' +
       (TIER ? '<div class="lb-player"><img src="' + KITE + '" alt=""><div class="s"><b>' + esc(K.displayName(m)) + '</b><span>我的點數 <b style="display:inline;font-size:14px;color:var(--orange)">' + (m.points || 0) + '</b> 點</span></div><button class="mg" id="toMG"><img class="gi" src="assets/ic_records.png" alt="">遊戲紀錄</button></div>' + (st0 ? '<div class="st-note"><img class="gi" src="assets/ic_gift.png" alt="">漏領的 ' + st0 + ' 點，幫你收好囉！</div>' : '') + (c.gameClaim === 'tap' ? track(gt) : '<div class="trk"><div class="trk-h"><b>今天遊戲點 ' + gt.pts + ' / ' + gt.cap + '</b></div>' + tierTable(gt.total) + '</div>') : '<div class="lb-player"><img src="' + KITE + '" alt=""><div class="s"><b>' + esc(K.displayName(m)) + '</b><span>今天還能算分 ' + left + ' 次・每 ' + c.scorePerPoint.toLocaleString() + ' 分換 1 點</span></div><div class="bank">分數存摺<b>' + bank.toLocaleString() + '</b></div></div>') +
       (evs.length ? '<div class="lb-ev"><img class="gi" src="assets/ic_event.png" alt="">今天的活動：' + evs.map(function (x) { return esc(x.e.title) + '（' + esc(K.GAMES[x.g.id].name) + ' ×' + x.e.mult + '）'; }).join('、') + '</div>' : '') +
-      dailyCard() +
+      dailyCard() + (window.KiteBoard ? KiteBoard.cardHtml() : '') +      /* D174：今日港口告示板 */
       '<div class="lbrow"><button type="button" data-lb="fish" style="flex:1"><img class="gi" src="../shared/assets/rank_btn.png" alt="">排行榜<small style="font-weight:600;opacity:.75;margin-left:6px">捕魚・飛行・合成港・疊貨櫃・鯨鯊・旅行・總分</small></button></div>' + '<div class="lb-sec">' + (evs.length ? '今日推薦' : '人氣遊戲') + '</div><div class="lb-grid">' + booth(fg, 0, true) + '</div>' +
       '<div class="lb-sec">全部遊戲</div><div class="lb-grid">' + GL.filter(function (g) { return g.id !== feat; }).map(function (g, i) { return booth(g, i + 1); }).join('') +
       '</div>' +      // D83：港口朋友已併進港灣蓋章散步（每站住一位朋友）
       '<div class="lb-foot">' + (TIER ? '<p class="muted" style="color:#CFE3EA;font-size:12.5px;margin:0;text-align:center">小鳶去旅行回家，偶爾也會帶點數或優惠券回來喔。</p>' : '<div class="card" style="margin:0"><b>怎麼用遊戲換點數？</b><p class="muted" style="margin:6px 0 0">會算分的遊戲，每款遊戲每天前幾局（捕魚、飛行每關 ' + c.triesPerLevel + ' 局；小遊戲看遊戲卡上的「今天還能算分」）的分數會存進「分數存摺」，滿 ' + c.scorePerPoint.toLocaleString() + ' 分就能在「我的資訊 → 我的遊戲」換 1 點。</p><button class="btn alt full" style="margin-top:10px" id="toMG2">看我的遊戲紀錄</button></div>') + '</div></div>';
     var mg = function () { go('mygames'); }; if ($('toMG')) $('toMG').onclick = mg; if ($('toMG2')) $('toMG2').onclick = mg; wireTrack(R.park);
+    if (window.KiteBoard) KiteBoard.wire($('sbody'), R.park);      /* D174：選題／換題／港口記憶後重畫樂園 */
     $('sbody').querySelectorAll('[data-lb]').forEach(function (b) { b.onclick = function () { if (window.KiteLB) KiteLB.hub(b.dataset.lb); }; });      // D123：一顆排行榜按鈕，進去再分類
   };
 
