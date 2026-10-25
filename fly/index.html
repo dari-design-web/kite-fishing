@@ -43,6 +43,9 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .card h1{font-family:var(--display);font-size:34px;line-height:1.1;margin:0;text-wrap:balance}
 .card h2{font-family:var(--display);font-size:24px;line-height:1.2;margin:0}
 .card p{margin:0;color:var(--muted);font-size:14px}
+.chips{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:4px 0 2px}.chips>div{display:grid;justify-items:center;text-align:center;background:#F3EAD8;border-radius:12px;padding:7px 4px;gap:1px}.chips i{font-style:normal;font-size:22px;line-height:1}.chips b{font-size:14px}.chips span{font-size:11.5px;color:#5B6B78;line-height:1.3}
+.more{text-align:left;font-size:13px;margin:2px 0}.more summary{cursor:pointer;color:#2F7F86;font-weight:700;list-style:none;text-align:center;padding:4px}.more summary::after{content:' ▾'}.more[open] summary::after{content:' ▴'}.more .how{margin-top:6px}
+.rows .xr{display:none}.rows.open .xr{display:block}.moreRows{display:block;margin:4px auto 0;border:0;background:none;color:#2F7F86;font:700 13px/1.4 inherit;font-family:inherit;cursor:pointer;padding:4px 10px}
 .how{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;text-align:left;font-size:14px}
 .how li{display:flex;gap:8px;align-items:baseline}
 .how b{flex:none;min-width:3.6em;color:var(--ink)}
@@ -192,6 +195,12 @@ body:not(.qa) #ask, body:not(.qa) #copyBtn{display:none!important}
     <div class="card">
       <h1 id="stageTitle">小鳶飛行冒險</h1>
       <p id="stageIntro">第 1 關　叁肆行：把漂進港口的垃圾清乾淨。</p>
+      <div class="chips" aria-label="怎麼玩">      <!-- D174：先看三張小卡，詳細規則收進「怎麼玩」 -->
+        <div><i>👆</i><b>滑動</b><span>小鳶跟著飛、自動射羽毛</span></div>
+        <div><i>🐢</i><b>救朋友</b><span>清掉纏住牠們的垃圾</span></div>
+        <div><i>🦈</i><b>大掃除</b><span>右下角集滿就按</span></div>
+      </div>
+      <details class="more"><summary>怎麼玩・怎麼算分</summary>
       <ul class="how">
         <li><b>滑動</b><span>手指在畫面上滑，小鳶跟著走，風之羽自動發射</span></li>
         <li><b>分數</b><span>清掉一個 10 分、救朋友 50 分、打倒魔王 300 分，最後剩幾顆愛心再各加 50 分</span></li>
@@ -199,7 +208,7 @@ body:not(.qa) #ask, body:not(.qa) #copyBtn{display:none!important}
         <li><b id="howBarrelK">油桶</b><span id="howBarrel">打爆會炸掉旁邊的垃圾，自己別靠太近</span></li>
         <li id="howFriend"><b>救朋友</b><span id="howFriendT">清掉纏住牠們的垃圾。小卷會來幫忙，海龜送你護盾</span></li>
         <li><b id="howUltK">鯨鯊</b><span id="howUlt">右下角集滿後按一下，全畫面大掃除</span></li>
-      </ul>
+      </ul></details>
       <div class="pick" id="modePick" role="group" aria-label="拖曳方式" hidden>
         <button type="button" data-mode="relative" aria-pressed="true">滑動帶著走</button>
         <button type="button" data-mode="follow" aria-pressed="false">跟著手指</button>
@@ -454,7 +463,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.46',
+  version: '0.47',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -752,7 +761,7 @@ function clearFoe(f, how) {      // how：'' 羽毛或墨汁、'blast' 被炸到
   const i = foes.indexOf(f); if (i < 0) return; foes.splice(i, 1);
   const d = T[f.type];
   if (!f.noCount) { stats.cleared++; stats.byType[f.type] = (stats.byType[f.type] || 0) + 1; } stats.score += d.score;
-  if (window.KiteBoard && !f.noCount && how !== 'sweep' && f.type !== 'boss' && !d.friend) KiteBoard.ev('fly_clear');      /* D174：告示板委託（收尾自動清、魔王不算） */
+  if (window.KiteBoard && !f.noCount && how !== 'sweep' && f.type !== 'boss' && !d.friend) KiteBoard.ev('fly_clear');      /* D175：告示板委託（收尾自動清、魔王不算） */
   if (how !== 'sweep') { stats.combo++; stats.comboT = CONFIG.combo.window; stats.bestCombo = Math.max(stats.bestCombo, stats.combo); }
   if (!calmClear) gauge = Math.min(CONFIG.ult.need, gauge + d.score + (stats.combo >= CONFIG.combo.bonusFrom ? 1 : 0));      // 鯨鯊清掉的不再幫鯨鯊集氣
   if (stats.combo >= 5 && stats.combo % 5 === 0) say('連清 ' + stats.combo + '！', f.x, f.y - 26, '#BFF0D0');
@@ -3266,7 +3275,8 @@ function finish() { BGM.stop(); if (window.KiteBoard) KiteBoard.ev('run_end', { 
   mode = 'result'; $('hud').hidden = true; $('banner').hidden = true; $('hint').hidden = true; $('ultBtn').hidden = true;
   const ok = kite.hearts > 0, pct = cleanPct(); jingle(ok ? [523, 659, 784] : [392, 330, 262], 120);
   $('resTitle').textContent = stats.boatSunk ? '小船沉了' : !ok ? '小鳶累了' : stats.bossCleared ? '過關' : '時間到'; $('rank').textContent = won ? rankOf(pct) : '還沒過關';      /* QA：沒過關不顯示最高稱號（原本輸了也寫「基隆鳶王」） */ $('cleanPct').textContent = scoreFinal();
-  const rows = $('rows'); rows.textContent = ''; const add = (a, b) => { const l = document.createElement('span'); l.textContent = a; const r = document.createElement('span'); r.textContent = b; if (String(b).length > 16) { r.style.gridColumn = '1 / -1'; r.style.textAlign = 'left'; r.style.fontWeight = '600'; } rows.append(l, r); };
+  const rows = $('rows'); rows.textContent = ''; const XR = /^(淨化的妖怪|清掉的垃圾與污染|最多連清|爆米香一次最多炸掉|油桶一次最多炸掉|擲筊祈福|呼叫)/;      /* D174：次要數字收進「更多紀錄」 */
+  const add = (a, b) => { const l = document.createElement('span'); l.textContent = a; const r = document.createElement('span'); r.textContent = b; if (XR.test(a)) { l.className = r.className = 'xr'; } if (String(b).length > 16) { r.style.gridColumn = '1 / -1'; r.style.textAlign = 'left'; r.style.fontWeight = '600'; } rows.append(l, r); };
   const nm = NM(); add('乾淨程度', pct + '%'); add(nm ? '淨化的妖怪' : '清掉的垃圾與污染', stats.cleared + ' / ' + stats.spawned); add('最多連清', stats.bestCombo + (nm ? ' 隻' : ' 件')); if (stats.bestBlast || stats.chain) add(nm ? '爆米香一次最多炸掉' : '油桶一次最多炸掉', stats.bestBlast + (nm ? ' 隻' : ' 件') + (stats.chain ? '　★' + CONFIG.chain.title : '')); if (stats.trapped) add('救出朋友', stats.rescued + ' / ' + stats.trapped);
   { const fo = nm || PM() || RM() || NEWT(); add(T.boss.name.split('・').pop(), stats.bossCleared ? (fo ? '打倒了' : '清掉了') : (fo ? '沒打倒' : '沒清完')); } add('剩下體力', Math.max(0, kite.hearts) + ' / ' + LV().hearts + '（被打到 ' + stats.hits + ' 次）'); add(nm ? '擲筊祈福' : '呼叫' + ULTN(), stats.ultUsed + ' 次，' + (nm ? '淨化 ' + stats.ultCleared + ' 隻' : '清掉 ' + stats.ultCleared + ' 件'));      // 結算：怪物魔王寫打倒、只留短名不折行；油桶 0 件不顯示
   const sv = starsOf(), id = stageNo, old = progress.stars[id] || [false, false, false]; progress.stars[id] = old.map((v, k) => v || sv[k]);
@@ -3275,8 +3285,9 @@ function finish() { BGM.stop(); if (window.KiteBoard) KiteBoard.ev('run_end', { 
   if (best && best.score) add('這關最高分', sc > best.score ? '🎉 ' + sc + ' 新紀錄！（上次最高 ' + best.score + '）' : best.score + (sc === best.score ? '（追平了！）' : '（還差 ' + (best.score - sc) + ' 分）'));
   /* v0.41（C-185，D71）：把這局分數送進官方 LINE 的「遊戲分數存摺」（每關每天前幾次才算、活動時段乘倍數；規則在後台改）。G 槽複本沒有共用資料層就跳過 */
   window.__lastRank = null; if (window.KiteCore) { try { const rk = KiteCore.rankAround ? KiteCore.rankAround('fly', String(id), () => KiteCore.reportPlay({ game: 'fly', level: String(id), score: sc, sec: t })) : { res: KiteCore.reportPlay({ game: 'fly', level: String(id), score: sc, sec: t }) }, rp = rk.res; window.__lastRank = rk;
-    add(rp.tier ? '官方 LINE 點數' : '官方 LINE 分數存摺', (rp.tier ? (rp.counted ? '今天累計 ' + rp.today.toLocaleString() + ' 分＝' + rp.pts + ' 點' + (rp.tap ? (rp.lit ? '・這局新亮 ' + rp.lit + ' 格' : '') + (rp.claim ? '，回樂園領 ' + rp.claim + ' 點！' : '') : rp.gain ? '（這局 +' + rp.gain + ' 點）' : '') + (rp.next ? '・再 ' + rp.next.need.toLocaleString() + ' 分多 1 點' : rp.pts >= rp.cap ? '・今天已拿滿' : '') + (rp.mult > 1 ? '・' + rp.event + ' ×' + rp.mult : '') : '今天這關已經算過分了（明天再來）') : rp.counted ? '+' + rp.add + ' 分' + (rp.mult > 1 ? '（' + rp.event + ' ×' + rp.mult + '）' : '') + '・存摺 ' + rp.bank + ' 分' : '今天這關已經算過分了（明天再來）')); } catch (e) {} }
+    add(rp.tier ? '官方 LINE 點數' : '官方 LINE 分數存摺', (rp.tier ? (rp.counted ? '今天累計 ' + rp.today.toLocaleString() + ' 分' + (rp.pts ? '＝' + rp.pts + ' 點' : '') + (rp.tap ? (rp.lit ? '・這局新亮 ' + rp.lit + ' 格' : '') + (rp.claim ? '，回樂園領 ' + rp.claim + ' 點！' : '') : rp.gain ? '（這局 +' + rp.gain + ' 點）' : '') + (rp.next ? (rp.pts ? '・再 ' + rp.next.need.toLocaleString() + ' 分多 1 點' : '・再 ' + rp.next.need.toLocaleString() + ' 分就拿到第 1 點') : rp.pts >= rp.cap ? '・今天已拿滿' : '') + (rp.mult > 1 ? '・' + rp.event + ' ×' + rp.mult : '') : '今天這關已經算過分了（明天再來）') : rp.counted ? '+' + rp.add + ' 分' + (rp.mult > 1 ? '（' + rp.event + ' ×' + rp.mult + '）' : '') + '・存摺 ' + rp.bank + ' 分' : '今天這關已經算過分了（明天再來）')); } catch (e) {} }
   if (won && window.KiteCore && KiteCore.rankText && window.__lastRank) {      /* D173：過關才秀名次，輸了不恭喜 */ const tx = KiteCore.rankText(window.__lastRank); if (tx) add('本月排名', tx + ' 🏆'); }      // D133：結算直接看到名次
+  { rows.classList.remove('open'); let mb = $('moreRows'); if (!mb) { mb = document.createElement('button'); mb.type = 'button'; mb.id = 'moreRows'; mb.className = 'moreRows'; rows.after(mb); } mb.textContent = '更多紀錄 ▾'; mb.onclick = () => { const o = rows.classList.toggle('open'); mb.textContent = o ? '收起 ▴' : '更多紀錄 ▾'; }; }
   const un = $('unlockNote'); un.hidden = true;
   if (won && progress.unlocked <= id && STAGES[id] && !STAGES[id].locked) { progress.unlocked = id + 1; un.textContent = '第 ' + (id + 1) + ' 關「' + STAGES[id].name + '」已開放！'; un.hidden = false; }
   saveProgress();

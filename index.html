@@ -63,6 +63,9 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .card h1{font-family:var(--display);font-size:34px;line-height:1.1;margin:0;text-wrap:balance}
 .card h2{font-family:var(--display);font-size:24px;line-height:1.2;margin:0}
 .card p{margin:0;color:var(--muted);font-size:14px}
+.chips{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:4px 0 2px}.chips>div{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:6px;align-items:center;text-align:left;background:#F3EAD8;border-radius:12px;padding:7px 9px}.chips i{grid-row:1/3;font-style:normal;font-size:22px;line-height:1}.chips b{font-size:14px}.chips span{font-size:11.5px;color:#5B6B78;line-height:1.3}.chips>div:not(#howRule){grid-template-columns:1fr;text-align:center;justify-items:center;padding:6px 4px}.chips>div:not(#howRule) i{grid-row:auto}#howRule{grid-column:1/-1}
+.more{text-align:left;font-size:13px;margin:2px 0}.more summary{cursor:pointer;color:#2F7F86;font-weight:700;list-style:none;text-align:center;padding:4px}.more summary::after{content:' ▾'}.more[open] summary::after{content:' ▴'}.more .how{margin-top:6px}
+.rows .xr{display:none}.rows.open .xr{display:block}.moreRows{display:block;margin:4px auto 0;border:0;background:none;color:#2F7F86;font:700 13px/1.4 inherit;font-family:inherit;cursor:pointer;padding:4px 10px}
 .how{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;text-align:left;font-size:14px}
 .how li{display:flex;gap:8px;align-items:baseline}
 .how b{flex:none;min-width:3.6em;color:var(--ink)}
@@ -192,15 +195,18 @@ body:not(.qa) #ask, body:not(.qa) #copyBtn{display:none!important}
       <p id="sessionNote">60 秒內，看你能幫小鳶拿到幾分。</p>
       <div class="pick" id="sessionPick" role="group" aria-label="選擇關卡" hidden></div>
       <div class="dexline" id="dexLine"></div>
+      <div class="chips" aria-label="怎麼玩">      <!-- D174：玩法改成四張小卡，長說明收進「更多說明」 -->
+        <div id="howRule"><i>🐟</i><b>越深越高分</b><span>小卷成群、白帶魚扭著游</span></div>
+        <div><i>👆</i><b>點魚</b><span>小鳶俯衝去抓</span></div>
+        <div><i>🔥</i><b>連抓加分</b><span>連 3 條起每條 +20</span></div>
+        <div><i>🦈</i><b>鯨鯊加倍</b><span>能量滿了按右下角</span></div>
+      </div>
+      <details class="more"><summary>更多說明</summary>
       <ul class="how">
-        <li><b>點魚</b><span>點水裡的魚，小鳶會俯衝下去抓</span></li>
-        <li id="howRule"><b>六種漁獲</b><span>越深分數越高。小卷成群，白帶魚扭著游</span></li>
-        <li><b>連抓</b><span>連續抓到 3 條起，每條多 20 分</span></li>
         <li><b>垃圾</b><span>抓到會暈一下，要避開</span></li>
-        <li><b>天色</b><span>一局裡會自己換：早上→傍晚→夜晚，每個時段魚不一樣（不一定從早上開始）</span></li>
-        <li><b>鯨鯊</b><span>抓魚會累積能量，滿了按右下角鯨鯊鍵，鯨鯊游出來 10 秒分數加倍</span></li>
-        <li><b>便當</b><span>今天算分場次的分數加起來到了門檻，就能在「小鳶樂園」領點數；點數可以到「港口換禮」換便當和贈品</span></li>
-      </ul>
+        <li><b>天色</b><span>一局裡會自己換：早上→傍晚→夜晚，每個時段魚不一樣</span></li>
+        <li><b>點數</b><span>今天算分場次的分數加起來到了門檻，就能在「小鳶樂園」領點數，到「港口換禮」換便當和贈品</span></li>
+      </ul></details>
       <button class="btn" id="startBtn">開始</button>
       <button class="btn quiet" id="toMapBtn">回關卡地圖</button>
       <p class="note ptnote"></p>
@@ -443,7 +449,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.31',
+  version: '0.32',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -679,7 +685,7 @@ function resolveDive() {
     const def = CONFIG.fish[best.type], inEvent = EVENT(), mult = inEvent ? CONFIG.ult.mult : 1, lucky = best.type === LK(), gain = def.kg * mult * (lucky ? LUCKY_MUL : 1);
     kg += gain; stats.hits++; stats.counts[best.type]++; if (inEvent) stats.kgInEvent += gain; else { energy = Math.min(CONFIG.ult.need, energy + (def.rare ? 3 : def.kg >= 1.5 ? 2 : 1)); ultUI(); } kite.carry = watch ? null : best.type; firstCatchDone = true; if (watch) { stars(best.x, best.y, 8, 55, '#FFFFFF'); flash = Math.max(flash, 0.18); } if (best.jp === 'air') { stats.jumps = (stats.jumps || 0) + 1; }
     stats.combo++; stats.bestCombo = Math.max(stats.bestCombo, stats.combo); stats.missRun = 0;
-    if (window.KiteBoard) KiteBoard.ev('fish_catch', { sp: best.type });      /* D174：告示板委託 */
+    if (window.KiteBoard) KiteBoard.ev('fish_catch', { sp: best.type });      /* D175：告示板委託 */
     if (!dex[best.type]) { dex[best.type] = true; stats.newDex.push(best.type); try { localStorage.setItem('kiteFishingDex2', JSON.stringify(dex)); } catch (e) {} }
     say((lucky ? '幸運魚！' : '') + (watch ? '記錄 ' : best.jp === 'air' ? '空中抓到 ' : '') + def.name + ' +' + PTS(gain) + (mult > 1 ? ' ×' + mult : ''), tx, ty - 18, mult > 1 || def.rare || lucky ? '#FFE08A' : '#fff'); if (lucky) stars(tx, ty, 6, 60, '#FFE08A');
     if (stats.combo >= CONFIG.combo.from) { kg += CONFIG.combo.bonus; stats.comboBonus += CONFIG.combo.bonus; if (stats.combo === CONFIG.combo.from || stats.combo % 5 === 0) say('連抓 ' + stats.combo + '！', tx, ty - 48, '#BFF0D0'); stars(tx, ty, 5, 50, '#9FF0C8'); }      /* C-94：連抓只在第 3、5、10…條跳字，其他用徽章；薄荷綠小水花（ChatGPT C-88 建議） */
@@ -1269,7 +1275,7 @@ function renderStart() {
   });
   $('sessionNote').textContent = LVL().note;
   { const i = CONFIG.stages.indexOf(LVL()); $('stgName').textContent = LVL().full || LVL().name; $('stgNo').textContent = '小鳶捕魚・第 ' + (i + 1) + ' 關'; }
-  { const hr = $('howRule'), hw = LVL().how; if (hr && hw) { hr.firstChild.textContent = hw[0]; hr.lastChild.textContent = hw[1]; } }
+  { const hr = $('howRule'), hw = LVL().how; if (hr && hw) { hr.querySelector('b').textContent = hw[0]; hr.querySelector('span').textContent = hw[1]; } }
   if (0) { let nl = $('nightLine'); if (!nl) { nl = document.createElement('p'); nl.id = 'nightLine'; nl.className = 'lucky nightTip'; $('sessionNote').after(nl); } const nt = CONFIG.sessions.find((x) => x.id === 'night'); nl.hidden = !NIGHT_NOW && !DUSK_NOW; const dk = CONFIG.sessions.find((x) => x.id === 'dusk'); nl.textContent = NIGHT_NOW ? (nt && isOpen(nt) ? '🌙 現在是晚上，漁船的燈亮了，夜釣場小卷特別多！' : '🌙 現在是晚上～先玩過「午後」「黃昏」，就能開放夜釣場') : (dk && isOpen(dk) ? '🌇 太陽快下山了，黃昏場的白帶魚正多！' : '🌇 傍晚了～先玩一局「午後」，就能開放黃昏場'); }
   { let lk = $('luckyLine'); if (!lk) { lk = document.createElement('p'); lk.id = 'luckyLine'; lk.className = 'lucky'; $('sessionNote').after(lk); } lk.textContent = '🍀 今日幸運魚：' + CONFIG.fish[LK()].name + '（抓到分數 ×1.5，明天會換）'; }
   const L = SP(), vb = LVL().verb || '抓', got = L.filter((k) => dex[k]), miss = L.filter((k) => !dex[k]), dl = $('dexLine'); dl.textContent = '';
@@ -1373,7 +1379,7 @@ function finish() { BGM.stop(); if (window.KiteBoard) KiteBoard.ev('run_end', { 
       if (k < 1) requestAnimationFrame(step); else { el.style.transition = 'transform .18s'; el.style.display = 'inline-block'; el.style.transform = 'scale(1.18)'; setTimeout(() => { el.style.transform = ''; }, 180); } };
     requestAnimationFrame(step); }
   const acc = stats.dives ? Math.round(stats.hits / stats.dives * 100) : 0, rows = $('rows'); rows.textContent = '';
-  const add = (a, b, isNew) => { const l = document.createElement('span'); l.textContent = a; if (isNew) { const n = document.createElement('span'); n.className = 'new'; n.textContent = '新圖鑑'; l.appendChild(n); } const r = document.createElement('span'); r.textContent = b; if (String(b).length > 16) { r.style.gridColumn = '1 / -1'; r.style.textAlign = 'left'; r.style.fontWeight = '600'; }      /* QA：長的說明（官方 LINE 點數）自己一整行，不把左邊擠成直排 */ rows.append(l, r); };
+  let xr = false; const add = (a, b, isNew) => { const l = document.createElement('span'); l.textContent = a; if (xr) l.classList.add('xr'); if (isNew) { const n = document.createElement('span'); n.className = 'new'; n.textContent = '新圖鑑'; l.appendChild(n); } const r = document.createElement('span'); r.textContent = b; if (xr) r.classList.add('xr'); if (String(b).length > 16) { r.style.gridColumn = '1 / -1'; r.style.textAlign = 'left'; r.style.fontWeight = '600'; }      /* QA：長的說明（官方 LINE 點數）自己一整行，不把左邊擠成直排 */ rows.append(l, r); };
   const VB = LVL().verb || '抓', UN = (k) => (k === 'squid' || k === 'lobster' ? ' 隻' : ' 條');
   for (const k of SP()) if (stats.counts[k]) add(CONFIG.fish[k].name + '（每' + UN(k).trim() + ' ' + PTS(CONFIG.fish[k].kg) + ' 分）', (VB === '抓' ? '' : VB + ' ') + stats.counts[k] + UN(k), stats.newDex.includes(k));
   if (!stats.hits) add('這局沒有' + VB + '到魚', '0 條');
@@ -1391,13 +1397,15 @@ function finish() { BGM.stop(); if (window.KiteBoard) KiteBoard.ev('run_end', { 
   add(LVL().name + '最佳', PTS(prog.best[sid]) + ' 分' + (old !== undefined && kg > old ? '　新紀錄' : ''));
   /* v0.28（C-185，D71）：把這局分數送進官方 LINE 的「遊戲分數存摺」（每關每天前幾次才算、活動時段乘倍數；規則在後台改）。沒有載入共用資料層時（G 槽複本）就跳過 */
   window.__lastRank = null; if (window.KiteCore) { try { const rk = KiteCore.rankAround ? KiteCore.rankAround('fish', sid, () => KiteCore.reportPlay({ game: 'fish', level: sid, score: PTS(kg), sec: t })) : { res: KiteCore.reportPlay({ game: 'fish', level: sid, score: PTS(kg), sec: t }) }, rp = rk.res; window.__lastRank = rk;
-    add(rp.tier ? '官方 LINE 點數' : '官方 LINE 分數存摺', (rp.tier ? (rp.counted ? '今天累計 ' + rp.today.toLocaleString() + ' 分＝' + rp.pts + ' 點' + (rp.tap ? (rp.lit ? '・這局新亮 ' + rp.lit + ' 格' : '') + (rp.claim ? '，回樂園領 ' + rp.claim + ' 點！' : '') : rp.gain ? '（這局 +' + rp.gain + ' 點）' : '') + (rp.next ? '・再 ' + rp.next.need.toLocaleString() + ' 分多 1 點' : rp.pts >= rp.cap ? '・今天已拿滿' : '') + (rp.mult > 1 ? '・' + rp.event + ' ×' + rp.mult : '') : '今天這場已經算過分了（明天再來）') : rp.counted ? '+' + rp.add + ' 分' + (rp.mult > 1 ? '（' + rp.event + ' ×' + rp.mult + '）' : '') + '・存摺 ' + rp.bank + ' 分' : '今天這場已經算過分了（明天再來）')); } catch (e) {} }
+    add(rp.tier ? '官方 LINE 點數' : '官方 LINE 分數存摺', (rp.tier ? (rp.counted ? '今天累計 ' + rp.today.toLocaleString() + ' 分' + (rp.pts ? '＝' + rp.pts + ' 點' : '') + (rp.tap ? (rp.lit ? '・這局新亮 ' + rp.lit + ' 格' : '') + (rp.claim ? '，回樂園領 ' + rp.claim + ' 點！' : '') : rp.gain ? '（這局 +' + rp.gain + ' 點）' : '') + (rp.next ? (rp.pts ? '・再 ' + rp.next.need.toLocaleString() + ' 分多 1 點' : '・再 ' + rp.next.need.toLocaleString() + ' 分就拿到第 1 點') : rp.pts >= rp.cap ? '・今天已拿滿' : '') + (rp.mult > 1 ? '・' + rp.event + ' ×' + rp.mult : '') : '今天這場已經算過分了（明天再來）') : rp.counted ? '+' + rp.add + ' 分' + (rp.mult > 1 ? '（' + rp.event + ' ×' + rp.mult + '）' : '') + '・存摺 ' + rp.bank + ' 分' : '今天這場已經算過分了（明天再來）')); } catch (e) {} }
   if (window.KiteCore && KiteCore.rankText && window.__lastRank) { const tx = KiteCore.rankText(window.__lastRank); if (tx) add('本月排名', tx + ' 🏆'); }      // D133：結算直接看到名次
+  xr = true;      /* D174：下面這些收進「更多紀錄」，結算先只看漁獲、幸運魚、最佳、點數、名次 */
   /* v0.24（C-162）：結算多一行「今天」——這支手機今天玩了幾局、一共抓了幾條（只記在這支手機；過了午夜重新算） */
   { const d = new Date(), day = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(), td = prog.today && prog.today.d === day ? prog.today : { d: day, g: 0, n: 0 };
     td.g++; td.n += stats.hits || 0; prog.today = td; saveProg();
     add('今天', '第 ' + td.g + ' 局・一共抓了 ' + td.n + ' 條' + (td.g >= 3 ? ' 🎣' : '')); }
   add('鯨鯊加倍時段', PTS(stats.kgInEvent) + ' 分'); add('連抓加成（最多連 ' + stats.bestCombo + '）', '+' + PTS(stats.comboBonus) + ' 分'); add('命中率', acc + '%（' + stats.hits + '/' + stats.dives + '）'); add('抓到垃圾', stats.trash + ' 次');
+  { rows.classList.remove('open'); let mb = $('moreRows'); if (!mb) { mb = document.createElement('button'); mb.type = 'button'; mb.id = 'moreRows'; mb.className = 'moreRows'; rows.after(mb); } mb.textContent = '更多紀錄 ▾'; mb.onclick = () => { const o = rows.classList.toggle('open'); mb.textContent = o ? '收起 ▴' : '更多紀錄 ▾'; }; }
   // 港邊圖鑑冊：六種漁獲的小卡，抓過的可以點開看小知識；這局新抓到的標成金色
   const SPL = SP(), got = SPL.filter((k) => dex[k]).length, box = $('dex'), fact = $('fact'); box.textContent = '';
   const tell = (k, b) => { fact.textContent = CONFIG.fish[k].name + '：' + CONFIG.fish[k].fact; for (const x of box.children) x.setAttribute('aria-pressed', String(x === b)); };
