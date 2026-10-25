@@ -85,6 +85,7 @@
   function grow(k) { return CROP[k].min * MIN; }
   function stage(p) { if (!p || !p.v) return -1; var a = Date.now() - p.t; return a >= grow(p.v) ? 3 : a >= grow(p.v) / 2 ? 2 : 0; }
   function mins(ms) { var m = Math.max(1, Math.ceil(ms / MIN)); return m >= 60 ? Math.floor(m / 60) + ' 小時' + (m % 60 ? ' ' + m % 60 + ' 分' : '') : m + ' 分鐘'; }
+  function sm(ms) { var m = Math.max(1, Math.ceil(ms / MIN)); return m >= 60 ? Math.floor(m / 60) + '時' + (m % 60 ? m % 60 + '分' : '') : m + '分'; }      /* D174：菜圃上的小標籤用短字 */
   function itemName(k) { return CROP[k] ? CROP[k].name : GOOD[k] ? GOOD[k].name : k; }
   function itemIc(k, cls) { if (CROP[k] && CROP[k].f) return img('crop_' + CROP[k].f + '_mature', cls); if (GOOD[k]) return img('product_' + k, cls); var e = CROP[k] ? CROP[k].em : GOOD[k] ? GOOD[k].em : '❔'; return '<span class="' + (cls || 'hi') + ' emo">' + e + '</span>'; }
   function img(src, cls) { return '<img class="' + (cls || 'hi') + '" src="' + A + src + '.webp" alt="" draggable="false">'; }
@@ -125,7 +126,9 @@
   }
   function seedPick(i) {
     var html = '<h3>要種什麼？</h3><p class="mu sm">每種菜長大的時間不一樣，長好了會一直等你，不會枯掉。</p><div class="list" style="margin:0">';
-    SEEDS.forEach(function (k) { var o = open(k), c = CROP[k]; html += '<button type="button" class="opt" data-k="' + k + '"' + (o ? '' : ' disabled') + '><span class="ic em">' + (o ? cropImg(k, 3) : '❔') + '</span><span class="tx">' + (o ? c.name + '<em class="tm">' + mins(c.min * MIN) + '</em><em class="tm">收 ' + (c.y || 2) + ' 份</em>' : '還沒拿到的種子') + '<small>' + c.from + '</small></span></button>'; });
+    var lockedS = SEEDS.filter(function (k) { return !open(k); });
+    SEEDS.filter(open).forEach(function (k) { var o = true, c = CROP[k]; html += '<button type="button" class="opt" data-k="' + k + '"' + (o ? '' : ' disabled') + '><span class="ic em">' + (o ? cropImg(k, 3) : '❔') + '</span><span class="tx">' + (o ? c.name + '<em class="tm">' + mins(c.min * MIN) + '</em><em class="tm">收 ' + (c.y || 2) + ' 份</em>' : '還沒拿到的種子') + '<small>' + c.from + '</small></span></button>'; });
+    if (lockedS.length) html += '<div class="lockRow"><span>' + lockedS.map(function () { return '❔'; }).join('') + '</span>還有 ' + lockedS.length + ' 種種子：在港灣蓋章認識港口朋友就會拿到</div>';
     html += '</div><div class="row"><button class="btn ghost" id="hmX">關閉</button></div>';
     modal(html);
     document.querySelectorAll('.hm .opt[data-k]').forEach(function (b) { b.onclick = function () { H().plots[i] = { v: b.dataset.k, t: Date.now() }; sv(); close(); pop(PLOT[i][0], PLOT[i][1] - 6, '🌱'); say('種好了，' + CROP[b.dataset.k].name + '加油！'); }; });
@@ -135,10 +138,10 @@
     var h = H(), html = '';
     PLOTG.forEach(function (g, i) {
       var p = h.plots[i], ok = landOpen(i), s = ok ? stage(p) : -2, lbl = '';
-      if (!ok) lbl = h.land[i] ? '⛏️ ' + mins(h.land[i] - Date.now()) : h.xp >= LAND[i] ? '⛏️ 可開墾' : '🔒';
-      else if (s < 0) lbl = '＋ 種菜'; else if (s === 3) lbl = '可以收成！'; else lbl = mins(p.t + grow(p.v) - Date.now());
+      if (!ok) lbl = h.land[i] ? '⛏️' + sm(h.land[i] - Date.now()) : h.xp >= LAND[i] ? '⛏️' : '🔒';
+      else if (s < 0) lbl = '＋'; else if (s === 3) lbl = '🧺'; else lbl = '⏱' + sm(p.t + grow(p.v) - Date.now());
       var bw = g[2] - g[0], bh = g[3] - g[1], cx = (g[4] - g[0]) / bw * 100, cw = g[6] / bw * 100;
-      html += '<button type="button" class="hmPlot' + (!ok ? ' wild' : s === 3 ? ' ripe' : '') + '" data-i="' + i + '" style="left:' + g[0] + '%;top:' + g[1] + '%;width:' + bw + '%;height:' + bh + '%" aria-label="菜圃 ' + (i + 1) + '：' + lbl + '">' +
+      html += '<button type="button" class="hmPlot' + (!ok ? ' wild' : s === 3 ? ' ripe' : '') + '" data-i="' + i + '" style="left:' + g[0] + '%;top:' + g[1] + '%;width:' + bw + '%;height:' + bh + '%" aria-label="菜圃 ' + (i + 1) + '：' + (!ok ? '還沒開墾' : s < 0 ? '空地，點一下種菜' : s === 3 ? '可以收成' : '長大中') + '">' +
         (!ok ? '<span class="cover">' + img(h.land[i] ? 'soil_clearing' : 'soil_weeds', 'si') + '</span>' : '') +
         (ok && s >= 0 ? '<span class="crop" style="left:' + cx + '%;width:' + cw + '%;bottom:' + ((g[3] - g[5]) / bh * 100) + '%">' + cropImg(p.v, s) + '</span>' : '') + '<span class="lb">' + lbl + '</span></button>';
     });
@@ -160,7 +163,7 @@
     if (a.k === 'dog') { say(A0.says[Math.floor(Math.random() * 2)]); return; }
     var lines = Object.keys(A0.make).map(function (g) { return '<span class="fi">' + itemIc(g, 'fic') + GOOD[g].name + '：還要 ' + mins(a.t[g] + period(g, a.k) - Date.now()) + '</span>'; }).join('<br>');
     var fd = A0.feed, ok = (h.fridge[fd] || 0) >= 1;
-    modal('<h3>' + A0.em + ' ' + A0.name + '</h3><p>' + lines + '</p><p class="mu sm">餵一份' + itemName(fd) + '，下一批會快一半（可以不餵，時間到也會自己好）。' + (hasDog() ? '狗狗在顧牧場，大家都快了 25%。' : '') + '</p><div class="row"><button class="btn" id="hmFeed"' + (ok ? '' : ' disabled') + '>' + (ok ? '餵' + itemName(fd) + '×1' : '冰箱沒有' + itemName(fd)) + '</button><button class="btn ghost" id="hmX">關閉</button></div>');
+    modal('<h3 class="aniH">' + spP(a.k) + A0.name + '</h3><p>' + lines + '</p><p class="mu sm">餵一份' + itemName(fd) + '，下一批會快一半（可以不餵，時間到也會自己好）。' + (hasDog() ? '狗狗在顧牧場，大家都快了 25%。' : '') + '</p><div class="row"><button class="btn" id="hmFeed"' + (ok ? '' : ' disabled') + '>' + (ok ? '餵' + itemName(fd) + '×1' : '冰箱沒有' + itemName(fd)) + '</button><button class="btn ghost" id="hmX">關閉</button></div>');
     $('hmFeed').onclick = function () { if ((h.fridge[fd] || 0) < 1) return; take(mk(fd, 1)); Object.keys(A0.make).forEach(function (g) { var left = a.t[g] + period(g, a.k) - Date.now(); if (left > 0) a.t[g] -= left / 2; }); sv(); close(); say(A0.says[1]); zooRender(true); };
     $('hmX').onclick = close;
   }
@@ -239,9 +242,11 @@
     if (tab === 'bento') {
       BORDER.forEach(function (k) { var b = BENTO[k], ok = have(b.need), c = (window.__travel && __travel.CFG.bentos[k]) || {}; html += '<button type="button" class="opt' + (ok ? ' can' : '') + '" data-b="' + k + '"' + (ok ? '' : ' disabled') + '><span class="ic em">' + img(BIMG[k]) + '</span><span class="tx">' + b.name + '<small>' + needLine(b.need) + (c.note ? '<br>' + c.note : '') + '<br>' + (ok ? '<b class="ok">材料齊了，點一下開始做</b>' : '<b class="no">還缺 ' + lack(b.need) + '</b>') + '</small></span><span class="n">' + (h.hb[k] ? '有 ' + h.hb[k] : '') + '</span></button>'; });
     } else {
-      DORDER.forEach(function (k) { var d = DISH[k], o = open(k), ok = o && have(d.need); html += '<button type="button" class="opt' + (ok ? ' can' : '') + '" data-k="' + k + '"' + (ok ? '' : ' disabled') + '><span class="ic em">' + (o ? dishImg(k) : '❔') + '</span><span class="tx">' + (o ? d.name + (h.book[k] ? '' : ' <em class="nw">新菜</em>') : '還沒學會的招牌菜') + '<small>' + (o ? needLine(d.need) + '<br>' + (ok ? '<b class="ok">材料齊了，點一下開始做</b>' : '<b class="no">還缺 ' + lack(d.need) + '</b>') : '認識' + CROP[k].from.split('的').pop() + '後就會學到') + '</small></span><span class="n">' + (h.box[k] ? '料理盒 ' + h.box[k] : '') + '</span></button>'; });
+      var lockedD = DORDER.filter(function (k) { return !open(k); });
+      DORDER.filter(open).forEach(function (k) { var d = DISH[k], o = true, ok = have(d.need); html += '<button type="button" class="opt' + (ok ? ' can' : '') + '" data-k="' + k + '"' + (ok ? '' : ' disabled') + '><span class="ic em">' + (o ? dishImg(k) : '❔') + '</span><span class="tx">' + (o ? d.name + (h.book[k] ? '' : ' <em class="nw">新菜</em>') : '還沒學會的招牌菜') + '<small>' + (o ? needLine(d.need) + '<br>' + (ok ? '<b class="ok">材料齊了，點一下開始做</b>' : '<b class="no">還缺 ' + lack(d.need) + '</b>') : '認識' + CROP[k].from.split('的').pop() + '後就會學到') + '</small></span><span class="n">' + (h.box[k] ? '料理盒 ' + h.box[k] : '') + '</span></button>'; });
+      if (lockedD.length) html += '<div class="lockRow"><span>' + lockedD.map(function () { return '❔'; }).join('') + '</span>還有 ' + lockedD.length + ' 道招牌菜：在港灣蓋章認識港口朋友，就會學到</div>';      /* D174：還沒學會的不再一排排灰色，收成一行 */
     }
-    html += '</div><p class="mu sm">' + (tab === 'bento' ? '手作便當可以帶小鳶出門旅行（打包時在「便當」裡選）。手作便當的旅行不會撿到點數或券；點數便當還是到港口換禮換。' : '配菜帶出門，第一次帶回來會有一張料理小記。') + '</p><p class="mu sm">冰箱：' + fridgeLine() + '</p><div class="row"><button class="btn ghost" id="hmOrd">📋 港邊訂單</button><button class="btn ghost" id="hmBook">📖 菜譜冊</button><button class="btn ghost" id="hmX">關閉</button></div>';
+    html += '</div><p class="mu sm">' + (tab === 'bento' ? '手作便當可以帶小鳶出門旅行（打包時在「便當」裡選）。手作便當的旅行不會撿到點數或券；點數便當還是到港口換禮換。' : '配菜帶出門，第一次帶回來會有一張料理小記。') + '</p><p class="mu sm">冰箱：' + fridgeLine() + '</p><div class="row"><button class="btn ghost" id="hmOrd">📋 訂單</button><button class="btn ghost" id="hmBook">📖 菜譜</button><button class="btn ghost" id="hmX">關閉</button></div>';
     modal(html);
     document.querySelectorAll('.hmT button').forEach(function (b) { b.onclick = function () { kitchen(b.dataset.t); }; });
     document.querySelectorAll('.hm .opt[data-k]').forEach(function (b) { b.onclick = function () { cook('d', b.dataset.k); }; });
@@ -470,7 +475,7 @@
     '.hmPlot,.hmPen,.hmStove{position:absolute;transform:translate(-50%,-100%);border:0;background:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;font-family:inherit;-webkit-tap-highlight-color:transparent}' +
     '.hmPlot{transform:none!important}.hmPlot .cover{position:absolute;inset:-6% -4%}.hmPlot .cover .si{width:100%;height:100%;object-fit:fill;opacity:.95}' +
     '.hmPlot .crop{position:absolute;transform:translateX(-50%);aspect-ratio:1;pointer-events:none}.hmPlot .crop .hi{width:100%;height:100%;object-fit:contain;object-position:50% 100%}.hmPlot .crop .emo{font-size:min(9vw,40px);align-items:flex-end}' +
-    '.hmPlot .lb,.hmStove .lb{white-space:nowrap;font-size:11px;font-weight:700;background:rgba(255,253,248,.92);color:#4A3426;border-radius:8px;padding:2px 6px;box-shadow:0 1px 3px rgba(0,0,0,.2)}.hmPlot .lb{position:absolute;left:50%;bottom:4%;transform:translateX(-50%);z-index:2;pointer-events:none;margin:0}.hmPlot.wild .lb{background:rgba(0,0,0,.45);color:#fff}.hmPlot.press{filter:brightness(1.12)}' +
+    '.hmPlot .lb,.hmStove .lb{white-space:nowrap;font-size:11px;font-weight:700;background:rgba(255,253,248,.92);color:#4A3426;border-radius:8px;padding:2px 6px;box-shadow:0 1px 3px rgba(0,0,0,.2)}.hmPlot .lb{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);z-index:2;pointer-events:none;margin:0;font-size:10.5px;padding:1px 6px;border-radius:999px;opacity:.92}.hmPlot.ripe .lb{font-size:15px;padding:2px 5px;bottom:58%;animation:hmB 1.2s ease-in-out infinite;box-shadow:0 0 0 2px #fff,0 2px 6px rgba(0,0,0,.3)}.hmPlot.wild .lb{background:rgba(0,0,0,.45);color:#fff}.hmPlot.press{filter:brightness(1.12)}' +
     '.hmPlot.ripe .lb,.hmPen.ripe .lb{background:#3E9B4F;color:#fff}.hmPlot.ripe .crop{animation:hmB 1.6s ease-in-out infinite}' +
     '@keyframes hmB{50%{transform:translateY(-4%) scale(1.04)}}' +
     '.hmPen{width:31%;aspect-ratio:1}.hmPen .pi{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}.hmPen .ai{position:absolute;left:22%;bottom:4%;width:56%;height:56%;object-fit:contain}' +
@@ -514,6 +519,7 @@
     '.vCard{position:relative;width:62%;max-width:220px;margin:0 auto 4px}.vCard .vi{width:100%;display:block}.vMood{position:absolute;right:-30%;top:4%;width:46%;background:#FFFDF8;border-radius:14px;padding:4px 4px 6px;box-shadow:0 3px 10px rgba(0,0,0,.2);text-align:center;transform:rotate(4deg)}.vMood .mi{width:100%;display:block}.vMood b{font-size:12px}.vMood .spP{width:100%;height:auto;aspect-ratio:1}' +
     '.vRow{display:flex;justify-content:center;gap:8px}.vRow .vi{width:40%;max-width:150px}.vRow.gifts .hi{width:84px;height:84px;animation:hmD .6s}' +
     '.spP{display:inline-block;width:44px;height:44px;background-repeat:no-repeat;background-size:1000% 100%;background-position:0 0;vertical-align:middle}.opt .em .spP{width:44px;height:44px}' +
+    '.lockRow{display:flex;flex-direction:column;align-items:center;gap:2px;margin:6px 0 2px;padding:8px;border:1.5px dashed #D9CBB0;border-radius:12px;color:#8A7A66;font-size:12px;text-align:center}.lockRow span{letter-spacing:2px;font-size:14px;opacity:.7}.aniH{display:flex;align-items:center;gap:6px}.aniH .spP{width:40px;height:40px}' +
     '.ordC[aria-pressed="true"]{border-color:#E39A1F;background:#FFF6E0}.oSwap{display:block;width:auto!important;flex:none;margin:-2px 0 8px auto;min-height:32px;padding:2px 12px;font-size:12px}.hmAni .bub .crate{font-size:22px;line-height:26px;width:26px;text-align:center}' +
     '.hm .row{position:sticky;bottom:-1px;background:var(--paper,#FFFDF8);padding-top:8px;margin-bottom:-4px}';      /* D172：清單很長時「關閉」鈕黏在下面 */
   document.head.appendChild(css);
