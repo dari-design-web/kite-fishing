@@ -20,7 +20,7 @@
   };
   var SEEDS = ['base', 'rice', 'grass', 's1', 's2', 's3', 's4', 's5', 's6'];
   /* ===== 牧場產品 ===== */
-  var GOOD = { gohan: { name: '白飯', em: '🍚', noImg: 1 }      /* 白飯、電鍋的正式圖等 GPT（20261027_1630），先用 emoji／鍋子圖 */, egg: { name: '雞蛋', em: '🥚' }, chicken: { name: '雞肉', em: '🍗', meat: 1 }, pork: { name: '豬肉', em: '🥩', meat: 1 }, milk: { name: '牛奶', em: '🥛' }, beef: { name: '牛肉', em: '🍖', meat: 1 } };      /* 圖：assets/home/product_*.webp（G104） */
+  var GOOD = { gohan: { name: '白飯', em: '🍚' }      /* D190：白飯碗圖 product_gohan（GPT G105 食物 v2 rice_bowl_v1） */, egg: { name: '雞蛋', em: '🥚' }, chicken: { name: '雞肉', em: '🍗', meat: 1 }, pork: { name: '豬肉', em: '🥩', meat: 1 }, milk: { name: '牛奶', em: '🥛' }, beef: { name: '牛肉', em: '🍖', meat: 1 } };      /* 圖：assets/home/product_*.webp（G104） */
   /* ===== D166（Dari 10/23）：牧場改成「一大片、大家和樂融融」——不分棚，動物在同一片草地走來走去，定時自己產東西，點一下就收。
      雞：雞蛋 30 分、雞肉 2 小時；豬：豬肉 90 分；牛：牛奶 40 分、牛肉 2.5 小時。可以餵飼料讓下一批快一半（選做）。
      動物要「領養」才會變多；條件先用收成次數暫代（之後改成任務／某種購買條件，Dari 還在想）。狗狗：全部產品時間少 25%。 */
@@ -269,7 +269,7 @@
       h.best = h.best || {}; if (stars && stars > (h.best[k] || 0)) h.best[k] = stars;
       if (!sv()) { give(d.need); toast('手機存不下來，這次先不算'); return; }
       if (window.KiteBoard && type === 'd') KiteBoard.ev('home_cook', { dish: k });      /* D175：告示板委託 */
-      modal('<div class="dish">' + (type === 'd' ? dishImg(k) : img(BIMG[k])) + '</div><h3 style="text-align:center">' + d.name + '做好了！' + (stars ? ' ' + '⭐'.repeat(stars) : '') + '</h3><p style="text-align:center">' + (first ? '第一次做，收進菜譜冊了！<br>' : '') + (type === 'd' ? '放進料理盒，打包出門時可以帶一份當配菜。' : ((veg || []).length ? '配菜：' + veg.map(itemName).join('、') + ((veg.length >= 2 && veg[0] !== veg[1]) ? '・🌈 彩色便當！' : '') + '<br>' : '') + '打包出門時，在「便當」裡選它就能帶小鳶去旅行。') + '</p><div class="row"><button class="btn" id="hmOk">好</button></div>');
+      modal((type === 'd' ? '<div class="dish">' + dishImg(k) + '</div>' : bentoBox(BENTO[k].main, veg, 0, 'big')) + '<h3 style="text-align:center">' + d.name + '做好了！' + (stars ? ' ' + '⭐'.repeat(stars) : '') + '</h3><p style="text-align:center">' + (first ? '第一次做，收進菜譜冊了！<br>' : '') + (type === 'd' ? '放進料理盒，打包出門時可以帶一份當配菜。' : ((veg || []).length ? '配菜：' + veg.map(itemName).join('、') + ((veg.length >= 2 && veg[0] !== veg[1]) ? '・🌈 彩色便當！' : '') + '<br>' : '') + '打包出門時，在「便當」裡選它就能帶小鳶去旅行。') + '</p><div class="row"><button class="btn" id="hmOk">好</button></div>');
       $('hmOk').onclick = function () { kitchen(); };
     }
     if (window.COOK) { close(); COOK.start({ name: d.name, need: d.need, kind: type === 'd' ? 'dish' : 'bento', items: cookItems(d.need) }, function (stars) { finish(stars); }); return; }
@@ -281,7 +281,7 @@
   /* D189：每種食材自己的準備動作（給 cook.js）：葉菜連點切；根莖先左右滑削皮再切；玉米往下滑剝粒；蛋點兩下打蛋再滑攪拌；肉點三下撒鹽 */
   var PREP = { base: [['切', 5, 'tap']], s4: [['切', 5, 'tap']], s3: [['切', 4, 'tap']], s1: [['削皮', 3, 'swipe'], ['切', 3, 'tap']], s5: [['削皮', 3, 'swipe'], ['切', 3, 'tap']], s6: [['削皮', 3, 'swipe'], ['切', 3, 'tap']], s2: [['剝玉米粒', 3, 'swipe', 'down']], egg: [['打蛋', 2, 'tap'], ['攪拌', 4, 'swipe']], chicken: [['撒鹽', 3, 'tap']], pork: [['撒鹽', 3, 'tap']], beef: [['撒鹽', 3, 'tap']] };
   function prepOf(k) { return (PREP[k] || []).map(function (x) { return { v: x[0], n: x[1], g: x[2], dir: x[3] }; }); }
-  function cookItems(need) { var o = {}; Object.keys(need).forEach(function (k) { var c = CROP[k]; o[k] = { name: itemName(k), e: EMO[k] || (GOOD[k] && GOOD[k].em) || '🍴', type: k === 'gohan' ? 'rice' : PREP[k] ? 'chop' : 'cook', steps: prepOf(k), img: c && c.f ? 'crop_' + c.f + '_mature' : GOOD[k] && !GOOD[k].noImg ? 'product_' + k : '', cut: c && c.f && k !== 'rice' && k !== 'grass' ? 'cut_' + c.f : '' }; }); return o; }
+  function cookItems(need) { var o = {}; Object.keys(need).forEach(function (k) { var c = CROP[k]; o[k] = { name: itemName(k), e: EMO[k] || (GOOD[k] && GOOD[k].em) || '🍴', type: k === 'gohan' ? 'rice' : PREP[k] ? 'chop' : 'cook', steps: prepOf(k), img: c && c.f ? 'crop_' + c.f + '_mature' : GOOD[k] && !GOOD[k].noImg ? 'product_' + k : '', cut: c && c.f && k !== 'rice' && k !== 'grass' ? 'cut_' + c.f : '' }; if (k === 'egg') { o[k].cut = 'egg_bowl'; o[k].cutMid = 1; } });      /* D190：打完蛋，砧板上換成 GPT 打蛋碗（攪拌、下鍋都用這張） */ return o; }
   function book() {
     var h = H(), html = '<h3>📖 菜譜冊與料理小記</h3><div class="list" style="margin:0">';
     DORDER.forEach(function (k) { var d = DISH[k], has = h.book[k], st = h.stories[k]; html += '<button type="button" class="opt"' + (st ? ' data-st="' + k + '"' : ' disabled') + (has ? '' : ' style="opacity:.5"') + '><span class="ic em">' + (st ? img('landmark_' + d.lm) : has ? dishImg(k) : '❔') + '</span><span class="tx">' + (has ? d.name + (h.best && h.best[k] ? ' ' + '⭐'.repeat(h.best[k]) : '') : '還沒做過') + '<small>' + (st ? '<b>' + d.story[0] + '</b>・點一下看' : has ? '帶這道菜出門一趟，就會收到料理小記' : '') + '</small></span></button>'; });
@@ -328,7 +328,7 @@
     if (r.st === 'done') { give({ gohan: r.n * 2 }); h.rc = null; sv(); pop(26, 52, '+' + r.n * 2 + ' 白飯'); say(['飯煮好了，好香！', '白飯熱騰騰的～', '電鍋跳起來了！'][Math.floor(Math.random() * 3)]); render(); return; }
     if (r.st === 'cook') { say('飯還要 ' + mins(r.left) + '，電鍋咕嘟咕嘟～'); return; }
     var have0 = h.fridge.rice || 0;
-    var html = '<h3>🍚 電鍋煮飯</h3><p>稻米要先煮成<b>白飯</b>，做菜和便當才用得到。<br>1 份稻米 → 2 碗白飯，大約 ' + mins(RC_MIN * MIN) + '。</p><p class="mu sm">冰箱：稻米 ' + have0 + ' 份・白飯 ' + (h.fridge.gohan || 0) + ' 碗</p>';
+    var html = '<h3>🍚 電鍋煮飯</h3><div class="rcPic">' + img('rc_empty') + '<span>→</span>' + img('product_gohan') + '<b>×2</b></div><p>稻米要先煮成<b>白飯</b>，做菜和便當才用得到。<br>1 份稻米 → 2 碗白飯，大約 ' + mins(RC_MIN * MIN) + '。</p><p class="mu sm">冰箱：稻米 ' + have0 + ' 份・白飯 ' + (h.fridge.gohan || 0) + ' 碗</p>';
     if (!have0) html += '<p class="mu sm">冰箱沒有稻米了，去花園種稻米吧！</p><div class="row"><button class="btn" id="hmGo2">去花園</button><button class="btn ghost" id="hmX">關閉</button></div>';
     else html += '<div class="rcN">' + [1, 2, 3].filter(function (n) { return n <= Math.min(RC_MAX, have0); }).map(function (n) { return '<button type="button" class="btn' + (n === Math.min(RC_MAX, have0) ? '' : ' ghost') + '" data-rc="' + n + '">放 ' + n + ' 份稻米（煮出 ' + n * 2 + ' 碗）</button>'; }).join('') + '</div><div class="row"><button class="btn ghost" id="hmX">先不要</button></div>';
     modal(html);
@@ -350,22 +350,33 @@
   function sumModal(title, got, note) { modal('<h3>' + title + '</h3><div class="sumG">' + Object.keys(got).map(function (k) { return '<span>' + itemIc(k, 'sgi') + '<b>' + itemName(k) + '</b>+' + got[k] + '</span>'; }).join('') + '</div>' + (note ? '<p class="mu sm">' + note + '</p>' : '') + '<div class="row"><button class="btn" id="hmOk">好</button></div>'); $('hmOk').onclick = close; say('收好了，冰箱滿滿的！'); }
   /* --- 便當自己配菜：任何一種菜都能放；兩種不同的菜＝彩色便當，出門的信會提到吃了什麼 --- */
   var VEG = ['base', 's1', 's2', 's3', 's4', 's5', 's6'];
-  var VEGLINE = { base: '小白菜脆脆的，配飯剛剛好！', s1: '地瓜甜甜的，吃了好有力氣！', s2: '玉米粒一顆一顆，好像小星星！', s3: '番茄酸酸甜甜，吃完精神都來了！', s4: '青蔥好香，風吹過來都是香味！', s5: '南瓜鬆鬆軟軟，好像在吃太陽！', s6: '紅蘿蔔好甜，小鳶眼睛都亮起來了！' };
+  /* D190：GPT G105 食物 v2「配菜旅行感想・小鳶口吻 v1」7 種各 2 句，信裡用「便當裡有○○和○○。小鳶說：『…』」 */
+  var VEGLINE = { base: ['我把小白菜吃光光了！', '出門帶著小白菜，我好開心！'], s1: ['我咬一口地瓜，心裡甜甜的！', '我把地瓜留到最後，慢慢吃完！'], s2: ['我一口一口吃玉米，好開心！', '我帶著玉米出門，便當好香呀！'], s3: ['我吃到番茄，嘴角都笑彎了！', '這趟有番茄陪我，我好喜歡！'], s4: ['我聞到青蔥香，就想吃便當了！', '我把青蔥拌進飯裡，好香呀！'], s5: ['我吃著南瓜，開心地晃晃腳！', '我吃完南瓜，還捨不得蓋上便當！'], s6: ['我把紅蘿蔔吃光了，一口也沒剩！', '出門吃到紅蘿蔔，我笑咪咪的！'] };
+  /* D190：三格便當盒（GPT bento_box_empty_top_v3＋12 種便當格食材，座標照「三格便當靜態建議座標_v1」換成盒子裁切後的 %）：左大格白飯、右上主菜、右下配菜（兩種各占一半）。
+     edit＝挑配菜畫面：配菜格可以點，空的顯示＋。全部用 span／button，放進信裡的 <p> 也不會斷。 */
+  var BXR = { rice: [6.1, 11.4, 40, 76.5], main: [54.4, 11.4, 38.8, 32.3], v1: [54.4, 52.2, 38.8, 35.7], vA: [54.4, 52.2, 18.8, 35.7], vB: [74.4, 52.2, 18.8, 35.7] };
+  function bfImg(k) { var f = k === 'gohan' ? 'rice' : CROP[k] && CROP[k].f ? CROP[k].f : k; return '<img src="' + A + 'bf_' + f + '.webp" alt="' + itemName(k) + '" draggable="false">'; }
+  function bxAt(r) { return 'left:' + r[0] + '%;top:' + r[1] + '%;width:' + r[2] + '%;height:' + r[3] + '%'; }
+  function bentoBox(main, veg, edit, cls) {
+    veg = veg || []; var slots = edit ? Math.max(1, edit) : veg.length, html = '<span class="bbox' + (cls ? ' ' + cls : '') + '"><img class="bbg" src="' + A + 'bento_box_top.webp" alt="" draggable="false"><span class="bf" style="' + bxAt(BXR.rice) + '">' + bfImg('gohan') + '</span><span class="bf" style="' + bxAt(BXR.main) + '">' + bfImg(main) + '</span>';
+    for (var n = 0; n < slots; n++) { var r = slots >= 2 ? (n ? BXR.vB : BXR.vA) : BXR.v1, v = veg[n];
+      html += edit ? '<button type="button" class="bf vs' + (v ? ' on' : ' empty') + '" data-rm="' + n + '" style="' + bxAt(r) + '" aria-label="' + (v ? '拿出' + itemName(v) : '空的配菜格') + '">' + (v ? bfImg(v) : '<b>＋</b><small>配菜</small>') + '</button>' : '<span class="bf" style="' + bxAt(r) + '">' + bfImg(v) + '</span>'; }
+    return html + '</span>';
+  }
   function bentoBuild(k, sel) {
     var h = H(), b = BENTO[k]; sel = sel || [];
     var vs = VEG.filter(function (v) { return open(v) && (h.fridge[v] || 0) > 0; });
     var need = Object.assign({}, b.need); sel.forEach(function (v) { need[v] = (need[v] || 0) + 1; });
     var okN = sel.length >= b.veg[0], ok = okN && have(need), colorful = sel.length >= 2 && sel[0] !== sel[1];
-    var html = '<h3>🍱 ' + b.name + '</h3><div class="bbx"><div class="cell main">' + itemIc(b.main) + '<small>' + itemName(b.main) + '</small></div><div class="cell">' + itemIc('gohan') + '<small>白飯</small></div>' +
-      [0, 1].map(function (n) { var v = sel[n]; return n < b.veg[1] ? '<div class="cell veg' + (v ? ' on' : '') + '" data-rm="' + n + '">' + (v ? itemIc(v) + '<small>' + itemName(v) + '</small>' : '<span class="plus">＋</span><small>配菜</small>') + '</div>' : ''; }).join('') + '</div>';
-    html += '<p class="mu sm">點下面的菜放進便當格（' + (b.veg[0] ? '至少 ' + b.veg[0] + ' 樣，' : '') + '最多 ' + b.veg[1] + ' 樣；點格子可以拿出來）。放兩種不一樣的菜，就是<b>彩色便當</b>！</p><div class="vegPick">' + (vs.length ? vs.map(function (v) { var used = sel.filter(function (x) { return x === v; }).length; return '<button type="button" data-vg="' + v + '"' + ((h.fridge[v] || 0) - used <= 0 || sel.length >= b.veg[1] ? ' disabled' : '') + '>' + itemIc(v) + itemName(v) + '<em>' + ((h.fridge[v] || 0) - used) + '</em></button>'; }).join('') : '<span class="mu sm">冰箱沒有菜，先去花園收成吧！</span>') + '</div>';
+    var html = '<h3>🍱 ' + b.name + '</h3>' + bentoBox(b.main, sel, b.veg[1]) + '<p class="bxl">白飯・' + itemName(b.main) + '・' + (sel.length ? sel.map(itemName).join('＋') : '配菜') + '</p>';      /* D190：直接看到真的便當盒，選的菜就放在右下格 */
+    html += '<p class="mu sm">點下面的菜放進便當格（' + (b.veg[0] ? '至少 ' + b.veg[0] + ' 樣，' : '') + '最多 ' + b.veg[1] + ' 種；點便當裡的菜可以拿出來）。放兩種不一樣的菜，就是<b>彩色便當</b>！</p><div class="vegPick">' + (vs.length ? vs.map(function (v) { var used = sel.filter(function (x) { return x === v; }).length; return '<button type="button" data-vg="' + v + '"' + ((h.fridge[v] || 0) - used <= 0 || sel.length >= b.veg[1] ? ' disabled' : '') + '>' + itemIc(v) + itemName(v) + '<em>' + ((h.fridge[v] || 0) - used) + '</em></button>'; }).join('') : '<span class="mu sm">冰箱沒有菜，先去花園收成吧！</span>') + '</div>';
     html += (colorful ? '<p class="cfl">🌈 彩色便當！小鳶出門會寫信告訴你吃起來怎麼樣</p>' : '') + '<p class="mu sm">' + (ok ? '<b class="ok">材料齊了！</b>' : '<b class="no">' + (!okN ? '再放 ' + (b.veg[0] - sel.length) + ' 樣配菜' : '還缺 ' + lack(need)) + '</b>') + '</p><div class="row"><button class="btn" id="hmGo"' + (ok ? '' : ' disabled') + '>開始做</button><button class="btn ghost" id="hmBk">回廚房</button></div>';
     modal(html);
     document.querySelectorAll('[data-vg]').forEach(function (x) { x.onclick = function () { bentoBuild(k, sel.concat([x.dataset.vg])); }; });
     document.querySelectorAll('[data-rm]').forEach(function (x) { x.onclick = function () { var n = +x.dataset.rm; if (sel[n]) { var c = sel.slice(); c.splice(n, 1); bentoBuild(k, c); } }; });
     $('hmGo').onclick = function () { if (ok) cook('b', k, sel); }; $('hmBk').onclick = function () { kitchen('bento'); };
   }
-  function kitchenHTML() { var r = rcState(); return '<button type="button" class="hmStove" style="left:72%;top:62%" aria-label="做菜">' + img('pot_still', 'si') + '<span class="lb">點鍋子做菜</span></button><button type="button" class="hmStove hmRc ' + r.st + '" style="left:26%;top:60%" aria-label="電鍋">' + img(r.st === 'done' ? 'pot_ready' : r.st === 'cook' ? 'pot_cooking' : 'pot_still', 'si') + '<span class="lb">' + (r.st === 'done' ? '🍚 飯好了！' : r.st === 'cook' ? '煮飯中 ' + sm(r.left) : '電鍋煮飯') + '</span></button>'; }
+  function kitchenHTML() { var r = rcState(); return '<button type="button" class="hmStove" style="left:72%;top:62%" aria-label="做菜">' + img('pot_still', 'si') + '<span class="lb">點鍋子做菜</span></button><button type="button" class="hmStove hmRc ' + r.st + '" style="left:26%;top:60%" aria-label="電鍋">' + img(r.st === 'done' ? 'rc_ready' : r.st === 'cook' ? 'rc_cooking' : 'rc_empty', 'si rci') + '<span class="lb">' + (r.st === 'done' ? '🍚 飯好了！' : r.st === 'cook' ? '煮飯中 ' + sm(r.left) : '電鍋煮飯') + '</span></button>'; }
 
   /* ===== 打包：配菜＋手作便當 ===== */
   var side = '';
@@ -380,7 +391,12 @@
   function hbCount(k) { return H().hb[k] || 0; }
   function bentoIcon(k) { return BIMG[k] ? '<img class="ic" src="' + A + BIMG[k] + '.webp" alt="">' : '<span class="ic emo hbI">🍱</span>'; }
   function letterExtra(tr) {
-    var vl = tr && tr.hbVeg && tr.hbVeg.length ? '便當裡的' + tr.hbVeg.map(itemName).join('和') + '：「' + VEGLINE[tr.hbVeg[tr.hbVeg.length - 1]] + '」' : '';      /* D189：手作便當的配菜，信裡會提到 */
+    var vl = '';
+    if (tr && tr.hbVeg && tr.hbVeg.length && BENTO[tr.bento]) {      /* D189／D190：手作便當的配菜，信裡附一張便當小圖，小鳶說一句（從真的放進去的菜裡挑，挑過就記在這趟旅行上） */
+      var vv = tr.hbVeg.filter(function (x, i, a) { return a.indexOf(x) === i; });
+      if (!tr.hbLine) { var pv = vv[Math.floor(Math.random() * vv.length)]; tr.hbLine = (VEGLINE[pv] || [''])[Math.floor(Math.random() * 2)] || ''; sv(); }
+      vl = bentoBox(BENTO[tr.bento].main, tr.hbVeg, 0, 'ltr') + '便當裡有' + vv.map(itemName).join('和') + '。小鳶說：「' + tr.hbLine + '」';
+    }
     if (!tr || !tr.side || !DISH[tr.side]) return vl;
     var h = H(), k = tr.side, d = DISH[k];
     if (!tr.sideDone) { tr.sideDone = h.stories[k] ? 'again' : 'new'; if (!h.stories[k]) h.stories[k] = Date.now(); sv(); }
@@ -555,6 +571,7 @@
     '#hmAct button{position:relative;display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:6px 14px;border:0;border-radius:999px;background:#FFFDF8;color:#4A3426;font:700 14px/1 inherit;font-family:inherit;box-shadow:0 3px 10px rgba(0,0,0,.22);cursor:pointer}' +
     '#hmAct .allB{background:#3E9B4F;color:#fff;animation:hmB 1.6s ease-in-out infinite}.sumG{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:6px 0}.sumG span{display:flex;flex-direction:column;align-items:center;background:#F3EAD8;border-radius:12px;padding:6px 10px;font-weight:800;color:#2F7A3A;min-width:64px}.sumG b{font-size:12px;color:#4A3426}.sumG .sgi{width:40px;height:40px;font-size:30px}.rcN{display:flex;flex-direction:column;gap:8px}' +
     '.bbx{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:#C99A62;border-radius:14px;padding:8px;margin:4px 0 8px}.bbx .cell{background:#FFF3DA;border-radius:10px;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px}.bbx .cell .hi,.bbx .cell .emo{width:62%;height:62%;font-size:26px}.bbx .veg{border:2px dashed #C9A36A;cursor:pointer}.bbx .veg.on{border:2px solid #3E9B4F}.bbx .plus{font-size:24px;color:#B08A55;font-weight:800}' +
+    '.bbox{position:relative;display:block;width:min(300px,88%);aspect-ratio:425/294;margin:2px auto 4px}.bbox .bbg{width:100%;height:100%;display:block}.bbox .bf{position:absolute;display:flex;align-items:center;justify-content:center;border:0;background:none;padding:0;font-family:inherit}.bbox .bf img{max-width:94%;max-height:94%;object-fit:contain;filter:drop-shadow(0 2px 2px rgba(80,40,0,.25))}.bbox .vs{cursor:pointer;border-radius:10px}.bbox .vs.on img{animation:bfIn .28s ease-out}.bbox .vs.empty{border:2px dashed rgba(140,90,30,.55);background:rgba(255,248,230,.45);flex-direction:column;color:#8A5A2B;line-height:1}.bbox .vs.empty b{font-size:22px}.bbox .vs.empty small{font-size:11px}@keyframes bfIn{from{transform:scale(.4) translateY(-30%);opacity:.2}to{transform:none;opacity:1}}.bbox.big{width:min(320px,92%)}.bbox.ltr{width:min(220px,70%);margin:6px auto}.bxl{text-align:center;font-size:12px;color:#7A5A3A;margin:0 0 6px}.rcPic{display:flex;align-items:center;justify-content:center;gap:6px}.rcPic .hi{width:70px;height:70px;object-fit:contain}.rcPic span{font-size:20px;color:#B08A55}.rcPic b{font-size:16px;color:#4A3426}.hmStove .si.rci{width:72%}' +
     '.vegPick{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}.vegPick button{display:flex;align-items:center;gap:3px;border:2px solid #E5D49B;background:#FFFDF8;border-radius:999px;padding:3px 10px 3px 4px;font:700 13px/1 inherit;font-family:inherit;color:#4A3426;cursor:pointer;min-height:40px}.vegPick button[disabled]{opacity:.4}.vegPick .hi,.vegPick .emo{width:30px;height:30px;font-size:22px}.vegPick em{font-style:normal;font-size:11px;color:#8A7A66;margin-left:2px}.cfl{text-align:center;font-weight:800;color:#C0392B;margin:6px 0}.hmRc.cook .si{animation:rcS .9s ease-in-out infinite}.hmRc.done .lb{background:#3E9B4F;color:#fff}@keyframes rcS{50%{transform:translateY(-3%) rotate(-2deg)}}' +
     '#hmAct em{position:absolute;top:-6px;right:-4px;min-width:20px;height:20px;border-radius:10px;background:#E8674A;color:#fff;font:700 12px/20px sans-serif;font-style:normal;text-align:center;padding:0 4px}' +
     '#hmFarm{position:absolute;inset:0;z-index:200;pointer-events:none}#hmFarm>*{pointer-events:auto;touch-action:manipulation}.room[data-farm="1"] .bird{pointer-events:none}.hmPlot.press,.hmPen.press,.hmStove.press{filter:brightness(1.15);transform:translate(-50%,-100%) scale(.96)}' +
