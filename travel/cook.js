@@ -21,7 +21,7 @@
     '.ck .hz{position:absolute;border:0;background:none;padding:0;cursor:pointer;border-radius:14px;-webkit-tap-highlight-color:transparent}.ck .hz.hl{box-shadow:0 0 0 3px #F4BB42;animation:ckP 1s infinite}@keyframes ckP{50%{box-shadow:0 0 0 6px rgba(244,187,66,.5)}}' +
     '.ck .hz .lb{position:absolute;left:50%;bottom:-2px;transform:translate(-50%,100%);white-space:nowrap;font:800 11px/1 sans-serif;color:#fff;background:rgba(74,52,38,.85);border-radius:8px;padding:3px 6px;pointer-events:none}' +
     '.ck .onb{position:absolute;left:50%;top:50%;width:44%;transform:translate(-50%,-55%);pointer-events:none;transition:transform .08s}.ck .onb img{width:100%;display:block}.ck .onb .e{font-size:30px;text-align:center;display:block}.ck .hz.chop .onb{transform:translate(-50%,-45%) scale(.94)}' +
-    '.ck .knife{position:absolute;right:4%;top:-30%;font-size:26px;pointer-events:none;transform-origin:80% 80%}.ck .hz.chop .knife{transform:rotate(-30deg) translateY(10px)}' +
+    '.ck .knife{position:absolute;right:4%;top:-30%;font-size:26px;pointer-events:none;transform-origin:80% 80%}.ck .knife img{width:30px;display:block}.ck .hz.chop .knife{transform:rotate(-30deg) translateY(10px)}' +
     '.ck .pot{position:absolute;left:50%;bottom:6%;width:150%;transform:translateX(-50%);pointer-events:none}.ck .pot img{width:100%;display:block}.ck .steam{position:absolute;left:50%;top:-20%;font-size:20px;animation:ckS 1.2s infinite;opacity:.85}@keyframes ckS{to{transform:translateY(-18px);opacity:0}}' +
     '.ck .bar{position:absolute;left:10%;right:10%;top:-12px;height:7px;border-radius:4px;background:rgba(0,0,0,.25);overflow:hidden;pointer-events:none}.ck .bar i{display:block;height:100%;width:0;background:#E39A1F}.ck .bar.ok i{background:#3E9B4F}.ck .bar.burn i{background:#C0392B}' +
     '.ck .boxin{position:absolute;inset:8% 6%;display:flex;align-items:center;justify-content:space-around;pointer-events:none}.ck .boxin span{font-size:20px}.ck .boxin img{width:30%;}' +
@@ -57,7 +57,7 @@
       '<div class="tip" id="ckTip"></div><div class="tray" id="ckTray"></div>' +
       '<div class="desk">' +
       '<button class="hz" id="ckBasket" style="' + pct(HIT.basket) + '" aria-label="藤籃"><span class="lb">藤籃</span></button>' +
-      '<button class="hz" id="ckBoard" style="' + pct(HIT.board) + '" aria-label="砧板"><span class="onb" id="ckOnB"></span><span class="knife">🔪</span><span class="bar" id="ckCBw"><i id="ckCB"></i></span><span class="lb" id="ckBL">砧板</span></button>' +
+      '<button class="hz" id="ckBoard" style="' + pct(HIT.board) + '" aria-label="砧板"><span class="onb" id="ckOnB"></span><span class="knife" id="ckKn">🔪</span><span class="bar" id="ckCBw"><i id="ckCB"></i></span><span class="lb" id="ckBL">砧板</span></button>' +
       '<button class="hz" id="ckPot" style="' + pct(HIT.stove) + '" aria-label="左爐"><span class="pot" id="ckPotImg"></span><span class="bar" id="ckPBw"><i id="ckPB"></i></span><span class="lb" id="ckPS">爐子</span></button>' +
       (G > 1 ? '<button class="hz" id="ckPot2" style="' + pct(HIT.stove2) + '" aria-label="右爐"><span class="pot" id="ckPot2Img"></span><span class="bar" id="ckPot2Bw"><i id="ckPot2B"></i></span><span class="lb" id="ckPot2S">右爐</span></button>' : '') +
       '<button class="hz" id="ckRice" style="' + pct(HIT.rice) + '" aria-label="飯鍋"><span class="lb" id="ckRS">飯鍋</span></button>' +
@@ -89,7 +89,8 @@
       else { x.st = 'rice'; tip('點飯鍋，把飯裝進' + (r.kind === 'bento' ? '便當盒' : '盤子')); }
       order(); tray(); boxState();
     }
-    function boardState() { $('ckOnB').innerHTML = board ? pic(board.it, board.st === 'cut' || (board.si || 0) > 0 && !!board.it.cutMid) : ''; var c = cur(); $('ckCB').style.width = board && c && board.st !== 'cut' ? Math.min(100, chop / c.n * 100) + '%' : board ? '100%' : '0'; $('ckCBw').style.display = board ? '' : 'none'; }
+    function boardState() { var kn = $('ckKn'), c0 = cur(); if (kn) kn.innerHTML = board && c0 && c0.v === '撒鹽' && board.st !== 'cut' ? '<img src="' + A + 'salt_shaker.webp" alt="鹽罐">' : '🔪';      /* D190：撒鹽時刀子換成 GPT 鹽罐 */
+      $('ckOnB').innerHTML = board ? pic(board.it, board.st === 'cut' || (board.si || 0) > 0 && !!board.it.cutMid) : ''; var c = cur(); $('ckCB').style.width = board && c && board.st !== 'cut' ? Math.min(100, chop / c.n * 100) + '%' : board ? '100%' : '0'; $('ckCBw').style.display = board ? '' : 'none'; }
     function maybeCook(g) { var p = pots[g]; if (p.st === 'idle' && p.n >= p.need && p.need > 0) { p.st = 'cooking'; p.t = Date.now(); tip(G > 1 ? MARK[g] + potName(g) + '開火！點鍋子翻炒，兩個鍋子都要顧，好了就起鍋' : '開火！一直點鍋子翻炒，炒得勻比較不會焦，顧好鍋子，好了就點爐子起鍋'); } potState(g); }
     tap($('ckBasket'), function () { $('ckTray').classList.add('hl'); setTimeout(function () { var t = $('ckTray'); if (t) t.classList.remove('hl'); }, 900); tip('食材在上面的籃子裡，點一樣拿出來'); });
     tap($('ckBoard'), function () {
