@@ -104,7 +104,9 @@
   }
   function have(need) { var h = H(); return Object.keys(need).every(function (v) { return (h.fridge[v] || 0) >= need[v]; }); }
   function lack(need) { var h = H(), a = []; Object.keys(need).forEach(function (v) { var d = need[v] - (h.fridge[v] || 0); if (d > 0) a.push(itemName(v) + '×' + d); }); return a.join('、'); }
-  function lackShort(need) { var h = H(), a = []; Object.keys(need).forEach(function (v) { var d = need[v] - (h.fridge[v] || 0); if (d > 0) a.push(itemName(v) + ' ' + d + ' 份'); }); return a.length ? '還差' + a[0] + (a.length > 1 ? '，另差 ' + (a.length - 1) + ' 種' : '') : ''; }      /* D191：GPT 1720 菜單意見——缺料寫名稱和差多少，多項只寫第一項＋另差 N 種 */
+  var UNIT = { gohan: '碗', egg: '顆' };      /* D192：GPT 1820 B——白飯「碗」、雞蛋「顆」、其他「份」，只改顯示 */
+  function unitOf(k) { return UNIT[k] || '份'; }
+  function lackShort(need) { var h = H(), a = []; Object.keys(need).forEach(function (v) { var d = need[v] - (h.fridge[v] || 0); if (d > 0) a.push(itemName(v) + ' ' + d + ' ' + unitOf(v)); }); return a.length ? '還差' + a[0] + (a.length > 1 ? '，另差 ' + (a.length - 1) + ' 種' : '') : ''; }      /* D191：GPT 1720 菜單意見——缺料寫名稱和差多少，多項只寫第一項＋另差 N 種 */
   function needLine(need) { return Object.keys(need).map(function (v) { return itemName(v) + '×' + need[v]; }).join('＋'); }
   function take(need) { var h = H(); Object.keys(need).forEach(function (v) { h.fridge[v] -= need[v]; if (!h.fridge[v]) delete h.fridge[v]; }); }
   function give(get) { var h = H(); Object.keys(get).forEach(function (v) { h.fridge[v] = (h.fridge[v] || 0) + get[v]; }); }
@@ -396,20 +398,28 @@
   function bindPack(rerender) { document.querySelectorAll('[data-side]').forEach(function (b) { b.onclick = function () { side = side === b.dataset.side ? '' : b.dataset.side; rerender(); /* 選中狀態寫在卡片上 */ }; }); }
   function onDepart(trip) { var h = H(); if (side && h.box[side] > 0) { h.box[side]--; trip.side = side; } side = ''; if (BENTO[trip.bento] && h.hb[trip.bento] > 0) { h.hb[trip.bento]--; var q = (h.hbVeg || {})[trip.bento]; if (q && q.length) trip.hbVeg = q.shift(); } }
   /* D191：N1 出門前掀蓋看便當（GPT bento_lid_top_v1，425×294 蓋子對齊盒子可見框、放 102%）。看的是這次真的會帶走的那一盒（hbVeg 佇列第一個），不另外扣材料 */
+  var LIDLINE = { egg: '蛋飯糰，我要帶你出門！', chicken: '香香雞腿，等等一起吃！', pork: '有豬排，出門好開心！', beef: '牛肉配白飯，我好期待！' };      /* D192：GPT 1820 A——掀蓋後依主菜說一句 */
   function lidPeek(k, go) {
     var h = H(), b = BENTO[k]; if (!b) { go(); return; }
     var q = ((h.hbVeg || {})[k] || [])[0] || [], vv = q.filter(function (x, i, a) { return a.indexOf(x) === i; });
     modal('<h3 style="text-align:center">🍱 出門前，看一眼便當</h3><button type="button" class="lidW" id="hmLid" aria-label="掀開便當蓋">' + bentoBox(b.main, q, 0, 'big') + '<img class="lid" src="' + A + 'bento_lid_top.webp" alt="" draggable="false"></button><p class="lidT" id="hmLidT">點蓋子，打開看看！</p><div class="row"><button class="btn" id="hmLidGo">出發</button></div>');
     var opened = false;
-    function open1() { if (opened) return; opened = true; $('hmLid').classList.add('open'); $('hmLidT').innerHTML = '白飯、' + itemName(b.main) + (vv.length ? '，還有' + vv.map(itemName).join('和') : '') + '！<br>小鳶說：「我會好好吃完的！」'; }
+    function open1() { if (opened) return; opened = true; $('hmLid').classList.add('open'); $('hmLidT').innerHTML = '白飯、' + itemName(b.main) + (vv.length ? '，還有' + vv.map(itemName).join('和') : '') + '！<br>小鳶說：「' + (LIDLINE[b.main] || '我會好好吃完的！') + '」'; }
     $('hmLid').onclick = open1;
     $('hmLidGo').onclick = function () { $('modal').classList.remove('on'); go(); };
   }
   function hbCount(k) { return H().hb[k] || 0; }
   function bentoIcon(k) { return BIMG[k] ? '<img class="ic" src="' + A + BIMG[k] + '.webp" alt="">' : '<span class="ic emo hbI">🍱</span>'; }
-  function letterExtra(tr) {
+  /* D192：N3 回家小故事卡（GPT 1820 C，新圖 0）——手作便當那趟，信拆完後多兩張紙卡：①我帶的便當 ③我回家了（②路上小發現等 N2，有資料才放）。略過也照樣入冊、不重扣不重發 */
+  function story(tr) {
+    if (!tr || !tr.hbVeg || !tr.hbVeg.length || !BENTO[tr.bento]) return null;
+    var b = BENTO[tr.bento], vv = tr.hbVeg.filter(function (x, i, a) { return a.indexOf(x) === i; });
+    if (!tr.hbLine) { var pv = vv[Math.floor(Math.random() * vv.length)]; tr.hbLine = (VEGLINE[pv] || [''])[Math.floor(Math.random() * 2)] || ''; sv(); }
+    return { box: bentoBox(b.main, tr.hbVeg, 0, 'big'), what: '白飯、' + itemName(b.main) + '，還有' + vv.map(itemName).join('和'), line: tr.hbLine };
+  }
+  function letterExtra(tr, noBento) {
     var vl = '';
-    if (tr && tr.hbVeg && tr.hbVeg.length && BENTO[tr.bento]) {      /* D189／D190：手作便當的配菜，信裡附一張便當小圖，小鳶說一句（從真的放進去的菜裡挑，挑過就記在這趟旅行上） */
+    if (!noBento && tr && tr.hbVeg && tr.hbVeg.length && BENTO[tr.bento]) {      /* D189／D190：手作便當的配菜，信裡附一張便當小圖，小鳶說一句（從真的放進去的菜裡挑，挑過就記在這趟旅行上） */
       var vv = tr.hbVeg.filter(function (x, i, a) { return a.indexOf(x) === i; });
       if (!tr.hbLine) { var pv = vv[Math.floor(Math.random() * vv.length)]; tr.hbLine = (VEGLINE[pv] || [''])[Math.floor(Math.random() * 2)] || ''; sv(); }
       vl = bentoBox(BENTO[tr.bento].main, tr.hbVeg, 0, 'ltr') + '便當裡有' + vv.map(itemName).join('和') + '。小鳶說：「' + tr.hbLine + '」';
@@ -643,7 +653,7 @@
     '.ordC[aria-pressed="true"]{border-color:#E39A1F;background:#FFF6E0}.oSwap{display:block;width:auto!important;flex:none;margin:-2px 0 8px auto;min-height:32px;padding:2px 12px;font-size:12px}.hmAni .bub .crate{font-size:22px;line-height:26px;width:26px;text-align:center}' +
     '.hm .row{position:sticky;bottom:-1px;background:var(--paper,#FFFDF8);padding-top:8px;margin-bottom:-4px}';      /* D172：清單很長時「關閉」鈕黏在下面 */
   document.head.appendChild(css);
-  window.HOME = { render: render, kitchen: kitchen, book: book, packHTML: packHTML, bindPack: bindPack, onDepart: onDepart, letterExtra: letterExtra, bentoKeys: function () { return BORDER; }, hbCount: hbCount, lidPeek: lidPeek, bentoIcon: bentoIcon, _H: H };
+  window.HOME = { render: render, kitchen: kitchen, book: book, packHTML: packHTML, bindPack: bindPack, onDepart: onDepart, letterExtra: letterExtra, story: story, bentoKeys: function () { return BORDER; }, hbCount: hbCount, lidPeek: lidPeek, bentoIcon: bentoIcon, _H: H };
   setInterval(function () { if ($('home') && $('home').classList.contains('on') && !$('modal').classList.contains('on')) render(); }, FAST ? 1000 : 15000);
   if (document.readyState !== 'loading') setTimeout(render, 0); else document.addEventListener('DOMContentLoaded', render);
 })();
