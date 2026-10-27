@@ -19,7 +19,8 @@
     scorePerPoint: 1000,          // 舊制（bank）：遊戲分數多少分換 1 點
     gameScorePerPoint: {},        // 個別遊戲覆寫，例如 { fish: 500 }
     triesPerLevel: 1,             // 每關每天幾次算分（超過還能玩，只是不算分）
-    gameTries: {},                // 個別遊戲覆寫，例如 { fly: 2 }
+    gameTries: {},
+    gameBestOfDay: { fly: true },      /* D181（Dari 10/27）：飛行每關每天不限局數，取當天最高的那一局算分（玩更好就把舊的換掉） */                // 個別遊戲覆寫，例如 { fly: 2 }
     spendPerPoint: 100,           // 消費多少元換 1 點
     minSpend: 100,                // 最低消費門檻 T：單筆未滿不給點，遇到加倍活動也一樣（工作單 01 v5；U-35 暫採）
     maxStorePointsPerDay: 100,    // 每人每天最多從消費拿幾點（防誤刷）
@@ -300,14 +301,16 @@
   function reportPlay(o) {      // o = { game, level, score, sec, wg（換算用的遊戲）, lbAll（不算分的局也進排行榜）, counted（指定是否算分） }
     var m = member(), k = dayKey() + '|' + o.game + '|' + o.level; m.tries = m.tries || {};
     var gc = (cfg().games || {})[o.game] || {}, sc = Math.max(0, o.score || 0), capped = gc.maxScore && sc > gc.maxScore; if (capped) sc = gc.maxScore;
-    var counted = o.counted != null ? (o.counted && m.status !== 'frozen' && gc.on !== false) : (m.status !== 'frozen' && gc.on !== false && triesLeft(o.game, o.level) > 0), ev = eventMult(o.game);
-    sc = Math.round(sc * scoreW(o.wg || o.game)); var add = counted ? Math.round(sc * ev.mult) : 0;      // D141：換算比例
+    var bod = o.counted == null && (cfg().gameBestOfDay || {})[o.game], prevBest = null;
+    var counted = o.counted != null ? (o.counted && m.status !== 'frozen' && gc.on !== false) : (m.status !== 'frozen' && gc.on !== false && (bod || triesLeft(o.game, o.level) > 0)), ev = eventMult(o.game);
+    sc = Math.round(sc * scoreW(o.wg || o.game));
+    if (bod && counted) { var dk = dayKey(); (m.plays || []).forEach(function (p) { if (p.counted && p.game === o.game && p.level === String(o.level) && dayKey(p.t) === dk) prevBest = p; }); if (prevBest && (prevBest.raw || 0) >= sc) counted = false; else if (prevBest) { prevBest.counted = false; prevBest.raw = 0; prevBest.replaced = 1; } } var add = counted ? Math.round(sc * ev.mult) : 0;      // D141：換算比例
     if (o.counted == null) m.tries[k] = (m.tries[k] || 0) + 1;
     var tier = cfg().gamePointMode === 'tier', id = 'P' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
     m.plays.unshift({ t: Date.now(), id: id, game: o.game, level: String(o.level), sub: o.wg || undefined, did: o.did || undefined, score: o.score || 0, capped: !!capped, sec: Math.round(o.sec || 0), counted: counted, lbOnly: o.lbAll ? true : undefined, mult: ev.mult, cp: ev.id || undefined, raw: counted ? sc : 0, bank: tier ? 0 : add }); m.plays = m.plays.slice(0, 800);
     if (!tier) { m.scoreBank[o.game] = (m.scoreBank[o.game] || 0) + add; saveMember(m); return { counted: counted, add: add, mult: ev.mult, event: ev.title, bank: m.scoreBank[o.game], left: triesLeft(o.game, o.level), id: id }; }
     var r = tierSync(m, o.game); saveMember(m);
-    return Object.assign(r, { counted: counted, add: counted ? sc : 0, w: scoreW(o.wg || o.game), mult: ev.mult, event: ev.title, left: triesLeft(o.game, o.level), id: id });
+    return Object.assign(r, { counted: counted, add: counted ? sc : 0, w: scoreW(o.wg || o.game), mult: ev.mult, event: ev.title, left: bod ? null : triesLeft(o.game, o.level), id: id, bod: !!bod, best: bod ? Math.max(sc, prevBest ? prevBest.raw || 0 : 0) : undefined, beat: bod && counted && !!prevBest });
   }
   /* D97／D102：階梯制——把今天累計的點數補到應得的數字（只增不減，當天上限內）；點亮制只點亮格子，回樂園領 */
   function tierSync(m, game) {
@@ -317,7 +320,7 @@
     return { tier: true, tap: tap, today: g.total, pts: g.pts, gain: gain, lit: lit, claim: tap ? Math.max(0, g.pts - g.got) : 0, cap: g.cap, next: g.next, total: m.points };
   }
   /* 結算一行字（捕魚、飛行、小遊戲共用）：今天累計多少分、幾點、這局新亮幾格 */
-  function tierLine(rp) { if (!rp) return ''; if (!rp.tier) return rp.counted ? '分數存摺 +' + rp.add : ''; if (!rp.counted) return '今天這款的算分次數用完了，這局只進排行榜'; return (rp.w && rp.w !== 1 && rp.add ? '本局計入 ' + rp.add.toLocaleString() + ' 分・' : '')      /* D173：不給小朋友看內部權重「這款 ×0.4」 */ + (rp.left != null ? '今天還能算分 ' + rp.left + ' 局・' : '') + '今日積分 ' + rp.today.toLocaleString() + ' 分' + (rp.pts ? '＝' + rp.pts + ' 點' : '') + (rp.tap ? (rp.lit ? '・新亮 ' + rp.lit + ' 格' : '') + (rp.claim ? '・回樂園領 ' + rp.claim + ' 點' : '') : rp.gain ? '（+' + rp.gain + ' 點）' : '') + (rp.next ? (rp.pts ? '・再 ' + rp.next.need.toLocaleString() + ' 分多 1 點' : '・再 ' + rp.next.need.toLocaleString() + ' 分就拿到第 1 點')      /* D173：0 點時不寫「＝0 點」，改說還差多少 */ : rp.pts >= rp.cap ? '・今天已滿' : ''); }
+  function tierLine(rp) { if (!rp) return ''; if (!rp.tier) return rp.counted ? '分數存摺 +' + rp.add : ''; if (!rp.counted) return rp.bod ? '這關今天最高 ' + (rp.best || 0).toLocaleString() + ' 分，這局沒超過・今日積分 ' + rp.today.toLocaleString() + ' 分' : '今天這款的算分次數用完了，這局只進排行榜'; return (rp.w && rp.w !== 1 && rp.add ? '本局計入 ' + rp.add.toLocaleString() + ' 分・' : '')      /* D173：不給小朋友看內部權重「這款 ×0.4」 */ + (rp.left != null ? '今天還能算分 ' + rp.left + ' 局・' : '') + '今日積分 ' + rp.today.toLocaleString() + ' 分' + (rp.pts ? '＝' + rp.pts + ' 點' : '') + (rp.tap ? (rp.lit ? '・新亮 ' + rp.lit + ' 格' : '') + (rp.claim ? '・回樂園領 ' + rp.claim + ' 點' : '') : rp.gain ? '（+' + rp.gain + ' 點）' : '') + (rp.next ? (rp.pts ? '・再 ' + rp.next.need.toLocaleString() + ' 分多 1 點' : '・再 ' + rp.next.need.toLocaleString() + ' 分就拿到第 1 點')      /* D173：0 點時不寫「＝0 點」，改說還差多少 */ : rp.pts >= rp.cap ? '・今天已滿' : ''); }
   /* D102：小鳶樂園點亮的格子點一下入帳（n＝要領幾點，不給就全部領）；點數記在今天分數最多的遊戲名下，報表才分得出來 */
   function topGame(m, d) { var by = {}; (m.plays || []).forEach(function (p) { if (p.counted && dayKey(p.t) === d) by[p.game] = (by[p.game] || 0) + (p.raw || 0); }); return Object.keys(by).sort(function (a, b) { return by[b] - by[a]; })[0] || 'fish'; }
   function claimGame(n) {

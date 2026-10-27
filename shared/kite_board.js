@@ -74,6 +74,8 @@
     var r = { id: 'R' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), day: d, t: Date.now(), q: sel.id, vid: sel.id + (sel.vi ? ':fallback1' : ':primary'), cv: 'v5', game: q.game, line: q.v[sel.vi].line };
     s.recs.push(r); s.sel = null; return r;
   }
+  /* D183（Dari 10/27）：小鳶在家四件回禮家具拿完以後，港邊訂單的謝禮改成一枚港口貼紙（跟告示板共用「每天最多 1 枚」） */
+  function gift(game, line) { var s = rd(), d = day(); if (doneOn(s, d)) return null; var r = { id: 'R' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), day: d, t: Date.now(), q: 'GIFT-ORDER', vid: 'order', cv: 'v5', game: game, line: line }; s.recs.push(r); wr(s); toast('📋 收到一枚港口貼紙！收進「我的港口記憶」了', 1); return r; }
   /* 選題：保存題目 ID＋主題／替代＋條件快照（之後題庫改了也照接受時的條件算） */
   function accept(id, vi) {
     var s = state(), d = day(), q = qById(id); if (!q || doneOn(s, d)) return false;
@@ -186,5 +188,5 @@
     '.kb-poster .ti{position:absolute;left:20%;right:20%;top:6%;height:7%;z-index:3;display:flex;align-items:center;justify-content:center;font-size:18px}.kb-poster .no{position:absolute;left:23%;right:29%;top:86%;z-index:3;text-align:center;font-size:11px;font-weight:800}' +
     '.kb-toast{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translate(-50%,-150%);z-index:10000;max-width:90vw;padding:8px 14px;border-radius:999px;background:#10293D;color:#FFE45C;font-weight:900;font-size:13px;box-shadow:0 6px 16px rgba(0,0,0,.3);transition:transform .25s;pointer-events:none;text-align:center}.kb-toast.on{transform:translate(-50%,0)}.kb-toast.big{font-size:14px;border-radius:16px;background:#FFE45C;color:#10293D}';
   if (document.head) { var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st); }
-  G.KiteBoard = { Q: Q, GAME: GAME, candidates: candidates, state: state, accept: accept, drop: drop, easier: easier, start: start, ev: ev, cardHtml: cardHtml, wire: wire, book: book, day: day };
+  G.KiteBoard = { gift: gift, sticker: sticker, Q: Q, GAME: GAME, candidates: candidates, state: state, accept: accept, drop: drop, easier: easier, start: start, ev: ev, cardHtml: cardHtml, wire: wire, book: book, day: day };
 })(window);

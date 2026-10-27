@@ -463,7 +463,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.48',
+  version: '0.49',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -3285,7 +3285,7 @@ function finish() { BGM.stop(); if (window.KiteBoard) KiteBoard.ev('run_end', { 
   if (best && best.score) add('這關最高分', sc > best.score ? '🎉 ' + sc + ' 新紀錄！（上次最高 ' + best.score + '）' : best.score + (sc === best.score ? '（追平了！）' : '（還差 ' + (best.score - sc) + ' 分）'));
   /* v0.41（C-185，D71）：把這局分數送進官方 LINE 的「遊戲分數存摺」（每關每天前幾次才算、活動時段乘倍數；規則在後台改）。G 槽複本沒有共用資料層就跳過 */
   window.__lastRank = null; if (window.KiteCore) { try { const rk = KiteCore.rankAround ? KiteCore.rankAround('fly', String(id), () => KiteCore.reportPlay({ game: 'fly', level: String(id), score: sc, sec: t })) : { res: KiteCore.reportPlay({ game: 'fly', level: String(id), score: sc, sec: t }) }, rp = rk.res; window.__lastRank = rk;
-    add(rp.tier ? '官方 LINE 點數' : '官方 LINE 分數存摺', (rp.tier ? (rp.counted ? '今天累計 ' + rp.today.toLocaleString() + ' 分' + (rp.pts ? '＝' + rp.pts + ' 點' : '') + (rp.tap ? (rp.lit ? '・這局新亮 ' + rp.lit + ' 格' : '') + (rp.claim ? '，回樂園領 ' + rp.claim + ' 點！' : '') : rp.gain ? '（這局 +' + rp.gain + ' 點）' : '') + (rp.next ? (rp.pts ? '・再 ' + rp.next.need.toLocaleString() + ' 分多 1 點' : '・再 ' + rp.next.need.toLocaleString() + ' 分就拿到第 1 點') : rp.pts >= rp.cap ? '・今天已拿滿' : '') + (rp.mult > 1 ? '・' + rp.event + ' ×' + rp.mult : '') : '今天這關已經算過分了（明天再來）') : rp.counted ? '+' + rp.add + ' 分' + (rp.mult > 1 ? '（' + rp.event + ' ×' + rp.mult + '）' : '') + '・存摺 ' + rp.bank + ' 分' : '今天這關已經算過分了（明天再來）')); } catch (e) {} }
+    add(rp.tier ? '官方 LINE 點數' : '官方 LINE 分數存摺', (rp.tier ? (rp.counted ? '今天累計 ' + rp.today.toLocaleString() + ' 分' + (rp.pts ? '＝' + rp.pts + ' 點' : '') + (rp.tap ? (rp.lit ? '・這局新亮 ' + rp.lit + ' 格' : '') + (rp.claim ? '，回樂園領 ' + rp.claim + ' 點！' : '') : rp.gain ? '（這局 +' + rp.gain + ' 點）' : '') + (rp.next ? (rp.pts ? '・再 ' + rp.next.need.toLocaleString() + ' 分多 1 點' : '・再 ' + rp.next.need.toLocaleString() + ' 分就拿到第 1 點') : rp.pts >= rp.cap ? '・今天已拿滿' : '') + (rp.mult > 1 ? '・' + rp.event + ' ×' + rp.mult : '') + (rp.beat ? '・🎉 超過今天這關最高分，換成這局' : '') : rp.bod ? '這關今天最高 ' + (rp.best || 0).toLocaleString() + ' 分，這局沒超過（多玩幾次，取最高的算）' : '今天這關已經算過分了（明天再來）') : rp.counted ? '+' + rp.add + ' 分' + (rp.mult > 1 ? '（' + rp.event + ' ×' + rp.mult + '）' : '') + '・存摺 ' + rp.bank + ' 分' : '今天這關已經算過分了（明天再來）')); } catch (e) {} }
   if (won && window.KiteCore && KiteCore.rankText && window.__lastRank) {      /* D173：過關才秀名次，輸了不恭喜 */ const tx = KiteCore.rankText(window.__lastRank); if (tx) add('本月排名', tx + ' 🏆'); }      // D133：結算直接看到名次
   { rows.classList.remove('open'); let mb = $('moreRows'); if (!mb) { mb = document.createElement('button'); mb.type = 'button'; mb.id = 'moreRows'; mb.className = 'moreRows'; rows.after(mb); } mb.textContent = '更多紀錄 ▾'; mb.onclick = () => { const o = rows.classList.toggle('open'); mb.textContent = o ? '收起 ▴' : '更多紀錄 ▾'; }; }
   const un = $('unlockNote'); un.hidden = true;
@@ -3362,7 +3362,7 @@ loadProgress(); reset(); $('mapPanel').classList.toggle('night', NIGHT_MAP); $('
 <script>/* D103（Dari 10/17）：遊戲畫面下方改成今天的積分狀況（原本寫「不發點數」已經過時） */
 (function () { function fill() { var K = window.KiteCore; document.querySelectorAll('.ptnote').forEach(function (e) {
   if (!K || !K.gameToday) { e.textContent = '今天會算分的局數加起來就是今日積分，到官方 LINE 小鳶樂園領點數'; return; }
-  var g = K.gameToday(), c = K.cfg(); e.innerHTML = '今日積分 <b>' + g.total.toLocaleString() + '</b> 分' + (g.claim ? '・<b style="color:#E2702A">亮了 ' + g.claim + ' 點可以領</b>' : g.next ? '・再 ' + g.next.need.toLocaleString() + ' 分亮下一格' : '・今天的格子都亮了') + '<br><a href="../line/index.html?p=park" style="color:inherit;font-weight:800">到小鳶樂園領點 ›</a>　<span style="opacity:.75">每關每天前 ' + c.triesPerLevel + ' 次算分</span>'; }); }
+  var g = K.gameToday(), c = K.cfg(); e.innerHTML = '今日積分 <b>' + g.total.toLocaleString() + '</b> 分' + (g.claim ? '・<b style="color:#E2702A">亮了 ' + g.claim + ' 點可以領</b>' : g.next ? '・再 ' + g.next.need.toLocaleString() + ' 分亮下一格' : '・今天的格子都亮了') + '<br><a href="../line/index.html?p=park" style="color:inherit;font-weight:800">到小鳶樂園領點 ›</a>　<span style="opacity:.75">' + ((c.gameBestOfDay || {}).fly ? '每關每天取最高的一局算分' : '每關每天前 ' + c.triesPerLevel + ' 次算分') + '</span>'; }); }
   fill(); document.addEventListener('visibilitychange', fill); setInterval(fill, 4000); })();</script>
 <script>/* D104：飛行排行榜（四關各前 10 名） */ if (window.KiteLB) KiteLB.button(document.getElementById('lbSlot'), { title: '飛行冒險排行榜', game: 'fly', tabs: [['1', '第 1 關'], ['2', '第 2 關'], ['3', '第 3 關'], ['4', '第 4 關'], ['5', '第 5 關'], ['6', '第 6 關'], ['7', '第 7 關'], ['8', '第 8 關']] });</script>
 </body>
