@@ -598,8 +598,9 @@ const AQ = (() => {
       fish += '<button type="button" class="aqF" data-lv="' + lv + '" style="left:' + sp[0] + '%;top:' + sp[1] + '%;width:' + w + '%;animation-duration:' + dur + 's;animation-delay:' + dl + 's" aria-label="' + SEAF[lv][0] + '"><img src="../assets/merge/sea_' + lv + '.png" alt=""></button>';
     });
     if (whale) fish += '<button type="button" class="aqF aqW" data-lv="9" aria-label="鎮館之寶 鯨鯊"><img src="../assets/merge/sea_9.png" alt=""></button><span class="aqRib">鎮館之寶</span>';
+    else if (ks.length) fish += '<div class="aqGhost" aria-hidden="true"><img src="../assets/merge/sea_9.png" alt=""></div><p class="aqGhostT">合出鯨鯊，請牠來住！</p>';      /* D188（GPT 1540）：還沒合出鯨鯊，中間留一個淡淡的影子 */
     box.innerHTML = '<div class="aqIn"><div class="aqHd"><b>我的小水族館</b><button type="button" class="aqX">回到合成港</button></div>' +
-      '<p class="aqSub">收集 ' + ks.length + ' / 10 種' + (whale ? '・鯨鯊 ×' + d.c[9] : '・合出鯨鯊就有鎮館之寶') + (d.home ? '・送鯨鯊回大海 ' + d.home + ' 次' : '') + '</p>' +
+      '<p class="aqSub">收集 ' + ks.length + ' / 10 種' + (whale ? '・鯨鯊 ×' + d.c[9] : '') + (d.home ? '<br>兩隻鯨鯊合在一起、游回大海 ' + d.home + ' 次' : '') + '</p>' +
       '<div class="aqTank">' + fish + (ks.length ? '' : '<p class="aqEmpty">還沒有海鮮<br>去合成港合合看！</p>') + '</div>' +
       '<p class="aqTip" aria-live="polite">' + (ks.length ? '點一下水裡的海鮮看看' : '') + '</p><p class="aqNote">水族館存在這支手機裡，不算點數</p></div>';
     box.hidden = false;
@@ -616,6 +617,7 @@ const AQ = (() => {
     '.aqHd{display:flex;align-items:center;justify-content:space-between;gap:8px}.aqHd b{font-size:18px}.aqX{border:2px solid #10293D;background:#2F7F86;color:#fff;border-radius:999px;padding:6px 12px;font:800 13px/1 inherit;font-family:inherit;cursor:pointer}.aqSub{margin:6px 2px 8px;font-size:12.5px;color:#3A5568;font-weight:700}' +
     '.aqTank{position:relative;width:100%;aspect-ratio:4/5;background:url(../assets/merge/aquarium_bg.webp) center/100% 100% no-repeat;border-radius:10px;overflow:hidden}.aqF{position:absolute;transform:translate(-50%,-50%);border:0;background:none;padding:0;cursor:pointer;animation:aqSwim 8s ease-in-out infinite alternate}.aqF img{width:100%;display:block;filter:drop-shadow(0 3px 2px rgba(16,41,61,.18))}' +
     '.aqW{left:50%;top:48%;width:36%;animation:aqWhale 14s ease-in-out infinite alternate}.aqRib{position:absolute;left:50%;top:29%;transform:translateX(-50%);background:#F4BB42;color:#10293D;border:2px solid #10293D;border-radius:999px;padding:3px 12px;font-size:13px;font-weight:900;white-space:nowrap}' +
+    '.aqGhost{position:absolute;left:50%;top:48%;width:36%;transform:translate(-50%,-50%);opacity:.22;filter:grayscale(1) brightness(.35);pointer-events:none}.aqGhost img{width:100%;display:block}.aqGhostT{position:absolute;left:50%;top:28%;transform:translate(-50%,-50%);margin:0;background:rgba(255,248,236,.88);color:#2F5F7A;border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:900;white-space:nowrap;pointer-events:none}' +
     '.aqHop img{animation:aqHop .45s ease-out}.aqEmpty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:800;color:#2F5F7A;margin:0}.aqTip{min-height:38px;margin:8px 2px 2px;font-size:13px;line-height:1.45;text-align:center}.aqTip b{font-size:14px}.aqNote{margin:2px 0 0;font-size:11px;color:#6A7F8E;text-align:center}' +
     '@keyframes aqSwim{0%{transform:translate(-62%,-50%)}50%{transform:translate(-50%,-56%)}100%{transform:translate(-38%,-50%)}}@keyframes aqWhale{0%{transform:translate(-56%,-50%)}100%{transform:translate(-44%,-53%)}}@keyframes aqHop{0%{transform:scale(1)}40%{transform:scale(1.18) rotate(-6deg)}100%{transform:scale(1)}}' +
     '@media (prefers-reduced-motion:reduce){.aqF,.aqW,.aqHop img{animation:none}}';
