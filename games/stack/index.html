@@ -330,6 +330,22 @@ const ST = { perfect: 9, perfectEasy: 16, easyN: 8, spd0: 150, spdUp: 4, spdMax:
   goldEvery: 5, goldBonus: 30, goldGrow: 24, goldGrowOk: 10, shipEvery: 10, shipBonus: 50, evFrom: 12, evChance: 0.4, rushN: 5, rushK: 1.3, rushBonus: 15,
   focusAt: 5, focusN: 3, focusK: 0.55, saves: 1 };
 const BH = 30, Y0 = 500;
+/* D185：疊出地標（GPT 1345 三張遠景圖）——疊到第 15 層看到基隆嶼、25 層港口燈塔、35 層大郵輪。
+   疊越高看越遠：畫在畫面最下面的一條遠海上，只是背景，不擋貨櫃、不改分數。foot＝圖在 540 高畫布裡的主體下緣。 */
+const LM = [{ n: 15, key: 'lm_islet', w: 200, cx: 82, foot: 470 }, { n: 25, key: 'lm_lighthouse', w: 168, cx: 296, foot: 529 }, { n: 35, key: 'lm_cruise', w: 200, foot: 475, sail: true, dy: 16 }];
+function drawLandmarks(g, n, k) {
+  if (n < LM[0].n) return; g.lm = g.lm || {};
+  LM.forEach((L) => { if (n >= L.n && g.lm[L.n] == null) g.lm[L.n] = g.t; });
+  const hy = H - 58, a0 = clamp((g.t - g.lm[LM[0].n]) / 0.9, 0, 1);
+  const sg = ctx.createLinearGradient(0, hy - 34, 0, H); sg.addColorStop(0, 'rgba(160,205,220,0)'); sg.addColorStop(0.45, 'rgba(' + Math.round(lerp(96, 40, k)) + ',' + Math.round(lerp(158, 70, k)) + ',' + Math.round(lerp(186, 110, k)) + ',' + (0.8 * a0) + ')'); sg.addColorStop(1, 'rgba(' + Math.round(lerp(40, 20, k)) + ',' + Math.round(lerp(104, 44, k)) + ',' + Math.round(lerp(134, 80, k)) + ',' + (0.9 * a0) + ')');
+  ctx.fillStyle = sg; ctx.fillRect(0, hy - 34, W, H - hy + 34);
+  for (const L of LM) {
+    const t0 = g.lm[L.n], im = ready(L.key); if (t0 == null || !im) continue;
+    const a = clamp((g.t - t0) / 0.9, 0, 1), h = L.w * im.naturalHeight / im.naturalWidth, fy = L.foot / 540 * h;
+    let cx = L.cx; if (L.sail) { const span = W + L.w, d = (g.t - t0) * 8; cx = ((W - 60 + L.w / 2 - d) % span + span) % span - L.w / 2; }      /* 郵輪從右邊開進來、在燈塔前面慢慢往左開 */
+    ctx.globalAlpha = a * (1 - k * 0.25); ctx.drawImage(im, cx - L.w / 2, hy + 6 + (L.dy || 0) - fy + (1 - a) * 16, L.w, h); ctx.globalAlpha = 1;
+  }
+}
 function shade(hex, k) { const n = parseInt(hex.slice(1), 16), f = (v) => clamp(Math.round(v * k), 0, 255); return 'rgb(' + f(n >> 16) + ',' + f((n >> 8) & 255) + ',' + f(n & 255) + ')'; }
 /* 貨櫃：有 G86 的圖用九宮格拉長（兩端門框不變形）；沒有就畫有門框、角件、波浪鐵皮的貨櫃 */
 function crate(x, y, w, c, gold) {
@@ -411,7 +427,7 @@ function makeStack() {
     }
     const n = g.blocks.length - 1; if (window.KiteBoard) KiteBoard.ev('stack_place'); if (window.__relay) window.__relay.placed();      /* D175：告示板委託 */
     if (n % ST.shipEvery === 0 && n > 0) { g.ships++; g.score += ST.shipBonus; g.ship = { x: 60, t: 0 }; pop('第 ' + g.ships + ' 艘船裝滿出港！+' + ST.shipBonus, W / 2, 150, C.gold, true); g.say = '嗚——船出港囉！'; g.sayT = 1.8; jingle([392, 523, 659], 120); }
-    else if ([15, 25, 35, 45].includes(n)) { g.say = { 15: '看得到基隆嶼了！', 25: '雲在腳下耶～', 35: '好高好高！', 45: '快碰到星星了！' }[n]; g.sayT = 2; }
+    else if ([15, 25, 35, 45].includes(n)) { g.say = { 15: '看得到基隆嶼了！', 25: '看到港口燈塔了！', 35: '大郵輪開過來了！', 45: '快碰到星星了！' }[n]; g.sayT = 2; }      /* D185：25、35 層改說看到的地標 */
     g.spawn();
   };
   g.down = () => g.tap(); g.move = () => {}; g.up = () => {};
@@ -456,6 +472,7 @@ function makeStack() {
         cut(0, by, W, H - by); cut(0, H * 0.78, 60, by - H * 0.78); cut(W - 30, H * 0.78, 30, by - H * 0.78); } }
     else { stackBG = stackBG || buildStackBG(); ctx.drawImage(stackBG, 0, 0, W, H); }
     ctx.restore();
+    drawLandmarks(g, hgt - 1, k);      /* D185：疊出地標 */
     ctx.save(); if (g.shake > 0 && !RM) ctx.translate(rnd(-1, 1) * g.shake * 14, rnd(-1, 1) * g.shake * 8); ctx.translate(0, g.cam);
     drawShip(g.ship ? g.ship.x : 70, Y0 + BH + 44, g.ship ? 6 : Math.min(6, Math.floor(((hgt - 1) % ST.shipEvery) * 0.6)));
     // 高度尺
@@ -542,13 +559,13 @@ function relayUI() {
   const can = mode === 'stack' && !DS;
   bar.hidden = !can || state === 'play';
   if (can && state !== 'play') bar.innerHTML = '<button type="button" id="rlTog" aria-pressed="' + RELAY.on + '">👨‍👩‍👧 全家接力' + (RELAY.on ? '：' + RELAY.names.join('→') : '') + '</button>' +
-    (RELAY.on ? '<div class="rlPick"><span>點名字排順序（2～4 人）：</span>' + RELAY.NAMES.map((n) => '<button type="button" class="rlN" data-n="' + n + '" aria-pressed="' + (RELAY.names.indexOf(n) >= 0) + '">' + (RELAY.names.indexOf(n) >= 0 ? (RELAY.names.indexOf(n) + 1) + ' ' : '') + n + '</button>').join('') + '<small>一支手機輪流放，每放一個換下一位。接力局不算點數、不進排行榜。</small></div>' : '');
+    (RELAY.on ? '<div class="rlPick"><span>點名字排順序（2～4 人）：</span>' + RELAY.NAMES.map((n) => '<button type="button" class="rlN" data-n="' + n + '" aria-pressed="' + (RELAY.names.indexOf(n) >= 0) + '">' + (RELAY.names.indexOf(n) >= 0 ? (RELAY.names.indexOf(n) + 1) + ' ' : '') + n + '</button>').join('') + '<small>和家人輪流，把貨櫃疊高高！一人放一個，接力局不算點數、不進排行榜。</small></div>' : '');
   const tg = document.getElementById('rlTog'); if (tg) tg.onclick = () => { RELAY.on = !RELAY.on; if (RELAY.on && RELAY.names.length < 2) RELAY.names = ['爸爸', '我']; relayUI(); };
   bar.querySelectorAll('.rlN').forEach((b) => { b.onclick = () => { const n = b.dataset.n, k = RELAY.names.indexOf(n); if (k >= 0) { if (RELAY.names.length > 2) RELAY.names.splice(k, 1); } else if (RELAY.names.length < 4) RELAY.names.push(n); relayUI(); }; });
   pill.hidden = !(RELAY.on && can && state === 'play'); if (!pill.hidden) pill.innerHTML = '輪到 <b>' + RELAY.names[RELAY.i] + '</b>';
 }
 RELAY.begin = () => { RELAY.cnt = RELAY.names.map(() => 0); RELAY.i = 0; relayUI(); };
-RELAY.placed = () => { if (!RELAY.on || mode !== 'stack' || DS) return; RELAY.cnt[RELAY.i]++; RELAY.i = (RELAY.i + 1) % RELAY.names.length; const p = document.getElementById('relayPill'); if (p) { p.innerHTML = '換 <b>' + RELAY.names[RELAY.i] + '</b>！'; p.classList.remove('pop'); void p.offsetWidth; p.classList.add('pop'); clearTimeout(RELAY.t); RELAY.t = setTimeout(relayUI, 900); } };
+RELAY.placed = () => { if (!RELAY.on || mode !== 'stack' || DS) return; RELAY.cnt[RELAY.i]++; RELAY.i = (RELAY.i + 1) % RELAY.names.length; const p = document.getElementById('relayPill'); if (p) { p.innerHTML = '換 <b>' + RELAY.names[RELAY.i] + '</b> 接棒囉！'; p.classList.remove('pop'); void p.offsetWidth; p.classList.add('pop'); clearTimeout(RELAY.t); RELAY.t = setTimeout(relayUI, 900); } };
 (() => { const st = document.createElement('style'); st.textContent = '#relayBar{width:100%;max-width:420px;text-align:center}#relayBar[hidden]{display:none}#rlTog{border:2px solid #F4BB42;background:rgba(244,187,66,.12);color:#FFE6A8;border-radius:999px;padding:8px 16px;font:800 14px/1.2 inherit;font-family:inherit;cursor:pointer}#rlTog[aria-pressed="true"]{background:#F4BB42;color:#10293D}' +
   '.rlPick{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:8px 4px 0;color:#CFE3EC;font-size:12.5px}.rlPick span{width:100%}.rlPick small{width:100%;opacity:.75}.rlN{border:1.5px solid #4A6A80;background:transparent;color:#E6F2F7;border-radius:999px;padding:5px 11px;font:700 13px/1 inherit;font-family:inherit;cursor:pointer}.rlN[aria-pressed="true"]{background:#2F7F86;border-color:#2F7F86;color:#fff}' +
   '#relayPill{position:absolute;left:50%;top:58px;transform:translateX(-50%);z-index:5;background:#FFF8EA;color:#10293D;border:2.5px solid #F4BB42;border-radius:999px;padding:6px 16px;font:700 15px/1.2 inherit;font-family:inherit;box-shadow:0 3px 10px rgba(0,0,0,.3);pointer-events:none;white-space:nowrap}#relayPill[hidden]{display:none}#relayPill b{color:#C0392B;font-size:18px}#relayPill.pop{animation:rlP .5s}@keyframes rlP{30%{transform:translateX(-50%) scale(1.25)}}'; document.head.appendChild(st); })();
@@ -559,6 +576,7 @@ function setMode(m) {
   mode = m; document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.m === m))); document.getElementById('how').innerHTML = HOW[m]; state = 'ready'; newGame(); setTimeout(relayUI, 0);
   const A = m === 'merge' ? ['bg_merge', 'kite_hold', 'kite_hold_fly', 'fx_merge'].concat(SEAF.map((_, i) => 'sea_' + i)) : ['bg_stack_base', 'bg_stack_sky', 'ship', 'kite_carry', 'kite_carry_fly', 'box_gold', 'far_mtn', 'cloud_0', 'cloud_1', 'cloud_2', 'gull', 'wind_0', 'wind_1', 'wind_2', 'fog_bank'].concat(BOXC.map((_, i) => 'box_' + i));
   A.forEach((k) => { if (!IMG[k]) want(k, '../assets/' + m + '/' + k + (k.indexOf('bg_') === 0 ? '.jpg' : '.png')); });
+  if (m === 'stack') LM.forEach((L) => { if (!IMG[L.key]) want(L.key, '../assets/stack/' + L.key + '.webp'); });      /* D185 */
 }
 document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.m)));
 function pos(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height }; }
