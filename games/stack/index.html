@@ -425,7 +425,7 @@ function makeStack() {
       g.blocks.push({ x: nx, w: nw, c: m.c, gold: m.gold, sq: 0.2 }); g.score += ST.layerPts; g.shake = 0.18; beep(300, 0.09, 'sine', 0.06, -80); buzz(8);
       const cx = m.x < l ? m.x : r, cw = m.x < l ? l - m.x : m.x + m.w - r; g.cut.push({ x: cx, w: cw, y: Y0 - g.blocks.length * BH + BH, vy: 0, c: m.c, gold: m.gold, vr: m.x < l ? -2 : 2, rot: 0 });
     }
-    const n = g.blocks.length - 1; if (window.KiteBoard) KiteBoard.ev('stack_place'); if (window.__relay) window.__relay.placed();      /* D175：告示板委託 */
+    const n = g.blocks.length - 1; if (window.KiteBoard) KiteBoard.ev('stack_place');      /* D175：告示板委託 */
     if (n % ST.shipEvery === 0 && n > 0) { g.ships++; g.score += ST.shipBonus; g.ship = { x: 60, t: 0 }; pop('第 ' + g.ships + ' 艘船裝滿出港！+' + ST.shipBonus, W / 2, 150, C.gold, true); g.say = '嗚——船出港囉！'; g.sayT = 1.8; jingle([392, 523, 659], 120); }
     else if ([15, 25, 35, 45].includes(n)) { g.say = { 15: '看得到基隆嶼了！', 25: '看到港口燈塔了！', 35: '大郵輪開過來了！', 45: '快碰到星星了！' }[n]; g.sayT = 2; }      /* D185：25、35 層改說看到的地標 */
     g.spawn();
@@ -542,38 +542,18 @@ function drawEnd(e) {
   e.rows.forEach((r, i) => { const y = 232 + i * 34; rrect(50, y - 14, W - 100, 28, 10, '#F3EAD8'); text(r[0], 64, y, 13, '#3A5568', 'left', 700, false); text(r[1], W - 64, y, 14, C.ink, 'right', 900, false);
     if (i === 0 && e.icon != null) { ctx.font = FONT(14, 900); drawSea(e.icon, W - 64 - ctx.measureText(r[1]).width - 16, y, 11, 0); } });
   if (e.found && e.found.length) text('新發現 ' + e.found.length + ' 種海鮮！', W / 2, 232 + e.rows.length * 34 + 4, 13, C.warn, 'center', 900, false);
-  if (e.rank) text(e.relay ? '👨‍👩‍👧 ' + e.rank : (DS ? '📅 ' : '🏆 本月') + e.rank, W / 2, e.found && e.found.length ? 390 : 232 + e.rows.length * 34 + 4, 13, '#2F7F86', 'center', 900, false);      // D133
-  if (!e.relay) text('最佳 ' + (best[mode] || e.s) + ' 分', W / 2, 408, 13, '#6A7F8E', 'center', 700, false);
+  if (e.rank) text((DS ? '📅 ' : '🏆 本月') + e.rank, W / 2, e.found && e.found.length ? 390 : 232 + e.rows.length * 34 + 4, 13, '#2F7F86', 'center', 900, false);      // D133
+  text('最佳 ' + (best[mode] || e.s) + ' 分', W / 2, 408, 13, '#6A7F8E', 'center', 700, false);
   endBtnR = btn('再玩一次', 426);
   ctx.restore(); ctx.globalAlpha = 1;
 }
 
 /* ---------- 主迴圈 ---------- */
-/* D184：疊貨櫃「全家接力」（Claude 方案 3 × GPT 反提案：先做輪流玩，不做多指計分）
-   一支手機輪流放，每放一個換下一位；結算「全家一起疊了 N 層」＋每個人放了幾個。接力局不進點數、不進排行榜、不算今日挑戰。 */
-const RELAY = { on: false, names: [], cnt: [], i: 0, NAMES: ['爸爸', '媽媽', '我', '哥哥', '姊姊', '弟弟', '妹妹', '阿公', '阿嬤', '朋友'] };
-window.__relay = RELAY;
-function relayUI() {
-  let bar = document.getElementById('relayBar'); if (!bar) { bar = document.createElement('div'); bar.id = 'relayBar'; document.querySelector('.stage').after(bar); }
-  let pill = document.getElementById('relayPill'); if (!pill) { pill = document.createElement('div'); pill.id = 'relayPill'; document.querySelector('.stage').appendChild(pill); }
-  const can = mode === 'stack' && !DS;
-  bar.hidden = !can || state === 'play';
-  if (can && state !== 'play') bar.innerHTML = '<button type="button" id="rlTog" aria-pressed="' + RELAY.on + '">👨‍👩‍👧 全家接力' + (RELAY.on ? '：' + RELAY.names.join('→') : '') + '</button>' +
-    (RELAY.on ? '<div class="rlPick"><span>點名字排順序（2～4 人）：</span>' + RELAY.NAMES.map((n) => '<button type="button" class="rlN" data-n="' + n + '" aria-pressed="' + (RELAY.names.indexOf(n) >= 0) + '">' + (RELAY.names.indexOf(n) >= 0 ? (RELAY.names.indexOf(n) + 1) + ' ' : '') + n + '</button>').join('') + '<small>和家人輪流，把貨櫃疊高高！一人放一個，接力局不算點數、不進排行榜。</small></div>' : '');
-  const tg = document.getElementById('rlTog'); if (tg) tg.onclick = () => { RELAY.on = !RELAY.on; if (RELAY.on && RELAY.names.length < 2) RELAY.names = ['爸爸', '我']; relayUI(); };
-  bar.querySelectorAll('.rlN').forEach((b) => { b.onclick = () => { const n = b.dataset.n, k = RELAY.names.indexOf(n); if (k >= 0) { if (RELAY.names.length > 2) RELAY.names.splice(k, 1); } else if (RELAY.names.length < 4) RELAY.names.push(n); relayUI(); }; });
-  pill.hidden = !(RELAY.on && can && state === 'play'); if (!pill.hidden) pill.innerHTML = '輪到 <b>' + RELAY.names[RELAY.i] + '</b>';
-}
-RELAY.begin = () => { RELAY.cnt = RELAY.names.map(() => 0); RELAY.i = 0; relayUI(); };
-RELAY.placed = () => { if (!RELAY.on || mode !== 'stack' || DS) return; RELAY.cnt[RELAY.i]++; RELAY.i = (RELAY.i + 1) % RELAY.names.length; const p = document.getElementById('relayPill'); if (p) { p.innerHTML = '換 <b>' + RELAY.names[RELAY.i] + '</b> 接棒囉！'; p.classList.remove('pop'); void p.offsetWidth; p.classList.add('pop'); clearTimeout(RELAY.t); RELAY.t = setTimeout(relayUI, 900); } };
-(() => { const st = document.createElement('style'); st.textContent = '#relayBar{width:100%;max-width:420px;text-align:center}#relayBar[hidden]{display:none}#rlTog{border:2px solid #F4BB42;background:rgba(244,187,66,.12);color:#FFE6A8;border-radius:999px;padding:8px 16px;font:800 14px/1.2 inherit;font-family:inherit;cursor:pointer}#rlTog[aria-pressed="true"]{background:#F4BB42;color:#10293D}' +
-  '.rlPick{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:8px 4px 0;color:#CFE3EC;font-size:12.5px}.rlPick span{width:100%}.rlPick small{width:100%;opacity:.75}.rlN{border:1.5px solid #4A6A80;background:transparent;color:#E6F2F7;border-radius:999px;padding:5px 11px;font:700 13px/1 inherit;font-family:inherit;cursor:pointer}.rlN[aria-pressed="true"]{background:#2F7F86;border-color:#2F7F86;color:#fff}' +
-  '#relayPill{position:absolute;left:50%;top:58px;transform:translateX(-50%);z-index:5;background:#FFF8EA;color:#10293D;border:2.5px solid #F4BB42;border-radius:999px;padding:6px 16px;font:700 15px/1.2 inherit;font-family:inherit;box-shadow:0 3px 10px rgba(0,0,0,.3);pointer-events:none;white-space:nowrap}#relayPill[hidden]{display:none}#relayPill b{color:#C0392B;font-size:18px}#relayPill.pop{animation:rlP .5s}@keyframes rlP{30%{transform:translateX(-50%) scale(1.25)}}'; document.head.appendChild(st); })();
 
 let mode = 'merge', G = null, state = 'ready', down = false, last = performance.now(), clock = 0, endInfo = null;
 function newGame() { if (DS) gR = KiteDaily.rng(DS.td.seed); floats = []; parts = []; rings = []; G = { merge: makeMerge, stack: makeStack }[mode](); }
 function setMode(m) {
-  mode = m; document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.m === m))); document.getElementById('how').innerHTML = HOW[m]; state = 'ready'; newGame(); setTimeout(relayUI, 0);
+  mode = m; document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.m === m))); document.getElementById('how').innerHTML = HOW[m]; state = 'ready'; newGame();
   const A = m === 'merge' ? ['bg_merge', 'kite_hold', 'kite_hold_fly', 'fx_merge'].concat(SEAF.map((_, i) => 'sea_' + i)) : ['bg_stack_base', 'bg_stack_sky', 'ship', 'kite_carry', 'kite_carry_fly', 'box_gold', 'far_mtn', 'cloud_0', 'cloud_1', 'cloud_2', 'gull', 'wind_0', 'wind_1', 'wind_2', 'fog_bank'].concat(BOXC.map((_, i) => 'box_' + i));
   A.forEach((k) => { if (!IMG[k]) want(k, '../assets/' + m + '/' + k + (k.indexOf('bg_') === 0 ? '.jpg' : '.png')); });
   if (m === 'stack') LM.forEach((L) => { if (!IMG[L.key]) want(L.key, '../assets/stack/' + L.key + '.webp'); });      /* D185 */
@@ -582,7 +562,7 @@ document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('cli
 function pos(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height }; }
 cv.addEventListener('pointerdown', (e) => {
   e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (er) {} const p = pos(e);
-  if (state === 'ready') { state = 'play'; if (RELAY.on && mode === 'stack' && !DS) RELAY.begin(); else dailyBegin(); if (window.KiteBoard) KiteBoard.start(mode); beep(660, 0.08); if (mode === 'merge') { down = true; G.down(p.x, p.y); G.tap = null; } return; }
+  if (state === 'ready') { state = 'play'; dailyBegin(); if (window.KiteBoard) KiteBoard.start(mode); beep(660, 0.08); if (mode === 'merge') { down = true; G.down(p.x, p.y); G.tap = null; } return; }
   if (state === 'end') { const r = endBtnR, onBtn = e.kbd || (r && p.x > r.x - 14 && p.x < r.x + r.w + 14 && p.y > r.y - 14 && p.y < r.y + r.h + 14); if (endInfo && endInfo.t > 0.8 && onBtn) { newGame();      /* 玩家角度：結算畫面只有按「再玩一次」才重開，避免疊貨櫃連點時一下就跳過成績 */ state = 'play'; dailyBegin(); beep(660, 0.08); if (mode === 'merge') { down = true; G.down(p.x, p.y); G.tap = null; } } return; }
   down = true; G.down(p.x, p.y);
 });
@@ -592,8 +572,7 @@ cv.addEventListener('pointerup', upH); cv.addEventListener('pointercancel', upH)
 document.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { if (state !== 'play') { const ev = new PointerEvent('pointerdown', { clientX: 0, clientY: 0 }); ev.kbd = true; cv.dispatchEvent(ev); upH(); } else if (mode === 'stack') G.tap(); else if (G.fall) G.release(); e.preventDefault(); } if (mode === 'merge' && state === 'play' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { G.tx = clamp(G.tx + (e.key === 'ArrowLeft' ? -30 : 30), 0, W); } });
 function finish() {
   if (window.KiteBoard) KiteBoard.ev('run_end', { game: mode });
-  const s = Math.round(G.score), relay = RELAY.on && mode === 'stack' && !DS, nb = relay ? false : saveBest(mode, s);
-  if (relay) { const h = G.blocks.length - 1; endInfo = { s, nb: false, t: 0, title: '全家一起疊了 ' + h + ' 層！', rows: RELAY.names.map((n, k) => [n, '放了 ' + RELAY.cnt[k] + ' 個']).concat(RELAY.names.length < 4 ? [['裝滿貨船', G.ships + ' 艘']] : []), rank: '全家接力不算點數、不進排行榜', relay: true }; state = 'end'; relayUI(); jingle([523, 659, 784, 1047], 110); return; }      /* D184：接力局不送分數 */
+  const s = Math.round(G.score), nb = saveBest(mode, s);
   let rk = null, dr = DS ? KiteDaily.finish(DS, s) : null; let tl = ''; try { if (!DS && window.KiteCore && KiteCore.reportPlay && s > 0) { const rep = () => KiteCore.reportPlay({ game: mode, level: 'all', score: s, lbAll: true }); rk = KiteCore.rankAround ? KiteCore.rankAround(mode, 'all', rep) : { res: rep() }; tl = KiteCore.tierLine ? KiteCore.tierLine(rk.res) : ''; } } catch (e) {}      // D141：前 3 局算進今日積分、可換點      // D123：進排行榜；D133：記下名次
   if (mode === 'merge') endInfo = { s, nb, t: 0, title: G.over > 1.6 ? '堆過紅線了' : '魚艙塞滿了', rows: [['最大合到', SEAF[G.top][0]], ['撐到', '第 ' + G.lv + ' 關'], ['合成次數', G.mergesAll + ' 次'], ['最長連鎖', '×' + Math.max(1, G.bestChain)]], icon: G.top, found: G.newFound };
   else { const h = G.blocks.length - 1; if (h > (best.stackH || 0)) { best.stackH = h; store.set('kiteMiniBest1', best); } endInfo = { s, nb, t: 0, title: '貨櫃掉下去了', rows: [['疊了', h + ' 層'], ['裝滿貨船', G.ships + ' 艘'], ['完美', G.perfects + ' 次'], ['最長完美連擊', '×' + G.bestCombo]] }; }
@@ -609,7 +588,7 @@ function frame(now) {
   drawRings(dt); drawParts(dt); drawFloats(dt);
   if (state === 'ready') drawTitle(clock);
   if (state === 'end') { endInfo.t += dt; drawEnd(endInfo); }
-  if (state !== frame.ps) { frame.ps = state; relayUI(); }
+  if (state !== frame.ps) { frame.ps = state; }
   requestAnimationFrame(frame);
 }
 let tab = 'stack';      // D119：放進遊戲大廳的單一遊戲版（不計分・隨時玩）
