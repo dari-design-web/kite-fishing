@@ -75,6 +75,9 @@ header h1{font-size:20px;margin:0;flex:1}
 .note .trip i{display:block;position:relative;height:8px;margin:4px 0 2px;border-radius:99px;background:repeating-linear-gradient(90deg,#E5D49B 0 6px,transparent 6px 10px)}
 .note .trip i b{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:#F0A35E}
 .note .trip i em{position:absolute;top:50%;width:24px;height:24px;margin:-14px 0 0 -12px;background:url(assets/kite_pack.png) center/contain no-repeat}
+.note .peekB{display:block;margin:7px auto 0;padding:5px 12px;border:1.5px solid #C9A25A;border-radius:99px;background:#FFFDF6;color:#7A4E1E;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer}      /* D193 N2 路上看一眼 */
+.peek{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(30,40,60,.55)}.peek .stc{width:min(340px,92vw);background:#FFFDF6;border-radius:14px;padding:14px 12px 12px;box-shadow:0 10px 26px rgba(0,0,0,.35);text-align:center;color:#4A3426;animation:stIn .35s ease-out}.peek .stT{font-weight:800;color:#8A5A2B;font-size:14px;letter-spacing:.1em;margin-bottom:6px}.peek p{margin:10px 0 2px;font-size:15px;line-height:1.55}
+.pkC{position:relative;width:100%;aspect-ratio:8/5;border-radius:10px;border:5px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.18);background-repeat:no-repeat;overflow:hidden}.pkK{position:absolute;right:-4px;bottom:-6px;width:30%;aspect-ratio:1;background:url(assets/kite_pack.png) center/contain no-repeat;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}
 .note{z-index:3;position:absolute;left:50%;bottom:9%;transform:translateX(-50%) rotate(-3deg);width:56%;padding:10px 12px;background:#FFF8D9;border:1.5px solid #E5D49B;box-shadow:0 3px 8px rgba(0,0,0,.12);font-size:14px;line-height:1.5}
 .envelope{position:absolute;z-index:100;left:69.4%;top:76.8%;width:22.2%;height:16.2%;background:url(assets/letter_seal.png) center/contain no-repeat,url(assets/letter_env.png) center/contain no-repeat;animation:bob 1.6s infinite;cursor:pointer}
 .say{position:absolute;width:62%;text-align:center;pointer-events:none;z-index:130;transform:translate(-50%,-100%);transition:opacity .25s}
@@ -336,7 +339,7 @@ header .back,.letter .skip{min-height:44px;min-width:44px;display:inline-flex;al
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.55',
+  version: '0.56',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 0,      // D80：遠行便當改用點數換，不再每 3 趟送 1 份（0＝關閉）
@@ -407,6 +410,30 @@ const VOICE = {
   jiufen:   { sv: '用它裝點心，好像又去山上玩了。', n: ['一階、兩階、三階……燈籠亮了，好溫暖喔。', '芋圓 QQ 的！我要慢慢吃，一口一口。', '走累了坐一下，回頭一看……哇，是大海！'] }
 };
 if (CFG.look) for (const l of LOCS) { const v = VOICE[l.id]; l.sv = v.sv; v.n.forEach((n, i) => { l.cards[i][1] = n; }); }
+/* D193：N2「路上看一眼」（GPT 1925）——每地點 1 句＋A 卡局部（x、y、寬，%），共用一個版面，新圖 0。只看這趟目的地；同一趟重開同一句同一塊 */
+const PEEK = {
+  home:     { c: [50, 10, 50], t: '我在港邊，看見大船囉！' },
+  miaokou:  { c: [50, 0, 50], t: '好多黃色燈籠亮起來了！' },
+  zhengbin: { c: [4, 12, 50], t: '彩色房子在水裡也有一排！' },
+  heping:   { c: [0, 6, 50], t: '石頭上有好多小洞洞！' },
+  badouzi:  { c: [32, 22, 50], t: '鐵軌旁邊就是大海耶！' },
+  shenao:   { c: [64, 6, 36], t: '山就在海的旁邊耶！' },
+  chaojing: { c: [30, 42, 50], t: '退潮了，石頭間有小水池！' },
+  jiufen:   { c: [50, 14, 50], t: '紅燈籠一盞一盞亮了！' }
+};
+function peekHTML(id) {
+  const l = LOCS.find((x) => x.id === id), p = PEEK[id]; if (!l || !p || !l.cards[0][2]) return '';
+  const [x, y, w] = p.c, z = 100 / w;
+  return '<div class="pkC" style="background-image:url(assets/' + l.cards[0][2] + ');background-size:' + (z * 100) + '% ' + (z * 100) + '%;background-position:' + (x / (100 - w) * 100).toFixed(1) + '% ' + (y / (100 - w) * 100).toFixed(1) + '%"><span class="pkK"></span></div>';
+}
+function openPeek() {
+  const tr = S.trip; if (!tr || S.state !== 'away' || !PEEK[tr.dest]) return;
+  if (!tr.peek) { tr.peek = tr.dest; save(); }
+  const d = document.createElement('div'); d.className = 'peek';
+  d.innerHTML = '<div class="stc"><div class="stT">路上看一眼</div>' + peekHTML(tr.dest) + '<p>小鳶說：「' + PEEK[tr.dest].t + '」</p><div class="row" style="margin-top:12px;justify-content:center"><button class="btn gold" id="peekGo">繼續旅行</button></div></div>';
+  document.body.appendChild(d);
+  const close = () => d.remove(); $('peekGo').onclick = close; d.onclick = (e) => { if (e.target === d) close(); };
+}
 const LIMITED = LOCS.map((l) => ({ id: 'lim-' + l.id, loc: l.id, title: '本週限定・' + l.name + '的小驚喜', note: '這個禮拜好想去' + l.name + '，真的遇到好特別的事！' }));
 const SAYS = {
   home: ['嘿嘿，你來啦！', '嗨嗨！今天去哪裡？', '今天天氣好好，我們出門玩好不好？', '你看了我寄的明信片嗎？', '便當準備好了嗎？我隨時可以出發！', '我好想去看海喔！'],
@@ -578,7 +605,7 @@ function renderHome() {
   /* v0.29（C-170）：早上 6 點到 9 點小鳶在家，說早晨的話（台詞是建議） */
   else if (S.firstDone && st === 'home' && hh >= 6 && hh < 9) { $('chip').textContent = '早安！小鳶剛起床'; b.style.backgroundImage = 'url(assets/kite_home.png)'; $('say').textContent = ['早安～我剛起床，羽毛還翹翹的！', '早上的港口好安靜，漁船都出海了嗎？', '早餐吃飽飽，今天要去哪裡玩呢？'][Math.floor(Math.random() * 3)]; main.textContent = '打包出門'; main.onclick = () => go('pack'); }
   else if (st === 'home') { $('chip').textContent = '小鳶在家，還沒出發'; b.style.backgroundImage = 'url(assets/kite_home.png)'; $('say').textContent = sayOne('home'); main.textContent = '打包出門'; main.onclick = () => go('pack'); }
-  else if (st === 'away') { b.style.display = 'none'; note.hidden = false; note.innerHTML = ''; note.appendChild(document.createTextNode('「' + (S.trip.say || sayOne('away')) + '」　— 小鳶')); note.insertAdjacentHTML('beforeend', '<span class="trip" id="tripBar"></span>'); tripBar(); $('chip').textContent = '小鳶正在旅行，大約 ' + fmtTime(S.trip.end) + ' 回來；信會留在小屋等你拆'; $('say').textContent = ''; main.textContent = backLeft(); main.onclick = () => toast('小鳶還在路上，晚點再來看看'); }
+  else if (st === 'away') { b.style.display = 'none'; note.hidden = false; note.innerHTML = ''; note.appendChild(document.createTextNode('「' + (S.trip.say || sayOne('away')) + '」　— 小鳶')); note.insertAdjacentHTML('beforeend', '<span class="trip" id="tripBar"></span>' + (PEEK[S.trip.dest] ? '<button type="button" class="peekB" id="peekB">👀 路上看一眼</button>' : '')); tripBar(); if ($('peekB')) $('peekB').onclick = openPeek; $('chip').textContent = '小鳶正在旅行，大約 ' + fmtTime(S.trip.end) + ' 回來；信會留在小屋等你拆'; $('say').textContent = ''; main.textContent = backLeft(); main.onclick = () => toast('小鳶還在路上，晚點再來看看'); }
   else { $('chip').textContent = '小鳶回來了！帶了一封信'; b.style.backgroundImage = 'url(assets/kite_back.png)'; env.hidden = false; $('say').textContent = sayOne('back'); main.textContent = '拆信'; main.onclick = openLetter; env.onclick = openLetter; }
   setRoom(S.room);
   PET.reset($('say').textContent);
@@ -873,12 +900,14 @@ function openLetter() {
   let step = 0;
   const showCard = () => {
     const q = queue[step];
-    if (!q && story && sp < 2) {
-      const pg = sp, gi = tr.got && tr.got.length ? tr.got[0] : null;
-      L.innerHTML = '<button class="skip" id="skipL2">略過 ››</button><div class="cap">回家小故事 ' + (pg + 1) + ' / 2</div><div class="stc">' +
-        (pg === 0 ? '<div class="stT">我帶的便當</div>' + story.box + '<p>' + story.what + '。<br><b>這是我帶的便當！</b></p>'
+    const sPages = story ? (tr.peek && PEEK[tr.peek] ? ['box', 'peek', 'home'] : ['box', 'home']) : [];      /* D193：看過 N2 才插中間卡 */
+    if (!q && story && sp < sPages.length) {
+      const pg = sp, kind = sPages[pg], gi = tr.got && tr.got.length ? tr.got[0] : null;
+      L.innerHTML = '<button class="skip" id="skipL2">略過 ››</button><div class="cap">回家小故事 ' + (pg + 1) + ' / ' + sPages.length + '</div><div class="stc">' +
+        (kind === 'box' ? '<div class="stT">我帶的便當</div>' + story.box + '<p>' + story.what + '。<br><b>這是我帶的便當！</b></p>'
+          : kind === 'peek' ? '<div class="stT">路上小發現</div><div class="stP">' + peekHTML(tr.peek) + '</div><p>小鳶說：「' + PEEK[tr.peek].t + '」</p>'
           : '<div class="stT">我回家了</div>' + (gi !== null && !tr.walk ? '<div class="stP">' + sceneHTML(l, gi) + '</div>' : '') + '<p><b>我回家囉！</b>' + (story.line ? '<br>小鳶說：「' + story.line + '」' : '') + '</p>') +
-        '</div><div class="row" style="margin-top:14px"><button class="btn gold" id="nextL">' + (pg === 0 ? '下一張' : '好') + '</button></div>';
+        '</div><div class="row" style="margin-top:14px"><button class="btn gold" id="nextL">' + (pg + 1 < sPages.length ? '下一張' : '好') + '</button></div>';
       $('skipL2').onclick = finish; $('nextL').onclick = () => { sp++; showCard(); }; return;
     }
     if (!q) { L.innerHTML = '<div class="cap">' + (tr.walk ? '小鳶散步回來了' : '這趟去了' + l.name) + '</div><p class="extra">' + (extras.join('<br>') || '下次再出門看看吧！') + (tr.gotFar !== undefined ? '' : '') + '</p><div class="row" style="margin-top:14px"><button class="btn gold" id="doneL">收進收藏冊</button></div>'; $('doneL').onclick = finish; return; }
@@ -1168,8 +1197,8 @@ function travelBgmSync() { if (travelBgmOn) BGM.play('travel_' + ({ ranch: 'scho
   document.addEventListener('pointerdown', () => { if (travelBgmOn) travelBgmSync(); }, { passive: true });
 })();
 </script>
-<script src="cook.js?v=0.55"></script>
-<script src="home.js?v=0.55"></script>
+<script src="cook.js?v=0.56"></script>
+<script src="home.js?v=0.56"></script>
 <script src="../shared/back_line.js"></script>
 <script>/* D104：旅行排行榜（明信片收藏數） */ if (window.KiteLB) { KiteLB.button(document.getElementById('lbSlot'), { title: '小鳶旅行收藏排行', travel: true }); setTimeout(function () { try { pushTravelStat(); } catch (e) {} }, 1500); }</script>
 </body>
