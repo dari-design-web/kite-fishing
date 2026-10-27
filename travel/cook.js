@@ -28,6 +28,7 @@
     '.ck .row{display:flex;gap:8px;padding:6px 12px calc(10px + env(safe-area-inset-bottom,0px));background:#6B4A2E}.ck .row .btn{flex:1}' +
     '.ck .fly{position:fixed;z-index:70;width:34px;height:34px;pointer-events:none;transition:transform .35s ease-in,opacity .35s;display:flex;align-items:center;justify-content:center;font-size:26px}.ck .fly img{width:100%}' +
     '.ck.dual .top b{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}body:has(.ck) #hmAct,body:has(.ck) .roomwrap .chip,body:has(.ck) #hmFarm,body:has(.ck) #sayBox{visibility:hidden}' +
+    '.ck .hz.toss .pot{animation:ckTs .35s}@keyframes ckTs{30%{transform:translateX(-50%) translateY(-8px) rotate(-6deg)}70%{transform:translateX(-50%) rotate(4deg)}}' +
     '.ck .done{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(30,20,10,.6);color:#fff;text-align:center;gap:6px}.ck .done .stars{font-size:44px;letter-spacing:4px}.ck .done b{font-size:20px}';
   document.head.appendChild(css);
 
@@ -41,13 +42,22 @@
     var pots = R.map(function (rr, g) { return { st: 'idle', t: 0, n: 0, need: list.filter(function (x) { return x.g === g && x.it.type !== 'rice'; }).length }; });
     var PID = ['ckPot', 'ckPot2'];
     var board = null, chop = 0;
+    /* D189：每種食材有自己的動作（steps：[{v 動作, n 次數, g 'tap' 點／'swipe' 滑}]），沒給就是連點切 5 下 */
+    function steps(it) { return it.steps && it.steps.length ? it.steps : [{ v: '切', n: CHOP, g: 'tap' }]; }
+    function cur() { return board ? steps(board.it)[board.si || 0] : null; }
+    function stepTip() { var c = cur(); if (!c) return; tip(MARK[board.g] + board.it.name + '：' + (c.g === 'swipe' ? '在砧板上' + (c.dir === 'down' ? '往下滑' : '左右滑') + '「' + c.v + '」' : '連點砧板「' + c.v + '」') + '（' + chop + '/' + c.n + '）'); var lb = $('ckBL'); if (lb) lb.textContent = '砧板・' + c.v + (c.g === 'swipe' ? (c.dir === 'down' ? '（往下滑）' : '（左右滑）') : '（連點）'); }
+    function stepDo() {
+      var c = cur(); if (!c) return; chop++; var bd = $('ckBoard'); bd.classList.add('chop'); setTimeout(function () { bd.classList.remove('chop'); }, 80);
+      if (chop >= c.n) { board.si = (board.si || 0) + 1; chop = 0; if (board.si >= steps(board.it).length) { board.st = 'cut'; tip(MARK[board.g] + board.it.name + '準備好了，點' + potName(board.g) + '放進鍋'); var lb = $('ckBL'); if (lb) lb.textContent = '砧板'; boardState(); hl(); return; } }
+      stepTip(); boardState(); hl();
+    }
     function pic(it, cut) { return cut && it.cut ? '<img src="' + A + it.cut + '.webp" alt="">' : it.img ? '<img src="' + A + it.img + '.webp" alt="">' : '<span class="e">' + it.e + '</span>'; }
     var w = el('div', 'ck' + (G > 1 ? ' dual' : ''));
     w.innerHTML = '<div class="top"><b>' + (G > 1 ? '①' + R[0].name + '＋②' + R[1].name : '做' + r.name) + '</b><span class="tk" id="ckT">0 秒</span></div><div class="order" id="ckO"></div>' +
       '<div class="tip" id="ckTip"></div><div class="tray" id="ckTray"></div>' +
       '<div class="desk">' +
       '<button class="hz" id="ckBasket" style="' + pct(HIT.basket) + '" aria-label="藤籃"><span class="lb">藤籃</span></button>' +
-      '<button class="hz" id="ckBoard" style="' + pct(HIT.board) + '" aria-label="砧板"><span class="onb" id="ckOnB"></span><span class="knife">🔪</span><span class="bar" id="ckCBw"><i id="ckCB"></i></span><span class="lb">砧板・連點切</span></button>' +
+      '<button class="hz" id="ckBoard" style="' + pct(HIT.board) + '" aria-label="砧板"><span class="onb" id="ckOnB"></span><span class="knife">🔪</span><span class="bar" id="ckCBw"><i id="ckCB"></i></span><span class="lb" id="ckBL">砧板</span></button>' +
       '<button class="hz" id="ckPot" style="' + pct(HIT.stove) + '" aria-label="左爐"><span class="pot" id="ckPotImg"></span><span class="bar" id="ckPBw"><i id="ckPB"></i></span><span class="lb" id="ckPS">爐子</span></button>' +
       (G > 1 ? '<button class="hz" id="ckPot2" style="' + pct(HIT.stove2) + '" aria-label="右爐"><span class="pot" id="ckPot2Img"></span><span class="bar" id="ckPot2Bw"><i id="ckPot2B"></i></span><span class="lb" id="ckPot2S">右爐</span></button>' : '') +
       '<button class="hz" id="ckRice" style="' + pct(HIT.rice) + '" aria-label="飯鍋"><span class="lb" id="ckRS">飯鍋</span></button>' +
@@ -60,7 +70,7 @@
       var b = $('ckTray'); b.innerHTML = '';
       list.forEach(function (x, i) {
         if (x.st !== 'basket') return;
-        var btn = el('button', '', pic(x.it) + MARK[x.g] + x.it.name + (x.it.type === 'chop' ? '・切' : x.it.type === 'rice' ? '・裝飯' : '・下鍋'));
+        var btn = el('button', '', pic(x.it) + MARK[x.g] + x.it.name + (x.it.type === 'chop' ? '・' + steps(x.it)[0].v : x.it.type === 'rice' ? '・裝飯' : '・下鍋'));
         btn.type = 'button';
         btn.disabled = (x.it.type === 'chop' && !!board) || (x.it.type === 'cook' && pots[x.g].st !== 'idle');
         tap(btn, function () { if (!btn.disabled && btn.isConnected) take(i, btn); });
@@ -74,34 +84,36 @@
     function potName(g) { return G > 1 ? (g ? '右爐' : '左爐') : '爐子'; }
     function take(i, btn) {
       var x = list[i];
-      if (x.it.type === 'chop') { if (board) return; board = x; chop = 0; x.st = 'board'; fly(btn, 'ckBoard', pic(x.it)); tip('連點砧板，把' + MARK[x.g] + x.it.name + '切好！'); boardState(); }
+      if (x.it.type === 'chop') { if (board) return; board = x; board.si = 0; chop = 0; x.st = 'board'; fly(btn, 'ckBoard', pic(x.it)); stepTip(); boardState(); }
       else if (x.it.type === 'cook') { if (pots[x.g].st !== 'idle') return; x.st = 'pot'; pots[x.g].n++; fly(btn, PID[x.g], pic(x.it)); tip(MARK[x.g] + x.it.name + '下' + potName(x.g) + '了！'); maybeCook(x.g); }
       else { x.st = 'rice'; tip('點飯鍋，把飯裝進' + (r.kind === 'bento' ? '便當盒' : '盤子')); }
       order(); tray(); boxState();
     }
-    function boardState() { $('ckOnB').innerHTML = board ? pic(board.it, board.st === 'cut') : ''; $('ckCB').style.width = board ? Math.min(100, chop / CHOP * 100) + '%' : '0'; $('ckCBw').style.display = board ? '' : 'none'; }
-    function maybeCook(g) { var p = pots[g]; if (p.st === 'idle' && p.n >= p.need && p.need > 0) { p.st = 'cooking'; p.t = Date.now(); tip(G > 1 ? MARK[g] + potName(g) + '開火！兩個鍋子都要顧，好了就點那個爐子起鍋' : '開火！顧好鍋子，好了就點爐子起鍋'); } potState(g); }
+    function boardState() { $('ckOnB').innerHTML = board ? pic(board.it, board.st === 'cut' || (board.si || 0) > 0 && !!board.it.cutMid) : ''; var c = cur(); $('ckCB').style.width = board && c && board.st !== 'cut' ? Math.min(100, chop / c.n * 100) + '%' : board ? '100%' : '0'; $('ckCBw').style.display = board ? '' : 'none'; }
+    function maybeCook(g) { var p = pots[g]; if (p.st === 'idle' && p.n >= p.need && p.need > 0) { p.st = 'cooking'; p.t = Date.now(); tip(G > 1 ? MARK[g] + potName(g) + '開火！點鍋子翻炒，兩個鍋子都要顧，好了就起鍋' : '開火！一直點鍋子翻炒，炒得勻比較不會焦，顧好鍋子，好了就點爐子起鍋'); } potState(g); }
     tap($('ckBasket'), function () { $('ckTray').classList.add('hl'); setTimeout(function () { var t = $('ckTray'); if (t) t.classList.remove('hl'); }, 900); tip('食材在上面的籃子裡，點一樣拿出來'); });
     tap($('ckBoard'), function () {
       if (!board) { tip('先從籃子拿要切的菜'); return; }
       if (board.st === 'cut') { tip(MARK[board.g] + board.it.name + '切好了，點' + potName(board.g) + '放進鍋'); return; }
-      chop++; var bd = $('ckBoard'); bd.classList.add('chop'); setTimeout(function () { bd.classList.remove('chop'); }, 80);
-      if (chop >= CHOP) { board.st = 'cut'; tip(MARK[board.g] + board.it.name + '切好了，點' + potName(board.g) + '放進鍋'); }
-      boardState(); hl();
+      if (cur().g === 'swipe') { stepTip(); return; }
+      stepDo();
     });
+    (function () { var bd = $('ckBoard'), sx = null, sy = 0; bd.addEventListener('pointerdown', function (e) { sx = e.clientX; sy = e.clientY; try { bd.setPointerCapture(e.pointerId); } catch (x) {} });
+      bd.addEventListener('pointermove', function (e) { if (sx == null || !board || board.st !== 'board') return; var c = cur(); if (!c || c.g !== 'swipe') return; var dx = e.clientX - sx, dy = e.clientY - sy, ok = c.dir === 'down' ? dy > 34 : Math.abs(dx) > 34; if (ok) { sx = e.clientX; sy = e.clientY; stepDo(); } });
+      bd.addEventListener('pointerup', function () { sx = null; }); bd.addEventListener('pointercancel', function () { sx = null; }); })();      /* D189：削皮、剝玉米粒、攪蛋用滑的 */
     function potTap(g) {
       var p = pots[g];
       if (board && board.st === 'cut') {
         if (board.g !== g) { tip('這是' + MARK[board.g] + '的菜，要放' + potName(board.g)); return; }
         if (p.st !== 'idle') { tip('鍋子在用，等一下'); return; }
-        board.st = 'pot'; p.n++; fly($('ckBoard'), PID[g], pic(board.it, true)); board = null; chop = 0; boardState(); order(); tray(); maybeCook(g); return;
+        board.st = 'pot'; p.n++; fly($('ckBoard'), PID[g], pic(board.it, true)); board = null; chop = 0; boardState(); var lb0 = $('ckBL'); if (lb0) lb0.textContent = '砧板'; order(); tray(); maybeCook(g); return;
       }
       if (p.st === 'ready' || p.st === 'burn') {
         if (p.st === 'burn') burnt = true;
         var wasBurn = p.st === 'burn';
         p.st = 'served'; list.forEach(function (x) { if (x.st === 'pot' && x.g === g) x.st = 'done'; }); fly($(PID[g]), 'ckBox', '🥘'); tip(wasBurn ? '有點焦焦的…沒關係，還是很香！' : MARK[g] + '起鍋！剛剛好～'); order(); potState(g); boxState(); check(); return;
       }
-      if (p.st === 'cooking') { tip('還在煮，再等一下下'); return; }
+      if (p.st === 'cooking') { p.stir = (p.stir || 0) + 1; p.bonus = Math.min(2400, (p.bonus || 0) + 350); var pe = $(PID[g]); pe.classList.remove('toss'); void pe.offsetWidth; pe.classList.add('toss'); tip(['翻！', '再翻一下～', '炒得香香的！', '翻得好！'][p.stir % 4] + '（翻炒 ' + p.stir + ' 下，越勻越不容易焦）'); return; }      /* D189：煮的時候點鍋子翻炒：每翻一下，「剛好」的時間多 0.35 秒 */
       if (p.st === 'served') { tip(MARK[g] + '已經起鍋了'); return; }
       tip(p.need ? '先把' + MARK[g] + '的食材放進' + potName(g) + '（切好的菜、蛋、肉、奶）' : '這道不用開火喔');
     }
@@ -139,7 +151,7 @@
       if (ended) return true;
       if (R.every(function (rr, g) { return riceIn[g] >= needRice[g] && (pots[g].st === 'served' || !pots[g].need); })) {
         ended = true; clearInterval(tickT);
-        var sec = Math.round((Date.now() - t0) / 1000), stars = Math.max(1, 3 - (burnt ? 1 : 0) - (sec > LIM ? 1 : 0));
+        var sec = Math.round((Date.now() - t0) / 1000), stars = Math.max(1, 3 - (burnt ? 1 : 0) - (sec > LIM ? 1 : 0) - (pots.some(function (p) { return p.need && (p.stir || 0) < 2; }) ? 1 : 0));
         var d = el('div', 'done', '<div style="font-size:64px">' + (G > 1 ? '🧾' : r.kind === 'bento' ? '🍱' : '🍽️') + '</div><b>' + (G > 1 ? '兩張訂單都完成！' : r.name + '完成！') + '</b><div class="stars">' + '⭐'.repeat(stars) + '<span style="opacity:.3">' + '⭐'.repeat(3 - stars) + '</span></div><p>' + sec + ' 秒' + (burnt ? '・有一點焦' : '') + (stars >= 3 ? '・完美！' : '') + '</p>');
         w.appendChild(d); setTimeout(function () { w.remove(); onDone(stars); }, 1600);
         return true;
@@ -154,7 +166,7 @@
         if (p.st !== 'cooking' && p.st !== 'ready' && p.st !== 'burn') return;
         var a = Date.now() - p.t, b = $(g ? 'ckPot2B' : 'ckPB');
         if (a < COOK_MS) { b.style.width = a / COOK_MS * 100 + '%'; }
-        else if (a < COOK_MS + GOOD_MS) { if (p.st !== 'ready') { p.st = 'ready'; potState(g); } b.style.width = '100%'; }
+        else if (a < COOK_MS + GOOD_MS + (p.bonus || 0)) { if (p.st !== 'ready') { p.st = 'ready'; potState(g); } b.style.width = '100%'; }
         else if (p.st !== 'burn') { p.st = 'burn'; potState(g); }
       });
     }, 100);
