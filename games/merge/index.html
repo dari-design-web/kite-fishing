@@ -262,6 +262,7 @@ function makeMerge() {
     g.chain = g.chainT > 0 ? g.chain + 1 : 1; g.chainT = 1.3; g.bestChain = Math.max(g.bestChain, g.chain); const mul = g.chain >= 2 ? Math.min(5, g.chain) : 1; if (window.KiteBoard) KiteBoard.ev('merge', { chain: g.chain });      // QA：連鎖倍數最多 ×5，亂丟快丟不會比用心放分數高
     burst(x, y, 8 + lv * 2, SEAF[Math.min(9, lv)][2]); burst(x, y, 4 + lv, '#FFFFFF', 'star'); ring(x, y, SEAF[Math.min(9, lv)][1], '#FFFFFF');
     g.mergesAll++; beep(440 + lv * 70, 0.12, 'triangle', 0.07, 120); buzz(lv >= 6 ? 30 : 12);
+    AQ.add(lv);      /* D186：我的小水族館記一筆 */
     if (lv > 9) { g.score += 200 * mul; pop('兩隻鯨鯊游回大海 +' + 200 * mul, W / 2, 230, C.gold, true); g.say = '哇——鯨鯊回家了！'; g.sayT = 2; jingle([523, 659, 784, 1047, 1319], 90); }
     else {
       const pts = SEAF[lv][3] * mul; g.score += pts; pop((mul > 1 ? '連鎖×' + mul + ' ' : '') + '+' + pts, x, y - 20, mul > 1 || lv >= 5 ? C.gold : C.paper, mul > 1 || lv >= 5);
@@ -591,11 +592,59 @@ function frame(now) {
   drawRings(dt); drawParts(dt); drawFloats(dt);
   if (state === 'ready') drawTitle(clock);
   if (state === 'end') { endInfo.t += dt; drawEnd(endInfo); }
-  if (state !== frame.ps) { frame.ps = state; relayUI(); }
+  if (state !== frame.ps) { frame.ps = state; relayUI(); AQ.ui(); if (state === 'end') AQ.save(); }
   requestAnimationFrame(frame);
 }
 let tab = 'merge';      // D119：放進遊戲大廳的單一遊戲版（不計分・隨時玩）
 setMode(HOW[tab] ? tab : 'merge'); requestAnimationFrame(frame); dailyTag();
+/* D186：合成港「我的小水族館」（Claude 方案 × GPT 1345 水族館背景）
+   合過的海鮮會留在這支手機的水族箱裡（kiteMiniAq1，不上雲端、不算點數）；合出鯨鯊就是鎮館之寶，兩隻鯨鯊回大海也記下來。
+   結算和開始畫面下方有「去看水族館」；點水裡的海鮮會說出名字、合過幾次和一句小知識。 */
+const AQ = (() => {
+  const d = store.get('kiteMiniAq1', null) || { c: {}, home: 0 }; d.c = d.c || {}; d.home = d.home || 0;
+  Object.keys(mdex).forEach((k) => { if (!d.c[k]) d.c[k] = 1; });      /* 以前就發現過的海鮮，先各放一隻進來 */
+  let dirty = false, box = null, bar = null;
+  const kinds = () => Object.keys(d.c).map(Number).filter((i) => i >= 0 && i <= 9 && d.c[i] > 0).sort((a, b) => a - b);
+  const add = (lv) => { if (lv > 9) d.home++; else d.c[lv] = (d.c[lv] || 0) + 1; dirty = true; };
+  const save = () => { if (dirty) { store.set('kiteMiniAq1', d); dirty = false; } };
+  /* 擺放：GPT 建議海鮮限 x 280～800、y 220～1050（1080×1350 原圖），換成百分比大約 x 26～74%、y 16～78% */
+  const SPOT = [[28, 19], [72, 19], [50, 17], [27, 37], [74, 39], [27, 61], [73, 61], [34, 76], [66, 75]];      /* 鯨鯊在正中間，其他沿著四周游 */
+  function open() {
+    save(); if (!box) { box = document.createElement('div'); box.id = 'aqBox'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', '我的小水族館'); document.body.appendChild(box); }
+    const ks = kinds(), whale = d.c[9] > 0;
+    let fish = '';
+    ks.forEach((lv, n) => {
+      if (lv === 9) return;
+      const sp = SPOT[lv], w = 9 + lv * 1.9, dur = 7 + (lv % 4) * 1.6, dl = -(n * 1.3);
+      fish += '<button type="button" class="aqF" data-lv="' + lv + '" style="left:' + sp[0] + '%;top:' + sp[1] + '%;width:' + w + '%;animation-duration:' + dur + 's;animation-delay:' + dl + 's" aria-label="' + SEAF[lv][0] + '"><img src="../assets/merge/sea_' + lv + '.png" alt=""></button>';
+    });
+    if (whale) fish += '<button type="button" class="aqF aqW" data-lv="9" aria-label="鎮館之寶 鯨鯊"><img src="../assets/merge/sea_9.png" alt=""></button><span class="aqRib">鎮館之寶</span>';
+    box.innerHTML = '<div class="aqIn"><div class="aqHd"><b>我的小水族館</b><button type="button" class="aqX">回到合成港</button></div>' +
+      '<p class="aqSub">收集 ' + ks.length + ' / 10 種' + (whale ? '・鯨鯊 ×' + d.c[9] : '・合出鯨鯊就有鎮館之寶') + (d.home ? '・送鯨鯊回大海 ' + d.home + ' 次' : '') + '</p>' +
+      '<div class="aqTank">' + fish + (ks.length ? '' : '<p class="aqEmpty">還沒有海鮮<br>去合成港合合看！</p>') + '</div>' +
+      '<p class="aqTip" aria-live="polite">' + (ks.length ? '點一下水裡的海鮮看看' : '') + '</p><p class="aqNote">水族館存在這支手機裡，不算點數</p></div>';
+    box.hidden = false;
+    box.querySelector('.aqX').onclick = () => { box.hidden = true; };
+    box.querySelectorAll('.aqF').forEach((b) => { b.onclick = () => { const lv = +b.dataset.lv; box.querySelector('.aqTip').innerHTML = '<b>' + SEAF[lv][0] + '</b>　合過 ' + d.c[lv] + ' 次<br>' + SEAF[lv][4]; b.classList.remove('aqHop'); void b.offsetWidth; b.classList.add('aqHop'); beep(520 + lv * 60, 0.08, 'triangle', 0.05, 120); }; });
+  }
+  function ui() {
+    if (!bar) { bar = document.createElement('div'); bar.id = 'aqBar'; bar.innerHTML = '<button type="button" id="aqGo"><img src="../assets/merge/sea_1.png" alt="">去看水族館</button>'; document.querySelector('.stage').after(bar); bar.querySelector('#aqGo').onclick = open; }
+    bar.hidden = !(mode === 'merge' && state !== 'play' && kinds().length > 0);
+  }
+  const st = document.createElement('style');
+  st.textContent = '#aqBar{width:100%;max-width:420px;text-align:center;margin-top:6px}#aqBar[hidden]{display:none}#aqGo{display:inline-flex;align-items:center;gap:6px;border:2px solid #7FD3DB;background:rgba(127,211,219,.14);color:#E3F7FA;border-radius:999px;padding:7px 16px 7px 10px;font:800 14px/1.2 inherit;font-family:inherit;cursor:pointer}#aqGo img{width:24px;height:24px;object-fit:contain}' +
+    '#aqBox{position:fixed;inset:0;z-index:60;background:rgba(10,28,42,.78);display:flex;align-items:center;justify-content:center;padding:12px}#aqBox[hidden]{display:none}.aqIn{width:100%;max-width:400px;background:#FFF8EC;border:3px solid #10293D;border-radius:22px;padding:12px 12px 10px;color:#10293D;max-height:100%;overflow:auto}' +
+    '.aqHd{display:flex;align-items:center;justify-content:space-between;gap:8px}.aqHd b{font-size:18px}.aqX{border:2px solid #10293D;background:#2F7F86;color:#fff;border-radius:999px;padding:6px 12px;font:800 13px/1 inherit;font-family:inherit;cursor:pointer}.aqSub{margin:6px 2px 8px;font-size:12.5px;color:#3A5568;font-weight:700}' +
+    '.aqTank{position:relative;width:100%;aspect-ratio:4/5;background:url(../assets/merge/aquarium_bg.webp) center/100% 100% no-repeat;border-radius:10px;overflow:hidden}.aqF{position:absolute;transform:translate(-50%,-50%);border:0;background:none;padding:0;cursor:pointer;animation:aqSwim 8s ease-in-out infinite alternate}.aqF img{width:100%;display:block;filter:drop-shadow(0 3px 2px rgba(16,41,61,.18))}' +
+    '.aqW{left:50%;top:48%;width:36%;animation:aqWhale 14s ease-in-out infinite alternate}.aqRib{position:absolute;left:50%;top:29%;transform:translateX(-50%);background:#F4BB42;color:#10293D;border:2px solid #10293D;border-radius:999px;padding:3px 12px;font-size:13px;font-weight:900;white-space:nowrap}' +
+    '.aqHop img{animation:aqHop .45s ease-out}.aqEmpty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:800;color:#2F5F7A;margin:0}.aqTip{min-height:38px;margin:8px 2px 2px;font-size:13px;line-height:1.45;text-align:center}.aqTip b{font-size:14px}.aqNote{margin:2px 0 0;font-size:11px;color:#6A7F8E;text-align:center}' +
+    '@keyframes aqSwim{0%{transform:translate(-62%,-50%)}50%{transform:translate(-50%,-56%)}100%{transform:translate(-38%,-50%)}}@keyframes aqWhale{0%{transform:translate(-56%,-50%)}100%{transform:translate(-44%,-53%)}}@keyframes aqHop{0%{transform:scale(1)}40%{transform:scale(1.18) rotate(-6deg)}100%{transform:scale(1)}}' +
+    '@media (prefers-reduced-motion:reduce){.aqF,.aqW,.aqHop img{animation:none}}';
+  document.head.appendChild(st);
+  addEventListener('pagehide', save); document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });      /* 玩到一半離開也記得 */
+  return { add, save, ui, open, data: d };
+})();
+window.__aq = AQ;
 window.__mini = { get G() { return G; }, get state() { return state; }, setMode, IMG, SEAF };
 })();
 </script>
