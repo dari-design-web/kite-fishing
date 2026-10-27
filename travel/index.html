@@ -339,7 +339,7 @@ header .back,.letter .skip{min-height:44px;min-width:44px;display:inline-flex;al
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.56',
+  version: '0.57',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 0,      // D80：遠行便當改用點數換，不再每 3 趟送 1 份（0＝關閉）
@@ -410,16 +410,17 @@ const VOICE = {
   jiufen:   { sv: '用它裝點心，好像又去山上玩了。', n: ['一階、兩階、三階……燈籠亮了，好溫暖喔。', '芋圓 QQ 的！我要慢慢吃，一口一口。', '走累了坐一下，回頭一看……哇，是大海！'] }
 };
 if (CFG.look) for (const l of LOCS) { const v = VOICE[l.id]; l.sv = v.sv; v.n.forEach((n, i) => { l.cards[i][1] = n; }); }
+/* D195：八句換 GPT 2045 候選（八斗子保留，裁圖確有鐵軌）；東三東四裁切右移避開左邊半個小鳶 */
 /* D193：N2「路上看一眼」（GPT 1925）——每地點 1 句＋A 卡局部（x、y、寬，%），共用一個版面，新圖 0。只看這趟目的地；同一趟重開同一句同一塊 */
 const PEEK = {
-  home:     { c: [50, 10, 50], t: '我在港邊，看見大船囉！' },
-  miaokou:  { c: [50, 0, 50], t: '好多黃色燈籠亮起來了！' },
-  zhengbin: { c: [4, 12, 50], t: '彩色房子在水裡也有一排！' },
-  heping:   { c: [0, 6, 50], t: '石頭上有好多小洞洞！' },
+  home:     { c: [56, 12, 44], t: '我在港邊，看見大船囉！' },
+  miaokou:  { c: [50, 0, 50], t: '我看見黃色的燈籠！' },
+  zhengbin: { c: [4, 12, 50], t: '水裡也有彩色房子！' },
+  heping:   { c: [0, 6, 50], t: '石頭上有好多小洞！' },
   badouzi:  { c: [32, 22, 50], t: '鐵軌旁邊就是大海耶！' },
-  shenao:   { c: [64, 6, 36], t: '山就在海的旁邊耶！' },
-  chaojing: { c: [30, 42, 50], t: '退潮了，石頭間有小水池！' },
-  jiufen:   { c: [50, 14, 50], t: '紅燈籠一盞一盞亮了！' }
+  shenao:   { c: [64, 6, 36], t: '山和大海在一起耶！' },
+  chaojing: { c: [30, 42, 50], t: '石頭中間有小水池！' },
+  jiufen:   { c: [50, 14, 50], t: '紅紅的燈籠好多呀！' }
 };
 function peekHTML(id) {
   const l = LOCS.find((x) => x.id === id), p = PEEK[id]; if (!l || !p || !l.cards[0][2]) return '';
@@ -1197,8 +1198,8 @@ function travelBgmSync() { if (travelBgmOn) BGM.play('travel_' + ({ ranch: 'scho
   document.addEventListener('pointerdown', () => { if (travelBgmOn) travelBgmSync(); }, { passive: true });
 })();
 </script>
-<script src="cook.js?v=0.56"></script>
-<script src="home.js?v=0.56"></script>
+<script src="cook.js?v=0.57"></script>
+<script src="home.js?v=0.57"></script>
 <script src="../shared/back_line.js"></script>
 <script>/* D104：旅行排行榜（明信片收藏數） */ if (window.KiteLB) { KiteLB.button(document.getElementById('lbSlot'), { title: '小鳶旅行收藏排行', travel: true }); setTimeout(function () { try { pushTravelStat(); } catch (e) {} }, 1500); }</script>
 </body>
