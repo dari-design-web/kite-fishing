@@ -137,6 +137,14 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .pinfo div{display:flex;justify-content:space-between;gap:8px}
 .pinfo em{font-style:normal;font-weight:700}
 .pinfo .ok{color:#2E8F5A}.pinfo .no{color:#C0503A}.pinfo .wait{color:#8A7356}
+.far{margin:2px 0 8px;text-align:left}
+.far .ft{position:relative;height:12px;margin:14px 14px 4px;border-radius:6px;background:#E8DDCC}
+.far .ft>i{position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:linear-gradient(90deg,#7CC3DF,#3F8FB8)}
+.far .ft>b{position:absolute;top:-4px;width:3px;height:20px;margin-left:-1.5px;border-radius:2px;background:#E2A93B}
+.far .ft>img{position:absolute;top:50%;width:40px;height:34px;margin:-18px 0 0 -20px;object-fit:contain;filter:drop-shadow(0 1px 1px rgba(0,0,0,.25))}
+.far .fl{display:flex;justify-content:space-between;font-size:12px;color:#7A6656;padding:0 2px}
+.far p{margin:4px 0 0;font-size:14px;font-weight:700;color:#3E2E22;text-align:center}
+.far p small{display:block;font-size:12px;font-weight:600;color:#9A7A3A}
 .tipNote{margin:0;padding:8px 10px;border-radius:10px;background:#EAF5FA;border:2px dashed #3F8FB8;font-size:13.5px;line-height:1.5;text-align:left}
 .tipNote b{color:#1D6A88}
 .pick{display:flex;gap:6px;justify-content:center}
@@ -239,6 +247,7 @@ body:not(.qa) #ask, body:not(.qa) #copyBtn{display:none!important}
       <div class="headline"><h2 id="resTitle">過關</h2><div class="rank" id="rank"></div></div>
       <div class="bigstars" id="bigStars"></div>
       <div class="total"><span id="cleanPct">0</span> <small>分</small></div>
+      <div class="far" id="farBar" hidden></div>      <!-- D196：沒過關時看這局飛到哪裡（和這關最遠紀錄） -->
       <div class="rows" id="rows"></div>
       <p class="tipNote" id="tipNote" hidden></p>
       <div class="ask" id="ask">
@@ -463,7 +472,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.49',
+  version: '0.50',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -3290,6 +3299,18 @@ function finish() { BGM.stop(); if (window.KiteBoard) KiteBoard.ev('run_end', { 
   { rows.classList.remove('open'); let mb = $('moreRows'); if (!mb) { mb = document.createElement('button'); mb.type = 'button'; mb.id = 'moreRows'; mb.className = 'moreRows'; rows.after(mb); } mb.textContent = '更多紀錄 ▾'; mb.onclick = () => { const o = rows.classList.toggle('open'); mb.textContent = o ? '收起 ▴' : '更多紀錄 ▾'; }; }
   const un = $('unlockNote'); un.hidden = true;
   if (won && progress.unlocked <= id && STAGES[id] && !STAGES[id].locked) { progress.unlocked = id + 1; un.textContent = '第 ' + (id + 1) + ' 關「' + STAGES[id].name + '」已開放！'; un.hidden = false; }
+  /* D196：沒過關時，結算卡多一條「飛到哪裡」：前 70 秒是路程，到了魔王就看打掉多少；金色短線是這關最遠紀錄，破紀錄寫「這次飛最遠！」 */
+  { const fb = $('farBar'); fb.hidden = true; fb.textContent = '';
+    if (!won) { const rt = CONFIG.boss.at, bn = T.boss.short || T.boss.name.split('・').pop(), atB = t >= rt || !!boss, dmg = boss ? Math.max(0, Math.min(1, 1 - boss.hp / boss.maxHp)) : 0, far = atB ? 1 + dmg : Math.max(0, t / rt);
+      progress.far = progress.far || {}; const old = progress.far[id] || 0, rec = far > old + 0.005; if (rec) progress.far[id] = Math.round(far * 1000) / 1000;
+      const pos = (v) => Math.round(Math.min(1, v) * 100), tk = document.createElement('div'); tk.className = 'ft';
+      const fi = document.createElement('i'); fi.style.width = pos(far) + '%'; tk.append(fi);
+      if (old > 0 && !rec) { const mb = document.createElement('b'); mb.style.left = pos(old) + '%'; mb.title = '最遠紀錄'; tk.append(mb); }
+      const ki = document.createElement('img'); ki.src = 'assets/kite_top_a.png'; ki.alt = ''; ki.style.left = Math.max(5, Math.min(95, pos(far))) + '%'; tk.append(ki);
+      const fl = document.createElement('div'); fl.className = 'fl'; const a = document.createElement('span'); a.textContent = '出發'; const z = document.createElement('span'); z.textContent = bn; fl.append(a, z);
+      const tx = document.createElement('p'); tx.textContent = atB ? '飛到' + bn + '面前了！' + (dmg > 0.02 ? '打掉 ' + Math.round(dmg * 100) + '%' : '') : (far >= 0.9 ? '差一點！' : '') + '飛到 ' + pos(far) + '%，再 ' + Math.max(1, Math.ceil(rt - t)) + ' 秒就到' + bn;
+      const sm = document.createElement('small'); sm.textContent = rec && old > 0 ? '🎉 這次飛最遠！' : old > 0 ? '最遠紀錄：' + (old >= 1 ? '到' + bn + (old > 1.02 ? '・打掉 ' + Math.round((old - 1) * 100) + '%' : '') : pos(old) + '%') + '（金色線）' : ''; if (sm.textContent) tx.append(sm);
+      fb.append(tk, fl, tx); fb.hidden = false; } }
   saveProgress();
   const acc = progress.stars[id], miss = ST().stars.filter((n, k) => !acc[k]); add('這一局的星星', sv.map((v) => (v ? '★' : '☆')).join('') + '（累積 ' + acc.filter(Boolean).length + ' / 3）'); add('下一顆星', miss.length ? miss[0] : '三顆星都拿到了');      // 下一顆星看累積的，已經拿過的不再提示
   /* v0.34（C-134）：沒過關時，小鳶看這局最常被什麼打到，給一句下一局的小提示（文字是建議） */
