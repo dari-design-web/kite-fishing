@@ -51,6 +51,10 @@ button{font-family:inherit}
 .stk{position:absolute;left:0;top:0;transform-origin:50% 50%;z-index:3;touch-action:none}
 .stk img{display:block;width:100%;height:auto;pointer-events:none;filter:drop-shadow(0 3px 4px rgba(0,0,0,.3))}
 .stk img{animation:stkin .35s cubic-bezier(.3,1.6,.6,1) both}
+/* D206（GPT 1420 B）：單指拖動貼紙時陰影稍寬、往下多約 2px，像拿起來；放手 0.15 秒收回。只影響畫面，照片合成另用自己的陰影 */
+.stk img{transition:filter .15s ease-out}
+.stk.lift img{filter:drop-shadow(0 5px 7px rgba(0,0,0,.3))}
+@media (prefers-reduced-motion:reduce){.stk.lift img{filter:drop-shadow(0 3px 4px rgba(0,0,0,.3))}}
 @keyframes stkin{from{transform:scale(.2) rotate(-25deg);opacity:0}}
 /* v0.9（C-87）：配樂鈕、快門閃光、照片洗出來、首頁按鈕依序進場 */
 .snd{position:absolute;left:14px;top:calc(18px + env(safe-area-inset-top,0px));z-index:3;width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,244,226,.92);color:#1F5A5F;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3)}
@@ -394,7 +398,7 @@ const SND_ICON = (() => {
 </script>
 <script>
 /* 小鳶合照館 原型 v0.1（工作單 11 v4 P2）。貼紙、相框、解鎖方式都是建議，等 Dari 確認；正式素材之後開單給 ChatGPT */
-const CFG = { version: '0.24', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
+const CFG = { version: '0.25', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
 const $ = (id) => document.getElementById(id);
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = 'none'), 2400); }
@@ -625,8 +629,9 @@ function grab(e, o) {
   const move = (ev) => {
     if (!ptrs.has(ev.pointerId)) return; ptrs.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
     const r = $('stage').getBoundingClientRect(), pts = [...ptrs.values()], g = g0;
-    if (pts.length === 1 && g.n === 1) { o.x = g.ox + (pts[0].x - g.p[0].x) / r.width; o.y = g.oy + (pts[0].y - g.p[0].y) / r.height; }
+    if (pts.length === 1 && g.n === 1) { o.x = g.ox + (pts[0].x - g.p[0].x) / r.width; o.y = g.oy + (pts[0].y - g.p[0].y) / r.height; if (Math.hypot(pts[0].x - g.p[0].x, pts[0].y - g.p[0].y) > 4) o.el.classList.add('lift'); /* D206 確實移動才拿起 */ }
     else if (pts.length >= 2 && g.n >= 2) {
+      o.el.classList.remove('lift'); /* D206 雙指縮放旋轉不加抬起 */
       const d0 = Math.hypot(g.p[1].x - g.p[0].x, g.p[1].y - g.p[0].y), d1 = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
       const a0 = Math.atan2(g.p[1].y - g.p[0].y, g.p[1].x - g.p[0].x), a1 = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
       o.s = Math.max(0.08, Math.min(1.4, g.os * d1 / Math.max(10, d0))); o.r = g.or + (a1 - a0);
@@ -634,7 +639,7 @@ function grab(e, o) {
     }
     place(o);
   };
-  const up = (ev) => { ptrs.delete(ev.pointerId); g0 = snap(o); if (!ptrs.size) { o.el.removeEventListener('pointermove', move); o.el.removeEventListener('pointerup', up); o.el.removeEventListener('pointercancel', up); } };
+  const up = (ev) => { ptrs.delete(ev.pointerId); g0 = snap(o); if (!ptrs.size) { o.el.classList.remove('lift'); o.el.removeEventListener('pointermove', move); o.el.removeEventListener('pointerup', up); o.el.removeEventListener('pointercancel', up); } };
   if (ptrs.size === 1) { o.el.addEventListener('pointermove', move); o.el.addEventListener('pointerup', up); o.el.addEventListener('pointercancel', up); }
 }
 function snap(o) { return { n: ptrs.size, p: [...ptrs.values()].map((p) => ({ ...p })), ox: o.x, oy: o.y, os: o.s, or: o.r }; }
