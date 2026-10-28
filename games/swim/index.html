@@ -164,8 +164,8 @@ const wakeTex = W.tex(64, 64, (c) => { const g = c.createRadialGradient(32, 32, 
 const WAKE = []; for (let i = 0; i < 16; i++) { const w = new THREE.Sprite(new THREE.SpriteMaterial({ map: wakeTex, transparent: true, opacity: 0, depthWrite: false })); w.visible = false; w.renderOrder = 2; w.userData.life = 0; S.add(w); WAKE.push(w); }
 let wakeT = 0, wakeI = 0, wakeAcc = 0, wakeSaid = false;
 function wakeUpd(dt, dz) {
-  if (wakeT > 0) { wakeT -= dt; wakeAcc += dt; if (Math.abs(pos.x - L[lane]) > 0.12 && wakeAcc >= 0.03) { wakeAcc = 0; const w = WAKE[wakeI++ % WAKE.length]; w.visible = true; w.userData.life = 0.5; w.position.set(pos.x, pos.y - 0.15, 0.9); w.scale.set(0.7, 0.45, 1); } }
-  for (const w of WAKE) { if (!w.visible) continue; w.userData.life -= dt; if (w.userData.life <= 0) { w.visible = false; w.material.opacity = 0; continue; } const f = w.userData.life / 0.5; w.position.z += dz; w.material.opacity = 0.8 * f; w.scale.set(0.7 + (1 - f) * 0.8, 0.45 + (1 - f) * 0.3, 1); }
+  if (wakeT > 0) { wakeT -= dt; wakeAcc += dt; if (Math.abs(pos.x - L[lane]) > 0.12 && wakeAcc >= 0.03) { wakeAcc = 0; const w = WAKE[wakeI++ % WAKE.length]; w.visible = true; w.userData.life = 0.7; w.position.set(pos.x, pos.y - 0.15, 0.9); w.scale.set(0.7, 0.45, 1); } }
+  for (const w of WAKE) { if (!w.visible) continue; w.userData.life -= dt; if (w.userData.life <= 0) { w.visible = false; w.material.opacity = 0; continue; } const f = w.userData.life / 0.7; w.position.z += dz; w.material.opacity = 0.8 * f; w.scale.set(0.7 + (1 - f) * 0.8, 0.45 + (1 - f) * 0.3, 1); }
 }
 const glowM = new THREE.MeshBasicMaterial({ color: '#FFB13C', transparent: true, opacity: 0.18, depthWrite: false }), aura = new THREE.Mesh(new THREE.SphereGeometry(1.7, 24, 16), glowM); aura.scale.set(0.9, 0.55, 1.1); aura.visible = false; S.add(aura);
 /* 海底：沙地＋流動光斑、遠景插畫（每個場景一張，換場時淡入）、氣泡 */
