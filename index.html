@@ -89,6 +89,10 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 @keyframes glow{50%{transform:scale(1.035);box-shadow:0 0 0 4px rgba(244,187,66,.35)}}
 .rank{align-self:center;font-family:var(--display);font-weight:700;font-size:18px;background:var(--gold);border:2px solid var(--ink);border-radius:999px;padding:0 14px}
 .fact{font-size:13px;text-align:left;background:#fff;border:1px dashed var(--muted);border-radius:10px;padding:6px 9px;color:var(--ink)}
+/* D204（GPT 1220 B）：點圖鑑小卡，那種漁獲從左邊游進來 0.6 秒、說「嗨，我是○○！」，小知識留在下面；減少動態時直接出現 */
+.fact .hi{display:flex;align-items:center;gap:8px;font-weight:800;margin-bottom:2px}.fact .hi img{height:26px;max-width:70px;object-fit:contain;animation:hiswim .6s ease-out both}
+@keyframes hiswim{from{transform:translateX(-40px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.fact .hi img{animation:none}}
 .headline{display:flex;align-items:center;justify-content:center;gap:10px}
 .seal{align-self:center;font-size:12px;font-weight:700;color:var(--coral);border:2px solid var(--coral);border-radius:8px;padding:0 8px;transform:rotate(-3deg)}
 .dex{display:flex;flex-wrap:wrap;gap:4px;justify-content:center}
@@ -449,7 +453,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.35',
+  version: '0.36',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -1418,12 +1422,15 @@ function finish() { BGM.stop(); if (window.KiteBoard) KiteBoard.ev('run_end', { 
   { rows.classList.remove('open'); let mb = $('moreRows'); if (!mb) { mb = document.createElement('button'); mb.type = 'button'; mb.id = 'moreRows'; mb.className = 'moreRows'; rows.after(mb); } mb.textContent = '更多紀錄 ▾'; mb.onclick = () => { const o = rows.classList.toggle('open'); mb.textContent = o ? '收起 ▴' : '更多紀錄 ▾'; }; }
   // 港邊圖鑑冊：六種漁獲的小卡，抓過的可以點開看小知識；這局新抓到的標成金色
   const SPL = SP(), got = SPL.filter((k) => dex[k]).length, box = $('dex'), fact = $('fact'); box.textContent = '';
-  const tell = (k, b) => { fact.textContent = CONFIG.fish[k].name + '：' + CONFIG.fish[k].fact; for (const x of box.children) x.setAttribute('aria-pressed', String(x === b)); };
+  const tell = (k, b, hi) => { fact.textContent = '';
+    /* D204（GPT 1220 B）：只有孩子自己點小卡時，那種漁獲用遊戲裡的圖游進來打招呼；結算自動選新漁獲時照舊只顯示小知識。每次點都重建，連點只留目前這隻 */
+    if (hi) { const h = document.createElement('div'); h.className = 'hi'; const im0 = img[CONFIG.fish[k].sprite]; if (im0 && im0.src) { const ie = document.createElement('img'); ie.src = im0.src; ie.alt = ''; h.appendChild(ie); } const tx = document.createElement('span'); tx.textContent = '嗨，我是' + CONFIG.fish[k].name + '！'; h.appendChild(tx); fact.appendChild(h); window.__dexHi = (window.__dexHi || 0) + 1; }
+    fact.appendChild(document.createTextNode(CONFIG.fish[k].name + '：' + CONFIG.fish[k].fact)); for (const x of box.children) x.setAttribute('aria-pressed', String(x === b)); };
   for (const k of SPL) {
     const b = document.createElement('button'); b.type = 'button'; b.disabled = !dex[k]; b.setAttribute('aria-pressed', 'false'); b.setAttribute('aria-label', dex[k] ? CONFIG.fish[k].name : '還沒抓到的' + (VB === '抓' ? '漁獲' : '魚'));
     const im0 = img[CONFIG.fish[k].sprite]; if (im0 && im0.src) { const ie = document.createElement('img'); ie.src = im0.src; ie.alt = ''; if (!dex[k]) ie.className = 'sil'; b.appendChild(ie); }      // 玩家角度：沒抓到的顯示黑色剪影，知道還有什麼可以抓
     const nm = document.createElement('span'); nm.textContent = dex[k] ? CONFIG.fish[k].name : '？？'; b.appendChild(nm);
-    if (stats.newDex.includes(k)) b.className = 'fresh'; b.onclick = () => tell(k, b); box.appendChild(b);
+    if (stats.newDex.includes(k)) b.className = 'fresh'; b.onclick = () => tell(k, b, true); box.appendChild(b);
   }
   const nk = stats.newDex[stats.newDex.length - 1];
   if (nk) tell(nk, box.children[SPL.indexOf(nk)]); else fact.textContent = LVL().name + '圖鑑 ' + got + ' / ' + SPL.length + '。點上面的' + (VB === '抓' ? '漁獲' : '魚') + '看小知識。';
