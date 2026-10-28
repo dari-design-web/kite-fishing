@@ -438,7 +438,7 @@ const SND_ICON = (() => {
 /* BGM-END */
 </script>
 <script>
-const CFG = { version: '1.4', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
+const CFG = { version: '1.5', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
 const FRAMES = [[53.3333, 40.4444], [25.0463, 46.1481], [18.9352, 75.4815], [44.4907, 86.7407], [75.9722, 77.4815], [80.5093, 56.037]], FRAME_R = 10.37;      // v0.8：G-50 港區小地圖六圈中心（%）；章容器 224px＝寬 20.74%（ChatGPT 地圖位置 JSON）
 const ROUTE = [[1, 2, [[[462.8, 559.4], [449.0, 561.0], [429.0, 568.0], [410.0, 578.0], [378.3, 588.2]]]], [2, 3, [[[330.7, 717.1], [339.0, 730.0], [337.8, 734.0]], [[294.0, 784.0], [285.0, 790.0], [301.0, 820.0], [313.0, 859.0], [313.0, 902.0], [299.0, 934.0], [287.3, 944.5]]]], [3, 4, [[[290.9, 1089.4], [315.0, 1109.0], [339.0, 1130.0], [360.0, 1145.0], [372.6, 1147.7]]]], [4, 5, [[[590.5, 1181.6], [615.0, 1184.0], [638.0, 1178.0], [662.0, 1171.0], [688.0, 1157.0], [709.0, 1138.0], [736.5, 1115.3]]]], [5, 6, [[[750.1, 963.3], [721.0, 929.0], [730.0, 903.0], [740.0, 879.0], [752.0, 857.0], [786.2, 827.8]]]], [6, 1, [[[797.0, 674.6], [784.0, 660.0], [760.0, 636.0], [742.0, 613.0], [718.0, 591.0], [700.0, 579.0], [686.0, 575.3]]]]];      // 每段 [起站, 終站, 可見路段（原圖像素）]；稱號帶的斷口不補線
 /* 6 個蓋章點（實際位置待 Dari 現勘）。color：每站主色（工作單 18）；title：蓋到就拿到的稱號（建議）；riddle：還沒去時的提示 */
@@ -525,12 +525,17 @@ function renderTitleBar() {
   const all = allTitles(), have = all.filter((x) => x.ok).length;
   $('titleBar').innerHTML = '<span class="medal">' + (have ? '🏅' : '？') + '</span><span><small>我的稱號（點一下可以換）</small><b>' + (P.cur || '還沒有稱號') + '</b></span><span class="cnt">稱號冊 ›</span>';      // v0.9：主進度只看 6 站，稱號總數收進稱號冊（ChatGPT 實測意見）
 }
-function openTitles() {
+/* D209（GPT 1721 B）：換成不同的已獲稱號後，稱號冊上方說明暫換「叫我『○○』！」1.2 秒再還原；快速換選只留最新、關閉即收、同一個稱號不重播；減少動態一樣只是靜態文字 */
+const TNOTE = '蓋章就會拿到稱號；有些稱號要特定的章湊在一起才會出現。';
+let tSayT = 0;
+function openTitles(say) {
+  clearTimeout(tSayT); tSayT = 0;
   const list = allTitles().map((x) => '<button type="button" data-t="' + x.t + '" aria-pressed="' + (x.t === P.cur) + '"' + (x.ok ? '' : ' disabled') + '>' + (x.ok ? '🏅 <b>' + x.t + '</b>' : '🔒 ' + (x.combo ? '？？？' : x.t)) + '<small>' + x.how + '</small></button>').join('');
-  $('sheet').innerHTML = '<h3>我的稱號</h3><p class="again">蓋章就會拿到稱號；有些稱號要特定的章湊在一起才會出現。</p><div class="tlist">' + list + '</div><button class="btn" type="button" id="ovOk">關閉</button>';
+  $('sheet').innerHTML = '<h3>我的稱號</h3><p class="again" id="tNote" aria-live="polite">' + (say ? '叫我『' + say + '』！' : TNOTE) + '</p><div class="tlist">' + list + '</div><button class="btn" type="button" id="ovOk">關閉</button>';
   $('ov').hidden = false;
-  $('sheet').querySelectorAll('.tlist button').forEach((b) => (b.onclick = () => { P.cur = b.dataset.t; save(); openTitles(); renderTitleBar(); }));
-  $('ovOk').onclick = () => { $('ov').hidden = true; };
+  if (say) tSayT = setTimeout(() => { tSayT = 0; const el = document.getElementById('tNote'); if (el) el.textContent = TNOTE; }, 1200);
+  $('sheet').querySelectorAll('.tlist button').forEach((b) => (b.onclick = () => { if (b.dataset.t === P.cur) return; P.cur = b.dataset.t; save(); openTitles(P.cur); renderTitleBar(); }));
+  $('ovOk').onclick = () => { clearTimeout(tSayT); tSayT = 0; $('ov').hidden = true; };
 }
 /* ===== 畫護照 ===== */
 let justId = 0;
@@ -796,7 +801,7 @@ if (n() === 6 && !P.rewarded) setTimeout(() => { if ($('ov').hidden) checkDone()
 try { if (/[?&]dev=1/.test(location.search)) localStorage.setItem('kiteDev', '1'); if (/[?&]dev=0/.test(location.search)) localStorage.removeItem('kiteDev'); } catch (e) {}
 const DEV = (() => { try { if (localStorage.getItem('kiteDev') === '1') return true; } catch (e) {} return /^(localhost|127\.0\.0\.1|)$/.test(location.hostname); })();
 $('devBox').hidden = !DEV;
-$('titleBar').onclick = openTitles;
+$('titleBar').onclick = () => openTitles();
 $('shareBtn').onclick = sharePassport;
 $('snd').onclick = (e) => { e.stopPropagation(); sndOn = !sndOn; SND_ICON.save(sndOn); bgmSync(); drawSnd(); };
 document.addEventListener('pointerdown', () => { if (sndOn && !BGM.on) bgmSync(); }, { passive: true });      // 手機要先點一下才能出聲
