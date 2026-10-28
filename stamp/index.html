@@ -438,7 +438,7 @@ const SND_ICON = (() => {
 /* BGM-END */
 </script>
 <script>
-const CFG = { version: '1.3', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
+const CFG = { version: '1.4', key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
 const FRAMES = [[53.3333, 40.4444], [25.0463, 46.1481], [18.9352, 75.4815], [44.4907, 86.7407], [75.9722, 77.4815], [80.5093, 56.037]], FRAME_R = 10.37;      // v0.8：G-50 港區小地圖六圈中心（%）；章容器 224px＝寬 20.74%（ChatGPT 地圖位置 JSON）
 const ROUTE = [[1, 2, [[[462.8, 559.4], [449.0, 561.0], [429.0, 568.0], [410.0, 578.0], [378.3, 588.2]]]], [2, 3, [[[330.7, 717.1], [339.0, 730.0], [337.8, 734.0]], [[294.0, 784.0], [285.0, 790.0], [301.0, 820.0], [313.0, 859.0], [313.0, 902.0], [299.0, 934.0], [287.3, 944.5]]]], [3, 4, [[[290.9, 1089.4], [315.0, 1109.0], [339.0, 1130.0], [360.0, 1145.0], [372.6, 1147.7]]]], [4, 5, [[[590.5, 1181.6], [615.0, 1184.0], [638.0, 1178.0], [662.0, 1171.0], [688.0, 1157.0], [709.0, 1138.0], [736.5, 1115.3]]]], [5, 6, [[[750.1, 963.3], [721.0, 929.0], [730.0, 903.0], [740.0, 879.0], [752.0, 857.0], [786.2, 827.8]]]], [6, 1, [[[797.0, 674.6], [784.0, 660.0], [760.0, 636.0], [742.0, 613.0], [718.0, 591.0], [700.0, 579.0], [686.0, 575.3]]]]];      // 每段 [起站, 終站, 可見路段（原圖像素）]；稱號帶的斷口不補線
 /* 6 個蓋章點（實際位置待 Dari 現勘）。color：每站主色（工作單 18）；title：蓋到就拿到的稱號（建議）；riddle：還沒去時的提示 */
@@ -638,6 +638,15 @@ function pressSheet(s, v, done) {
   btn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); finish(); } });
   $('skipBtn').onclick = () => { P.fast = true; save(); fin = true; cancelAnimationFrame(raf); sfx('stamp'); done(); };      // v0.9：直接看結果＝立刻到結果
 }
+/* D203（GPT 1120 B）：按「找到了！」時，結果卡上的小鳶輕輕往前點頭一次（約 5°、0.4 秒），像一起確認發現；點頭時先停住原本的飄浮，回位再接回。減少動態時只留文字。 */
+function nod() {
+  const im = document.querySelector('#sheet .say img'); if (!im || !im.animate) return;
+  try { if (matchMedia('(prefers-reduced-motion: reduce)').matches) return; } catch (e) {}
+  im.style.animation = 'none';
+  const a = im.animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(5deg)', offset: 0.5 }, { transform: 'rotate(0deg)' }], { duration: 400, easing: 'ease-in-out' });
+  a.onfinish = a.oncancel = () => { im.style.animation = ''; };
+  window.__nod = (window.__nod || 0) + 1;
+}
 function showStory(s, fresh, newTitles, extra, v) {
   v = v || P.var[s.id] || '';
   if (fresh && !extra && n() === 6 && !P.rewarded) { render(); checkDone(s, newTitles); return; }      // v1.3（G-61）：第 6 章的結果和集滿畫面合成一次，不用連按兩次
@@ -651,7 +660,7 @@ function showStory(s, fresh, newTitles, extra, v) {
     '<p class="again">' + (n() < 6 ? '還差 ' + (6 - n()) + ' 個章' : '6 個都蓋好了！') + '</p>' + (fresh && nextSpot() ? '<div class="nextTip">🧭 下一站猜猜看：<b>' + nextSpot().riddle + '</b></div>' : '') + '<button class="btn" type="button" id="ovOk">看護照</button>';      // v0.20（C-141）：蓋完章馬上給下一站的謎語，不用回護照找
   $('ov').hidden = false;
   if (newTitles.length) setTimeout(() => sfx('pop'), 300);
-  if ($('obsYes')) { $('obsYes').onclick = () => { P.found = P.found || {}; P.found[s.id] = Date.now(); save(); const o = $('obs'); o.classList.add('done'); o.querySelector('p').textContent = '一起找到了！可以在港口札記寫下今天的發現～'; o.querySelector('.row').remove(); sfx('chime'); }; $('obsNo').onclick = () => $('obs').remove(); }
+  if ($('obsYes')) { $('obsYes').onclick = () => { P.found = P.found || {}; P.found[s.id] = Date.now(); save(); const o = $('obs'); o.classList.add('done'); o.querySelector('p').textContent = '一起找到了！可以在港口札記寫下今天的發現～'; o.querySelector('.row').remove(); sfx('chime'); nod(); }; $('obsNo').onclick = () => $('obs').remove(); }
   if ($('hearGo')) $('hearGo').onclick = () => {
     const h = $('hear'); let k = 5; BGM.stop();
     h.innerHTML = '<b>👂 安靜聽……</b><div class="ring"><i id="hearN">5</i><span>小鳶也在聽</span></div>';
