@@ -482,7 +482,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.53',
+  version: '0.54',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -2444,7 +2444,7 @@ function railFoeState(f, dt) {
   else if (f.type === 'battery') f.loud = f.zapAcc < 0.7 && f.age > 1;      // 尖嘯獸：叫的時候把羽毛彈開
   else if ((f.type === 'can' || f.type === 'butt') && f.rail) f.open = !f.noCount && (f.age % 2.1) >= 1.0;      // 刺蝟：滾成球 1.0 秒（羽毛被彈開）→ 張開 1.1 秒（D112 拉長，比較抓得到）；鐵軌亮紅後衝下來的刺蝟列車一直是球、只能閃
   /* D201（Dari 10/28 選 B）：怪獸飛到畫面 62% 高度還在灰盾，就補開一次 1.2 秒（每隻只一次；刺蝟列車不算） */
-  if (f.lateT === undefined && f.y > H * 0.62 && !f.noCount && railBlocks(f)) { f.lateT = 1.2; if (!stats.toldLate) { stats.toldLate = true; say('快飛走了，盾打開一下！', f.x, f.y - 34, '#BFF0D0'); } }
+  if (f.lateT === undefined && f.y > H * 0.62 && !f.noCount && railBlocks(f)) { f.lateT = 1.2; if (!stats.toldLate) { stats.toldLate = true; say('盾開了，打得到！', f.x, f.y - 34, '#BFF0D0'); } }
   if (f.lateT > 0) { f.lateT -= dt; if (f.type === 'tire') f.shell = false; else if (f.type === 'battery') f.loud = false; else if (f.rail) f.open = true; }
 }
 function railBlocks(f) { return (f.type === 'tire' && f.shell) || (f.type === 'battery' && f.loud) || ((f.type === 'can' || f.type === 'butt') && f.rail && !f.open); }
