@@ -64,6 +64,10 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
 .flash.on{opacity:1;transition:none}
 .feverfx{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 50px 10px rgba(255,214,60,.55);opacity:0;transition:opacity .3s}
 .feverfx.on{opacity:1}
+.stage.smashOn::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:4;background:repeating-conic-gradient(from 0deg at 50% 62%,rgba(255,244,190,0) 0deg 7deg,rgba(255,244,190,.32) 7deg 8deg);-webkit-mask:radial-gradient(circle at 50% 62%,transparent 0 34%,#000 70%);mask:radial-gradient(circle at 50% 62%,transparent 0 34%,#000 70%);animation:spd .18s steps(2) infinite}
+@keyframes spd{50%{transform:rotate(2deg);opacity:.7}}
+.boom{position:absolute;z-index:6;pointer-events:none;transform:translate(-50%,-50%)}.boom i{position:absolute;left:-40px;top:-40px;width:80px;height:80px;border-radius:50%;border:5px solid #FFE45C;animation:bmR .5s ease-out forwards}.boom b{position:absolute;left:-22px;top:-24px;font-size:40px;animation:bmB .5s ease-out forwards}.boom s{position:absolute;left:-4px;top:-4px;width:8px;height:8px;border-radius:50%;background:#FFF3A8;animation:bmS .55s ease-out forwards}.boom s:nth-of-type(1){--x:-60px;--y:-40px}.boom s:nth-of-type(2){--x:60px;--y:-46px}.boom s:nth-of-type(3){--x:-70px;--y:20px}.boom s:nth-of-type(4){--x:66px;--y:24px}.boom s:nth-of-type(5){--x:-14px;--y:-70px}.boom s:nth-of-type(6){--x:18px;--y:-66px}
+@keyframes bmR{from{transform:scale(.2);opacity:1}to{transform:scale(1.6);opacity:0}}@keyframes bmB{0%{transform:scale(.4)}40%{transform:scale(1.3)}100%{transform:scale(1);opacity:0}}@keyframes bmS{to{transform:translate(var(--x),var(--y));opacity:0}}
 .card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(310px,88%);background:var(--paper);color:var(--ink);border-radius:22px;padding:18px 18px 16px;text-align:center;box-shadow:0 10px 0 rgba(0,0,0,.25);border:3px solid var(--ink);max-height:92%;overflow:auto;box-sizing:border-box}
 .card[hidden]{display:none}
 .card h2{margin:0 0 2px;font-size:28px}
@@ -291,7 +295,8 @@ function hit(b) {
   hearts--; inv = CFG.inv; combo = 0; lastHit = b.name; beep([220, 150], 120, 'square'); buzz(120); $('flash').classList.add('on'); setTimeout(() => $('flash').classList.remove('on'), 60);
   pop(b.hit || '撞到了！', pos.x, pos.y + 1, 0, 'bad'); hud(); if (hearts <= 0) end();
 }
-function smash(b) { b.smash = 1; bonus += 40; pop('撞飛！+40', pos.x, pos.y + 1, 0, 'gold'); beep([300, 600, 900], 50, 'square', 0.06); buzz(40); }
+function smash(b) { const sd = b.o.position.x > pos.x + 0.3 ? 1 : b.o.position.x < pos.x - 0.3 ? -1 : (Math.random() < 0.5 ? -1 : 1); b.smash = { vx: sd * (7 + Math.random() * 3), vy: 9 + Math.random() * 3, vz: 26, spin: sd * (6 + Math.random() * 4), t: 0, s: b.o.scale.clone() }; boom(b.o.position.x, b.o.position.y + 0.6, b.o.position.z); bonus += 40; pop('撞飛！+40', pos.x, pos.y + 1, 0, 'gold'); beep([300, 600, 900], 50, 'square', 0.06); buzz(40); }
+function boom(x, y, z) { const p = new THREE.Vector3(x, y, z).project(cam), e = document.createElement('div'); e.className = 'boom'; e.style.left = ((p.x + 1) / 2 * 100) + '%'; e.style.top = ((1 - p.y) / 2 * 100) + '%'; e.innerHTML = '<i></i><b>💥</b>' + '<s></s>'.repeat(6); stage.appendChild(e); setTimeout(() => e.remove(), 650); }
 function blocked(b) { const ln = L.reduce((bi, x, i) => (Math.abs(pos.x - x) < Math.abs(pos.x - L[bi]) ? i : bi), 0), off = Math.abs(pos.x - L[ln]) > 0.9;
   const inLane = off ? b.lanes.some((l) => Math.abs(pos.x - L[l]) < 1.5) : b.lanes.includes(ln); return inLane && pos.y > b.y[0] && pos.y < b.y[1]; }
 function update(dt) {
@@ -300,7 +305,7 @@ function update(dt) {
   if (Math.floor(playT / CFG.vEvery) !== Math.floor((playT - dt) / CFG.vEvery) && playT > 1) { pop('加速！速度 ' + speedLv(), 0, 4.5, -6, 'gold'); beep([700, 900], 60, 'triangle', 0.06); }
   const dz = v * dt; dist += dz; score = Math.floor(dist) + bonus; if (mis.id === 'dist' && !misDone) misSet('dist', dist);
   const zi = Math.max(0, Math.floor(dist / CFG.zoneLen)); if (zi !== zone) setZone(zi); bookCheck();
-  curve.next -= dt; if (curve.next <= 0) { curve.next = grnd(6, 10); const k = smooth(15, 120, playT); curve.tx = playT < 15 ? 0 : gpick([-1, 1]) * grnd(0.35, 1) * 0.003 * (0.5 + k * 0.5); curve.ty = playT < 15 ? 0 : grnd(-1, 1) * 0.0012 * k; }
+  curve.next -= dt; if (curve.next <= 0) { curve.next = grnd(6, 10); const k = smooth(15, 120, playT); curve.tx = playT < 15 ? 0 : gpick([-1, 1]) * grnd(0.35, 1) * 0.0018 * (0.5 + k * 0.5); curve.ty = playT < 15 ? 0 : grnd(-1, 1) * 0.0005 * k;      /* D203：彎道變緩（Dari 10/28：後面場景有點飄忽） */ }
   curve.x = lerp(curve.x, curve.tx, 1 - Math.exp(-dt * 0.8)); curve.y = lerp(curve.y, curve.ty, 1 - Math.exp(-dt * 0.8)); W.bend.value.set(curve.x, curve.y);
   const ty = vstate === 'up' ? CFG.yUp : vstate === 'down' ? CFG.yDown : CFG.yMid;
   pos.x = lerp(pos.x, L[lane], 1 - Math.exp(-dt * 11)); pos.y = lerp(pos.y, ty, 1 - Math.exp(-dt * 9));
@@ -310,7 +315,7 @@ function update(dt) {
   for (let i = objs.length - 1; i >= 0; i--) { const b = objs[i], z0 = b.o.position.z; b.o.position.z += dz; const z1 = b.o.position.z;
     if (b.glow) { b.glow.position.set(b.o.position.x, b.o.position.y, z1 - 0.08); b.mark.position.set(b.o.position.x, -0.63, z1); const k = 1 + Math.sin(t * 6 + (b.ph || 0)) * 0.07; b.o.scale.set(b.sx * k, b.sy * (2 - k), 1); b.mark.scale.setScalar(1.25 - (b.o.position.y - 0.5) * 0.12); }
     else if (b.kind === 'ob') b.o.children.forEach((c) => { if (c.userData.danger) c.scale.setScalar(c.userData.danger * (1 + Math.sin(t * 8) * 0.08)); });
-    if (b.smash) { b.o.position.y += dt * 9; b.o.position.x += (b.o.position.x >= 0 ? 1 : -1) * dt * 6; }
+    if (b.smash) { const m = b.smash; m.t += dt; m.vy -= 14 * dt; b.o.position.x += m.vx * dt; b.o.position.y += m.vy * dt; b.o.position.z -= (v + m.vz) * dt; if (b.o.material) b.o.material.rotation += m.spin * dt; else b.o.rotation.z += m.spin * dt; const k = Math.max(0.05, 1 - m.t * 0.9); b.o.scale.set(m.s.x * k, m.s.y * k, m.s.z * k); if (b.glow) b.glow.visible = false; if (b.mark) b.mark.visible = false; if (m.t > 1.1) { kill(b); objs.splice(i, 1); continue; } }      /* D203：撞飛＝往旁邊＋往上＋往遠處拋、會轉、越來越小（Dari 10/28：真的撞到東西要飛走） */
     if (b.kind === 'ob') { const u = b.o.userData;
       if (u.roll) u.roll.material.rotation -= dz * 0.8;
       if (u.harpoon) { const k = smooth(-24, -2, z1); u.harpoon.position.x = lerp(9, -9, k); u.laser.material.opacity = z1 < -2 ? 0.4 + 0.5 * (Math.sin(t * 20) > 0 ? 1 : 0) : 0; }
@@ -345,11 +350,11 @@ function pose(dt) {
   shark.position.set(pos.x, pos.y + Math.sin(t * 3) * 0.05, 0); sharkM.rotation = clamp((L[lane] - pos.x) * 0.25 - curve.x * 60, -0.5, 0.5); shark.visible = !(inv > 0 && P.shield <= 0 && Math.floor(inv * 12) % 2 === 0);
   shadow.position.set(pos.x, -0.64, 0.2); shadow.material.opacity = clamp(1.3 - pos.y * 0.25, 0.3, 1);
   bubble.visible = P.shield > 0; bubble.position.set(pos.x, pos.y, 0.3); bubble.material.opacity = 0.6 + Math.sin(t * 5) * 0.1;
-  aura.visible = P.dash > 0 || P.fever > 0; aura.position.set(pos.x, pos.y, -0.1); glowM.color.set(P.fever > 0 ? '#FFB13C' : '#FFF07A'); glowM.opacity = 0.14 + Math.sin(t * 8) * 0.05;
+  aura.visible = P.dash > 0 || P.fever > 0; aura.position.set(pos.x, pos.y, -0.1); glowM.color.set(P.fever > 0 ? '#FFB13C' : '#FFF07A'); glowM.opacity = P.fever > 0 ? 0.3 + Math.sin(t * 10) * 0.08 : 0.2 + Math.sin(t * 8) * 0.05; const ak = P.fever > 0 ? 1.2 + Math.sin(t * 10) * 0.08 : 1; aura.scale.set(0.9 * ak, 0.55 * ak, 1.1 * ak);      /* D203：撞飛狀態更明顯：光圈脈動、鯨鯊閃金、畫面速度線 */ sharkM.color.set(P.fever > 0 && Math.sin(t * 14) > 0.3 ? '#FFE9A8' : '#FFFFFF'); stage.classList.toggle('smashOn', P.fever > 0 || P.dash > 0);
   for (const o of deco) { const u = o.userData; if (u.float != null) { o.position.y += Math.sin(t * 1.5 + u.float) * 0.006; if (u.pulse) o.scale.y = u.sy * (1 + Math.sin(t * 3 + u.float) * 0.07); } if (u.sway) o.material.rotation = Math.sin(t * 1.6 + u.ph) * u.sway + Math.sin(t * 3.1 + u.ph) * u.sway * 0.3; }      // D142：海草擺、水母一縮一放
   if (big) { const u = big.userData; big.material.rotation = Math.sin(t * 1.8) * 0.08; big.scale.y = u.sy * (1 + Math.sin(t * 4.2) * 0.05); big.scale.x = u.sx * (1 - Math.sin(t * 4.2) * 0.03); big.position.y += Math.sin(t * 1.4) * 0.01; }      // 海龜、燈籠魚划水
   if (P.magnet > 0) { const side = pos.x > 0.5 ? -1 : 1, p = new THREE.Vector3(pos.x + side * 1.5, pos.y + 1.6 + Math.sin(t * 3) * 0.15, -1.6).project(cam); helper.style.display = 'block'; helper.style.left = ((p.x + 1) / 2 * 100) + '%'; helper.style.top = ((1 - p.y) / 2 * 100) + '%'; helper.style.transform = 'translate(-50%,-50%) scaleX(' + (side > 0 ? 1 : -1) + ')'; } else helper.style.display = 'none';
-  cam.position.x = lerp(cam.position.x, pos.x * 0.55, 1 - Math.exp(-dt * 4)); cam.position.y = lerp(cam.position.y, 4.6 + pos.y * 0.3, 1 - Math.exp(-dt * 3)); cam.lookAt(pos.x * 0.4, 1.3 + pos.y * 0.1, -10); cam.rotateZ(-curve.x * 25);
+  cam.position.x = lerp(cam.position.x, pos.x * 0.55, 1 - Math.exp(-dt * 4)); cam.position.y = lerp(cam.position.y, 4.6 + pos.y * 0.3, 1 - Math.exp(-dt * 3)); cam.lookAt(pos.x * 0.4, 1.3 + pos.y * 0.1, -10); cam.rotateZ(-curve.x * 10);
 }
 function frame(now) {
   const dt = clamp((now - last) / 1000, 0, 0.1); last = now;

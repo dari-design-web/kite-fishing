@@ -99,9 +99,21 @@
       if (cur().g === 'swipe') { stepTip(); return; }
       stepDo();
     });
-    (function () { var bd = $('ckBoard'), sx = null, sy = 0; bd.addEventListener('pointerdown', function (e) { sx = e.clientX; sy = e.clientY; try { bd.setPointerCapture(e.pointerId); } catch (x) {} });
-      bd.addEventListener('pointermove', function (e) { if (sx == null || !board || board.st !== 'board') return; var c = cur(); if (!c || c.g !== 'swipe') return; var dx = e.clientX - sx, dy = e.clientY - sy, ok = c.dir === 'down' ? dy > 34 : Math.abs(dx) > 34; if (ok) { sx = e.clientX; sy = e.clientY; stepDo(); } });
-      bd.addEventListener('pointerup', function () { sx = null; }); bd.addEventListener('pointercancel', function () { sx = null; }); })();      /* D189：削皮、剝玉米粒、攪蛋用滑的 */
+    (function () {      /* D189：削皮、剝玉米粒、攪蛋用滑的。D203 修：真手機上 touch-action:manipulation 會被當成捲動、pointer 事件被取消 → 砧板改 touch-action:none，並用 touch 事件為主 */
+      var bd = $('ckBoard'), sx = null, sy = 0;
+      function st(x, y) { sx = x; sy = y; }
+      function mv(x, y) { if (sx == null || !board || board.st !== 'board') return false; var c = cur(); if (!c || c.g !== 'swipe') return false; var dx = x - sx, dy = y - sy, ok = c.dir === 'down' ? dy > 30 : Math.abs(dx) > 30; if (ok) { sx = x; sy = y; stepDo(); } return true; }
+      bd.style.touchAction = 'none';
+      if ('ontouchstart' in window) {
+        bd.addEventListener('touchstart', function (e) { var q = e.touches[0]; st(q.clientX, q.clientY); }, { passive: true });
+        bd.addEventListener('touchmove', function (e) { var q = e.touches[0]; if (mv(q.clientX, q.clientY)) e.preventDefault(); }, { passive: false });
+        bd.addEventListener('touchend', function () { sx = null; }); bd.addEventListener('touchcancel', function () { sx = null; });
+      } else {
+        bd.addEventListener('pointerdown', function (e) { st(e.clientX, e.clientY); try { bd.setPointerCapture(e.pointerId); } catch (x) {} });
+        bd.addEventListener('pointermove', function (e) { mv(e.clientX, e.clientY); });
+        bd.addEventListener('pointerup', function () { sx = null; }); bd.addEventListener('pointercancel', function () { sx = null; });
+      }
+    })();
     function potTap(g) {
       var p = pots[g];
       if (board && board.st === 'cut') {
