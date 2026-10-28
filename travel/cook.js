@@ -64,7 +64,8 @@
       '<button class="hz" id="ckBox" style="' + pct(HIT.box) + '" aria-label="' + (r.kind === 'bento' ? '便當盒' : '盤子') + '"><span class="boxin" id="ckBoxIn"></span><span class="lb" id="ckBS">' + (G > 1 ? '出餐' : r.kind === 'bento' ? '便當盒' : '盤子') + '</span></button>' +
       '</div><div class="row"><button class="btn ghost" id="ckHelp">請小鳶幫忙做好</button></div>';
     document.body.appendChild(w);
-    function tip(t) { $('ckTip').textContent = t; }
+    function tip(t) { if (danceT) { clearTimeout(danceT); danceT = 0; } $('ckTip').textContent = t; }
+    var danceT = 0;      /* D210（GPT 1820 B）：每鍋第一次翻炒先說「鍋裡跳舞囉！」0.8 秒，再換回原本的翻炒提示；其他提示一出現就收 */
     function order() { $('ckO').innerHTML = list.map(function (x) { return '<span class="' + (x.st === 'done' ? 'ok' : '') + '">' + MARK[x.g] + x.it.e + x.it.name + '</span>'; }).join(''); }
     function tray() {
       var b = $('ckTray'); b.innerHTML = '';
@@ -126,7 +127,7 @@
         var wasBurn = p.st === 'burn';
         p.st = 'served'; list.forEach(function (x) { if (x.st === 'pot' && x.g === g) x.st = 'done'; }); fly($(PID[g]), 'ckBox', '🥘'); tip(wasBurn ? '有點焦焦的…沒關係，還是很香！' : MARK[g] + '起鍋！剛剛好～'); order(); potState(g); boxState(); check(); return;
       }
-      if (p.st === 'cooking') { p.stir = (p.stir || 0) + 1; p.bonus = Math.min(2400, (p.bonus || 0) + 350); var pe = $(PID[g]); pe.classList.remove('toss'); void pe.offsetWidth; pe.classList.add('toss'); tip(['翻！', '再翻一下～', '炒得香香的！', '翻得好！'][p.stir % 4] + '（翻炒 ' + p.stir + ' 下，越勻越不容易焦）'); return; }      /* D189：煮的時候點鍋子翻炒：每翻一下，「剛好」的時間多 0.35 秒 */
+      if (p.st === 'cooking') { p.stir = (p.stir || 0) + 1; p.bonus = Math.min(2400, (p.bonus || 0) + 350); var pe = $(PID[g]); pe.classList.remove('toss'); void pe.offsetWidth; pe.classList.add('toss'); var stT = ['翻！', '再翻一下～', '炒得香香的！', '翻得好！'][p.stir % 4] + '（翻炒 ' + p.stir + ' 下，越勻越不容易焦）'; if (!p.danced) { p.danced = true; tip('鍋裡跳舞囉！'); danceT = setTimeout(function () { danceT = 0; $('ckTip').textContent = stT; }, 800); } else tip(stT); return; }      /* D189：煮的時候點鍋子翻炒：每翻一下，「剛好」的時間多 0.35 秒 */
       if (p.st === 'served') { tip(MARK[g] + '已經起鍋了'); return; }
       tip(p.need ? '先把' + MARK[g] + '的食材放進' + potName(g) + '（切好的菜、蛋、肉、奶）' : '這道不用開火喔');
     }
