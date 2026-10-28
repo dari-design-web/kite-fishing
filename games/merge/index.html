@@ -263,6 +263,7 @@ function makeMerge() {
     burst(x, y, 8 + lv * 2, SEAF[Math.min(9, lv)][2]); burst(x, y, 4 + lv, '#FFFFFF', 'star'); ring(x, y, SEAF[Math.min(9, lv)][1], '#FFFFFF');
     g.mergesAll++; beep(440 + lv * 70, 0.12, 'triangle', 0.07, 120); buzz(lv >= 6 ? 30 : 12);
     AQ.add(lv);      /* D186：我的小水族館記一筆 */
+    if (lv <= 9 && (g.show == null || lv >= g.show)) g.show = lv;      /* D198：記下這局合出的最高一階（鯨鯊回大海不算新魚） */
     if (lv > 9) { g.score += 200 * mul; pop('兩隻鯨鯊游回大海 +' + 200 * mul, W / 2, 230, C.gold, true); g.say = '哇——鯨鯊回家了！'; g.sayT = 2; jingle([523, 659, 784, 1047, 1319], 90); }
     else {
       const pts = SEAF[lv][3] * mul; g.score += pts; pop((mul > 1 ? '連鎖×' + mul + ' ' : '') + '+' + pts, x, y - 20, mul > 1 || lv >= 5 ? C.gold : C.paper, mul > 1 || lv >= 5);
@@ -535,7 +536,29 @@ function drawEnd(e) {
 /* ---------- 主迴圈 ---------- */
 
 let mode = 'merge', G = null, state = 'ready', down = false, last = performance.now(), clock = 0, endInfo = null;
-function newGame() { if (DS) gR = KiteDaily.rng(DS.td.seed); floats = []; parts = []; rings = []; G = { merge: makeMerge, stack: makeStack }[mode](); }
+/* D198（GPT 2335 C）：結算後可以點「再看一次變身」，用這局真的合出的最高一階，重播一次「兩隻 → 新海鮮」。
+   只是畫面回顧：不加分、不入冊、不進水族館，也不跑真正的合成。沒有合成就不出現；隨時點一下回到成績。 */
+let RP = null;
+function drawReplay(dt) {
+  RP.t += dt; const t = RP.t, lv = RP.lv, a = lv - 1, k0 = clamp(t * 4, 0, 1);
+  if (t > 3.2) { RP = null; AQ.ui(); return; }
+  ctx.fillStyle = 'rgba(14,34,50,' + 0.6 * k0 + ')'; ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.globalAlpha = k0; panel(140, 320);
+  text('再看一次變身', W / 2, 174, 16, '#3A5568', 'center', 900, false);
+  const cy = 290, rA = Math.min(SEAF[a][1] * 1.25, 44), rB = Math.min(SEAF[lv][1] * 1.3, 66), MT = 1.0;
+  if (t < MT) { const u = clamp((t - 0.15) / (MT - 0.15), 0, 1), e = u * u * (3 - 2 * u), d = lerp(96, rA * 0.55, e), wob = RM ? 0 : Math.sin(t * 14) * 3 * (1 - e);
+    drawSea(a, W / 2 - d, cy + wob, rA, RM ? 0 : 0.15 * (1 - e)); drawSea(a, W / 2 + d, cy - wob, rA, RM ? 0 : -0.15 * (1 - e)); }
+  else { const u = t - MT, sc = RM ? 1 : 1 + 0.28 * Math.exp(-u * 5) * Math.cos(u * 16);
+    if (!RP.hit) { RP.hit = true; beep(440 + lv * 70, 0.14, 'triangle', 0.07, 120); jingle([660, 880, 1046], 90); buzz(lv >= 6 ? 30 : 12); }
+    if (!RM && u < 0.9) { ctx.save(); ctx.globalAlpha = k0 * (1 - u / 0.9); for (let i = 0; i < 10; i++) { const an = i / 10 * 6.2832, r0 = rB * 0.8 + u * 120; ell(W / 2 + Math.cos(an) * r0, cy + Math.sin(an) * r0, 4, 4, i % 2 ? C.gold : '#FFFFFF'); } ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(W / 2, cy, rB * (1 + u * 1.2), 0, 6.2832); ctx.stroke(); ctx.restore(); }
+    drawSea(lv, W / 2, cy, rB * sc, 0);
+    const tk = clamp((u - 0.15) * 4, 0, 1); ctx.globalAlpha = k0 * tk;
+    text('我們合在一起啦！', W / 2, 384, 20, C.ink, 'center', 900, false);
+    text(SEAF[a][0] + '＋' + SEAF[a][0] + ' → ' + SEAF[lv][0], W / 2, 414, 14, '#2F7F86', 'center', 900, false); }
+  ctx.globalAlpha = k0; text('點一下回到成績', W / 2, 444, 12, '#6A7F8E', 'center', 700, false);
+  ctx.restore(); ctx.globalAlpha = 1;
+}
+function newGame() { RP = null; if (DS) gR = KiteDaily.rng(DS.td.seed); floats = []; parts = []; rings = []; G = { merge: makeMerge, stack: makeStack }[mode](); }
 function setMode(m) {
   mode = m; document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.m === m))); document.getElementById('how').innerHTML = HOW[m]; state = 'ready'; newGame();
   const A = m === 'merge' ? ['bg_merge', 'kite_hold', 'kite_hold_fly', 'fx_merge'].concat(SEAF.map((_, i) => 'sea_' + i)) : ['bg_stack_base', 'bg_stack_sky', 'ship', 'kite_carry', 'kite_carry_fly', 'box_gold', 'far_mtn', 'cloud_0', 'cloud_1', 'cloud_2', 'gull', 'wind_0', 'wind_1', 'wind_2', 'fog_bank'].concat(BOXC.map((_, i) => 'box_' + i));
@@ -546,6 +569,7 @@ function pos(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX -
 cv.addEventListener('pointerdown', (e) => {
   e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (er) {} const p = pos(e);
   if (state === 'ready') { state = 'play'; dailyBegin(); if (window.KiteBoard) KiteBoard.start(mode); beep(660, 0.08); if (mode === 'merge') { down = true; G.down(p.x, p.y); G.tap = null; } return; }
+  if (state === 'end' && RP) { RP = null; AQ.ui(); return; }      /* D198：回顧中點一下就回到成績 */
   if (state === 'end') { const r = endBtnR, onBtn = e.kbd || (r && p.x > r.x - 14 && p.x < r.x + r.w + 14 && p.y > r.y - 14 && p.y < r.y + r.h + 14); if (endInfo && endInfo.t > 0.8 && onBtn) { newGame();      /* 玩家角度：結算畫面只有按「再玩一次」才重開，避免疊貨櫃連點時一下就跳過成績 */ state = 'play'; dailyBegin(); beep(660, 0.08); if (mode === 'merge') { down = true; G.down(p.x, p.y); G.tap = null; } } return; }
   down = true; G.down(p.x, p.y);
 });
@@ -557,7 +581,7 @@ function finish() {
   if (window.KiteBoard) KiteBoard.ev('run_end', { game: mode });
   const s = Math.round(G.score), nb = saveBest(mode, s);
   let rk = null, dr = DS ? KiteDaily.finish(DS, s) : null; let tl = ''; try { if (!DS && window.KiteCore && KiteCore.reportPlay && s > 0) { const rep = () => KiteCore.reportPlay({ game: mode, level: 'all', score: s, lbAll: true }); rk = KiteCore.rankAround ? KiteCore.rankAround(mode, 'all', rep) : { res: rep() }; tl = KiteCore.tierLine ? KiteCore.tierLine(rk.res) : ''; } } catch (e) {}      // D141：前 3 局算進今日積分、可換點      // D123：進排行榜；D133：記下名次
-  if (mode === 'merge') endInfo = { s, nb, t: 0, title: G.over > 1.6 ? '堆過紅線了' : '魚艙塞滿了', rows: [['最大合到', SEAF[G.top][0]], ['撐到', '第 ' + G.lv + ' 關'], ['合成次數', G.mergesAll + ' 次'], ['最長連鎖', '×' + Math.max(1, G.bestChain)]], icon: G.top, found: G.newFound };
+  if (mode === 'merge') endInfo = { s, nb, t: 0, title: G.over > 1.6 ? '堆過紅線了' : '魚艙塞滿了', rows: [['最大合到', SEAF[G.top][0]], ['撐到', '第 ' + G.lv + ' 關'], ['合成次數', G.mergesAll + ' 次'], ['最長連鎖', '×' + Math.max(1, G.bestChain)]], icon: G.top, found: G.newFound, replay: G.show == null ? null : G.show };
   else { const h = G.blocks.length - 1; if (h > (best.stackH || 0)) { best.stackH = h; store.set('kiteMiniBest1', best); } endInfo = { s, nb, t: 0, title: '貨櫃掉下去了', rows: [['疊了', h + ' 層'], ['裝滿貨船', G.ships + ' 艘'], ['完美', G.perfects + ' 次'], ['最長完美連擊', '×' + G.bestCombo]] }; }
   endInfo.rank = DS ? (DS.official && dr && dr.rank ? '今日挑戰第 ' + dr.rank + ' 名' : DS.official ? '' : '練習不計榜') : rk && KiteCore.rankText ? KiteCore.rankText(rk) : '';
   if (DS) { const h = document.getElementById('dres'); h.innerHTML = '<button type="button" class="dx" aria-label="收起">收起 ▾</button>' + KiteDaily.resultHtml(DS, dr, s); KiteDaily.wire(h, s); h.hidden = false; h.querySelector('.dx').onclick = () => { h.hidden = true; }; }      // QA：今日挑戰結果改成下方面板，不再把遊戲畫面擠小
@@ -570,7 +594,7 @@ function frame(now) {
   G.draw(clock);
   drawRings(dt); drawParts(dt); drawFloats(dt);
   if (state === 'ready') drawTitle(clock);
-  if (state === 'end') { endInfo.t += dt; drawEnd(endInfo); }
+  if (state === 'end') { endInfo.t += dt; if (RP) drawReplay(dt); else drawEnd(endInfo); }
   if (state !== frame.ps) { frame.ps = state; AQ.ui(); if (state === 'end') AQ.save(); }
   requestAnimationFrame(frame);
 }
@@ -608,11 +632,13 @@ const AQ = (() => {
     box.querySelectorAll('.aqF').forEach((b) => { b.onclick = () => { const lv = +b.dataset.lv; box.querySelector('.aqTip').innerHTML = '<b>' + SEAF[lv][0] + '</b>　合過 ' + d.c[lv] + ' 次<br>' + SEAF[lv][4]; b.classList.remove('aqHop'); void b.offsetWidth; b.classList.add('aqHop'); beep(520 + lv * 60, 0.08, 'triangle', 0.05, 120); }; });
   }
   function ui() {
-    if (!bar) { bar = document.createElement('div'); bar.id = 'aqBar'; bar.innerHTML = '<button type="button" id="aqGo"><img src="../assets/merge/sea_1.png" alt="">去看水族館</button>'; document.querySelector('.stage').after(bar); bar.querySelector('#aqGo').onclick = open; }
-    bar.hidden = !(mode === 'merge' && state !== 'play' && kinds().length > 0);
+    if (!bar) { bar = document.createElement('div'); bar.id = 'aqBar'; bar.innerHTML = '<button type="button" id="rpGo" hidden>✨ 再看一次變身</button><button type="button" id="aqGo"><img src="../assets/merge/sea_1.png" alt="">去看水族館</button>'; document.querySelector('.stage').after(bar); bar.querySelector('#aqGo').onclick = open;
+      bar.querySelector('#rpGo').onclick = () => { if (state !== 'end' || !endInfo || endInfo.replay == null || endInfo.t < 0.6) return; RP = { lv: endInfo.replay, t: 0 }; ui(); }; }
+    const rpOk = mode === 'merge' && state === 'end' && endInfo && endInfo.replay != null && !RP; bar.querySelector('#rpGo').hidden = !rpOk;      /* D198 */
+    bar.hidden = !(mode === 'merge' && state !== 'play' && (kinds().length > 0 || rpOk));
   }
   const st = document.createElement('style');
-  st.textContent = '#aqBar{width:100%;max-width:420px;text-align:center;margin-top:6px}#aqBar[hidden]{display:none}#aqGo{display:inline-flex;align-items:center;gap:6px;border:2px solid #7FD3DB;background:rgba(127,211,219,.14);color:#E3F7FA;border-radius:999px;padding:7px 16px 7px 10px;font:800 14px/1.2 inherit;font-family:inherit;cursor:pointer}#aqGo img{width:24px;height:24px;object-fit:contain}' +
+  st.textContent = '#aqBar{width:100%;max-width:420px;text-align:center;margin-top:6px}#aqBar[hidden]{display:none}#aqGo{display:inline-flex;align-items:center;vertical-align:middle;gap:6px;border:2px solid #7FD3DB;background:rgba(127,211,219,.14);color:#E3F7FA;border-radius:999px;padding:7px 16px 7px 10px;font:800 14px/1.2 inherit;font-family:inherit;cursor:pointer}#aqGo img{width:24px;height:24px;object-fit:contain}#rpGo{display:inline-flex;align-items:center;vertical-align:middle;margin:0 8px 6px 0;border:2px solid #F4BB42;background:rgba(244,187,66,.16);color:#FFF1C9;border-radius:999px;padding:7px 14px;font:800 14px/1.2 inherit;font-family:inherit;cursor:pointer}#rpGo[hidden]{display:none}' +
     '#aqBox{position:fixed;inset:0;z-index:60;background:rgba(10,28,42,.78);display:flex;align-items:center;justify-content:center;padding:12px}#aqBox[hidden]{display:none}.aqIn{width:100%;max-width:400px;background:#FFF8EC;border:3px solid #10293D;border-radius:22px;padding:12px 12px 10px;color:#10293D;max-height:100%;overflow:auto}' +
     '.aqHd{display:flex;align-items:center;justify-content:space-between;gap:8px}.aqHd b{font-size:18px}.aqX{border:2px solid #10293D;background:#2F7F86;color:#fff;border-radius:999px;padding:6px 12px;font:800 13px/1 inherit;font-family:inherit;cursor:pointer}.aqSub{margin:6px 2px 8px;font-size:12.5px;color:#3A5568;font-weight:700}' +
     '.aqTank{position:relative;width:100%;aspect-ratio:4/5;background:url(../assets/merge/aquarium_bg.webp) center/100% 100% no-repeat;border-radius:10px;overflow:hidden}.aqF{position:absolute;transform:translate(-50%,-50%);border:0;background:none;padding:0;cursor:pointer;animation:aqSwim 8s ease-in-out infinite alternate}.aqF img{width:100%;display:block;filter:drop-shadow(0 3px 2px rgba(16,41,61,.18))}' +
