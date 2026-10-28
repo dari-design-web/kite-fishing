@@ -90,7 +90,8 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .rank{align-self:center;font-family:var(--display);font-weight:700;font-size:18px;background:var(--gold);border:2px solid var(--ink);border-radius:999px;padding:0 14px}
 .fact{font-size:13px;text-align:left;background:#fff;border:1px dashed var(--muted);border-radius:10px;padding:6px 9px;color:var(--ink)}
 /* D204（GPT 1220 B）：點圖鑑小卡，那種漁獲從左邊游進來 0.6 秒、說「嗨，我是○○！」，小知識留在下面；減少動態時直接出現 */
-.fact .hi{display:flex;align-items:center;gap:8px;font-weight:800;margin-bottom:2px}.fact .hi img{height:26px;max-width:70px;object-fit:contain;animation:hiswim .6s ease-out both}
+/* D205（GPT 1325 A）：漁獲圖獨立一行放在招呼上方，120×44 共用框等比放大，細長的白帶魚和圓的鯖魚各保留身形 */
+.fact .hi{display:flex;flex-direction:column;align-items:flex-start;gap:2px;font-weight:800;margin-bottom:2px}.fact .hi img{width:120px;height:44px;max-width:100%;object-fit:contain;object-position:left center;animation:hiswim .6s ease-out both}
 @keyframes hiswim{from{transform:translateX(-40px);opacity:0}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.fact .hi img{animation:none}}
 .headline{display:flex;align-items:center;justify-content:center;gap:10px}
@@ -453,7 +454,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.36',
+  version: '0.37',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光

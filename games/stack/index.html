@@ -542,7 +542,7 @@ function drawEnd(e) {
   hornR = null;
   e.rows.forEach((r, i) => { const y = 232 + i * 34;
     if (e.horn === i) { const on = performance.now() - hornT < 1100, wob = on ? Math.sin((performance.now() - hornT) / 40) * 1.5 : 0; hornR = { x: 50, y: y - 14 + (1 - k) * 30, w: W - 100, h: 28 };      /* D200（GPT 0925 B）：汽笛收進卡內「裝滿貨船」那一行，整行可點 */
-      rrect(50, y - 14, W - 100, 28, 10, on ? '#FFE3A1' : '#FFF1C9', '#F4BB42', 2); text('📯 裝滿 ' + G.ships + ' 艘', 64, y, 13, '#3A5568', 'left', 800, false); text(on ? '嗚——嗚——！' : '按汽笛 ▶', W - 64 + wob, y, 14, on ? C.warn : C.ink, 'right', 900, false); return; }      /* D201（GPT 1015 B）：左邊資訊、右邊動作 */
+      rrect(50, y - 14, W - 100, 28, 10, on ? '#FFE3A1' : '#FFF1C9', '#F4BB42', 2); text('📯 裝滿 ' + G.ships + ' 艘', 64, y, 13, '#3A5568', 'left', 800, false); if (on) hornSay(W - 64 + wob, y, performance.now() - hornT); else text('按汽笛 ▶', W - 64 + wob, y, 14, C.ink, 'right', 900, false); return; }      /* D201（GPT 1015 B）：左邊資訊、右邊動作 */
     rrect(50, y - 14, W - 100, 28, 10, '#F3EAD8'); text(r[0], 64, y, 13, '#3A5568', 'left', 700, false); text(r[1], W - 64, y, 14, C.ink, 'right', 900, false);
     if (i === 0 && e.icon != null) { ctx.font = FONT(14, 900); drawSea(e.icon, W - 64 - ctx.measureText(r[1]).width - 16, y, 11, 0); } });
   if (e.found && e.found.length) text('新發現 ' + e.found.length + ' 種海鮮！', W / 2, 232 + e.rows.length * 34 + 4, 13, C.warn, 'center', 900, false);
@@ -597,6 +597,9 @@ function frame(now) {
 }
 /* D199（GPT 0825 C）＋D200（GPT 0925 B）：這局有裝滿貨船，結算卡內「📯 裝滿 N 艘，按汽笛」整行可點，響兩聲短汽笛（跟著音效開關），不加分、不擋再玩一次；1.1 秒內不重複。 */
 let hornR = null, hornT = -9999;
+/* D205（GPT 1325 B）：按汽笛時右邊改「一起嗚嗚！」，邀旁邊的家人一起叫；兩個「嗚」跟著兩聲汽笛各加深一次，減少動態時不加深 */
+function hornSay(xr, y, dt) { const parts = ['一起', '嗚', '嗚', '！']; ctx.font = FONT(14, 900); let x = xr - parts.reduce((a, t) => a + ctx.measureText(t).width, 0);
+  parts.forEach((t, i) => { const deep = !RM && ((i === 1 && dt < 420) || (i === 2 && dt >= 470 && dt < 900)); text(t, x, y, deep ? 15 : 14, deep ? '#B4420F' : C.warn, 'left', 900, false); ctx.font = FONT(14, 900); x += ctx.measureText(t).width; }); }
 function toot() { const now = performance.now(); if (now - hornT < 1100) return; hornT = now;
   beep(196, 0.32, 'sawtooth', 0.06, -6); beep(147, 0.32, 'square', 0.03, -4); setTimeout(() => { beep(196, 0.38, 'sawtooth', 0.06, -8); beep(147, 0.38, 'square', 0.03, -6); }, 470);
   if (snd && navigator.vibrate) try { navigator.vibrate([90, 140, 110]); } catch (e) {} }
