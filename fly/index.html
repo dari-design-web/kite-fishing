@@ -160,6 +160,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .pick button{flex:1;border:2px solid var(--ink);border-radius:999px;background:transparent;padding:5px 8px;font-size:13px;font-weight:700}
 .pick button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
 #hearts{font-family:var(--body);font-size:15px;letter-spacing:1px;color:var(--coral);padding:4px 10px}
+#hearts .hf{position:relative;display:inline-block}#hearts .hf b{position:absolute;left:0;top:0;font-weight:inherit;clip-path:inset(100% 0 0 0);animation:hfill .35s linear forwards}@keyframes hfill{to{clip-path:inset(0 0 0 0)}}      /* D211 補回愛心由下往上填 */
 @media (prefers-reduced-motion:reduce){.ult.ready .ring{animation:none}}
 
 /* UX 走查（10/17）：可以點的地方至少 44px、字至少 12px */
@@ -482,7 +483,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.54',
+  version: '0.55',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -718,10 +719,19 @@ function reset() {
   for (const k in answers) delete answers[k];
   for (const b of document.querySelectorAll('.yn button')) b.setAttribute('aria-pressed', 'false');
   newReset();
-  drawHearts(); const ub = $('ultBtn'); ub.disabled = true; ub.classList.remove('ready'); ub.style.setProperty('--fill', '0%'); $('ultTag').textContent = ULTN(); $('banner').hidden = true;
+  heartShown = null; drawHearts(); const ub = $('ultBtn'); ub.disabled = true; ub.classList.remove('ready'); ub.style.setProperty('--fill', '0%'); $('ultTag').textContent = ULTN(); $('banner').hidden = true;
   { const disc = document.querySelector('#ultBtn .disc'), k = ULT2[TH()]; let em = disc.querySelector('.u2'); if (k) { if (!em) { em = document.createElement('span'); em.className = 'u2'; em.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px;background:inherit;border-radius:50%'; disc.appendChild(em); } if (em.dataset.k !== k[0]) { em.dataset.k = k[0]; em.textContent = ''; const im = new Image(); im.alt = ''; im.style.cssText = 'width:86%;height:86%;object-fit:contain'; im.onerror = () => { em.textContent = k[2]; }; im.src = 'assets/ult_' + k[0] + '.png'; em.appendChild(im); } em.hidden = false; } else if (em) em.hidden = true; }
 }
-function drawHearts() { $('hearts').textContent = '♥'.repeat(Math.max(0, kite.hearts)) + '♡'.repeat(Math.max(0, LV().hearts - kite.hearts)); }
+let heartShown = null, heartFillT = 0;      /* D211：GPT 1930 A——體力實際增加時，補回的那格由下往上填滿 0.35 秒；減少動態直接完成；受傷／重開立即照真實體力 */
+function drawHearts() {
+  const el = $('hearts'), n = Math.max(0, kite.hearts), m = LV().hearts, prev = heartShown;
+  clearTimeout(heartFillT); heartShown = n;
+  if (prev === null || n <= prev || calm) { el.textContent = '♥'.repeat(n) + '♡'.repeat(Math.max(0, m - n)); return; }
+  el.textContent = ''; el.append('♥'.repeat(prev));
+  for (let i = prev; i < n; i++) { const s = document.createElement('span'); s.className = 'hf'; s.textContent = '♡'; const b = document.createElement('b'); b.textContent = '♥'; s.append(b); el.append(s); }
+  el.append('♡'.repeat(Math.max(0, m - n)));
+  heartFillT = setTimeout(() => { if (heartShown === n) el.textContent = '♥'.repeat(n) + '♡'.repeat(Math.max(0, m - n)); }, 380);
+}
 
 const FOE_VIS = 1.45, FOE_BIG = (ty) => ty !== 'boss' && ty !== 'log' && ty !== 'bound' && !(T[ty] && (T[ty].solid || T[ty].rescue));      // D128（Dari 10/19 18:22「怪物圖案都有點偏小」）：一般怪物畫大 1.45 倍、判定圓大 1.18 倍；魔王、漂流木、被困的朋友不變
 function mk(type, x, y, o) {
