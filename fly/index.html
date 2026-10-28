@@ -151,7 +151,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .cheer{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 auto 6px;padding:4px 14px 4px 6px;border:0;border-radius:999px;background:#FFF1D2;color:#7A4A1E;font:inherit;font-size:14px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .cheer .kf{width:58px;height:49px;background:url(assets/kite_top_fly.png) 0 0/400% 100% no-repeat;transform-origin:50% 60%}
 .cheer.go .kf{animation:cheerUp .95s cubic-bezier(.3,.7,.4,1),cheerFlap .24s steps(4) 4}
-@keyframes cheerUp{0%{transform:none}40%{transform:translateY(-44px) rotate(-10deg) scale(1.08)}70%{transform:translateY(-30px) rotate(6deg)}100%{transform:none}}
+@keyframes cheerUp{0%{transform:none}40%{transform:translateY(-30px) rotate(-10deg) scale(1.08)}70%{transform:translateY(-20px) rotate(6deg)}100%{transform:none}}
 @keyframes cheerFlap{from{background-position-x:0}to{background-position-x:133.333%}}
 @media (prefers-reduced-motion:reduce){.cheer.go .kf{animation:cheerFlap .24s steps(4) 3}}
 .tipNote{margin:0;padding:8px 10px;border-radius:10px;background:#EAF5FA;border:2px dashed #3F8FB8;font-size:13.5px;line-height:1.5;text-align:left}
@@ -482,7 +482,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.51',
+  version: '0.52',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
