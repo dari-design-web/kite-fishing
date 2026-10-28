@@ -332,9 +332,20 @@
   /* --- 電鍋：稻米 1 份煮 20 分鐘變 2 碗白飯；一次最多放 3 份 --- */
   var RC_MIN = 20, RC_MAX = 3;
   function rcState() { var h = H(), r = h.rc; if (!r) return { st: 'idle' }; var left = r.t + RC_MIN * MIN - Date.now(); return left > 0 ? { st: 'cook', left: left, n: r.n } : { st: 'done', n: r.n }; }
+  /* D201（GPT 1015 C）：真正盛飯成功後，三朵淡蒸氣從電鍋飄向小鳶，小鳶原圖往電鍋那邊微微前傾再回位，說「飯香跑過來啦！」。不加分、不加步驟；小鳶不在畫面上就照舊。 */
+  function riceSniff() {
+    try {
+      var room = $('room'), b = $('bird'); if (!room || !b || b.style.display === 'none' || !b.offsetWidth || !b.animate) return false;
+      var R = room.getBoundingClientRect(), B = b.getBoundingClientRect(); if (!R.width) return false;
+      var bx = (B.left + B.width / 2 - R.left) / R.width * 100, by = (B.top + B.height * 0.35 - R.top) / R.height * 100, sx = 26, sy = 56, dir = bx < sx ? 1 : -1;
+      for (var i = 0; i < 3; i++) { (function (i) { var e = document.createElement('div'); e.className = 'hmSteam'; e.style.left = sx + '%'; e.style.top = sy + '%'; room.appendChild(e); var dx = (bx - sx) / 100 * R.width, dy = (by - sy) / 100 * R.height; e.animate([{ transform: 'translate(-50%,-50%) scale(.6)', opacity: 0 }, { transform: 'translate(calc(-50% + ' + dx * 0.35 + 'px),calc(-50% + ' + (dy * 0.35 - 26) + 'px)) scale(1)', opacity: 0.75, offset: 0.35 }, { transform: 'translate(calc(-50% + ' + dx + 'px),calc(-50% + ' + dy + 'px)) scale(1.4)', opacity: 0 }], { duration: 1300, delay: i * 180, easing: 'ease-out', fill: 'both' }); setTimeout(function () { e.remove(); }, 1300 + i * 180 + 80); })(i); }
+      setTimeout(function () { var b2 = $('bird'); if (b2 && b2.animate) b2.animate([{ rotate: '0deg' }, { rotate: (dir * 7) + 'deg', offset: 0.4 }, { rotate: (dir * 7) + 'deg', offset: 0.6 }, { rotate: '0deg' }], { duration: 700, easing: 'ease-in-out' }); say('飯香跑過來啦！'); }, 750);
+      return true;
+    } catch (x) { return false; }
+  }
   function riceCooker() {
     var h = H(), r = rcState();
-    if (r.st === 'done') { give({ gohan: r.n * 2 }); h.rc = null; sv(); pop(26, 52, '+' + r.n * 2 + ' 白飯'); say(['飯煮好了，好香！', '白飯熱騰騰的～', '電鍋跳起來了！'][Math.floor(Math.random() * 3)]); render(); return; }
+    if (r.st === 'done') { give({ gohan: r.n * 2 }); h.rc = null; sv(); pop(26, 52, '+' + r.n * 2 + ' 白飯'); render(); if (!riceSniff()) say(['飯煮好了，好香！', '白飯熱騰騰的～', '電鍋跳起來了！'][Math.floor(Math.random() * 3)]); return; }
     if (r.st === 'cook') { say('飯還要 ' + mins(r.left) + '，電鍋咕嘟咕嘟～'); return; }
     var have0 = h.fridge.rice || 0;
     var html = '<h3>🍚 電鍋煮飯</h3><div class="rcPic">' + img('rc_empty') + '<span>→</span>' + img('product_gohan') + '<b>×2</b></div><p>稻米要先煮成<b>白飯</b>，做菜和便當才用得到。<br>1 份稻米 → 2 碗白飯，大約 ' + mins(RC_MIN * MIN) + '。</p><p class="mu sm">冰箱：稻米 ' + have0 + ' 份・白飯 ' + (h.fridge.gohan || 0) + ' 碗</p>';
@@ -629,6 +640,7 @@
     '.hmZooTag{position:absolute;left:8px;bottom:6px;font-size:10px;background:rgba(0,0,0,.45);color:#fff;border-radius:6px;padding:2px 6px}' +
     '.hmPen .lb{position:absolute;left:50%;bottom:-8%;transform:translateX(-50%)}#hmAct .bi{width:28px;height:28px}' +
     '.hmStove{width:22%}.hmStove .si{width:100%;filter:drop-shadow(0 4px 4px rgba(0,0,0,.3));animation:hmB 2s ease-in-out infinite}' +
+    '.hmSteam{position:absolute;z-index:205;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.95) 0,rgba(255,255,255,.55) 45%,rgba(255,255,255,0) 72%);pointer-events:none;opacity:0}' +
     '.hmPop{position:absolute;z-index:210;transform:translate(-50%,-50%);font:800 14px/1.2 sans-serif;color:#2F7A3A;background:#fff;border-radius:10px;padding:3px 8px;box-shadow:0 2px 6px rgba(0,0,0,.2);animation:hmU 1.3s forwards;pointer-events:none;white-space:nowrap}@keyframes hmU{to{transform:translate(-50%,-180%);opacity:0}}' +
     '.hi{width:100%;height:100%;object-fit:contain;display:block}.opt .em .hi{width:44px;height:44px}.emo{display:flex;align-items:center;justify-content:center;font-size:32px;line-height:1}.emo.big{font-size:96px}.hbI{font-size:30px;width:44px;height:44px}' +
     '.fi{display:inline-flex;align-items:center;gap:2px;margin:0 8px 4px 0;white-space:nowrap}.fic{width:20px;height:20px;font-size:16px}' +
