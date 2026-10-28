@@ -167,6 +167,12 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #menuSnd{width:44px!important;height:44px!important}
 .ptnote a,.mapnote a{display:inline-block;padding:14px 4px;margin:-14px -4px}
 .mapnote{font-size:12px}
+.dailywrap{position:absolute;left:4%;top:24.5%;width:42%;pointer-events:none}
+.stage.dailycard{position:relative;width:100%;border-color:#7FD3E6;background:rgba(14,58,84,.9);gap:3px}
+.stage.dailycard .dpl{color:#BFF0FF;font-weight:700;font-size:11px}
+.stage.dailycard .dm{color:#FFF8EA}
+.stage.dailycard small{color:#FFD98A;font-size:11px}
+.dailynote{margin:2px 0 0;padding:3px 8px;font-size:11px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.7);pointer-events:none}
 </style>
 
 <style>/* QA 10/21：問卷與測試紀錄只在 ?test=1 顯示；開始／再玩一局釘在卡片底部，小手機也看得到 */
@@ -483,7 +489,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.55',
+  version: '0.56',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -1080,7 +1086,7 @@ function drawNewBossBits(f) {      // G84 魔王圖還沒交：在原本的大�
 function update(dt) {
   const real = dt; if (ult && ult.t < 0.5) dt *= 0.25;
   if (cine > 0) cine -= real; if (slowmo > 0) { slowmo -= real; dt *= 0.3; }      // 演出字卡；最後一擊的慢動作      // 鯨鯊登場的前半秒是慢動作
-  t += dt;
+  t += dt; if (daily) dailyTick(dt);
   while (si < script.length && script[si].t <= t) spawn(script[si++]);
   // 小鳶移動
   const K = CONFIG.kite; let mx = 0, my = 0;
@@ -1235,12 +1241,13 @@ function update(dt) {
   if (shake > 0) shake = Math.max(0, shake - real);
   // 畫面資訊
   const total = CONFIG.boss.at + 14, sb = $('stageBar');      // v0.20：魔王出場後，上方長條改成魔王血量（D51：第 4 關血量顯示和上方長條疊在一起）
-  if (boss && !won) { sb.classList.add('hp'); sb.style.transform = 'scaleX(' + Math.max(0, Math.min(1, barRatio(boss))) + ')'; } else { sb.classList.remove('hp'); sb.style.transform = 'scaleX(' + Math.min(1, t / total) + ')'; }
+  if (boss && !won) { sb.classList.add('hp'); sb.style.transform = 'scaleX(' + Math.max(0, Math.min(1, barRatio(boss))) + ')'; } else { sb.classList.remove('hp'); sb.style.transform = 'scaleX(' + Math.min(1, daily ? daily.rt / (DAILY.len * 3) : t / total) + ')'; }
   $('stageText').textContent = boss && boss.phased ? bossGoalText(boss) + '　' + Math.max(0, Math.ceil(BTIME() - (t - boss.born))) + ' 秒' : boss ? (T.boss.short || T.boss.name) + ' ' + Math.max(0, Math.ceil(boss.hp)) + ' / ' + boss.maxHp + '　剩 ' + Math.max(0, Math.ceil(BTIME() - (t - boss.born))) + ' 秒' : '分數 ' + scoreNow() + (stats.combo >= 3 ? '　連清 ' + stats.combo : '');
   const ub = $('ultBtn'), full = gauge >= CONFIG.ult.need; ub.disabled = !full || !!ult; ub.style.setProperty('--fill', Math.round(gauge / CONFIG.ult.need * 100) + '%'); ub.classList.toggle('ready', full && !ult); const tag = $('ultTag'), word = full && !ult ? (NM() ? '祈福！' : '出動！') : ULTN(); if (tag.textContent !== word) tag.textContent = word;
   if (full && !toldUlt && !ult) { toldUlt = true; banner(ULTN() + '準備好了！按右下角'); jingle([659, 880], 120); }
   $('hint').hidden = firstMove || t > 8;
   // 結束條件：大垃圾團清掉或漂走、體力歸零；保險：事件表跑完且畫面清空
+  if (daily && daily.rt >= DAILY.len * 3 && !ult && !cut && kite.hearts > 0 && endTimer <= 0) return finish();
   if (endTimer > 0) { endTimer -= real; if (endTimer <= 0) return finish(); }
   else if (si >= script.length && !boss && !foes.length && t > CONFIG.boss.at + 2) endTimer = 0.8;
 }
@@ -3162,7 +3169,7 @@ function draw() {
   if (flash > 0) { ctx.fillStyle = 'rgba(255,248,220,' + flash * (calm ? 0.2 : 0.5) + ')'; ctx.fillRect(0, 0, W, H); }
   ctx.textAlign = 'center'; ctx.lineJoin = 'round';
   for (const f of floats) { ctx.font = "700 " + (f.big ? 24 : 15) + "px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif"; ctx.globalAlpha = Math.min(1, f.life * 1.6); ctx.lineWidth = f.big ? 6 : 4; ctx.strokeStyle = '#10293D'; ctx.strokeText(f.text, f.x, f.y); ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y); }
-  ctx.globalAlpha = 1; drawCine();
+  ctx.globalAlpha = 1; drawCine(); if (dailyFade) dailyDraw();
 }
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000 || 0); last = now; clock += dt;
@@ -3172,7 +3179,61 @@ function frame(now) {
 
 /* ====== 流程與操作 ====== */
 function show(id) { for (const p of ['mapPanel', 'startPanel', 'pausePanel', 'resultPanel']) $(p).hidden = p !== id; }
-function start() { reset(); if (window.KiteBoard) KiteBoard.start('fly'); if (soundOn) BGM.play('fly_' + stageNo); const ub = $('ultBtn'), im = ub.querySelector('img'); if (im) im.src = 'assets/' + (NM() ? 'jiao_pair.png' : RM() ? (img.ult_icon_rail ? 'ult_icon_rail.png' : 'rail_ult.png') : PM() ? (img.fx_keel ? 'ult_icon_pier.png' : 'pier_ult.png') : 'whaleshark_top.png'); if (im && RM() && !img.ult_icon_rail) im.src = crabIconURL(); ub.setAttribute('aria-label', NM() ? '擲筊祈福' : RM() ? '呼叫鐵道車' : PM() ? '彩虹鏡海' : '呼叫鯨鯊'); mode = 'play'; show(null); $('hud').hidden = false; $('hint').hidden = false; $('ultBtn').hidden = false; banner('第 ' + stageNo + ' 關　' + ST().name); beep(523, 0.12, 'triangle', 0.06, 260); }
+function ultIcon() { const ub = $('ultBtn'), im = ub.querySelector('img'); if (im) im.src = 'assets/' + (NM() ? 'jiao_pair.png' : RM() ? (img.ult_icon_rail ? 'ult_icon_rail.png' : 'rail_ult.png') : PM() ? (img.fx_keel ? 'ult_icon_pier.png' : 'pier_ult.png') : 'whaleshark_top.png'); if (im && RM() && !img.ult_icon_rail) im.src = crabIconURL(); ub.setAttribute('aria-label', NM() ? '擲筊祈福' : RM() ? '呼叫鐵道車' : PM() ? '彩虹鏡海' : '呼叫鯨鯊'); }
+/* D212：GPT 2030——每日潮汐航線。台北日期當種子，從這支手機當天第一次打開時「已開放的關卡」抽 3 段，每段 30 秒用該關自己的背景與事件（取 6～36、20～50、36～66 秒其中一段，都在魔王前），不放魔王；
+   30／60 秒換段：畫面淡換 0.5 秒＋地名 0.8 秒（減少動態直接切換）。分數照原本算法，只存這支手機的「今日最佳」，不送分數存摺、不寫星星／解鎖／最佳／最遠。 */
+const DAILY = { len: 30, cut: 27.5, froms: [6, 20, 36], fade: 0.5, name: 0.8, key: 'kiteDailyRoute', bestKey: 'kiteDailyBest' };
+let daily = null, dailyFade = null;
+function taipeiDay() { const q = /[?&]dailydate=(\d{4}-\d{2}-\d{2})/.exec(location.search); if (q) return q[1]; try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); } catch (e) { const d = new Date(Date.now() + 8 * 3600e3); return d.toISOString().slice(0, 10); } }
+function dailyRoute() {
+  const day = taipeiDay(); let saved = null; try { saved = JSON.parse(localStorage.getItem(DAILY.key) || 'null'); } catch (e) {}
+  if (saved && saved.date === day && saved.segs && saved.segs.length === 3) return saved;      /* 當天固定：今天才解的新關明天才放進來 */
+  let h = 2166136261; for (const ch of day) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
+  const rnd = () => { h = (h + 0x6D2B79F5) | 0; let x = Math.imul(h ^ (h >>> 15), 1 | h); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
+  const pool = STAGES.filter((s) => !s.locked && s.id <= progress.unlocked).map((s) => s.id), segs = [], used = {};
+  for (let k = 0; k < 3; k++) {
+    let cand = pool.filter((id) => !used[id]); if (!cand.length) cand = pool.filter((id) => !segs.length || id !== segs[segs.length - 1].id); if (!cand.length) cand = pool;      /* 先挑不同關；不夠才重用，盡量不相鄰 */
+    const id = cand[Math.floor(rnd() * cand.length)], taken = segs.filter((s) => s.id === id).map((s) => s.from), fr = DAILY.froms.filter((f) => taken.indexOf(f) < 0);
+    segs.push({ id, from: (fr.length ? fr : DAILY.froms)[Math.floor(rnd() * (fr.length || DAILY.froms.length))] }); used[id] = 1;
+  }
+  const r = { date: day, segs }; try { localStorage.setItem(DAILY.key, JSON.stringify(r)); } catch (e) {} return r;
+}
+function dailyBestGet(day) { try { const b = JSON.parse(localStorage.getItem(DAILY.bestKey) || '{}'); return b[day]; } catch (e) { return undefined; } }
+function dailyBestSet(day, sc) { try { const b = JSON.parse(localStorage.getItem(DAILY.bestKey) || '{}'); b[day] = sc; const ks = Object.keys(b).sort(); while (ks.length > 7) delete b[ks.shift()]; localStorage.setItem(DAILY.bestKey, JSON.stringify(b)); } catch (e) {} }
+function dailyMD(day) { const p = day.split('-'); return (+p[1]) + '/' + (+p[2]); }
+function dailyNames(r) { return r.segs.map((s) => STAGES[s.id - 1].name); }
+function dailySeg(k, first) {
+  if (!first && !calm) { const c = document.createElement('canvas'); c.width = cv.width; c.height = cv.height; c.getContext('2d').drawImage(cv, 0, 0); dailyFade = { c, t0: performance.now() }; }
+  const s = daily.route.segs[k]; daily.k = k; stageNo = s.id; T = stageTypes();
+  foes = []; shots = []; picks = []; warns = []; rings = []; booms = []; rushes = []; vents = []; boats = []; mascots = []; beatDemo = null; menu = null; escort = null; guide = null; boss = null; cine = 0; kite.slowT = 0; newReset();      /* 上一段沒打完的就讓牠游走：不加分、也不算清掉 */
+  script = buildScript().filter((e) => e.t > s.from && e.t < s.from + DAILY.cut && e.type !== 'boss'); si = 0; t = s.from;
+  $('ultTag').textContent = ULTN(); ultIcon();
+  if (!first && soundOn) BGM.play('fly_' + stageNo);
+  const b = $('banner'); b.textContent = (k + 1) + '／3　' + ST().name; b.hidden = false; clearTimeout(banner.t); banner.t = setTimeout(() => { b.hidden = true; }, DAILY.name * 1000);
+  if (!first) beep(660, 0.14, 'triangle', 0.05, 200);
+}
+function dailyBegin() { daily.rt = 0; daily.k = 0; dailyFade = null; dailySeg(0, true); }
+function dailyTick(dt) { daily.rt += dt; const k = Math.min(2, Math.floor(daily.rt / DAILY.len)); if (k > daily.k && !ult && !cut) dailySeg(k, false); }
+function dailyDraw() { if (!dailyFade) return; const a = 1 - (performance.now() - dailyFade.t0) / 1000 / DAILY.fade; if (a <= 0) { dailyFade = null; return; } ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = a; ctx.drawImage(dailyFade.c, 0, 0); ctx.restore(); }
+function dailyOpen() {
+  daily = { route: dailyRoute(), rt: 0, k: 0 }; const r = daily.route; stageNo = r.segs[0].id;
+  $('stageTitle').textContent = '🌊 今日潮汐航線　' + dailyMD(r.date); $('stageIntro').textContent = dailyNames(r).join(' → ') + '。三段各 30 秒，跟小鳶飛一趟今日航線！不計點數與星星。';
+  reset(); mode = 'start'; show('startPanel');
+}
+function dailyFinish() {
+  BGM.stop(); if (window.KiteBoard) KiteBoard.ev('run_end', { game: 'fly' }); dailyFade = null;
+  mode = 'result'; $('hud').hidden = true; $('banner').hidden = true; $('hint').hidden = true; $('ultBtn').hidden = true;
+  const sc = scoreFinal(), day = daily.route.date, old = dailyBestGet(day), best = old === undefined ? sc : Math.max(old, sc); if (old === undefined || sc > old) dailyBestSet(day, sc);
+  jingle([523, 659, 784], 120);
+  $('resTitle').textContent = '這一趟飛到這裡！'; $('rank').textContent = ''; $('rank').hidden = true; $('bigStars').textContent = ''; $('cleanPct').textContent = sc;
+  const rows = $('rows'); rows.textContent = ''; rows.classList.add('open');
+  const add = (a, b, wide) => { const l = document.createElement('span'); l.textContent = a; const v = document.createElement('span'); v.textContent = b; if (wide) { v.style.gridColumn = '1 / -1'; v.style.textAlign = 'left'; v.style.fontWeight = '600'; } rows.append(l, v); };
+  add('今日航線 ' + dailyMD(day), dailyNames(daily.route).join(' → '), true); add('今日最佳', best + ' 分' + (old !== undefined && sc > old ? '　🎉' : ''));
+  for (const id of ['moreRows', 'farBar', 'cheerBtn', 'unlockNote', 'ask']) { const e = $(id); if (e) e.hidden = true; }
+  const tn = $('tipNote'); tn.textContent = '今日最佳只記在這支手機，不加點數或星星。'; tn.hidden = false;
+  show('resultPanel');
+}
+function start() { reset(); if (daily) dailyBegin(); if (window.KiteBoard) KiteBoard.start('fly'); if (soundOn) BGM.play('fly_' + stageNo); ultIcon(); mode = 'play'; show(null); $('hud').hidden = false; $('hint').hidden = false; $('ultBtn').hidden = false; if (!daily) banner('第 ' + stageNo + ' 關　' + ST().name); beep(523, 0.12, 'triangle', 0.06, 260); }
 function pause() { if (mode !== 'play') return; mode = 'pause'; BGM.stop(); kite.drag = false; pauseInfo(); show('pausePanel'); }
 /* v0.35（C-140）：暫停時看得到這一關的三顆星條件，和「照現在這樣過關的話」拿不拿得到；還有體力 */
 function pauseInfo() {
@@ -3220,14 +3281,20 @@ function renderMap() {
     line.textContent = s.locked ? s.time + '　製作中' : !open ? s.time + '　過了第 ' + (s.id - 1) + ' 關就開放' : s.time + '　' + [0, 1, 2].map((k) => (st[k] ? '★' : '☆')).join('') + (st.length === 3 && st.every(Boolean) ? ' 👑' : '') + (best ? '　最佳 ' + (best.score !== undefined ? best.score + ' 分' : best.pct + '%') : '');
     btn.append(title, line); btn.disabled = !open; if (!open) btn.classList.add('locked');
     if (open && s.id === nextId) { btn.classList.add('next'); const go = document.createElement('i'); go.className = 'go'; go.textContent = progress.stars[s.id] && progress.stars[s.id][0] ? '再挑戰' : '出發'; btn.append(go); }
-    btn.onclick = () => { stageNo = s.id; $('stageTitle').textContent = '第 ' + s.id + ' 關　' + s.name; $('stageIntro').textContent = s.time + '。' + s.intro; const nm = s.theme === 'market'; $('howDodge').textContent = nm ? '攤位照節拍噴熱氣：兩邊的燈先閃一次給你看，燈亮的那一邊就要噴。雨棚打不掉，油煙會擋住視線' : '漂流木打不掉；看到紅色區域就整隻離開'; $('howBarrelK').textContent = nm ? '爆米香' : '油桶'; $('howBarrel').textContent = nm ? '打爆會「碰！」一聲炸開，炸掉旁邊的妖怪，自己別靠太近' : '打爆會炸掉旁邊的垃圾，自己別靠太近'; $('howFriendT').textContent = nm ? '打破包住牠們的塑膠袋。黑輪補體力、石花凍送護盾、小卷米粉派小卷幫忙、大腸圈繞著你轉' : '清掉纏住牠們的垃圾。小卷會來幫忙，海龜送你護盾'; $('howUltK').textContent = nm ? '擲筊' : '鯨鯊'; $('howUlt').textContent = nm ? '右下角集滿後按一下，擲筊祈福，全畫面淨化；擲出的結果再送回禮' : '右下角集滿後按一下，全畫面大掃除'; if (s.how) { $('howDodge').textContent = s.how.dodge; $('howBarrelK').textContent = s.how.barrelK; $('howBarrel').textContent = s.how.barrel; $('howFriendT').textContent = s.how.friend; $('howUltK').textContent = s.how.ultK; $('howUlt').textContent = s.how.ult; } reset(); mode = 'start'; show('startPanel'); };
+    btn.onclick = () => { daily = null; stageNo = s.id; $('stageTitle').textContent = '第 ' + s.id + ' 關　' + s.name; $('stageIntro').textContent = s.time + '。' + s.intro; const nm = s.theme === 'market'; $('howDodge').textContent = nm ? '攤位照節拍噴熱氣：兩邊的燈先閃一次給你看，燈亮的那一邊就要噴。雨棚打不掉，油煙會擋住視線' : '漂流木打不掉；看到紅色區域就整隻離開'; $('howBarrelK').textContent = nm ? '爆米香' : '油桶'; $('howBarrel').textContent = nm ? '打爆會「碰！」一聲炸開，炸掉旁邊的妖怪，自己別靠太近' : '打爆會炸掉旁邊的垃圾，自己別靠太近'; $('howFriendT').textContent = nm ? '打破包住牠們的塑膠袋。黑輪補體力、石花凍送護盾、小卷米粉派小卷幫忙、大腸圈繞著你轉' : '清掉纏住牠們的垃圾。小卷會來幫忙，海龜送你護盾'; $('howUltK').textContent = nm ? '擲筊' : '鯨鯊'; $('howUlt').textContent = nm ? '右下角集滿後按一下，擲筊祈福，全畫面淨化；擲出的結果再送回禮' : '右下角集滿後按一下，全畫面大掃除'; if (s.how) { $('howDodge').textContent = s.how.dodge; $('howBarrelK').textContent = s.how.barrelK; $('howBarrel').textContent = s.how.barrel; $('howFriendT').textContent = s.how.friend; $('howUltK').textContent = s.how.ultK; $('howUlt').textContent = s.how.ult; } reset(); mode = 'start'; show('startPanel'); };
     box.append(btn);
   });
+  /* D212：每日潮汐航線入口（GPT 2030 B／C 文字）：卡片放在地圖左邊空白處，說明句放卡片外 */
+  if (opened.length) { const r = dailyRoute(), b = dailyBestGet(r.date), dc = document.createElement('button'); dc.type = 'button'; dc.className = 'stage dailycard'; dc.id = 'dailyCard';
+    const h = document.createElement('b'); h.textContent = '🌊 今日潮汐航線'; const pl = document.createElement('span'); pl.className = 'dpl'; pl.textContent = dailyMD(r.date) + '　' + dailyNames(r).join('→');
+    const m = document.createElement('span'); m.className = 'dm'; m.textContent = '跟小鳶飛一趟今日航線！'; const sm = document.createElement('small'); sm.textContent = '不計點數與星星' + (b !== undefined ? '・今日最佳 ' + b + ' 分' : '');
+    dc.append(h, pl, m, sm); dc.onclick = dailyOpen; const wr = document.createElement('div'); wr.className = 'dailywrap'; wr.append(dc); box.append(wr);
+    const dn = document.createElement('p'); dn.className = 'dailynote'; dn.textContent = '航線每天更新，明天再來！'; wr.append(dn); }
 }
 const NIGHT_MAP = (() => { const h = new Date().getHours(); return h >= 19 || h < 6; })();
 const DAWN_MAP = (() => { const h = new Date().getHours(); return h >= 6 && h < 8; })();
 let mapPage = 1;
-function toMap() { mapPage = stageNo > 4 ? 2 : 1; mode = 'map'; $('mapPanel').classList.toggle('night', NIGHT_MAP); $('mapPanel').classList.toggle('dawn', DAWN_MAP); renderMap(); show('mapPanel'); startMapFx(); }
+function toMap() { daily = null; mapPage = stageNo > 4 ? 2 : 1; mode = 'map'; $('mapPanel').classList.toggle('night', NIGHT_MAP); $('mapPanel').classList.toggle('dawn', DAWN_MAP); renderMap(); show('mapPanel'); startMapFx(); }
 /* ====== 關卡地圖的小動態（座標用地圖圖檔 720 × 1280）：東三四外海鯨鯊跳起、廟口燈籠閃動、正濱漁港漁船進港、深澳鐵道自行車載三位吉祥物 ====== */
 const MAPFX = {
   lamps: [[53, 711], [76, 736], [93, 754], [188, 752], [193, 769], [175, 771], [93, 776], [174, 794], [88, 798], [86, 821], [172, 822], [131, 834], [230, 833], [89, 843], [171, 847], [77, 845], [59, 850], [105, 871], [167, 873], [100, 648], [198, 661]],      // 夜市燈籠的位置（從地圖圖檔量的）
@@ -3303,7 +3370,7 @@ function mapRail(mt) {      // 河豚自行車載豆腐君、象鼻君、山野�
   ['tofu', 'ele', 'forest'].forEach((m, i) => { const hop = stop ? Math.abs(Math.sin(mt * 7 + i * 1.2)) * 8 : Math.abs(Math.sin(mt * 10 + i * 1.9)) * 3; g.save(); g.translate(-30 - i * 20, 20 - hop); if (back) g.scale(-1, 1); drawMascot(m, 0.5); g.restore(); });      // 吉祥物跟在車後面走      // 騎車時一顛一顛，停下來就跳一跳
   g.restore();
 }
-function finish() { BGM.stop(); if (window.KiteBoard) KiteBoard.ev('run_end', { game: 'fly' });
+function finish() { if (daily) return dailyFinish(); BGM.stop(); { $('ask').hidden = false; $('rank').hidden = false; const mr = $('moreRows'); if (mr) mr.hidden = false; } if (window.KiteBoard) KiteBoard.ev('run_end', { game: 'fly' });
   mode = 'result'; $('hud').hidden = true; $('banner').hidden = true; $('hint').hidden = true; $('ultBtn').hidden = true;
   const ok = kite.hearts > 0, pct = cleanPct(); jingle(ok ? [523, 659, 784] : [392, 330, 262], 120);
   $('resTitle').textContent = stats.boatSunk ? '小船沉了' : !ok ? '小鳶累了' : stats.bossCleared ? '過關' : '時間到'; $('rank').textContent = won ? rankOf(pct) : '還沒過關';      /* QA：沒過關不顯示最高稱號（原本輸了也寫「基隆鳶王」） */ $('cleanPct').textContent = scoreFinal();
@@ -3385,7 +3452,7 @@ $('copyBtn').onclick = () => {
   const fallback = () => { log.value = text; log.hidden = false; log.focus(); log.select(); $('copyBtn').textContent = '請長按上方文字複製'; };
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
 };
-window.__flyGame = { CONFIG, live: () => ({ foes, kite, stats, T, floats }), hz: () => ({ vents: vents.map((v) => ({ y: v.y, w: v.w, fromLeft: v.fromLeft, t: v.t, warn: v.warn, on: v.on })), boats: boats.map((b) => ({ x: b.x, y: b.y, t: b.t, warn: b.warn })) }), state: () => ({ mode, t, control, level, kite, gauge, foes: foes.map((f) => ({ type: f.type, x: f.x, y: f.y, r: f.r, hp: f.hp, vx: f.vx, w: f.w || 0, cross: !!f.cross, tired: !!f.tired, aimed: !!f.aimed })), warns: warns.map((w) => ({ y: w.y, t: w.t })), slam: boss && boss.slam ? { s: boss.slam, x: boss.slamX } : null, picks: picks.map((p) => ({ kind: p.kind, x: p.x, y: p.y })), pals: pals.length, stats, boss: !!boss, ult: ult ? ult.t : -1 }), fillGauge: () => { gauge = CONFIG.ult.need; }, record, skipTo: (sec) => { t = sec; while (si < script.length && script[si].t < sec) si++; }, hurtOff: () => { kite.safe = 1e9; }, testLose: (by, n, cl) => { if (by) stats.hitBy[by] = n || 3; if (cl) stats.cleared = cl; kite.hearts = 0; finish(); }, setStage: (n) => { stageNo = n; }, progress: () => progress, stage: () => stageNo, test: { pick: (kind, x, y) => { addPick(kind, x, y); }, buff: () => { kite.power = 3; kite.powerT = CONFIG.feather.powerTime * 0.7; kite.galeT = CONFIG.feather.galeTime * 0.5; kite.shield = true; }, spawn: (type, x, y) => { const f = mk(type, x, y); f.vy = CONFIG.scroll; return true; }, hearts: (n) => { kite.hearts = n; kite.safe = 0; drawHearts(); }, warn: (sec) => { warns.push({ y: kite.y, fromLeft: true, n: 3, t: sec }); }, friends: () => friends.map((c) => ({ kind: c.kind, x: Math.round(c.x), y: Math.round(c.y) })), won: () => won, logs: () => foes.filter((f) => f.type === 'log').map((f) => ({ x: Math.round(f.x), y: Math.round(f.y), w: Math.round(f.w) })) }, bossAtk: (a) => { if (boss) { boss.atk = a; boss.atkT = 0; boss.vol = 0; boss.rocks = []; boss.cables = []; boss.wave = 0; boss.stars = []; boss.beams = []; boss.lanes = []; boss.starAcc = 0; if (a === 'ram') { boss.ramX = kite.x; boss.ramT = 0; boss.ramS = 'warn'; } if (a === 'corridor') { boss.gx = W / 2; boss.rows = 0; } if (a === 'cross') { boss.cx = kite.x; boss.cy = kite.y; } } }, pierFriend: (id) => { pierGift(id, kite.x, kite.y); }, jiao: (r) => { jiaoForce = r; }, vents: () => vents.length, friend: (id, x, y) => { const f = mk('tangle', x, y); f.friend = id; f.vy = 30; }, floats: () => floats.map((f) => f.text), banner: () => $('banner').textContent, clouds: () => clouds.length, ring: () => kite.ringT, testWin: (sq, tu) => { stats.rescuedBy.squid = sq; stats.rescuedBy.turtle = tu; stats.rescued = sq + tu; stats.trapped = Math.max(stats.trapped, sq + tu); if (boss) { if (boss.phased) { for (const k in boss.pools) boss.pools[k] = 0; foes = foes.filter((o) => o.type !== 'minib'); boss.hidden = false; boss.phase = 3; cine = 0; } boss.hp = 0; } }, bossPhase: (n) => { const f = boss; if (!f || !f.phased) return; cine = 0; if (RM()) { if (n >= 2) { f.pools.armL = f.pools.armR = 0; f.phase = 2; } if (n >= 3) { f.pools.head = 0; f.phase = 3; } } else { if (n >= 2) { f.pools.shell = 0; f.layers = 0; f.phase = 2; } if (n >= 3) { f.pools.core = 0; splitBlob(f); cine = 0; } } syncHp(f); }, bossInfo: () => (boss ? { phase: boss.phase, hp: boss.hp, pools: boss.pools, hidden: !!boss.hidden, dying: boss.dying, cine } : null), setControl: (c) => { control = c; } };
+window.__flyGame = { CONFIG, daily: { route: () => dailyRoute(), state: () => daily, open: () => dailyOpen(), skip: (sec) => { if (daily) daily.rt += sec; } }, live: () => ({ foes, kite, stats, T, floats }), hz: () => ({ vents: vents.map((v) => ({ y: v.y, w: v.w, fromLeft: v.fromLeft, t: v.t, warn: v.warn, on: v.on })), boats: boats.map((b) => ({ x: b.x, y: b.y, t: b.t, warn: b.warn })) }), state: () => ({ mode, t, control, level, kite, gauge, foes: foes.map((f) => ({ type: f.type, x: f.x, y: f.y, r: f.r, hp: f.hp, vx: f.vx, w: f.w || 0, cross: !!f.cross, tired: !!f.tired, aimed: !!f.aimed })), warns: warns.map((w) => ({ y: w.y, t: w.t })), slam: boss && boss.slam ? { s: boss.slam, x: boss.slamX } : null, picks: picks.map((p) => ({ kind: p.kind, x: p.x, y: p.y })), pals: pals.length, stats, boss: !!boss, ult: ult ? ult.t : -1 }), fillGauge: () => { gauge = CONFIG.ult.need; }, record, skipTo: (sec) => { t = sec; while (si < script.length && script[si].t < sec) si++; }, hurtOff: () => { kite.safe = 1e9; }, testLose: (by, n, cl) => { if (by) stats.hitBy[by] = n || 3; if (cl) stats.cleared = cl; kite.hearts = 0; finish(); }, setStage: (n) => { stageNo = n; }, progress: () => progress, stage: () => stageNo, test: { pick: (kind, x, y) => { addPick(kind, x, y); }, buff: () => { kite.power = 3; kite.powerT = CONFIG.feather.powerTime * 0.7; kite.galeT = CONFIG.feather.galeTime * 0.5; kite.shield = true; }, spawn: (type, x, y) => { const f = mk(type, x, y); f.vy = CONFIG.scroll; return true; }, hearts: (n) => { kite.hearts = n; kite.safe = 0; drawHearts(); }, warn: (sec) => { warns.push({ y: kite.y, fromLeft: true, n: 3, t: sec }); }, friends: () => friends.map((c) => ({ kind: c.kind, x: Math.round(c.x), y: Math.round(c.y) })), won: () => won, logs: () => foes.filter((f) => f.type === 'log').map((f) => ({ x: Math.round(f.x), y: Math.round(f.y), w: Math.round(f.w) })) }, bossAtk: (a) => { if (boss) { boss.atk = a; boss.atkT = 0; boss.vol = 0; boss.rocks = []; boss.cables = []; boss.wave = 0; boss.stars = []; boss.beams = []; boss.lanes = []; boss.starAcc = 0; if (a === 'ram') { boss.ramX = kite.x; boss.ramT = 0; boss.ramS = 'warn'; } if (a === 'corridor') { boss.gx = W / 2; boss.rows = 0; } if (a === 'cross') { boss.cx = kite.x; boss.cy = kite.y; } } }, pierFriend: (id) => { pierGift(id, kite.x, kite.y); }, jiao: (r) => { jiaoForce = r; }, vents: () => vents.length, friend: (id, x, y) => { const f = mk('tangle', x, y); f.friend = id; f.vy = 30; }, floats: () => floats.map((f) => f.text), banner: () => $('banner').textContent, clouds: () => clouds.length, ring: () => kite.ringT, testWin: (sq, tu) => { stats.rescuedBy.squid = sq; stats.rescuedBy.turtle = tu; stats.rescued = sq + tu; stats.trapped = Math.max(stats.trapped, sq + tu); if (boss) { if (boss.phased) { for (const k in boss.pools) boss.pools[k] = 0; foes = foes.filter((o) => o.type !== 'minib'); boss.hidden = false; boss.phase = 3; cine = 0; } boss.hp = 0; } }, bossPhase: (n) => { const f = boss; if (!f || !f.phased) return; cine = 0; if (RM()) { if (n >= 2) { f.pools.armL = f.pools.armR = 0; f.phase = 2; } if (n >= 3) { f.pools.head = 0; f.phase = 3; } } else { if (n >= 2) { f.pools.shell = 0; f.layers = 0; f.phase = 2; } if (n >= 3) { f.pools.core = 0; splitBlob(f); cine = 0; } } syncHp(f); }, bossInfo: () => (boss ? { phase: boss.phase, hp: boss.hp, pools: boss.pools, hidden: !!boss.hidden, dying: boss.dying, cine } : null), setControl: (c) => { control = c; } };
 /* C-81／C-82（Dari 10/13 01:03）：音樂開關、暫停鈕改圖示；選單畫面也有音樂，每個場景不同曲子 */
 const MENU_TRACK = () => 'fly_map', PLAY_TRACK = () => 'fly_' + stageNo;
 function drawSnd() { const h = SND_ICON[soundOn ? 'on' : 'off']; for (const b of [$('soundBtn'), $('menuSnd')]) { if (!b) continue; b.innerHTML = h; b.setAttribute('aria-pressed', String(!soundOn)); b.setAttribute('aria-label', soundOn ? '音樂開著，點一下關掉' : '音樂關著，點一下打開'); } }
