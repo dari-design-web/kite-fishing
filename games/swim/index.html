@@ -58,7 +58,7 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
 .zone small{display:block;font-size:14px;text-align:center;opacity:.9}
 @keyframes zone{0%{opacity:0;transform:translate(-50%,-30%) scale(.8)}15%{opacity:1;transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0}}
 .pop{position:absolute;font-weight:900;font-size:18px;color:#FFF3A8;text-shadow:0 2px 0 rgba(0,0,0,.4);pointer-events:none;transform:translate(-50%,-50%);animation:pop .8s ease-out forwards;white-space:nowrap}
-.pop.bad{color:#FF8A73}.pop.pw{color:#9CF0FF;font-size:20px}.pop.gold{color:#FFD23A;font-size:20px}
+.pop.still{animation:none}.pop.amu{color:#FFD23A}.pop.bad{color:#FF8A73}.pop.pw{color:#9CF0FF;font-size:20px}.pop.gold{color:#FFD23A;font-size:20px}
 @keyframes pop{to{transform:translate(-50%,-170%);opacity:0}}
 .flash{position:absolute;inset:0;background:rgba(255,80,60,.35);pointer-events:none;opacity:0;transition:opacity .25s}
 .flash.on{opacity:1;transition:none}
@@ -167,6 +167,8 @@ const bubble = new THREE.Sprite(new THREE.SpriteMaterial({ map: W.TX.item_bubble
 const wakeTex = W.tex(64, 64, (c) => { const g = c.createRadialGradient(32, 32, 2, 32, 32, 30); g.addColorStop(0, 'rgba(255,255,255,.85)'); g.addColorStop(0.55, 'rgba(220,250,255,.35)'); g.addColorStop(1, 'rgba(220,250,255,0)'); c.fillStyle = g; c.fillRect(0, 0, 64, 64); });
 const WAKE = []; for (let i = 0; i < 16; i++) { const w = new THREE.Sprite(new THREE.SpriteMaterial({ map: wakeTex, transparent: true, opacity: 0, depthWrite: false })); w.visible = false; w.renderOrder = 2; w.userData.life = 0; S.add(w); WAKE.push(w); }
 let wakeT = 0, wakeI = 0, wakeAcc = 0, wakeSaid = false;
+/* D208（GPT 1625 B）：每局第一次吃到普通食物，原本的得分浮字前面加「啊嗚！」（同樣 0.8 秒）；減少動態時原位靜止 0.8 秒。不改分數、收集判定。GPT 1721 A：這一條整條改淡金 #FFD23A，字級不變。 */
+let amuSaid = false;
 function wakeUpd(dt, dz) {
   if (wakeT > 0) { wakeT -= dt; wakeAcc += dt; if (Math.abs(pos.x - L[lane]) > 0.12 && wakeAcc >= 0.03) { wakeAcc = 0; const w = WAKE[wakeI++ % WAKE.length]; w.visible = true; w.userData.life = 0.7; w.position.set(pos.x, pos.y - 0.15, 0.9); w.scale.set(0.7, 0.45, 1); } }
   for (const w of WAKE) { if (!w.visible) continue; w.userData.life -= dt; if (w.userData.life <= 0) { w.visible = false; w.material.opacity = 0; continue; } const f = w.userData.life / 0.7; w.position.z += dz; w.material.opacity = 0.8 * f; w.scale.set(0.7 + (1 - f) * 0.8, 0.45 + (1 - f) * 0.3, 1); }
@@ -254,7 +256,7 @@ let state = 'ready', v = CFG.v0, dist = 0, score = 0, bonus = 0, hearts = CFG.he
 const pos = { x: 0, y: CFG.yMid }, P = { shield: 0, magnet: 0, dash: 0, fever: 0 }, curve = { x: 0, y: 0, tx: 0, ty: 0, next: 6 };
 let bestNow = (() => { try { return +localStorage.getItem('kiteSwimBest1') || 0; } catch (e) { return 0; } })();
 function resize() { const w = stage.clientWidth, h = stage.clientHeight; R.setSize(w, h, false); cam.aspect = w / h; cam.fov = w / h < 0.62 ? 64 : 58; cam.updateProjectionMatrix(); } addEventListener('resize', resize); resize();
-function reset() { bookNew = []; objs.splice(0).forEach(kill); lastHeal = 0; v = CFG.v0; dist = 0; score = 0; bonus = 0; hearts = CFG.hearts; inv = 0; nextRow = 22; combo = 0; playT = 0; lane = 1; vstate = 'mid'; vT = 0; prevFree = 1; step = 0; pos.x = 0; pos.y = CFG.yMid; Object.keys(P).forEach((k) => (P[k] = 0)); seen = {}; feverE = 0; misV = 0; misDone = false; maxCombo = 0; lastHit = null; eaten = 0; curve.tx = curve.ty = 0; curve.next = 8; wakeSaid = false; wakeT = 0; WAKE.forEach((w) => { w.visible = false; w.userData.life = 0; }); if (zone !== 0) setZone(0, true); hud(); }
+function reset() { bookNew = []; objs.splice(0).forEach(kill); lastHeal = 0; v = CFG.v0; dist = 0; score = 0; bonus = 0; hearts = CFG.hearts; inv = 0; nextRow = 22; combo = 0; playT = 0; lane = 1; vstate = 'mid'; vT = 0; prevFree = 1; step = 0; pos.x = 0; pos.y = CFG.yMid; Object.keys(P).forEach((k) => (P[k] = 0)); seen = {}; feverE = 0; misV = 0; misDone = false; maxCombo = 0; lastHit = null; eaten = 0; curve.tx = curve.ty = 0; curve.next = 8; wakeSaid = false; amuSaid = false; wakeT = 0; WAKE.forEach((w) => { w.visible = false; w.userData.life = 0; }); if (zone !== 0) setZone(0, true); hud(); }
 const speedLv = () => Math.min(Math.floor(playT / CFG.vEvery) + 1, Math.floor((CFG.vMax - CFG.v0) / CFG.vStep) + 1);
 const mult = () => Math.min(5, (combo >= 50 ? 4 : combo >= 25 ? 3 : combo >= 10 ? 2 : 1) * (P.dash > 0 ? 2 : 1) * (P.fever > 0 ? 3 : 1));
 function hud() { $('sc').textContent = score.toLocaleString(); $('dist').textContent = Math.floor(dist) + ' 公尺'; $('spd').textContent = '速度 ' + speedLv(); $('hp').textContent = '💙'.repeat(Math.max(0, hearts)) + '🤍'.repeat(Math.max(0, CFG.hearts - hearts)); const m = mult(); $('cb').hidden = combo < 3 && m < 2; $('cb').textContent = (combo >= 3 ? '連吃 ' + combo : '') + (m > 1 ? '・×' + m : '');
@@ -328,7 +330,7 @@ function update(dt) {
       if (z1 > -1.6 && z1 < 1.2) { const dx = b.o.position.x - pos.x, dy = b.o.position.y - pos.y; if (dx * dx + dy * dy < b.r * b.r * 1.5) {
         if (b.pw === 'heal') { hearts = Math.min(CFG.hearts, hearts + 1); pop('補血 +1 💙', pos.x, pos.y + 1.2, 0, 'pw'); beep([523, 784, 1047], 90, 'triangle'); }
         else if (b.kind === 'pw') { P[b.pw] = CFG[b.pw]; pop(PW[b.pw].name + '！', pos.x, pos.y + 1.2, 0, 'pw'); beep([660, 880, 1100], 70, 'triangle'); }
-        else { combo++; eaten++; maxCombo = Math.max(maxCombo, combo); misSet('combo', combo); misSet('eat', eaten); const add = FOOD[b.food][0] * mult(); bonus += add; if (P.fever <= 0) feverE += FOOD[b.food][0]; pop('+' + add, b.o.position.x, b.o.position.y + 0.3, z1); beep([880 + Math.min(combo, 20) * 25], 50, 'triangle', 0.07);
+        else { combo++; eaten++; maxCombo = Math.max(maxCombo, combo); misSet('combo', combo); misSet('eat', eaten); const add = FOOD[b.food][0] * mult(); bonus += add; if (P.fever <= 0) feverE += FOOD[b.food][0]; const amu = !amuSaid; amuSaid = true; pop((amu ? '啊嗚！' : '') + '+' + add, b.o.position.x, b.o.position.y + 0.3, z1, amu ? 'amu' + (RM ? ' still' : '') : ''); beep([880 + Math.min(combo, 20) * 25], 50, 'triangle', 0.07);
           if (feverE >= CFG.feverNeed && P.fever <= 0) { P.fever = CFG.fever; feverE = 0; tip('🔥 鯨鯊狂歡！撞飛一切！', true, 1.6); beep([523, 659, 784, 1047, 1319], 70, 'square', 0.06); } }
         kill(b); objs.splice(i, 1); hud(); continue; } } }
     if (z1 > 12) { kill(b); objs.splice(i, 1); } }
