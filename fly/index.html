@@ -172,7 +172,8 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .stage.dailycard b{font-size:14px}
 .stage.dailycard .dpl{color:#BFF0FF;font-weight:700;font-size:12px}
 .stage.dailycard small{color:#FFD98A;font-size:11px}
-.dailynote{margin:2px 0 0;padding:0 8px;font-size:11px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.8);pointer-events:none}
+.dailynote{margin:2px 0 0;padding:0 8px;font-size:11px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.8);pointer-events:none;visibility:hidden}
+.stage.dailycard small .dup{color:#FFF4D6}
 #startPanel.daily .how li:not(.dly),#startPanel.daily .ptnote{display:none}
 #startPanel .how li.dly{display:none}
 #startPanel.daily .how li.dly{display:flex}
@@ -494,7 +495,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.57',
+  version: '0.58',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -3292,9 +3293,9 @@ function renderMap() {
   /* D212／D213（GPT 2130 A）：每日潮汐航線入口改成標題下的全寬卡（日期／三段地名／不計點數與星星），卡外一行每日更新；地圖上的按鈕往下讓位 */
   if (opened.length) { const r = dailyRoute(), dc = document.createElement('button'); dc.type = 'button'; dc.className = 'stage dailycard'; dc.id = 'dailyCard';
     const h = document.createElement('b'); h.textContent = '🌊 今日潮汐航線　' + dailyMD(r.date); const pl = document.createElement('span'); pl.className = 'dpl'; pl.textContent = dailyNames(r).join(' → ');
-    const sm = document.createElement('small'); sm.textContent = '不計點數與星星';
+    const sm = document.createElement('small'); sm.textContent = '不計點數與星星｜'; const up = document.createElement('span'); up.className = 'dup'; up.textContent = '航線每天更新，明天再來！'; sm.append(up);
     dc.append(h, pl, sm); dc.onclick = dailyOpen; const wr = document.createElement('div'); wr.className = 'dailywrap'; wr.append(dc); box.append(wr);
-    const dn = document.createElement('p'); dn.className = 'dailynote'; dn.textContent = '航線每天更新，明天再來！'; wr.append(dn);
+    const dn = document.createElement('p'); dn.className = 'dailynote'; dn.setAttribute('aria-hidden', 'true'); dn.textContent = '航線每天更新，明天再來！'; wr.append(dn); /* D214（GPT 2235 A）：更新句移進卡內第三行；卡外這行只留高度（看不見），關卡座標與積分條避讓維持原樣 */
     dailyMakeRoom(box, wr); } else dailyMakeRoom(box, null);
 }
 /* D213：每日入口卡下緣以下，左右兩欄的地圖按鈕依序往下排，不互相重疊；最下面的按鈕也不要被底部今日積分條蓋住（小螢幕原本就會蓋到第 1／5 關） */
