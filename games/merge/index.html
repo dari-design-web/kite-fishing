@@ -544,7 +544,7 @@ function drawReplay(dt) {
   if (t > 3.2) { RP = null; AQ.ui(); return; }
   ctx.fillStyle = 'rgba(14,34,50,' + 0.6 * k0 + ')'; ctx.fillRect(0, 0, W, H);
   ctx.save(); ctx.globalAlpha = k0; panel(140, 320);
-  text('再看一次變身', W / 2, 174, 16, '#3A5568', 'center', 900, false);
+  text('看我們變身！', W / 2, 174, 16, '#3A5568', 'center', 900, false);
   const cy = 290, rA = Math.min(SEAF[a][1] * 1.25, 44), rB = Math.min(SEAF[lv][1] * 1.3, 66), MT = 1.0;
   if (t < MT) { const u = clamp((t - 0.15) / (MT - 0.15), 0, 1), e = u * u * (3 - 2 * u), d = lerp(96, rA * 0.55, e), wob = RM ? 0 : Math.sin(t * 14) * 3 * (1 - e);
     drawSea(a, W / 2 - d, cy + wob, rA, RM ? 0 : 0.15 * (1 - e)); drawSea(a, W / 2 + d, cy - wob, rA, RM ? 0 : -0.15 * (1 - e)); }

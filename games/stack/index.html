@@ -588,8 +588,19 @@ function frame(now) {
   drawRings(dt); drawParts(dt); drawFloats(dt);
   if (state === 'ready') drawTitle(clock);
   if (state === 'end') { endInfo.t += dt; drawEnd(endInfo); }
-  if (state !== frame.ps) { frame.ps = state; }
+  if (state !== frame.ps) { frame.ps = state; hornUI(); }
   requestAnimationFrame(frame);
+}
+/* D199（GPT 0825 C）：疊貨櫃結算後，這局有裝滿貨船才出現「📯 按汽笛，出港囉！」。按了響兩聲短汽笛（跟著音效開關），不加分、不擋再玩一次。 */
+let hornBar = null, hornT = 0;
+function hornUI() {
+  if (!hornBar) { hornBar = document.createElement('div'); hornBar.id = 'hornBar'; hornBar.hidden = true; hornBar.innerHTML = '<button type="button" id="hornGo">📯 按汽笛，出港囉！</button>'; document.querySelector('.stage').after(hornBar);
+    const st = document.createElement('style'); st.textContent = '#hornBar{width:100%;max-width:420px;text-align:center;margin-top:6px}#hornBar[hidden]{display:none}#hornGo{display:inline-flex;align-items:center;gap:6px;border:2px solid #F4BB42;background:rgba(244,187,66,.16);color:#FFF1C9;border-radius:999px;padding:8px 16px;min-height:40px;font:800 14px/1.2 inherit;font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}#hornGo.toot{animation:hornToot .5s ease-out 2}@keyframes hornToot{30%{transform:scale(1.08) rotate(-3deg)}60%{transform:scale(.98)}}@media (prefers-reduced-motion:reduce){#hornGo.toot{animation:none}}'; document.head.appendChild(st);
+    hornBar.querySelector('#hornGo').onclick = (ev) => { const b = ev.currentTarget, now = performance.now(); if (now - hornT < 1100) return; hornT = now;
+      beep(196, 0.32, 'sawtooth', 0.06, -6); beep(147, 0.32, 'square', 0.03, -4); setTimeout(() => { beep(196, 0.38, 'sawtooth', 0.06, -8); beep(147, 0.38, 'square', 0.03, -6); }, 470);
+      if (snd && navigator.vibrate) try { navigator.vibrate([90, 140, 110]); } catch (e) {}
+      b.textContent = '嗚——嗚——！'; b.classList.remove('toot'); void b.offsetWidth; b.classList.add('toot'); setTimeout(() => { b.textContent = '📯 按汽笛，出港囉！'; }, 1100); }; }
+  hornBar.hidden = !(mode === 'stack' && state === 'end' && G && G.ships > 0);
 }
 let tab = 'stack';      // D119：放進遊戲大廳的單一遊戲版（不計分・隨時玩）
 setMode(HOW[tab] ? tab : 'merge'); requestAnimationFrame(frame); dailyTag();
