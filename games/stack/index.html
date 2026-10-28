@@ -539,7 +539,11 @@ function drawEnd(e) {
   if (e.nb) { rrect(W / 2 - 64, 82, 128, 30, 15, C.warn, C.ink, 2.5); text('新紀錄！', W / 2, 97, 15, C.paper, 'center', 900, false); }
   text(e.title, W / 2, 134, 16, '#3A5568', 'center', 700, false);
   text(String(e.s), W / 2, 178, 46, C.ink, 'center', 900, false); text('分', W / 2 + ctx.measureText(String(e.s)).width / 2 + 30, 186, 15, C.ink, 'center', 700, false);
-  e.rows.forEach((r, i) => { const y = 232 + i * 34; rrect(50, y - 14, W - 100, 28, 10, '#F3EAD8'); text(r[0], 64, y, 13, '#3A5568', 'left', 700, false); text(r[1], W - 64, y, 14, C.ink, 'right', 900, false);
+  hornR = null;
+  e.rows.forEach((r, i) => { const y = 232 + i * 34;
+    if (e.horn === i) { const on = performance.now() - hornT < 1100, wob = on ? Math.sin((performance.now() - hornT) / 40) * 1.5 : 0; hornR = { x: 50, y: y - 14 + (1 - k) * 30, w: W - 100, h: 28 };      /* D200（GPT 0925 B）：汽笛收進卡內「裝滿貨船」那一行，整行可點 */
+      rrect(50, y - 14, W - 100, 28, 10, on ? '#FFE3A1' : '#FFF1C9', '#F4BB42', 2); text(on ? '嗚——嗚——！' : '📯 裝滿 ' + G.ships + ' 艘，按汽笛', W / 2 + wob, y, 14, C.ink, 'center', 900, false); return; }
+    rrect(50, y - 14, W - 100, 28, 10, '#F3EAD8'); text(r[0], 64, y, 13, '#3A5568', 'left', 700, false); text(r[1], W - 64, y, 14, C.ink, 'right', 900, false);
     if (i === 0 && e.icon != null) { ctx.font = FONT(14, 900); drawSea(e.icon, W - 64 - ctx.measureText(r[1]).width - 16, y, 11, 0); } });
   if (e.found && e.found.length) text('新發現 ' + e.found.length + ' 種海鮮！', W / 2, 232 + e.rows.length * 34 + 4, 13, C.warn, 'center', 900, false);
   if (e.rank) text((DS ? '📅 ' : '🏆 本月') + e.rank, W / 2, e.found && e.found.length ? 390 : 232 + e.rows.length * 34 + 4, 13, '#2F7F86', 'center', 900, false);      // D133
@@ -563,6 +567,7 @@ function pos(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX -
 cv.addEventListener('pointerdown', (e) => {
   e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (er) {} const p = pos(e);
   if (state === 'ready') { state = 'play'; dailyBegin(); if (window.KiteBoard) KiteBoard.start(mode); beep(660, 0.08); if (mode === 'merge') { down = true; G.down(p.x, p.y); G.tap = null; } return; }
+  if (state === 'end' && endInfo && endInfo.t > 0.8 && hornR && p.x > hornR.x && p.x < hornR.x + hornR.w && p.y > hornR.y - 4 && p.y < hornR.y + hornR.h + 4) { toot(); return; }
   if (state === 'end') { const r = endBtnR, onBtn = e.kbd || (r && p.x > r.x - 14 && p.x < r.x + r.w + 14 && p.y > r.y - 14 && p.y < r.y + r.h + 14); if (endInfo && endInfo.t > 0.8 && onBtn) { newGame();      /* 玩家角度：結算畫面只有按「再玩一次」才重開，避免疊貨櫃連點時一下就跳過成績 */ state = 'play'; dailyBegin(); beep(660, 0.08); if (mode === 'merge') { down = true; G.down(p.x, p.y); G.tap = null; } } return; }
   down = true; G.down(p.x, p.y);
 });
@@ -575,7 +580,7 @@ function finish() {
   const s = Math.round(G.score), nb = saveBest(mode, s);
   let rk = null, dr = DS ? KiteDaily.finish(DS, s) : null; let tl = ''; try { if (!DS && window.KiteCore && KiteCore.reportPlay && s > 0) { const rep = () => KiteCore.reportPlay({ game: mode, level: 'all', score: s, lbAll: true }); rk = KiteCore.rankAround ? KiteCore.rankAround(mode, 'all', rep) : { res: rep() }; tl = KiteCore.tierLine ? KiteCore.tierLine(rk.res) : ''; } } catch (e) {}      // D141：前 3 局算進今日積分、可換點      // D123：進排行榜；D133：記下名次
   if (mode === 'merge') endInfo = { s, nb, t: 0, title: G.over > 1.6 ? '堆過紅線了' : '魚艙塞滿了', rows: [['最大合到', SEAF[G.top][0]], ['撐到', '第 ' + G.lv + ' 關'], ['合成次數', G.mergesAll + ' 次'], ['最長連鎖', '×' + Math.max(1, G.bestChain)]], icon: G.top, found: G.newFound };
-  else { const h = G.blocks.length - 1; if (h > (best.stackH || 0)) { best.stackH = h; store.set('kiteMiniBest1', best); } endInfo = { s, nb, t: 0, title: '貨櫃掉下去了', rows: [['疊了', h + ' 層'], ['裝滿貨船', G.ships + ' 艘'], ['完美', G.perfects + ' 次'], ['最長完美連擊', '×' + G.bestCombo]] }; }
+  else { const h = G.blocks.length - 1; if (h > (best.stackH || 0)) { best.stackH = h; store.set('kiteMiniBest1', best); } endInfo = { s, nb, t: 0, title: '貨櫃掉下去了', rows: [['疊了', h + ' 層'], ['裝滿貨船', G.ships + ' 艘'], ['完美', G.perfects + ' 次'], ['最長完美連擊', '×' + G.bestCombo]], horn: G.ships > 0 ? 1 : -1 }; }
   endInfo.rank = DS ? (DS.official && dr && dr.rank ? '今日挑戰第 ' + dr.rank + ' 名' : DS.official ? '' : '練習不計榜') : rk && KiteCore.rankText ? KiteCore.rankText(rk) : '';
   if (DS) { const h = document.getElementById('dres'); h.innerHTML = '<button type="button" class="dx" aria-label="收起">收起 ▾</button>' + KiteDaily.resultHtml(DS, dr, s); KiteDaily.wire(h, s); h.hidden = false; h.querySelector('.dx').onclick = () => { h.hidden = true; }; }      // QA：今日挑戰結果改成下方面板，不再把遊戲畫面擠小
   else if (tl) document.getElementById('how').innerHTML = '<span class="kd-banner">🪙 ' + tl + '</span>';
@@ -588,20 +593,13 @@ function frame(now) {
   drawRings(dt); drawParts(dt); drawFloats(dt);
   if (state === 'ready') drawTitle(clock);
   if (state === 'end') { endInfo.t += dt; drawEnd(endInfo); }
-  if (state !== frame.ps) { frame.ps = state; hornUI(); }
   requestAnimationFrame(frame);
 }
-/* D199（GPT 0825 C）：疊貨櫃結算後，這局有裝滿貨船才出現「📯 按汽笛，出港囉！」。按了響兩聲短汽笛（跟著音效開關），不加分、不擋再玩一次。 */
-let hornBar = null, hornT = 0;
-function hornUI() {
-  if (!hornBar) { hornBar = document.createElement('div'); hornBar.id = 'hornBar'; hornBar.hidden = true; hornBar.innerHTML = '<button type="button" id="hornGo">📯 按汽笛，出港囉！</button>'; document.querySelector('.stage').after(hornBar);
-    const st = document.createElement('style'); st.textContent = '#hornBar{width:100%;max-width:420px;text-align:center;margin-top:6px}#hornBar[hidden]{display:none}#hornGo{display:inline-flex;align-items:center;gap:6px;border:2px solid #F4BB42;background:rgba(244,187,66,.16);color:#FFF1C9;border-radius:999px;padding:8px 16px;min-height:40px;font:800 14px/1.2 inherit;font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}#hornGo.toot{animation:hornToot .5s ease-out 2}@keyframes hornToot{30%{transform:scale(1.08) rotate(-3deg)}60%{transform:scale(.98)}}@media (prefers-reduced-motion:reduce){#hornGo.toot{animation:none}}'; document.head.appendChild(st);
-    hornBar.querySelector('#hornGo').onclick = (ev) => { const b = ev.currentTarget, now = performance.now(); if (now - hornT < 1100) return; hornT = now;
-      beep(196, 0.32, 'sawtooth', 0.06, -6); beep(147, 0.32, 'square', 0.03, -4); setTimeout(() => { beep(196, 0.38, 'sawtooth', 0.06, -8); beep(147, 0.38, 'square', 0.03, -6); }, 470);
-      if (snd && navigator.vibrate) try { navigator.vibrate([90, 140, 110]); } catch (e) {}
-      b.textContent = '嗚——嗚——！'; b.classList.remove('toot'); void b.offsetWidth; b.classList.add('toot'); setTimeout(() => { b.textContent = '📯 按汽笛，出港囉！'; }, 1100); }; }
-  hornBar.hidden = !(mode === 'stack' && state === 'end' && G && G.ships > 0);
-}
+/* D199（GPT 0825 C）＋D200（GPT 0925 B）：這局有裝滿貨船，結算卡內「📯 裝滿 N 艘，按汽笛」整行可點，響兩聲短汽笛（跟著音效開關），不加分、不擋再玩一次；1.1 秒內不重複。 */
+let hornR = null, hornT = -9999;
+function toot() { const now = performance.now(); if (now - hornT < 1100) return; hornT = now;
+  beep(196, 0.32, 'sawtooth', 0.06, -6); beep(147, 0.32, 'square', 0.03, -4); setTimeout(() => { beep(196, 0.38, 'sawtooth', 0.06, -8); beep(147, 0.38, 'square', 0.03, -6); }, 470);
+  if (snd && navigator.vibrate) try { navigator.vibrate([90, 140, 110]); } catch (e) {} }
 let tab = 'stack';      // D119：放進遊戲大廳的單一遊戲版（不計分・隨時玩）
 setMode(HOW[tab] ? tab : 'merge'); requestAnimationFrame(frame); dailyTag();
 window.__mini = { get G() { return G; }, get state() { return state; }, setMode, IMG, SEAF };
