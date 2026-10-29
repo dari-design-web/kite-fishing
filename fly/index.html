@@ -495,7 +495,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.60',
+  version: '0.61',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -3282,7 +3282,7 @@ function renderMap() {
     const btn = document.createElement('button'); btn.className = 'stage'; btn.type = 'button';
     btn.style.left = (rects[i][0] / 1080 * 100) + '%'; btn.style.top = (rects[i][1] / 1920 * 100) + '%';
     const open = !s.locked && s.id <= progress.unlocked, st = progress.stars[s.id] || [], best = progress.best[s.id];
-    const title = document.createElement('b'); title.textContent = '第 ' + s.id + ' 關　' + s.name; if (s.id === 3) { title.textContent = '第 3 關'; title.append(document.createElement('br'), s.name); }      /* D216（GPT 0835 B）：第 3 關地名不斷成「正濱漁／港」 */
+    const title = document.createElement('b'); title.textContent = '第 ' + s.id + ' 關　' + s.name; const brk = { 2: ['第 2 關', '基隆廟口夜市'], 3: ['第 3 關', '正濱漁港'], 4: ['第 4 關　深澳', '鐵道自行車'] }[s.id]; if (brk) { title.textContent = brk[0]; title.append(document.createElement('br'), brk[1]); }      /* D216／D217（GPT 0835 B、0940 A）：第 2～4 關地名不在中間斷開 */
     const line = document.createElement('span');
     line.textContent = s.locked ? s.time + '　製作中' : !open ? s.time + '　過了第 ' + (s.id - 1) + ' 關就開放' : s.time + '　' + [0, 1, 2].map((k) => (st[k] ? '★' : '☆')).join('') + (st.length === 3 && st.every(Boolean) ? ' 👑' : '') + (best ? '　最佳 ' + (best.score !== undefined ? best.score + ' 分' : best.pct + '%') : '');
     btn.append(title, line); btn.disabled = !open; if (!open) btn.classList.add('locked');
