@@ -139,7 +139,7 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
 <script src="../../shared/bgm.js"></script>
 <script type="module">
 import * as THREE from '../../shared/vendor/three.module.min.js';
-import { makeWorld } from './world.js';
+import { makeWorld } from './world.js?v=229';
 const $ = (id) => document.getElementById(id), stage = $('stage'), cv = $('gl');
 const rnd = (a, b) => a + Math.random() * (b - a), clamp = (v, a, b) => Math.max(a, Math.min(b, v)), lerp = (a, b, k) => a + (b - a) * k, pick = (a) => a[Math.floor(Math.random() * a.length)];
 /* G97 每日挑戰：?daily=official／practice → 出場、彎道都用當天固定亂數（大家同一條海路） */
@@ -155,7 +155,7 @@ const goBtn = $('goBtn'); goBtn.disabled = true; goBtn.textContent = '載入中�
 const W = await makeWorld(THREE, './assets/', (k) => { goBtn.textContent = '載入中 ' + Math.round(k * 100) + '%'; });
 goBtn.disabled = false; goBtn.textContent = '開始';
 const S = new THREE.Scene(), seaC = new THREE.Color(W.THEMES[0].sea); S.background = seaC; S.fog = new THREE.Fog(seaC, 26, 86);
-const cam = new THREE.PerspectiveCamera(58, 1, 0.1, 200); cam.position.set(0, 5.0, 8.2);
+const cam = new THREE.PerspectiveCamera(58, 1, 0.1, 200), SGV = new THREE.Vector3(); cam.position.set(0, 5.0, 8.2);
 const add = (o) => { W.bendAll(o); S.add(o); return o; };
 function drop(o) { if (!o) return; S.remove(o); o.traverse((x) => { if (x.geometry && !x.geometry.userData.keep) x.geometry.dispose(); const ms = x.material ? (Array.isArray(x.material) ? x.material : [x.material]) : []; ms.forEach((m) => { if (!m.userData.keep) m.dispose(); }); }); }
 
@@ -323,6 +323,7 @@ function update(dt) {
     if (b.kind === 'ob') { const u = b.o.userData;
       if (u.roll) u.roll.material.rotation -= dz * 0.8;
       if (u.harpoon) { const k = smooth(-24, -2, z1); u.harpoon.position.x = lerp(9, -9, k); u.laser.material.opacity = z1 < -2 ? 0.4 + 0.5 * (Math.sin(t * 20) > 0 ? 1 : 0) : 0; }
+      if (u.sign) { const H = stage.clientHeight, tp = $('tip'), hp = 1.1 * H / (2 * Math.tan(cam.fov * Math.PI / 360) * Math.max(1, cam.position.z - z1)), tb = tp.hidden ? 0 : tp.getBoundingClientRect().bottom - stage.getBoundingClientRect().top + 6, py = Math.max(H / 3, tb + hp / 2); SGV.set(0, 1 - 2 * py / H, 0.5).unproject(cam).sub(cam.position); const k = (z1 - cam.position.z) / SGV.z; u.sign.position.y = Math.max(4.4, cam.position.y + SGV.y * k); u.sign.material.opacity = 1 - smooth(-5, -1.5, z1); }      /* D229：GPT 2140 A③ 魚叉「⬆ 或 ⬇」牌固定在遊戲畫面上方約 1/3（有提示字時排在提示字下面），不擋鯨鯊和前方；靠近時淡掉 */
       b.o.children.forEach((c) => { if (c.userData.float != null) c.position.y = 1.9 + Math.sin(t * 2 + c.userData.float) * 0.25; });
       if (b.tip && !b.tipped && z1 > -28) { b.tipped = true; const n = (seen[b.name] = (seen[b.name] || 0) + 1); if (n === 1 || dist < 350) tip(b.tip, false, 1.3); }
       if (z0 < -0.2 && z1 >= -0.2 && !b.done) { b.done = true; if (blocked(b)) hit(b); else if (b.net || b.name === 'harpoon' || b.name === 'arch') { if (b.net || b.name === 'arch') misSet('dodge', 1, true); bonus += 20 * mult(); pop('閃過 +' + 20 * mult(), pos.x, pos.y + 1.1, 0); beep([660, 990], 60); } } }
