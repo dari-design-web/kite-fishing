@@ -94,6 +94,7 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
 .tag3d{position:absolute;right:10px;bottom:10px;font-size:11px;font-weight:700;color:#CFE3EC;background:rgba(10,34,54,.5);border-radius:999px;padding:2px 8px;pointer-events:none}
 .how{width:100%;max-width:420px;font-size:13px;line-height:1.5;color:#CFE3EC;text-align:center;margin:0}
 .how b{color:var(--dusk)}
+@media (max-width:340px){.how{font-size:12px}}      /* D228：最小手機上第一行留邊 */
 .err{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:20px;font-size:15px;line-height:1.6}
 .helper{position:absolute;width:96px;height:96px;pointer-events:none;transform:translate(-50%,-50%);display:none}
 .helper img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 3px 0 rgba(0,0,0,.25))}
@@ -129,7 +130,7 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
   <div class="card" id="pauseCard" hidden><h2>暫停</h2><p id="pauseMis"></p><button class="go" id="resumeBtn" type="button">繼續</button><a class="go2" href="../../line/index.html?p=park" style="text-decoration:none;line-height:40px">回小鳶樂園</a></div>
   <span class="tag3d">試玩版</span>
 </div>
-<p class="how"><b>左右滑</b>換水道・<b>上下滑</b>換高度（一次一層、會停住）・<b>金圈</b>加速</p>
+<p class="how"><span style="white-space:nowrap"><b>左右滑</b>換水道・<b>上下滑</b>換高度（一次一層、會停住）</span><br><b>金圈</b>加速</p><!-- D228：手機上「速」不再單獨掉到第二行，改成兩行整齊斷開 -->
 
 <script src="../../shared/kite_core.js"></script>
 <script src="../../shared/kite_lb.js"></script>
