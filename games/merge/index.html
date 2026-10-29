@@ -123,7 +123,7 @@ function pill(x, y, w, h, fill) { rrect(x, y, w, h, h / 2, fill || 'rgba(16,41,6
 function hud(score, mid, right) {
   pill(10, 10, 118, 32); text('分數', 34, 26, 11, '#BFE0EC', 'center', 700, false); text(String(Math.round(score)), 84, 26, 18, C.paper, 'center', 900, false);
   if (right) { ctx.font = FONT(14); const w = ctx.measureText(right).width + 26; pill(W - 10 - w, 10, w, 32); text(right, W - 10 - w / 2, 26, 14, C.paper, 'center', 700, false); }
-  if (mid) { ctx.font = FONT(13); const w = ctx.measureText(mid).width + 24; pill(W / 2 - w / 2, 48, w, 26, 'rgba(16,41,61,.62)'); text(mid, W / 2, 61, 13, C.paper, 'center', 700, false); }
+  if (mid) { ctx.font = FONT(13); const w = ctx.measureText(mid).width + 24, mx = mode === 'merge' ? W - 10 - w / 2 : W / 2; pill(mx - w / 2, 48, w, 26, 'rgba(16,41,61,.62)'); text(mid, mx, 61, 13, C.paper, 'center', 700, false); }      /* D226：連鎖小牌移到右上「第 N 關」下面，不再蓋住正中間的小鳶 */
 }
 function btn(label, y, col) { const w = 184, x = W / 2 - w / 2; rrect(x, y + 4, w, 46, 23, 'rgba(0,0,0,.25)'); rrect(x, y, w, 46, 23, col || C.leaf, C.ink, 3); text(label, W / 2, y + 23, 18, C.paper, 'center', 900); return { x, y, w, h: 46 }; }
 function panel(y, h) { rrect(22, y + 5, W - 44, h, 24, 'rgba(0,0,0,.25)'); rrect(22, y, W - 44, h, 24, C.paper, C.ink, 3); }
@@ -289,9 +289,13 @@ function makeMerge() {
     for (const b of g.balls) drawSea(b.lv, b.x, b.y, b.r, b.rot * 0.3, b.sq);
     const f = g.fall;
     if (f) {
-      let gy = BOX.floor - f.r; for (const b of g.balls) { const dx = Math.abs(b.x - f.x), rr = b.r + f.r - 1; if (dx < rr && b.y > f.y) { const yy = b.y - Math.sqrt(rr * rr - dx * dx); if (yy < gy) gy = yy; } }
-      ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 2; ctx.setLineDash([3, 6]); ctx.beginPath(); ctx.moveTo(f.x, f.y + f.r); ctx.lineTo(f.x, gy); ctx.stroke(); ctx.setLineDash([]);
-      ctx.globalAlpha = 0.3; drawSea(f.lv, f.x, gy, f.r, 0); ctx.globalAlpha = 1;
+      let gy = BOX.floor - f.r, hit = null; for (const b of g.balls) { const dx = Math.abs(b.x - f.x), rr = b.r + f.r - 1; if (dx < rr && b.y > f.y) { const yy = b.y - Math.sqrt(rr * rr - dx * dx); if (yy < gy) { gy = yy; hit = b; } } }
+      /* D226（合成港實玩）：小鳶還抓著時，落點正好碰到同一種海鮮 → 虛線變金色、落點影子變亮、兩隻都套金圈（瞄準就知道會合成）；減少動態不閃 */
+      const aim = f.held && hit && hit.lv === f.lv ? hit : null, ap = aim ? (RM ? 1 : 0.75 + 0.25 * Math.sin(tt * 8)) : 0;
+      ctx.strokeStyle = aim ? 'rgba(255,210,58,.95)' : 'rgba(255,255,255,.7)'; ctx.lineWidth = aim ? 3 : 2; ctx.setLineDash([3, 6]); ctx.beginPath(); ctx.moveTo(f.x, f.y + f.r); ctx.lineTo(f.x, gy); ctx.stroke(); ctx.setLineDash([]);
+      ctx.globalAlpha = aim ? 0.6 : 0.3; drawSea(f.lv, f.x, gy, f.r, 0); ctx.globalAlpha = 1;
+      if (aim) { ctx.globalAlpha = ap; ctx.strokeStyle = '#FFD23A'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(f.x, gy, f.r + 3, 0, 6.283); ctx.stroke(); ctx.beginPath(); ctx.arc(aim.x, aim.y, aim.r + 3, 0, 6.283); ctx.stroke(); ctx.globalAlpha = 1; }
+      g.aim = !!aim;
       drawSea(f.lv, f.x, f.y, f.r, 0);
     }
     const kx = g.kx, ky = KF + Math.sin(tt * 3) * 3;
