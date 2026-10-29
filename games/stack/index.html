@@ -415,14 +415,14 @@ function makeStack() {
       g.combo++; g.perfects++; g.bestCombo = Math.max(g.bestCombo, g.combo); let add = g.combo >= ST.comboFrom ? ST.comboGrow : 0; if (m.gold) add += ST.goldGrow;
       const nw = Math.min(base.w, top.w + add); g.blocks.push({ x: clamp(top.x - (nw - top.w) / 2, 0, W - nw), w: nw, c: m.c, gold: m.gold, sq: 0.3 });
       const pts = ST.layerPts + ST.perfectPts + g.combo * ST.comboPts + (m.gold ? ST.goldBonus : 0) + (m.rush ? ST.rushBonus : 0); g.score += pts; g.flash = 0.22;
-      pop((m.gold ? '金貨櫃切齊！' : '完美 ×' + g.combo + (add > 0 ? '　變寬！' : '')) + ' +' + pts, W / 2, yTop - 30, C.gold, true);
+      pop((m.gold ? '金貨櫃切齊！' : '完美 ×' + g.combo + (add > 0 ? '　變寬！' : '')) + ' +' + pts, W / 2, yTop - 98, C.gold, true);      /* D227：浮字移到下一個貨櫃和小鳶頭上，不再蓋住剛飛進來的小鳶 */
       burst(W / 2, yTop + BH, m.gold ? 28 : 12, C.gold); burst(top.x + top.w / 2, yTop + BH, 6, '#FFFFFF', 'star'); ring(top.x + top.w / 2, yTop + BH / 2, top.w / 2, '#FFF4C2');
       beep(523 + Math.min(g.combo, 8) * 60, 0.13, 'triangle', 0.07, 90); buzz(15);
       if (g.combo === ST.focusAt) { g.focus = ST.focusN; g.say = '連 ' + ST.focusAt + ' 個完美！專注模式：接下來變慢'; g.sayT = 1.8; }
       else if (m.gold) { g.say = '金貨櫃！貨櫃變寬了'; g.sayT = 1.5; } else if (g.combo === 3) { g.say = '連三個完美！'; g.sayT = 1.5; }
     } else {
       g.combo = 0; let nx = l, nw = r - l;
-      if (m.gold) { const w2 = Math.min(base.w, nw + ST.goldGrowOk); nx = clamp(nx - (w2 - nw) / 2, 0, W - w2); nw = w2; pop('金貨櫃！還是變寬一點 +' + (ST.layerPts + 10), W / 2, yTop - 30, C.gold); g.score += 10; }
+      if (m.gold) { const w2 = Math.min(base.w, nw + ST.goldGrowOk); nx = clamp(nx - (w2 - nw) / 2, 0, W - w2); nw = w2; pop('金貨櫃！還是變寬一點 +' + (ST.layerPts + 10), W / 2, yTop - 98, C.gold); g.score += 10; }
       g.blocks.push({ x: nx, w: nw, c: m.c, gold: m.gold, sq: 0.2 }); g.score += ST.layerPts; g.shake = 0.18; beep(300, 0.09, 'sine', 0.06, -80); buzz(8);
       const cx = m.x < l ? m.x : r, cw = m.x < l ? l - m.x : m.x + m.w - r; g.cut.push({ x: cx, w: cw, y: Y0 - g.blocks.length * BH + BH, vy: 0, c: m.c, gold: m.gold, vr: m.x < l ? -2 : 2, rot: 0 });
     }
