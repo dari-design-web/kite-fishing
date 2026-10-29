@@ -11,6 +11,7 @@
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   function pct(r) { return 'left:' + r[0] * 100 + '%;top:' + r[1] / 0.7 * 70 + '%;width:' + (r[2] - r[0]) * 100 + '%;height:' + (r[3] - r[1]) * 100 + '%'; }
   var css = el('style');
+  /* D223（GPT 1555 B）：底部深棕列上「請小鳶幫忙做好」字改暖米白 #FFF4D6（停用時灰米 #D8CCB8、不整體淡化），框線與功能不動 */
   css.textContent = '.ck{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;justify-content:flex-end;max-width:430px;margin:0 auto;background:linear-gradient(rgba(30,20,10,.12) 0%,rgba(30,20,10,.12) 42%,#3b2a1c 60%);font-family:inherit;touch-action:manipulation;-webkit-user-select:none;user-select:none}' +
     '.ck .top{position:absolute;left:10px;right:10px;top:10px;display:flex;align-items:center;gap:8px;background:rgba(255,253,248,.95);border-radius:14px;padding:8px 10px;box-shadow:0 3px 10px rgba(0,0,0,.2)}.ck .top b{font-size:15px}.ck .top .tk{margin-left:auto;font:800 16px/1 sans-serif;color:#2F7A3A}.ck .top .tk.hurry{color:#C0392B}' +
     '.ck .order{position:absolute;left:10px;right:10px;top:60px;display:flex;gap:6px;flex-wrap:wrap}.ck .order span{background:#FFF8EA;border:2px solid #E5D49B;border-radius:10px;padding:3px 8px;font-size:13px;font-weight:700}.ck .order span.ok{background:#E3F4E5;border-color:#3E9B4F;text-decoration:line-through;color:#2F7A3A}' +
@@ -25,7 +26,7 @@
     '.ck .pot{position:absolute;left:50%;bottom:6%;width:150%;transform:translateX(-50%);pointer-events:none}.ck .pot img{width:100%;display:block}.ck .steam{position:absolute;left:50%;top:-20%;font-size:20px;animation:ckS 1.2s infinite;opacity:.85}@keyframes ckS{to{transform:translateY(-18px);opacity:0}}' +
     '.ck .bar{position:absolute;left:10%;right:10%;top:-12px;height:7px;border-radius:4px;background:rgba(0,0,0,.25);overflow:hidden;pointer-events:none}.ck .bar i{display:block;height:100%;width:0;background:#E39A1F}.ck .bar.ok i{background:#3E9B4F}.ck .bar.burn i{background:#C0392B}' +
     '.ck .boxin{position:absolute;inset:8% 6%;display:flex;align-items:center;justify-content:space-around;pointer-events:none}.ck .boxin span{font-size:20px}.ck .boxin img{width:30%;}' +
-    '.ck .row{display:flex;gap:8px;padding:6px 12px calc(10px + env(safe-area-inset-bottom,0px));background:#6B4A2E}.ck .row .btn{flex:1}' +
+    '.ck .row{display:flex;gap:8px;padding:6px 12px calc(10px + env(safe-area-inset-bottom,0px));background:#6B4A2E}.ck .row .btn{flex:1}.ck .row .btn.ghost{color:#FFF4D6}.ck .row .btn.ghost:disabled{color:#D8CCB8;opacity:1}' +
     '.ck .fly{position:fixed;z-index:70;width:34px;height:34px;pointer-events:none;transition:transform .35s ease-in,opacity .35s;display:flex;align-items:center;justify-content:center;font-size:26px}.ck .fly img{width:100%}' +
     '.ck.dual .top b{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}body:has(.ck) #hmAct,body:has(.ck) .roomwrap .chip,body:has(.ck) #hmFarm,body:has(.ck) #sayBox{visibility:hidden}' +
     '.ck .hz.toss .pot{animation:ckTs .35s}@keyframes ckTs{30%{transform:translateX(-50%) translateY(-8px) rotate(-6deg)}70%{transform:translateX(-50%) rotate(4deg)}}' +
