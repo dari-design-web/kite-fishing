@@ -495,7 +495,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.61',
+  version: '0.62',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -788,7 +788,8 @@ function spawn(e) {
   if (e.ring && !toldRing) { toldRing = true; f.ringHint = true; }      // 先記著，等整圈進畫面才提示
 }
 function banner(text) { const b = $('banner'); b.textContent = text; b.hidden = false; clearTimeout(banner.t); banner.t = setTimeout(() => { b.hidden = true; }, 2400); }
-function say(text, x, y, color, big) { const half = text.length * (big ? 12.5 : 8) + 6; floats.push({ text, x: Math.max(half, Math.min(W - half, x)), y, life: 1, color: color || '#fff', big: !!big }); }
+function say(text, x, y, color, big) { const half = text.length * (big ? 12.5 : 8) + 6; x = Math.max(half, Math.min(W - half, x)); for (let n = 0; n < 4; n++) { const hit = floats.find((f) => f.life > 0.15 && Math.abs(f.y - y) < 24 && Math.abs(f.x - x) < half + f.text.length * (f.big ? 12.5 : 8) + 6); if (!hit) break; y = hit.y - 26 < 90 ? hit.y + 26 : hit.y - 26; }      /* D224：兩句浮字同時出現時往上錯開一行，不疊在一起 */
+  floats.push({ text, x: Math.max(half, Math.min(W - half, x)), y, life: 1, color: color || '#fff', big: !!big }); }
 function part(kind, x, y, o) { parts.push(Object.assign({ kind, x, y, vx: 0, vy: 0, life: 1, fade: 1.8, size: 3, rot: rand(0, 6.28) }, o)); }
 function burst(x, y, n, color, spread) { for (let i = 0; i < n; i++) { const a = rand(0, 6.28), v = rand(30, spread || 110); part('star', x, y, { vx: Math.cos(a) * v, vy: Math.sin(a) * v, size: rand(2.5, 5), color: color || '#FFE08A' }); } }
 function bubbles(x, y, n) { for (let i = 0; i < n; i++) part('bubble', x + rand(-12, 12), y + rand(-8, 8), { vy: rand(-40, -15), fade: rand(1, 1.6), size: rand(1.5, 3.5) }); }
@@ -3236,7 +3237,7 @@ function dailyFinish() {
   const add = (a, b, wide) => { const l = document.createElement('span'); l.textContent = a; const v = document.createElement('span'); v.textContent = b; if (wide) { v.style.gridColumn = '1 / -1'; v.style.textAlign = 'left'; v.style.fontWeight = '600'; } rows.append(l, v); };
   add('今日航線 ' + dailyMD(day), dailyNames(daily.route).join(' → '), true); add('今日最佳', best + ' 分' + (old !== undefined && sc > old ? '　🎉' : ''));
   for (const id of ['moreRows', 'farBar', 'cheerBtn', 'unlockNote', 'ask']) { const e = $(id); if (e) e.hidden = true; }
-  const tn = $('tipNote'); tn.textContent = '今日最佳只記在這支手機，不加點數或星星。'; tn.hidden = false;
+  const tn = $('tipNote'); tn.textContent = '只存這支手機，不加點數或星星'; /* D224：縮短成一行，iPhone SE／13 不再剩「星。」單獨一行 */ tn.hidden = false;
   show('resultPanel');
 }
 function start() { reset(); if (daily) dailyBegin(); if (window.KiteBoard) KiteBoard.start('fly'); if (soundOn) BGM.play('fly_' + stageNo); ultIcon(); mode = 'play'; show(null); $('hud').hidden = false; $('hint').hidden = false; $('ultBtn').hidden = false; if (!daily) banner('第 ' + stageNo + ' 關　' + ST().name); beep(523, 0.12, 'triangle', 0.06, 260); }
