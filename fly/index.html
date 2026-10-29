@@ -171,7 +171,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .stage.dailycard{position:relative;width:100%;min-height:0;border-color:#7FD3E6;background:rgba(14,58,84,.92);gap:1px;padding:5px 12px;animation:none}
 .stage.dailycard b{font-size:14px}
 .stage.dailycard .dpl{color:#BFF0FF;font-weight:700;font-size:12px}
-.stage.dailycard small{color:#FFD98A;font-size:11px}
+.stage.dailycard small{color:#FFD98A;font-size:12px;line-height:16px}      /* D215（GPT 2325）：11px→12px、行高 16px */
 .dailynote{margin:2px 0 0;padding:0 8px;font-size:11px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.8);pointer-events:none;visibility:hidden}
 .stage.dailycard small .dup{color:#FFF4D6}
 #startPanel.daily .how li:not(.dly),#startPanel.daily .ptnote{display:none}
@@ -495,7 +495,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.58',
+  version: '0.59',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
