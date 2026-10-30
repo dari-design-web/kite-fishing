@@ -454,7 +454,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.40',
+  version: '0.41',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -1263,7 +1263,7 @@ function draw() {
   }
   if (flash > 0) { ctx.fillStyle = 'rgba(255,248,220,' + flash * (calm ? Math.min(0.2, CONFIG.flash) : CONFIG.flash) + ')'; ctx.fillRect(0, 0, W, H); }
   ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.font = "700 16px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif";
-  for (const f of floats) { const k = calm ? 1 : 1 + Math.max(0, 0.15 - f.age) / 0.15 * 0.45; ctx.save(); ctx.translate(f.x, f.y); ctx.scale(k, k); ctx.globalAlpha = Math.min(1, f.life * 1.6); ctx.lineWidth = 4; ctx.strokeStyle = '#10293D'; ctx.strokeText(f.text, 0, 0); ctx.fillStyle = f.color; ctx.fillText(f.text, 0, 0); ctx.restore(); }      // C-94：字跳出來時先放大一點再縮回
+  for (const f of floats) { const k = calm ? 1 : 1 + Math.max(0, 0.15 - f.age) / 0.15 * 0.45; if (f.hw == null) f.hw = ctx.measureText(f.text).width / 2 + 4; const fx = Math.max(f.hw * k + 4, Math.min(W - f.hw * k - 4, f.x)); /* D232：浮字依實際字寬夾在畫面內（原本固定留 48，長句在右邊會被切掉） */ ctx.save(); ctx.translate(fx, f.y); ctx.scale(k, k); ctx.globalAlpha = Math.min(1, f.life * 1.6); ctx.lineWidth = 4; ctx.strokeStyle = '#10293D'; ctx.strokeText(f.text, 0, 0); ctx.fillStyle = f.color; ctx.fillText(f.text, 0, 0); ctx.restore(); }      // C-94：字跳出來時先放大一點再縮回
   ctx.globalAlpha = 1;
 }
 
