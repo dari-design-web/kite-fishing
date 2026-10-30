@@ -497,7 +497,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.72',
+  version: '0.73',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -1192,7 +1192,7 @@ function update(dt) {
     if (T[f.type].solid) { if (Math.abs(s.x - f.x) < f.w / 2 + 3 && Math.abs(s.y - f.y) < 14) { s.dead = true; part('drop', s.x, s.y, { size: 2, fade: 5, color: '#D9B48A' }); } continue; }      // 漂流木：羽毛打到就沒了，木頭不受影響
     if (RM() && f.rail && f.noCount && (f.type === 'can' || f.type === 'butt')) continue;      // D112：刺蝟列車是鐵軌危險，不是目標，羽毛直接穿過（不再出現「打了沒反應」）
     if (f.bar) { if (f.hp > 0 && Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { f.hp = 0; part('star', s.x, s.y, { size: 3, fade: 4, color: '#fff' }); } continue; }      // D112：暴走連射的子彈一碰就散，羽毛繼續往前飛（不然子彈會變成魔王的盾）
-    if (Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { s.dead = true; if (f === boss && f.phased) { if (!bossShot(f, s)) s.dead = false; continue; } if (RM() && railBlocks(f)) { clank(s.x, s.y); if (!stats.toldBlock) { stats.toldBlock = true; say(f.type === 'tire' ? '灰盾＝躲殼打不動，等綠圈' : f.type === 'battery' ? '灰盾＝大叫打不動，等綠圈' : '灰盾＝縮成球打不動，等綠圈', f.x, f.y - 34, '#DCE6EC'); } continue; } const x2 = f === boss && f.atk === 'devour' && f.mouth >= 1, bk = TH() === 'beam' ? beamK(f, s) : NEWT() && f === boss ? shellK(f, s) : 1; if (bk < 0) continue; f.hp -= (x2 ? 2 : 1) * bk; if (x2 && !stats.toldX2) { stats.toldX2 = true; say('打嘴巴 傷害 ×2', f.x, f.y + 84, '#FFE08A'); } f.hitT = 0.08; part('star', s.x, s.y, { size: 3, fade: 4, color: s.ink ? '#C9B6F2' : '#fff' }); }
+    if (Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { s.dead = true; if (f === boss && f.phased) { if (!bossShot(f, s)) s.dead = false; continue; } if (RM() && railBlocks(f)) { clank(s.x, s.y); if (!stats.toldBlock) { stats.toldBlock = true; say(f.type === 'tire' ? '灰盾＝躲殼打不動，等綠圈' : f.type === 'battery' ? '灰盾＝大叫打不動，等綠圈' : '灰盾＝縮成球打不動，等綠圈', f.x, f.y - 34, '#FFFFFF', false, '#1F3A4D'); } continue; } const x2 = f === boss && f.atk === 'devour' && f.mouth >= 1, bk = TH() === 'beam' ? beamK(f, s) : NEWT() && f === boss ? shellK(f, s) : 1; if (bk < 0) continue; f.hp -= (x2 ? 2 : 1) * bk; if (x2 && !stats.toldX2) { stats.toldX2 = true; say('打嘴巴 傷害 ×2', f.x, f.y + 84, '#FFE08A'); } f.hitT = 0.08; part('star', s.x, s.y, { size: 3, fade: 4, color: s.ink ? '#C9B6F2' : '#fff' }); }
   }
   shots = shots.filter((s) => !s.dead && s.y > -20 && s.x > -20 && s.x < W + 20);
   updateRing(dt); bossFinalCheck(real);
@@ -2455,7 +2455,7 @@ function updateJianji2(f, dt) {
 function ringNow(f) { const k = f.ringK || 0, e = k * k * (3 - 2 * k), B = BFX(); return { cx: W / 2, cy: 430, rx: 260 - (260 - B.ringMin[0]) * e, ry: 300 - (300 - B.ringMin[1]) * e }; }
 
 /* ---- 第 4 關：鐵軌上的刺蝟列車（先在鐵軌上標紅色預告，再整串滾下來） ---- */
-function addRush(n) { rushes.push({ t: BFX().rushWarn * LV().warn / 1.15, n }); beep(700, 0.1, 'square', 0.04); if (!stats.toldRush) { stats.toldRush = true; say('鐵軌亮紅：刺蝟要滾下來了', RAIL_X(), 250, '#FFD0C4'); } }
+function addRush(n) { rushes.push({ t: BFX().rushWarn * LV().warn / 1.15, n }); beep(700, 0.1, 'square', 0.04); if (!stats.toldRush) { stats.toldRush = true; say('鐵軌亮紅：刺蝟要滾下來了', RAIL_X(), 250, '#FFFFFF', false, '#1F3A4D');      /* D243：第 4 關實玩，粉字壓在紅鐵軌上看不清，改白字深藍描邊 */ } }
 function updateRushes(dt) {
   for (const r of rushes) { r.t -= dt; if (r.t <= 0) { for (let i = 0; i < r.n; i++) mk('can', RAIL_X(), -20 - i * 36, { noCount: true, rail: true, vx: 0, vy: BFX().rushSpeed * SPD() }); beep(400, 0.2, 'sawtooth', 0.04, -100); } }
   rushes = rushes.filter((r) => r.t > 0);
