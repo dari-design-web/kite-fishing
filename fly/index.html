@@ -497,7 +497,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.77',
+  version: '0.78',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -2429,7 +2429,7 @@ function updateJianji2(f, dt) {
       if (g.t > G.warn + G.rows.length * G.rowGap + 0.4) { f.grid = null; if (f.atk === 'grid') f.atk = ''; }
       return true;
     }
-    if (f.atkAcc <= 0 && !f.beams.length && (f.swK = (f.swK || 0) + 1) % G.every === 0) { f.atkAcc = B.sweepEvery; f.atk = 'grid'; banner('礦脈棋盤・落石開徑！'); const n = Math.floor(W / G.cell); let c = Math.max(0, Math.min(n - 1, Math.floor(kite.x / G.cell) + (rnd() < 0.5 ? -1 : 1))); f.grid = { t: 0, rows: G.rows.map((y) => { const row = { y, gx: c * G.cell + G.cell / 2 }; let d = [-1, 1, 0, -1, 1][Math.floor(rnd() * 5)]; if (c + d < 0 || c + d > n - 1) d = -d; c += d; return row; }) }; if (!stats.toldGrid) { stats.toldGrid = true; say('沿著綠色缺口走', W / 2, 250, '#BFF0D0', true); } return true; }
+    if (f.atkAcc <= 0 && !f.beams.length && (f.swK = (f.swK || 0) + 1) % G.every === 0) { f.atkAcc = B.sweepEvery; f.atk = 'grid'; banner('礦脈棋盤・落石開徑！'); const n = Math.floor(W / G.cell); let c = Math.max(0, Math.min(n - 1, Math.floor(kite.x / G.cell) + (rnd() < 0.5 ? -1 : 1))); f.grid = { t: 0, rows: G.rows.map((y) => { const row = { y, gx: c * G.cell + G.cell / 2 }; let d = [-1, 1, 0, -1, 1][Math.floor(rnd() * 5)]; if (c + d < 0 || c + d > n - 1) d = -d; c += d; return row; }) }; if (!stats.toldGrid) { stats.toldGrid = true; say('沿著綠色缺口走', W / 2, 250, '#FFFFFF', true, '#1F3A4D'); } return true; }
     if (f.atkAcc <= 0 && !f.beams.length) { f.atkAcc = B.sweepEvery; const sides = []; if (f.pools.armL > 0) sides.push(true); if (f.pools.armR > 0) sides.push(false); const fromLeft = sides[(f.swN = (f.swN || 0) + 1) % sides.length]; f.atk = 'sweep'; f.beams.push({ y: Math.max(220, Math.min(580, kite.y)), fromLeft, t: 0, x: 0 }); }
     for (const b of f.beams) { b.t += dt; if (b.t >= C.sweepWarn) { if (!b.x) b.x = b.fromLeft ? -C.beamLen / 2 : W + C.beamLen / 2; b.x += (b.fromLeft ? 1 : -1) * C.sweepSpeed * dt; if (Math.abs(kite.y - b.y) < C.beamHalf + K.r * 0.6 && Math.abs(kite.x - b.x) < C.beamLen / 2) hurt('鋼梁鐵臂'); } }
     f.beams = f.beams.filter((b) => b.t < C.sweepWarn || (b.fromLeft ? b.x - C.beamLen / 2 < W : b.x + C.beamLen / 2 > 0)); if (!f.beams.length && f.atk === 'sweep') f.atk = '';
@@ -2441,7 +2441,7 @@ function updateJianji2(f, dt) {
     if (f.atkAcc <= 0) { f.atkAcc = B.cartEvery; f.lanes.push({ x: RAIL_X(), y: f.y + 40, t: 0 }); beep(180, 0.25, 'sawtooth', 0.04, -40); }
     for (const l of f.lanes) { l.t += dt; if (l.t >= C.cartWarn) { l.y += C.cartSpeed * SPD() * dt; if (Math.abs(kite.x - l.x) < C.cartHalf + K.r * 0.5 && Math.abs(kite.y - l.y) < 22 + K.r * 0.5) hurt('煤車'); } }
     f.lanes = f.lanes.filter((l) => l.y < H + 40);
-    if (!f.toldCart) { f.toldCart = true; say('看軌道，抓空檔', RAIL_X(), 330, '#FFE08A', true); }
+    if (!f.toldCart) { f.toldCart = true; say('看軌道，抓空檔', RAIL_X(), 330, '#FFFFFF', true, '#1F3A4D'); }      /* D248：第 4 關魔王實玩——棋盤／煤車兩句淺綠淺黃壓在碎石路上看不清，跟 D242／D243 一樣改白字深藍描邊 */
     return true;
   }
   // 第 3 階段：礦砂星火暴＋光環往內收（留下可躲、可射的範圍）
