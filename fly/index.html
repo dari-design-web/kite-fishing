@@ -497,7 +497,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.74',
+  version: '0.75',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -2139,6 +2139,7 @@ function drawTunnelDark() {      // 光隧道：四周變暗，只看得到小�
   g.addColorStop(0, 'rgba(10,8,20,0)'); g.addColorStop(1, 'rgba(10,8,20,' + 0.82 * k + ')'); ctx.fillStyle = g; ctx.fillRect(-10, -10, W + 20, H + 20);
   if (TUNNEL_LIT() && !calm) for (const sx of [0, 1]) { const g = ctx.createLinearGradient(sx ? W : 0, 0, sx ? W - 70 : 70, 0); g.addColorStop(0, 'hsla(' + ((t * 60) % 360) + ',90%,70%,' + 0.45 * k + ')'); g.addColorStop(1, 'hsla(0,0%,100%,0)'); ctx.fillStyle = g; ctx.fillRect(sx ? W - 70 : 0, 0, 70, H); }      // 牆上的光雕亮起來
   if (!calm) for (const f of foes) if (f.type === 'bag' && !f.ghost) { ctx.save(); ctx.translate(f.x, f.y); glow(46, ['255,120,200', '120,220,255', '255,230,120'][Math.floor(clock * 3 + f.ph) % 3], 0.5 * k); ctx.restore(); }      // 光影母在暗處發光
+  if (k > 0.3) for (const p of picks) drawPick(p);      /* D245：隧道實玩——掉落的魚乾／羽毛／疾風和第一次的說明字被暗幕蓋成灰色看不清，改畫在暗幕上面；光影母照舊只在光雕亮時才看得到 */
 }
 /* 吉祥物支援：河豚自行車載著吉祥物沿鐵道開過來，碰到就會幫忙（錯過就走了） */
 let mascots = [];
