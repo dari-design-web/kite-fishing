@@ -454,7 +454,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.41',
+  version: '0.42',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -1396,7 +1396,7 @@ function finish() { BGM.stop(); if (window.KiteBoard) KiteBoard.ev('run_end', { 
   const acc = stats.dives ? Math.round(stats.hits / stats.dives * 100) : 0, rows = $('rows'); rows.textContent = '';
   let xr = false; const add = (a, b, isNew) => { const l = document.createElement('span'); l.textContent = a; if (xr) l.classList.add('xr'); if (isNew) { const n = document.createElement('span'); n.className = 'new'; n.textContent = '新圖鑑'; l.appendChild(n); } const r = document.createElement('span'); r.textContent = b; if (xr) r.classList.add('xr'); if (String(b).length > 16) { r.style.gridColumn = '1 / -1'; r.style.textAlign = 'left'; r.style.fontWeight = '600'; }      /* QA：長的說明（官方 LINE 點數）自己一整行，不把左邊擠成直排 */ rows.append(l, r); };
   const VB = LVL().verb || '抓', UN = (k) => (k === 'squid' || k === 'lobster' ? ' 隻' : ' 條');
-  for (const k of SP()) if (stats.counts[k]) add(CONFIG.fish[k].name, (VB === '抓' ? '' : VB + ' ') + stats.counts[k] + UN(k) + '・每' + UN(k).trim() + ' ' + PTS(CONFIG.fish[k].kg) + ' 分', stats.newDex.includes(k));      /* D194：手機上不再斷成兩行 */
+  for (const k of SP()) if (stats.counts[k]) add(CONFIG.fish[k].name, (VB === '抓' ? '' : VB + ' ') + stats.counts[k] + UN(k) + '・每' + UN(k).trim() + ' ' + PTS(CONFIG.fish[k].kg) + ' 分');      /* D194：手機上不再斷成兩行；D233（GPT 0925 A②）：列表不再重複「新圖鑑」紅字，只留下方圖鑑卡的新魚標示 */
   if (!stats.hits) add('這局沒有' + VB + '到魚', '0 條');
   if (stats.jumps) add('空中抓到飛魚', stats.jumps + ' 次');
   /* v0.25（C-169）：結算多一行「今日幸運魚」——抓到幾條、分數乘幾倍；這局沒抓到就提醒下一局找找看（文字是建議） */
