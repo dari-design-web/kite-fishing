@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<style>html{color-scheme:light}body{margin:0}[hidden]{display:none!important}</style>
+<style>html{color-scheme:light}body{margin:0}[hidden]{display:none!important}/* D234：飛行實玩——關卡開始卡說明平均斷行（第 1 關不再讓「鯊。」單獨掉一行） */
+#stageIntro{text-wrap:balance}
+</style>
 <title>小鳶飛行冒險</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@700&display=swap">
 <style>
@@ -495,7 +497,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.63',
+  version: '0.64',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
