@@ -497,7 +497,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.73',
+  version: '0.74',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -1252,7 +1252,8 @@ function update(dt) {
   // 畫面資訊
   const total = CONFIG.boss.at + 14, sb = $('stageBar');      // v0.20：魔王出場後，上方長條改成魔王血量（D51：第 4 關血量顯示和上方長條疊在一起）
   if (boss && !won) { sb.classList.add('hp'); sb.style.transform = 'scaleX(' + Math.max(0, Math.min(1, barRatio(boss))) + ')'; } else { sb.classList.remove('hp'); sb.style.transform = 'scaleX(' + Math.min(1, daily ? daily.rt / (DAILY.len * 3) : t / total) + ')'; }
-  $('stageText').textContent = boss && boss.phased ? bossGoalText(boss) + '　' + Math.max(0, Math.ceil(BTIME() - (t - boss.born))) + ' 秒' : boss ? (T.boss.short || T.boss.name) + ' ' + Math.max(0, Math.ceil(boss.hp)) + ' / ' + boss.maxHp + '　剩 ' + Math.max(0, Math.ceil(BTIME() - (t - boss.born))) + ' 秒' : '分數 ' + scoreNow() + (stats.combo >= 3 ? '　連清 ' + stats.combo : '');
+  /* D244：GPT 1830 B 窄版（寬度不到 375）魔王標籤只留名字，血量數字不顯示（原本被截成「阿根納 22…」），血條照舊 */
+  $('stageText').textContent = boss && boss.phased ? bossGoalText(boss) + '　' + Math.max(0, Math.ceil(BTIME() - (t - boss.born))) + ' 秒' : boss ? (innerWidth < 375 ? (T.boss.short || T.boss.name) : (T.boss.short || T.boss.name) + ' ' + Math.max(0, Math.ceil(boss.hp)) + ' / ' + boss.maxHp + '　剩 ' + Math.max(0, Math.ceil(BTIME() - (t - boss.born))) + ' 秒') : '分數 ' + scoreNow() + (stats.combo >= 3 ? '　連清 ' + stats.combo : '');
   const ub = $('ultBtn'), full = gauge >= CONFIG.ult.need; ub.disabled = !full || !!ult; ub.style.setProperty('--fill', Math.round(gauge / CONFIG.ult.need * 100) + '%'); ub.classList.toggle('ready', full && !ult); const tag = $('ultTag'), word = full && !ult ? (NM() ? '祈福！' : '出動！') : ULTN(); if (tag.textContent !== word) tag.textContent = word;
   if (full && !toldUlt && !ult) { toldUlt = true; banner(ULTN() + '準備好了！按右下角'); jingle([659, 880], 120); }
   $('hint').hidden = firstMove || t > 8;
@@ -2064,7 +2065,7 @@ function updateAgenor(f, dt) {
     return;
   }
   if (f.atk === 'rocks') {      // 船廠危樑・水泥落石雨：兩波，每波一塊對準小鳶、其餘隨機，先出紅圈再落下
-    if (f.wave < 2 && f.atkT >= f.wave * C.rockWarn) { for (let i = 0; i < C.rockN + 2 * rageMore(f); i++) f.rocks.push(i === 0 && escort ? { x: escort.x, y: escort.y - 6, t: 0, boat: true } : { x: i === 1 ? kite.x : R(40, W - 40), y: i === 1 ? kite.y : R(220, 480), t: 0 }); f.wave++; }
+    if (f.wave < 2 && f.atkT >= f.wave * C.rockWarn) { for (let i = 0; i < C.rockN + 2 * rageMore(f); i++) f.rocks.push(i === 0 && escort ? { x: escort.x, y: escort.y - 6, t: 0, boat: true } : { x: i === 1 ? kite.x : R(40, W - 40), y: i === 1 ? kite.y : R(220, 480), t: 0 }); f.wave++; if (!escort && !stats.toldRock) { stats.toldRock = true; const k1 = f.rocks[1] || f.rocks[0]; say('落石來了，閃出紅圈！', Math.max(110, Math.min(W - 110, k1.x)), Math.max(130, k1.y - C.rockR - 28), '#FFFFFF', false, '#1F3A4D'); } }      /* D244：GPT 1830 A 每局第一次落石雨，在對準小鳶那顆紅圈上方提示一次（不恢復護船） */
     for (const k of f.rocks) { k.t += dt; if (k.t >= C.rockWarn && !k.hit) { k.hit = true; shake = Math.max(shake, 0.2); for (let i = 0; i < 6; i++) part('drop', k.x, k.y, { vx: rand(-80, 80), vy: rand(-80, 40), size: rand(2, 4), color: '#A9A39A', fade: 2 }); beep(90, 0.2, 'sawtooth', 0.05, -30); const inK = Math.hypot(kite.x - k.x, kite.y - k.y) < C.rockR + K.r * 0.5; if (k.boat) { if (inK) { say('替小船擋下落石！', k.x, k.y - 40, '#BFF0D0'); burst(k.x, k.y, 10, '#FFE08A'); stats.blocks = (stats.blocks || 0) + 1; } else escortHurt('水泥落石'); } else if (inK) hurt('水泥落石'); } }
     f.rocks = f.rocks.filter((k) => k.t < C.rockWarn + 0.35);
     if (f.atkT > C.rockWarn * 2 + 0.5) f.atk = '';
@@ -2455,7 +2456,7 @@ function updateJianji2(f, dt) {
 function ringNow(f) { const k = f.ringK || 0, e = k * k * (3 - 2 * k), B = BFX(); return { cx: W / 2, cy: 430, rx: 260 - (260 - B.ringMin[0]) * e, ry: 300 - (300 - B.ringMin[1]) * e }; }
 
 /* ---- 第 4 關：鐵軌上的刺蝟列車（先在鐵軌上標紅色預告，再整串滾下來） ---- */
-function addRush(n) { rushes.push({ t: BFX().rushWarn * LV().warn / 1.15, n }); beep(700, 0.1, 'square', 0.04); if (!stats.toldRush) { stats.toldRush = true; say('鐵軌亮紅：刺蝟要滾下來了', RAIL_X(), 250, '#FFFFFF', false, '#1F3A4D');      /* D243：第 4 關實玩，粉字壓在紅鐵軌上看不清，改白字深藍描邊 */ } }
+function addRush(n) { rushes.push({ t: BFX().rushWarn * LV().warn / 1.15, n }); beep(700, 0.1, 'square', 0.04); if (!stats.toldRush) { stats.toldRush = true; say('鐵軌變紅，刺蝟滾來！', RAIL_X(), 250, '#FFFFFF', false, '#1F3A4D');      /* D243：第 4 關實玩，粉字壓在紅鐵軌上看不清，改白字深藍描邊 */ } }
 function updateRushes(dt) {
   for (const r of rushes) { r.t -= dt; if (r.t <= 0) { for (let i = 0; i < r.n; i++) mk('can', RAIL_X(), -20 - i * 36, { noCount: true, rail: true, vx: 0, vy: BFX().rushSpeed * SPD() }); beep(400, 0.2, 'sawtooth', 0.04, -100); } }
   rushes = rushes.filter((r) => r.t > 0);
