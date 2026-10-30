@@ -497,7 +497,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.67',
+  version: '0.68',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -1643,7 +1643,8 @@ function updateTaotie(f, dt) {
     f.atkAcc = (f.atkAcc || 0) + bd;
     if (bossStageCheck(f, '饕餮')) return;
     if (f.atkAcc >= C.every * bossPace(f)) { f.atkAcc = 0; f.atk = pickAtk(f, C); f.atkT = 0; f.vol = 0; banner(C.names[f.atk]); beep(200, 0.35, 'sawtooth', 0.05, -60);
-      if (f.atk === 'corridor') { const D = CONFIG.corridor; f.gx = Math.round(Math.max(D.gapHalf + 12, Math.min(W - D.gapHalf - 12, rnd() < 0.5 ? R(70, 150) : R(210, 290)))); f.rows = 0; if (!stats.toldCorr) { stats.toldCorr = true; say('只有綠色走廊安全！先飛進去', f.gx, 300, '#BFF0D0', true); } }
+      if (f.atk === 'corridor') { const D = CONFIG.corridor; f.gx = Math.round(Math.max(D.gapHalf + 12, Math.min(W - D.gapHalf - 12, rnd() < 0.5 ? R(70, 150) : R(210, 290)))); f.rows = 0; if (!stats.toldCorr) { stats.toldCorr = true; say('只有綠色走廊安全！', f.gx, 300, '#BFF0D0', true); } }
+      if (f.atk === 'lamps' && !stats.toldLamp) { stats.toldLamp = true; say('燈籠打得掉，記得閃！', f.x, Math.min(560, f.y + 90), '#FFD0C4'); }      /* D238：GPT 1330 A③ 百燈第一次出招補一句；B② 走廊大字縮短 */
     }
     return;
   }
