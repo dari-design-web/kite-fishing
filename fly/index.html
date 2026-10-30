@@ -497,7 +497,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.70',
+  version: '0.71',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -2049,7 +2049,7 @@ function updateAgenor(f, dt) {
     if (f.atkAcc >= C.every * bossPace(f)) { f.atkAcc = 0; f.atk = pickAtk(f, C); f.atkT = 0; f.rocks = []; f.cables = []; f.ramT = undefined; banner(C.names[f.atk]); beep(180, 0.4, 'sawtooth', 0.05, -60);
       if (f.atk === 'cross') { f.cx = Math.max(40, Math.min(W - 40, kite.x)); f.cy = Math.max(220, Math.min(560, kite.y)); if (!stats.toldCross) { stats.toldCross = true; say('先直後橫，看虛線，閃開兩條鋼索', W / 2, 250, '#FFD0C4', true); } }
       if (f.atk === 'rocks') { f.wave = 0; if (escort && !stats.toldBlock) { stats.toldBlock = true; say('飛進小船上的紅圈，替牠擋落石！', W / 2, 260, '#FFD0C4'); } }
-      if (f.atk === 'ram') { f.ramX = escort ? escort.x : kite.x; f.ramT = 0; f.ramS = 'warn'; f.ramHp = f.hp; say(escort ? '牠要撞小船！快打牠的頭讓牠暈倒' : '牠要衝下來了！快閃出紅區', W / 2, 232, '#FFD0C4'); }
+      if (f.atk === 'ram') { f.ramX = escort ? escort.x : kite.x; f.ramT = 0; f.ramS = 'warn'; f.ramHp = f.hp; say(escort ? '牠要撞小船！快打牠的頭讓牠暈倒' : '牠要衝下來了！快閃出紅區', f.ramX, 232, '#FFFFFF', false, '#1F3A4D'); }      /* D241：GPT 1630 B② 衝撞提示跟著紅區（不再固定畫面中間），白字深藍描邊同其他第一次提示 */
     }
     return;
   }
