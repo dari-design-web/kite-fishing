@@ -497,7 +497,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.66',
+  version: '0.67',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -1665,7 +1665,7 @@ function updateTaotie(f, dt) {
     }
     if (f.atkT > 0.35 + (C.lampVolleys + rageMore(f)) * 0.5 + 0.4) f.atk = '';
   } else if (f.atk === 'rain') {      // 鬼王往下壓，身邊一圈下油雨
-    if (f.atkT < C.rainWarn) { f.y += (C.rainY - f.y) * Math.min(1, 3 * dt); f.x += (Math.max(110, Math.min(W - 110, kite.x)) - f.x) * Math.min(1, 1.5 * dt); }
+    if (f.atkT < C.rainWarn) { f.y += (C.rainY - f.y) * Math.min(1, 3 * dt); f.x += (Math.max(110, Math.min(W - 110, kite.x)) - f.x) * Math.min(1, 1.5 * dt); if (!stats.toldRain && f.atkT > 0.25) { stats.toldRain = true; say('要下油雨了！飛出紅圈', f.x, Math.min(560, f.y + C.rainR + 26), '#FFD0C4'); } }      /* D237：油雨第一次出招補一句怎麼躲（同吸嘴、走廊） */
     else if (f.atkT < C.rainWarn + C.rainOn) {
       if (!f.rainBeep) { f.rainBeep = true; beep(140, 0.5, 'sawtooth', 0.05, -40); }
       if (!calm) for (let i = 0; i < 3; i++) { const a = rand(0, 6.28), d = Math.sqrt(Math.random()) * C.rainR; part('drop', f.x + Math.cos(a) * d, f.y + Math.sin(a) * d - 20, { vy: 160, size: rand(1.5, 2.6), fade: 3, color: '#6B4A2A' }); }
