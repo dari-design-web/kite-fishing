@@ -497,7 +497,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.69',
+  version: '0.70',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -765,7 +765,7 @@ function spawn(e) {
   if (e.type === 'tunnel') { banner('進入光隧道！牆上的光亮起時才看得到光影母'); jingle([392, 494, 587], 120); return; }
   if (e.type === 'smoke') { addSmoke(e.fromLeft); return; }
   if (e.type === 'warn') { banner(NM() ? '收攤前的妖怪潮來了！' : PM() ? '漁港怪獸潮來了！' : RM() ? '山海怪獸潮來了！' : '垃圾潮來了！'); jingle([330, 330, 262], 150); return; }
-  if (e.type === 'log') { mk('log', e.x, -20, { noCount: true, w: 116 }); return; }
+  if (e.type === 'log') { const lf = mk('log', e.x, -20, { noCount: true, w: 116 }); if (PM() && !stats.toldLog) { stats.toldLog = true; lf.tellLog = true; }      /* D240：GPT 1530 A② 第 3 關每局第一次單條纜繩，等纜繩進畫面再說（缺口門另有「從缺口穿過去」） */ return; }
   if (e.type === 'dive') {      // D109／G79 C1 弧線俯衝：從上方角落進場，先畫出虛線弧（0.7 秒），弧線在出現時就鎖定、之後不追人
     const L = e.fromLeft, x0 = L ? -18 : W + 18, tx = Math.max(60, Math.min(W - 60, kite.x)), ty = Math.max(240, Math.min(470, kite.y - 90)), x2 = L ? W + 70 : -70, y2 = Math.min(H + 40, ty + 230);
     for (let i = 0; i < (e.n || 3); i++) mk(e.foe || 'bottle', x0, 70, { arc: { p0: [x0, 70], p1: [2 * tx - (x0 + x2) / 2, 2 * ty - (70 + y2) / 2], p2: [x2, y2], t: -0.7 - i * 0.28, dur: 2.4 }, vy: 0, noCount: true });
@@ -1175,6 +1175,7 @@ function update(dt) {
     if (f.arc) { const A = f.arc; A.t += dt; if (A.t >= 0) { const u = Math.min(1, A.t / A.dur), a = 1 - u; f.x = a * a * A.p0[0] + 2 * a * u * A.p1[0] + u * u * A.p2[0]; f.y = a * a * A.p0[1] + 2 * a * u * A.p1[1] + u * u * A.p2[1]; } continue; }
     if (f.split && !f.split.go && f.y >= f.split.y) { f.split.t = (f.split.t || 0) + dt; f.y += f.vy * 0.2 * dt; if (f.split.t > 0.6) { f.split.go = true; f.vx = f.split.dir * 115 * SPD(); } continue; }
     f.y += f.vy * dt; f.x += f.vx * dt;
+    if (f.tellLog && f.y > 70) { f.tellLog = false; say('小心纜繩，繞過去！', f.x, f.y + 170, '#FFFFFF', false, '#1F3A4D'); }      /* D240：纜繩看得到時，在它下方提醒一次 */
     if (f.ringHint && f.y > 90) { f.ringHint = false; f.hintT = 3.2; banner(NM() ? '瞄準中間的爆米香，一次炸掉一圈' : '瞄準中間的油桶，一次炸掉一圈'); }
     if (f.hintT > 0) f.hintT -= dt;
     if (d.sway && !f.sucked) f.x = f.x0 + Math.sin(clock * 2 + f.ph) * d.sway;
