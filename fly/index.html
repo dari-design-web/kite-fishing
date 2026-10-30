@@ -497,7 +497,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.65',
+  version: '0.66',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -1120,7 +1120,7 @@ function update(dt) {
   for (const p of pals) {
     p.t -= dt; const tx = kite.x + p.side * 34, ty = kite.y + 16; p.x += (tx - p.x) * Math.min(1, 8 * real); p.y += (ty - p.y) * Math.min(1, 8 * real);
     p.acc += dt; if (p.acc >= CONFIG.pal.every && p.t > 0 && endTimer <= 0) { p.acc = 0; shots.push({ x: p.x, y: p.y - 12, vx: 0, vy: -420, ink: true }); }
-    if (p.t <= 0 && !p.bye) { p.bye = true; say('掰掰', p.x, p.y - 18, '#fff'); friends.push({ kind: 'squid', x: p.x, y: p.y, vx: 0, vy: -110, free: true }); }
+    if (p.t <= 0 && !p.bye) { p.bye = true; if (!floats.some((o) => o.text === '掰掰' && o.life > 0.3)) say('掰掰', p.x, p.y - 18, '#fff');      /* D236：兩隻小卷同時離開只說一次掰掰 */ friends.push({ kind: 'squid', x: p.x, y: p.y, vx: 0, vy: -110, free: true }); }
   }
   pals = pals.filter((p) => !p.bye);
   if (beam) for (const s of shots) if (s.lit === undefined) { s.lit = !beam.off && Math.abs(s.x - beam.x) < NW.beam.half + 8 && s.y > kite.y - 50; if (s.lit && !stats.toldLitShot) { stats.toldLitShot = true; say('站在燈光裡，羽毛變光羽！', kite.x, kite.y - 40, '#FFE08A'); } }      // D123 燈塔光變成小鳶的武器
