@@ -497,7 +497,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.64',
+  version: '0.65',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -775,7 +775,7 @@ function spawn(e) {
     for (let i = 0; i < (e.n || 6); i++) mk(e.foe || 'bottle', e.x, -20 - i * 34, { split: { y: 230 + (i % 2) * 6, dir: i % 2 ? 1 : -1 }, vy: 95 * SPD(), noCount: true });
     return;
   }
-  if (e.type === 'gate') { const g = 62, lw = Math.max(0, e.x - g), rw = Math.max(0, W - e.x - g); if (lw > 20) mk('log', lw / 2, -20, { noCount: true, w: lw }); if (rw > 20) mk('log', W - rw / 2, -20, { noCount: true, w: rw }); if (!toldGate) { toldGate = true; guide = { x: e.x, y: -20, half: g, vy: T.log.speed[0] * SPD() }; say('從缺口穿過去', e.x, 170, '#BFF0D0'); } return; }
+  if (e.type === 'gate') { const g = 62, lw = Math.max(0, e.x - g), rw = Math.max(0, W - e.x - g); if (lw > 20) mk('log', lw / 2, -20, { noCount: true, w: lw }); if (rw > 20) mk('log', W - rw / 2, -20, { noCount: true, w: rw }); if (!toldGate) { toldGate = true; guide = { x: e.x, y: -20, half: g, vy: T.log.speed[0] * SPD() }; say('從缺口穿過去', e.x, 170, '#FFFFFF', false, '#1F3A4D');      /* D235：GPT 1025 A① 白字＋深藍薄描邊 */ } return; }
   if (e.type === 'side' && RM()) { addRush(e.n + 2); return; }      // 第 4 關：側邊橫衝改成鐵軌上的刺蝟列車
   if (e.type === 'side') { warns.push({ y: Math.max(150, Math.min(590, kite.y)), fromLeft: e.fromLeft, n: e.n, t: LV().warn }); beep(880, 0.08, 'square', 0.04); return; }
   if (e.type === 'chaser') { const f = mk('chaser', e.x, H + 24); f.vy = 0; say(NM() ? '後面有小燈籠追來，持續移動' : RM() ? '後面有煤渣團追來，持續移動' : '後面有污水泡，持續移動', e.x, H - 60, '#FFD0C4'); return; }
@@ -790,8 +790,8 @@ function spawn(e) {
   if (e.ring && !toldRing) { toldRing = true; f.ringHint = true; }      // 先記著，等整圈進畫面才提示
 }
 function banner(text) { const b = $('banner'); b.textContent = text; b.hidden = false; clearTimeout(banner.t); banner.t = setTimeout(() => { b.hidden = true; }, 2400); }
-function say(text, x, y, color, big) { const half = text.length * (big ? 12.5 : 8) + 6; x = Math.max(half, Math.min(W - half, x)); for (let n = 0; n < 4; n++) { const hit = floats.find((f) => f.life > 0.15 && Math.abs(f.y - y) < 24 && Math.abs(f.x - x) < half + f.text.length * (f.big ? 12.5 : 8) + 6); if (!hit) break; y = hit.y - 26 < 90 ? hit.y + 26 : hit.y - 26; }      /* D224：兩句浮字同時出現時往上錯開一行，不疊在一起 */
-  floats.push({ text, x: Math.max(half, Math.min(W - half, x)), y, life: 1, color: color || '#fff', big: !!big }); }
+function say(text, x, y, color, big, stroke) { const half = text.length * (big ? 12.5 : 8) + 6; x = Math.max(half, Math.min(W - half, x)); for (let n = 0; n < 4; n++) { const hit = floats.find((f) => f.life > 0.15 && Math.abs(f.y - y) < 24 && Math.abs(f.x - x) < half + f.text.length * (f.big ? 12.5 : 8) + 6); if (!hit) break; y = hit.y - 26 < 90 ? hit.y + 26 : hit.y - 26; }      /* D224：兩句浮字同時出現時往上錯開一行，不疊在一起 */
+  floats.push({ text, x: Math.max(half, Math.min(W - half, x)), y, life: 1, color: color || '#fff', big: !!big, stroke: stroke || '' }); }
 function part(kind, x, y, o) { parts.push(Object.assign({ kind, x, y, vx: 0, vy: 0, life: 1, fade: 1.8, size: 3, rot: rand(0, 6.28) }, o)); }
 function burst(x, y, n, color, spread) { for (let i = 0; i < n; i++) { const a = rand(0, 6.28), v = rand(30, spread || 110); part('star', x, y, { vx: Math.cos(a) * v, vy: Math.sin(a) * v, size: rand(2.5, 5), color: color || '#FFE08A' }); } }
 function bubbles(x, y, n) { for (let i = 0; i < n; i++) part('bubble', x + rand(-12, 12), y + rand(-8, 8), { vy: rand(-40, -15), fade: rand(1, 1.6), size: rand(1.5, 3.5) }); }
@@ -3177,7 +3177,7 @@ function draw() {
   ctx.restore();
   if (flash > 0) { ctx.fillStyle = 'rgba(255,248,220,' + flash * (calm ? 0.2 : 0.5) + ')'; ctx.fillRect(0, 0, W, H); }
   ctx.textAlign = 'center'; ctx.lineJoin = 'round';
-  for (const f of floats) { ctx.font = "700 " + (f.big ? 24 : 15) + "px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif"; ctx.globalAlpha = Math.min(1, f.life * 1.6); ctx.lineWidth = f.big ? 6 : 4; ctx.strokeStyle = '#10293D'; ctx.strokeText(f.text, f.x, f.y); ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y); }
+  for (const f of floats) { ctx.font = "700 " + (f.big ? 24 : 15) + "px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif"; ctx.globalAlpha = Math.min(1, f.life * 1.6); ctx.lineWidth = f.big ? 6 : 4; ctx.strokeStyle = f.stroke || '#10293D'; ctx.strokeText(f.text, f.x, f.y); ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y); }
   ctx.globalAlpha = 1; drawCine(); if (dailyFade) dailyDraw();
 }
 function frame(now) {
