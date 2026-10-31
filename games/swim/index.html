@@ -85,6 +85,7 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
 .card .ctl{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0 0;font-size:13px;font-weight:700;text-align:left}
 .card .ctl div{background:#F3EAD8;border-radius:10px;padding:6px 8px;display:flex;gap:6px;align-items:center}
 .card .ctl i{font-style:normal;font-size:18px}
+@media (max-width:374px){.card .ctl div{flex-direction:column;gap:2px;text-align:center;justify-content:center;padding:6px 4px}.card .ctl div span{white-space:nowrap}}      /* D251：GPT 0920 A① 窄版每格圖上字下，詞組不拆開 */
 .card .lg{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:8px;padding:6px 8px;border-radius:12px;background:#FFF6D6;font-size:12px;font-weight:700;color:#3A5568;text-align:left}
 .card .lg.bad{background:#FFE4DE}
 .card .lg b{width:100%;font-size:13px;color:var(--ink)}
@@ -120,7 +121,7 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
     <img class="hero" src="assets/shark_1.webp" alt="">
     <h2>鯨鯊快游</h2>
     <p>帶鯨鯊穿越基隆外海的四種海底世界！</p>
-    <div class="ctl"><div><i>👈👉</i>左右滑<br>換水道</div><div><i>👆👇</i>上下滑<br>一次換一層</div><div><i>💫</i>穿過金圈<br>加速加分</div><div><i>🔥</i>吃滿能量<br>鯨鯊狂歡</div></div>
+    <div class="ctl"><div><i>👈👉</i><span>左右滑<br><span>換水道</span></span></div><div><i>👆👇</i><span>上下滑<br><span>一次換一層</span></span></div><div><i>💫</i><span>穿過金圈<br><span>加速加分</span></span></div><div><i>🔥</i><span>吃滿能量<br><span>鯨鯊狂歡</span></span></div></div>
     <div class="lg"><b>✅ 可以吃</b><img src="assets/food_plankton.webp" alt="浮游生物"><img src="assets/food_krill.webp" alt="磷蝦"><img src="assets/food_roe.webp" alt="魚卵"><img src="assets/food_small_fish.webp" alt="小魚"><img src="assets/item_speed_ring.webp" alt="金圈"><span>發金光的都能吃</span></div>
     <div class="lg bad"><b>⚠️ 撞到扣血</b><img src="assets/ob_net.webp" alt="漁網"><img src="assets/ob_reef_pillar.webp" alt="礁石"><img src="assets/ob_bottle.webp" alt="垃圾"><img src="assets/ob_harpoon.webp" alt="魚叉"><img src="assets/ob_jellyfish_group.webp" alt="水母"><span>紅圈、紅黃條紋要閃</span></div>
     <div class="book" id="bookStart"></div>
