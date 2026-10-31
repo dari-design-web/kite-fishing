@@ -392,6 +392,7 @@ function makeStack() {
   const base = { x: 80, w: 200 }, g = { blocks: [{ x: base.x, w: base.w, c: 0 }], mv: null, speed: 150, dir: 1, combo: 0, bestCombo: 0, perfects: 0, score: 0, done: false, cut: [], cam: 0, say: '', sayT: 0, ships: 0, shake: 0, t: 0, ship: null, flash: 0, focus: 0, saves: ST.saves, drop: null };
   /* D253：疊貨櫃 11～20 層實玩——第 15 層看到基隆嶼、第 20 層船出港那一下，如果剛好接著起風／趕船，事件句會馬上蓋掉地標句和出港句。改成：地標／出港句先講 1 秒，事件句排在後面接著講 */
   /* D254（GPT 1220 A②）：地標／出港句和事件句同時出現時分成兩個泡泡並排——地標／出港句照 D253 只講 1 秒，事件句在事件觸發時馬上出現、照原本秒數；新事件直接換掉事件泡泡，不排隊 */
+  const tipSay = (t, T, sh) => { if (g.lmT > 0) { g.say2 = sh || t; g.say2T = T; g.say2x = null; } else { g.say = t; g.sayT = T; } };      /* D260：地標／出港句講的那 1 秒內，連三／專注／金貨櫃這些完美提示改放旁邊的泡泡，不把「大郵輪開過來了！」蓋掉 */
   const evSay = (t, T) => { if (g.bigSay) { g.say2 = t; g.say2T = T; g.say2x = null; g.sayT = Math.min(g.sayT, 1); } else { g.say = t; g.sayT = T; g.say2T = 0; } };
   g.spawn = () => {
     const n = g.blocks.length, top = g.blocks[n - 1], fromL = n % 2 === 0;
@@ -426,8 +427,8 @@ function makeStack() {
       pop((m.gold ? '金貨櫃切齊！' : '完美 ×' + g.combo + (add > 0 ? '　變寬！' : '')) + ' +' + pts, W / 2, yTop - 98, C.gold, true);      /* D227：浮字移到下一個貨櫃和小鳶頭上，不再蓋住剛飛進來的小鳶 */
       burst(W / 2, yTop + BH, m.gold ? 28 : 12, C.gold); burst(top.x + top.w / 2, yTop + BH, 6, '#FFFFFF', 'star'); ring(top.x + top.w / 2, yTop + BH / 2, top.w / 2, '#FFF4C2');
       beep(523 + Math.min(g.combo, 8) * 60, 0.13, 'triangle', 0.07, 90); buzz(15);
-      if (g.combo === ST.focusAt) { g.focus = ST.focusN; g.say = '連 ' + ST.focusAt + ' 個完美！專注模式：接下來變慢'; g.sayT = 1.8; }
-      else if (m.gold) { g.say = '金貨櫃！貨櫃變寬了'; g.sayT = 1.5; } else if (g.combo === 3) { g.say = '連三個完美！'; g.sayT = 1.5; }
+      if (g.combo === ST.focusAt) { g.focus = ST.focusN; tipSay('連 ' + ST.focusAt + ' 個完美！專注模式：接下來變慢', 1.8, '專注模式：變慢囉'); }
+      else if (m.gold) tipSay('金貨櫃！貨櫃變寬了', 1.5); else if (g.combo === 3) tipSay('連三個完美！', 1.5);
     } else {
       g.combo = 0; let nx = l, nw = r - l;
       if (m.gold) { const w2 = Math.min(base.w, nw + ST.goldGrowOk); nx = clamp(nx - (w2 - nw) / 2, 0, W - w2); nw = w2; pop('金貨櫃！還是變寬一點 +' + (ST.layerPts + 10), W / 2, yTop - 98, C.gold); g.score += 10; }
@@ -437,11 +438,11 @@ function makeStack() {
     const n = g.blocks.length - 1; if (window.KiteBoard) KiteBoard.ev('stack_place');      /* D175：告示板委託 */
     if (n % ST.shipEvery === 0 && n > 0) { g.ships++; g.score += ST.shipBonus; g.ship = { x: 60, t: 0 }; for (const f of floats) if (Math.abs(f.y - 150) < 40) f.y = 190;      /* D252：第 10 層一定是金貨櫃，切齊浮字和出港浮字原本疊在一起，往下讓開 */ pop('第 ' + g.ships + ' 艘船裝滿出港！+' + ST.shipBonus, W / 2, 150, C.gold, true); g.say = '嗚——船出港囉！'; g.sayT = 1.8; jingle([392, 523, 659], 120); }
     else if ([15, 25, 35, 45].includes(n)) { g.say = { 15: '看得到基隆嶼了！', 25: '看到港口燈塔了！', 35: '大郵輪開過來了！', 45: '快碰到星星了！' }[n]; g.sayT = 2; }      /* D185：25、35 層改說看到的地標 */
-    g.bigSay = n % ST.shipEvery === 0 || [15, 25, 35, 45].includes(n); g.spawn(); g.bigSay = false;
+    g.bigSay = n % ST.shipEvery === 0 || [15, 25, 35, 45].includes(n); if (g.bigSay) g.lmT = 1; g.spawn(); g.bigSay = false;
   };
   g.down = () => g.tap(); g.move = () => {}; g.up = () => {};
   g.update = (dt) => {
-    g.t += dt; if (g.sayT > 0) g.sayT -= dt; if (g.say2T > 0) g.say2T -= dt; if (g.shake > 0) g.shake -= dt; if (g.flash > 0) g.flash -= dt;
+    g.t += dt; if (g.lmT > 0) g.lmT -= dt; if (g.sayT > 0) g.sayT -= dt; if (g.say2T > 0) g.say2T -= dt; if (g.shake > 0) g.shake -= dt; if (g.flash > 0) g.flash -= dt;
     for (const b of g.blocks) if (b.sq) b.sq = Math.max(0, b.sq - dt * 1.5);
     if (g.mv) {
       const k = g.mv.wind ? 1 + 0.55 * Math.sin(g.t * 3.2 + g.mv.ph) : 1;
