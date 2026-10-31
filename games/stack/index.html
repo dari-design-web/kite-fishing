@@ -118,8 +118,8 @@ function bubble(s, x, y) {      /* D254：泡泡可以兩行（\n 換行），�
   rrect(x - w / 2, y - hh, w, hh * 2, 14, C.paper, C.ink, 2); poly([x - 6, y + hh - 1, x + 6, y + hh - 1, x, y + hh + 7], C.paper); ctx.strokeStyle = C.ink; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - 6, y + hh); ctx.lineTo(x, y + hh + 7); ctx.lineTo(x + 6, y + hh); ctx.stroke();
   ctx.fillStyle = C.ink; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; L.forEach((t, i) => ctx.fillText(t, x, y + (i - (L.length - 1) / 2) * 16)); }
 const bubW = (s) => { ctx.font = FONT(13); return Math.max.apply(null, String(s).split('\n').map((t) => ctx.measureText(t).width)) + 18; };
-let floats = []; function pop(s, x, y, col, big) { if (big) { let cur = y; floats.filter((f) => f.big && f.y < y + 26 && Math.abs(f.x - x) < 140).sort((a, b) => b.y - a.y).forEach((f) => { if (f.y > cur - 30) { if (cur - 30 < 128) f.life = Math.min(f.life, 0.2); else f.y = cur - 30; cur -= 30; } else cur = f.y; }); }      /* D255：疊貨櫃 21～30 層實玩——每疊一層大浮字都出在同一個高度，上一層還沒淡完的「完美 ×N」會疊在新浮字後面變成一團 → 舊的大浮字依序往上讓 30 點（連鎖讓開，出港浮字也不被蓋；再往上會碰到 y98 對話泡泡的就原地快速淡掉） */ floats.push({ s, x, y, col: col || C.paper, life: 1, big: !!big }); }
-function drawFloats(dt) { for (const f of floats) { f.life -= dt * 0.9; f.y -= 30 * dt; ctx.globalAlpha = clamp(f.life * 1.6, 0, 1); const k = 1 + Math.max(0, f.life - 0.85) * 2; text(f.s, f.x, f.y, (f.big ? 22 : 15) * k, f.col); } ctx.globalAlpha = 1; floats = floats.filter((f) => f.life > 0); }
+let floats = []; const banHit = (big, s, y) => !!(big && G && /^連鎖×/.test(s)) && y + 16 > 200 && y - 50 < 292; function pop(s, x, y, col, big) { if (big) { let cur = y; floats.filter((f) => f.big && f.y < y + 26 && Math.abs(f.x - x) < 140).sort((a, b) => b.y - a.y).forEach((f) => { if (f.y > cur - 30) { if (cur - 30 < 128) f.life = Math.min(f.life, 0.2); else f.y = cur - 30; cur -= 30; } else cur = f.y; }); }      /* D255：疊貨櫃 21～30 層實玩——每疊一層大浮字都出在同一個高度，上一層還沒淡完的「完美 ×N」會疊在新浮字後面變成一團 → 舊的大浮字依序往上讓 30 點（連鎖讓開，出港浮字也不被蓋；再往上會碰到 y98 對話泡泡的就原地快速淡掉） */ const ban = banHit(big, s, y) && G.bannerT > 0; if (ban) y = Math.max(y, 340);      /* D263：GPT 2130 A②——關卡橫幅顯示期間，連鎖大浮字從橫幅條下方起跳，整段上飄都留在條下（f.ban：字框上緣不超過 y292），橫幅結束後新的連鎖浮字照原位 */ floats.push({ s, x, y, col: col || C.paper, life: 1, big: !!big, ban }); }
+function drawFloats(dt) { for (const f of floats) { f.life -= dt * 0.9; f.y -= 30 * dt; if (f.ban) f.y = Math.max(f.y, 292 + 16); ctx.globalAlpha = clamp(f.life * 1.6, 0, 1); const k = 1 + Math.max(0, f.life - 0.85) * 2; text(f.s, f.x, f.y, (f.big ? 22 : 15) * k, f.col); } ctx.globalAlpha = 1; floats = floats.filter((f) => f.life > 0); }
 let parts = []; function burst(x, y, n, col, kind) { if (RM) n = Math.ceil(n / 3); for (let i = 0; i < n; i++) { const a = rnd(0, 6.28), v = rnd(60, 220); parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - (kind === 'drop' ? 80 : 0), life: 1, col: col || C.gold, r: rnd(2, 4.5), kind }); } }
 function drawParts(dt) { for (const p of parts) { p.life -= dt * 1.5; p.vy += 300 * dt; p.x += p.vx * dt; p.y += p.vy * dt; ctx.globalAlpha = clamp(p.life, 0, 1); if (p.kind === 'star') { ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.life * 4); poly([0, -p.r * 1.8, p.r * 0.5, -p.r * 0.5, p.r * 1.8, 0, p.r * 0.5, p.r * 0.5, 0, p.r * 1.8, -p.r * 0.5, p.r * 0.5, -p.r * 1.8, 0, -p.r * 0.5, -p.r * 0.5], p.col); ctx.restore(); } else ell(p.x, p.y, p.r, p.r, p.col); } ctx.globalAlpha = 1; parts = parts.filter((p) => p.life > 0); }
 let rings = []; function ring(x, y, r, col) { rings.push({ x, y, r, col: col || '#fff', life: 1 }); }
@@ -276,7 +276,7 @@ function makeMerge() {
       g.discover(lv);
     }
     if (mul === 3 && !(g.newT > 0)) { g.say = '連鎖三次！'; g.sayT = 1.4; }      /* D262：新海鮮那句（鬼頭刀好帥！／鯨鯊！！…）講的 1 秒內不被「連鎖三次！」蓋掉，右上角連鎖 ×3 照樣顯示 */
-    g.merges++; if (g.merges >= g.need) { g.lv++; g.merges = 0; g.need = MF.needBase + MF.needStep * g.lv; g.score += 10 * g.lv; g.banner = '第 ' + g.lv + ' 關・掉得更快了'; g.bannerT = 1.4; jingle([660, 880], 110); }
+    g.merges++; if (g.merges >= g.need) { g.lv++; g.merges = 0; g.need = MF.needBase + MF.needStep * g.lv; g.score += 10 * g.lv; g.banner = '第 ' + g.lv + ' 關・掉得更快了'; g.bannerT = 1.4; for (const f of floats) if (!f.ban && banHit(f.big, f.s, f.y)) { if (f.life > 0.8) { f.y = Math.max(f.y, 340); f.ban = true; } else f.life = Math.min(f.life, 0.2); }      /* D263：同一下合成就升關時，剛跳出的連鎖浮字也移到橫幅條下；快淡完的就原地淡掉 */ jingle([660, 880], 110); }
   };
   g.down = (x, y) => { g.tx = x; g.dropAt = null; g.pendingDrop = null; g.tap = { x, y, t: g.t }; };      // D124（Dari 10/19 14:57）：按住滑動＝移動，手放開就落下；點一下＝飛到那裡自動放手
   g.move = (x, y) => { g.tx = x; };
@@ -626,7 +626,7 @@ function toot() { const now = performance.now(); if (now - hornT < 1100) return;
   if (snd && navigator.vibrate) try { navigator.vibrate([90, 140, 110]); } catch (e) {} }
 let tab = 'stack';      // D119：放進遊戲大廳的單一遊戲版（不計分・隨時玩）
 setMode(HOW[tab] ? tab : 'merge'); requestAnimationFrame(frame); dailyTag();
-window.__mini = { get G() { return G; }, get state() { return state; }, setMode, IMG, SEAF, rng: (f) => { gR = f || Math.random; } };      /* D254：測試掛勾，固定亂數 */
+window.__mini = { get G() { return G; }, get state() { return state; }, setMode, IMG, SEAF, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; } };      /* D263：測試掛勾加 pop／floats */      /* D254：測試掛勾，固定亂數 */
 })();
 </script>
 <script>(function () { var b = document.getElementById('backBtn'); b.addEventListener('click', function (e) { if (window.__mini && window.__mini.state === 'play' && !confirm('這局還在進行，確定要離開嗎？（分數不會記錄）')) e.preventDefault(); }); /* QA：遊戲中按返回先確認 */ /* D161：一律回小鳶樂園（遊戲大廳），不再回舊版測試首頁 */ })();</script>
