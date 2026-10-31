@@ -379,20 +379,22 @@ function buildStackBG() {      // 東岸貨櫃碼頭（傍晚）：海、碼頭�
 }
 function makeStack() {
   const base = { x: 80, w: 200 }, g = { blocks: [{ x: base.x, w: base.w, c: 0 }], mv: null, speed: 150, dir: 1, combo: 0, bestCombo: 0, perfects: 0, score: 0, done: false, cut: [], cam: 0, say: '', sayT: 0, ships: 0, shake: 0, t: 0, ship: null, flash: 0, focus: 0, saves: ST.saves, drop: null };
+  /* D253：地標／出港句不被同一下的事件句蓋掉 */
+  const evSay = (t, T) => { if (g.bigSay) { g.sayQ = [t, T]; g.sayT = Math.min(g.sayT, 1); } else { g.say = t; g.sayT = T; g.sayQ = null; } };
   g.spawn = () => {
     const n = g.blocks.length, top = g.blocks[n - 1], fromL = n % 2 === 0;
     let ev = null;
     if (g.rush > 0) { g.rush--; ev = 'rush'; }
     else if (n >= ST.evFrom && g.focus <= 0 && gR() < ST.evChance) {
       ev = gpick([['wind', 12], ['rush', 16], ['fog', 22], ['rev', 28]].filter((e) => n >= e[1]).map((e) => e[0]));
-      if (ev === 'rush') { g.rush = ST.rushN - 1; g.say = '趕船！接下來 ' + ST.rushN + ' 個變快，完美多 ' + ST.rushBonus + ' 分'; g.sayT = 1.8; }
+      if (ev === 'rush') { g.rush = ST.rushN - 1; evSay('趕船！接下來 ' + ST.rushN + ' 個變快，完美多 ' + ST.rushBonus + ' 分', 1.8); }
     }
     g.mv = { x: fromL ? -top.w * 0.5 : W - top.w * 0.5,      /* D173：貨櫃一出場就有一半在畫面裡 */ w: top.w, c: n % BOXC.length, gold: n % ST.goldEvery === 0, wind: ev === 'wind', fog: ev === 'fog', rev: ev === 'rev', rush: ev === 'rush', flipAt: grnd(W * 0.3, W * 0.7), ph: rnd(0, 6.28) };
     g.dir = fromL ? 1 : -1; g.speed = Math.min(ST.spdMax, ST.spd0 + n * ST.spdUp) * (g.focus > 0 ? ST.focusK : 1) * (g.mv.rush ? ST.rushK : 1);
     if (g.focus > 0) g.focus--;
-    if (g.mv.wind) { g.say = '起風了！速度忽快忽慢'; g.sayT = 1.2; }
-    else if (g.mv.fog) { g.say = '起霧了！中間看不清楚'; g.sayT = 1.3; }
-    else if (g.mv.rev) { g.say = '小心，小鳶會突然折返！'; g.sayT = 1.3; }
+    if (g.mv.wind) evSay('起風了！速度忽快忽慢', 1.2);
+    else if (g.mv.fog) evSay('起霧了！中間看不清楚', 1.3);
+    else if (g.mv.rev) evSay('小心，小鳶會突然折返！', 1.3);
     else if (top.w < 40 && g.sayT <= 0) { g.say = '只剩一點點了，穩住！'; g.sayT = 1.4; }
   };
   g.spawn();
@@ -423,11 +425,11 @@ function makeStack() {
     const n = g.blocks.length - 1; if (window.KiteBoard) KiteBoard.ev('stack_place');      /* D175：告示板委託 */
     if (n % ST.shipEvery === 0 && n > 0) { g.ships++; g.score += ST.shipBonus; g.ship = { x: 60, t: 0 }; for (const f of floats) if (Math.abs(f.y - 150) < 40) f.y = 190;      /* D252：第 10 層一定是金貨櫃，切齊浮字和出港浮字原本疊在一起，往下讓開 */ pop('第 ' + g.ships + ' 艘船裝滿出港！+' + ST.shipBonus, W / 2, 150, C.gold, true); g.say = '嗚——船出港囉！'; g.sayT = 1.8; jingle([392, 523, 659], 120); }
     else if ([15, 25, 35, 45].includes(n)) { g.say = { 15: '看得到基隆嶼了！', 25: '雲在腳下耶～', 35: '好高好高！', 45: '快碰到星星了！' }[n]; g.sayT = 2; }
-    g.spawn();
+    g.bigSay = n % ST.shipEvery === 0 || [15, 25, 35, 45].includes(n); g.spawn(); g.bigSay = false;      /* D253：地標／出港句先講，事件句排在後面 */
   };
   g.down = () => g.tap(); g.move = () => {}; g.up = () => {};
   g.update = (dt) => {
-    g.t += dt; if (g.sayT > 0) g.sayT -= dt; if (g.shake > 0) g.shake -= dt; if (g.flash > 0) g.flash -= dt;
+    g.t += dt; if (g.sayT > 0) g.sayT -= dt; if (g.sayT <= 0 && g.sayQ) { g.say = g.sayQ[0]; g.sayT = g.sayQ[1]; g.sayQ = null; } if (g.shake > 0) g.shake -= dt; if (g.flash > 0) g.flash -= dt;
     for (const b of g.blocks) if (b.sq) b.sq = Math.max(0, b.sq - dt * 1.5);
     if (g.mv) {
       const k = g.mv.wind ? 1 + 0.55 * Math.sin(g.t * 3.2 + g.mv.ph) : 1;
