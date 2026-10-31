@@ -428,7 +428,7 @@ function makeStack() {
       const cx = m.x < l ? m.x : r, cw = m.x < l ? l - m.x : m.x + m.w - r; g.cut.push({ x: cx, w: cw, y: Y0 - g.blocks.length * BH + BH, vy: 0, c: m.c, gold: m.gold, vr: m.x < l ? -2 : 2, rot: 0 });
     }
     const n = g.blocks.length - 1; if (window.KiteBoard) KiteBoard.ev('stack_place');      /* D175：告示板委託 */
-    if (n % ST.shipEvery === 0 && n > 0) { g.ships++; g.score += ST.shipBonus; g.ship = { x: 60, t: 0 }; pop('第 ' + g.ships + ' 艘船裝滿出港！+' + ST.shipBonus, W / 2, 150, C.gold, true); g.say = '嗚——船出港囉！'; g.sayT = 1.8; jingle([392, 523, 659], 120); }
+    if (n % ST.shipEvery === 0 && n > 0) { g.ships++; g.score += ST.shipBonus; g.ship = { x: 60, t: 0 }; for (const f of floats) if (Math.abs(f.y - 150) < 40) f.y = 190;      /* D252：第 10 層一定是金貨櫃，切齊浮字和出港浮字原本疊在一起，往下讓開 */ pop('第 ' + g.ships + ' 艘船裝滿出港！+' + ST.shipBonus, W / 2, 150, C.gold, true); g.say = '嗚——船出港囉！'; g.sayT = 1.8; jingle([392, 523, 659], 120); }
     else if ([15, 25, 35, 45].includes(n)) { g.say = { 15: '看得到基隆嶼了！', 25: '看到港口燈塔了！', 35: '大郵輪開過來了！', 45: '快碰到星星了！' }[n]; g.sayT = 2; }      /* D185：25、35 層改說看到的地標 */
     g.spawn();
   };
