@@ -270,7 +270,8 @@ function makeMerge() {
     if (lv > 9) { g.score += 200 * mul; pop('兩隻鯨鯊游回大海 +' + 200 * mul, W / 2, 230, C.gold, true); g.say = '哇——鯨鯊回家了！'; g.sayT = 2; jingle([523, 659, 784, 1047, 1319], 90); }
     else {
       if (!g.wantDone) { g.wantDone = true; g.wantT = 0.6; g.wantLv = g.q[0]; }
-      const pts = SEAF[lv][3] * mul; g.score += pts; pop((mul > 1 ? '連鎖×' + mul + ' ' : '') + '+' + pts, x, y - 20, mul > 1 || lv >= 5 ? C.gold : C.paper, mul > 1 || lv >= 5);
+      const pts = SEAF[lv][3] * mul; g.score += pts; pop((mul > 1 ? '連鎖×' + mul + ' ' : '') + '+' + pts, x, y - 20 - (mul > 1 ? 24 : 0),      /* D251：GPT 0920 B① 連鎖浮字起點上移 24px，不跟小浮字疊 */
+        mul > 1 || lv >= 5 ? C.gold : C.paper, mul > 1 || lv >= 5);
       g.balls.push({ lv, x, y, vx: 0, vy: -80, r: SEAF[lv][1], age: 0.5, rot: 0, sq: -0.2 });
       if (lv > g.top) { g.top = lv; if (lv >= 4) { g.say = ['', '', '', '', '章魚出現了！', '海龜來了！', '鬼頭刀好帥！', '是海豚耶！', '翻車魚！快到了！', '鯨鯊！！我們合出鯨鯊了！'][lv]; g.sayT = 2; } }
       g.discover(lv);
