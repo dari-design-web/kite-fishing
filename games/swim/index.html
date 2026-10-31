@@ -59,6 +59,8 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
 .zone{position:absolute;left:50%;top:22%;transform:translate(-50%,-50%);font-weight:900;font-size:30px;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.35),0 0 18px rgba(0,0,0,.25);white-space:nowrap;pointer-events:none;animation:zone 2.4s ease-out forwards}
 .zone small{display:block;font-size:14px;text-align:center;opacity:.9}
 @media (max-width:374px){.zone{font-size:22px;top:36%}.zone small{font-size:12px}}      /* D257：窄版換區橫幅不壓暫停鈕與狂歡條 */
+#tip:not([hidden]) ~ .zone{top:222px}      /* D258：換區橫幅和提示（任務完成等）同時出現時，橫幅排到提示下面不重疊 */
+@media (max-width:374px){.tip{font-size:15px!important;padding:6px 12px!important}}      /* D258：窄版最長任務完成句留邊 */
 @keyframes zone{0%{opacity:0;transform:translate(-50%,-30%) scale(.8)}15%{opacity:1;transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0}}
 .pop{position:absolute;font-weight:900;font-size:18px;color:#FFF3A8;text-shadow:0 2px 0 rgba(0,0,0,.4);pointer-events:none;transform:translate(-50%,-50%);animation:pop .8s ease-out forwards;white-space:nowrap}
 .pop.still{animation:none}.pop.amu{color:#FFD23A}.pop.bad{color:#FF8A73}.pop.pw{color:#9CF0FF;font-size:20px}.pop.gold{color:#FFD23A;font-size:20px}
