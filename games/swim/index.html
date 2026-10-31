@@ -85,6 +85,10 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
 .card .go{display:block;width:100%;min-height:52px;margin-top:12px;border:3px solid var(--ink);border-radius:999px;background:#4FBF88;color:var(--ink);font:inherit;font-weight:900;font-size:20px;box-shadow:0 4px 0 var(--ink)}
 .card{max-height:calc(100% - 20px);overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y}.card .go{position:sticky;bottom:0;z-index:2}      /* QA：小手機開始／再玩一次按鈕永遠看得到 */
 .post img{max-height:110px;object-fit:cover;border-radius:10px}
+.card .go{box-shadow:0 4px 0 var(--ink),0 6px 0 12px var(--paper)}.card .row.nz span{white-space:nowrap}.card .row.nz{gap:6px}
+@media (max-width:374px){.card .row.nz{font-size:13px;padding:6px 10px}}
+@media (max-height:700px){#endCard .hero{width:84px;height:84px;margin:-6px auto -4px}}
+/* D259：GPT 1735 B② 快游結算卡——再玩鈕四周補紙色，捲動時後面的列不從按鈕兩側／下方露出來；矮螢幕結算鯨鯊縮小，第一眼看得到新明信片名字；下一站整列不拆字 */
 .card .go:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
 .card .ctl{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0 0;font-size:13px;font-weight:700;text-align:left}
 .card .ctl div{background:#F3EAD8;border-radius:10px;padding:6px 8px;display:flex;gap:6px;align-items:center}
@@ -399,7 +403,7 @@ function end() {
 const BOOK = [{ id: 'chaojing', n: '潮境', at: 150, t: '巨石相框旁的珊瑚礁' }, { id: 'badouzi', n: '八斗子', at: 450, t: '望幽谷草坡下的海草森林' }, { id: 'zhengbin', n: '正濱', at: 900, t: '彩色屋倒影下的港區' }, { id: 'heping', n: '和平島', at: 1150, t: '蕈狀岩旁的礁岸' }, { id: 'keelung_islet', n: '基隆嶼', at: 1350, t: '小島下的發光深海' }];
 let bookHave = (() => { try { return JSON.parse(localStorage.getItem('kiteSwimBook1') || '[]'); } catch (e) { return []; } })(), bookNew = [];
 function bookCheck() { BOOK.forEach((c) => { if (dist >= c.at && !bookHave.includes(c.id)) { bookHave.push(c.id); bookNew.push(c.id); try { localStorage.setItem('kiteSwimBook1', JSON.stringify(bookHave)); } catch (e) {} pop('📮 點亮旅行冊：' + c.n, 0, 4.2, -8, 'gold'); beep([660, 880, 1100], 80, 'triangle', 0.07); } }); }
-function bookHtml() { const nx = BOOK.find((c) => !bookHave.includes(c.id)); return '<b>📮 五地旅行冊<small>' + bookHave.length + '／5</small></b><div class="bk">' + BOOK.map((c) => '<div class="' + (bookHave.includes(c.id) ? '' : 'off') + (bookNew.includes(c.id) ? ' nw' : '') + '"><img src="assets/place_' + c.id + '.webp" alt="">' + c.n + '</div>').join('') + '</div>' + (nx ? '<div class="nx">下一張：' + nx.n + '（一局游到 ' + nx.at.toLocaleString() + ' 公尺）</div>' : '<div class="nx">🎉 五地都點亮了！</div>'); }
+function bookHtml() { const nx = BOOK.find((c) => !bookHave.includes(c.id)); return '<b>📮 五地旅行冊<small>' + bookHave.length + '／5</small></b><div class="bk">' + BOOK.map((c) => '<div class="' + (bookHave.includes(c.id) ? '' : 'off') + (bookNew.includes(c.id) ? ' nw' : '') + '"><img src="assets/place_' + c.id + '.webp" alt="">' + c.n + '</div>').join('') + '</div>' + (nx ? '<div class="nx">下一張：' + nx.n + '<span style="white-space:nowrap">（一局游到 ' + nx.at.toLocaleString() + ' 公尺）</span></div>' : '<div class="nx">🎉 五地都點亮了！</div>'); }
 function bookLine() { const nx = BOOK.find((c) => !bookHave.includes(c.id)); return '<div class="row"><span>📮 旅行冊 ' + bookHave.length + '／5</span><span>' + (nx ? '下一張 ' + nx.n + '（' + nx.at.toLocaleString() + ' 公尺）' : '全部點亮') + '</span></div>'; }
 /* D220（GPT 1255 A，同步捕魚 D216／合成 D218／疊貨櫃 D219）：淡黃點數區只留一句主句，緊接下方「點數明細 ▾」預設收合，原整串計算放裡面；本局沒算分照原說明、不出明細 */
 function ptMain(rp) { return rp && rp.tier && rp.counted ? (rp.tap && rp.claim ? '回樂園領 ' + rp.claim + ' 點！' : rp.pts >= rp.cap ? '今天拿滿' + rp.pts + '點囉！' : !rp.tap && rp.gain ? '這局拿到' + rp.gain + '點！' : rp.pts ? '今天累積' + rp.pts + '點' : rp.next ? '再' + rp.next.need.toLocaleString() + '分湊1點！' : '') : ''; }
@@ -411,7 +415,7 @@ $('bookStart').innerHTML = bookHtml();
 /* G98-R01：結算告訴玩家最後撞到什麼、下次怎麼閃 */
 const WHY = { netTop: ['ob_net', '浮網：看到「⬇ 潛」往下滑'], netLow: ['ob_net', '底網：看到「⬆ 游高」往上滑'], netWall: ['ob_net', '圍網：往綠色圈圈的缺口換水道'], kelpwall: ['seagrass_tall', '海草牆：往綠色圈圈的缺口換水道'], arch: ['ob_reef_arch', '礁石拱門：從中間的洞（綠色圈圈）穿過，兩邊是柱子'], pillar: ['ob_reef_pillar', '礁石柱：提早左右滑換水道'], trash: ['ob_bottle', '巨大垃圾：左右換水道，或上下閃'], tire: ['ob_tire', '大輪胎：換水道或往上游'], drum: ['ob_oil_barrel', '油桶：換水道或往上游'], container: ['ob_cargo', '貨櫃：左右換水道，或往上游過去'], harpoon: ['ob_harpoon', '魚叉：紅光一閃就往上或往下'], jelly: ['ob_jellyfish_group', '水母群：換水道或上下閃'] };
 function whyHtml() { const w = WHY[lastHit]; return w ? '<div class="why"><img src="assets/' + w[0] + '.webp" alt="">最後撞到 ' + w[1] + '</div>' : ''; }
-function nextZone() { const nz = W.THEMES[(zone + 1) % W.THEMES.length], left = Math.ceil((zone + 1) * CFG.zoneLen - dist); return '<div class="row"><span>下一站 ' + nz.name + '</span><span>還差 ' + left + ' 公尺</span></div>'; }
+function nextZone() { const nz = W.THEMES[(zone + 1) % W.THEMES.length], left = Math.ceil((zone + 1) * CFG.zoneLen - dist); return '<div class="row nz"><span>下一站 ' + nz.name + '</span><span>還差 ' + left + ' 公尺</span></div>'; }
 /* G98-R08：暫停 */
 function pause() { if (state !== 'play') return; state = 'pause'; music(); $('pauseMis').textContent = '🎯 ' + mis.txt + '（' + (misDone ? '完成' : Math.floor(misV) + '/' + mis.n) + '）'; $('pauseCard').hidden = false; }
 function resume() { if (state !== 'pause') return; $('pauseCard').hidden = true; last = performance.now(); state = 'play'; inv = Math.max(inv, 1.2); music(); }      /* QA：繼續後 1.2 秒無敵，不會一回來就撞 */
