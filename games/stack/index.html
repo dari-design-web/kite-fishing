@@ -415,7 +415,7 @@ function makeStack() {
     const l = Math.max(m.x, top.x), r = Math.min(m.x + m.w, top.x + top.w);
     if (r - l < 8) {      // QA：只疊到不到 8 點寬也算沒放到（原本會留下幾乎看不見的細條）
       g.cut.push({ x: m.x, w: m.w, y: Y0 - g.blocks.length * BH, vy: 0, c: m.c, gold: m.gold }); g.shake = 0.5; g.combo = 0; beep(140, 0.25, 'square', 0.05, -60); buzz(60);
-      if (g.saves > 0) { g.saves--; g.say = '沒關係！小鳶再抓一個來（只有一次喔）'; g.sayT = 2; g.spawn(); return; }
+      if (g.saves > 0) { g.saves--; g.say = '沒關係！小鳶再抓一個來（只有一次喔）'; g.sayT = 2; g.say2T = 0; g.spawn(); return; }      /* D254：用掉補救時收起上一個事件泡泡，不跟長句擠在一起 */
       g.mv = null; g.done = true; g.say = '咦——沒放到！'; g.sayT = 2; g.say2T = 0; return;
     }
     const yTop = Y0 - g.blocks.length * BH + g.cam, tol = g.blocks.length <= ST.easyN ? ST.perfectEasy : ST.perfect;
@@ -504,7 +504,9 @@ function makeStack() {
     if (g.flash > 0) { ctx.fillStyle = 'rgba(255,240,180,' + g.flash + ')'; ctx.fillRect(0, 0, W, H); }
     if (g.sayT > 0 && g.say2T > 0) {      /* D254：兩個泡泡並排在原本那一行（y98），不往下疊，避開分數列、出港／金貨櫃浮字和落點；太寬時事件句在「，」後換行 */
       let e2 = g.say2; if (bubW(g.say) + 8 + bubW(e2) > W - 12 && e2.indexOf('，') > 0) e2 = e2.replace('，', '，\n');
-      const wa = bubW(g.say), wb = bubW(e2), x0 = W / 2 - (wa + 8 + wb) / 2; bubble(g.say, x0 + wa / 2, 98); g.say2x = x0 + wa + 8 + wb / 2; g.say2w = e2; bubble(e2, g.say2x, 98);
+      const wa = bubW(g.say), wb = bubW(e2), x0 = W / 2 - (wa + 8 + wb) / 2;
+      if (wa + 8 + wb > W - 12) bubble(g.say, W / 2, 98);      /* 換行後還是放不下（例如專注模式長句），只顯示後講的那句，不疊字 */
+      else { bubble(g.say, x0 + wa / 2, 98); g.say2x = x0 + wa + 8 + wb / 2; g.say2w = e2; bubble(e2, g.say2x, 98); }
     } else if (g.sayT > 0) bubble(g.say, W / 2, 98);
     else if (g.say2T > 0) bubble(g.say2x ? g.say2w : g.say2, g.say2x || W / 2, 98);      /* 地標句收起後，事件泡泡留在原位，不跳 */
     const n = g.blocks.length - 1, left = ST.shipEvery - (n % ST.shipEvery);
