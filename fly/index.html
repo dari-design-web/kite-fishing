@@ -26,7 +26,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .kg{background:var(--paper);border:2px solid var(--ink);border-radius:999px;padding:2px 12px;font-family:var(--display);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .kg.pop{animation:pop .25s ease-out}
 @keyframes pop{50%{transform:scale(1.15)}}
-.time{flex:1;min-width:0;}#stageText{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.time{display:flex;flex-direction:column;gap:3px;background:rgba(255,248,236,.82);border-radius:10px;padding:3px 8px 5px}
+.time{flex:1;min-width:0;}#stageText{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#stageText.two{white-space:pre;line-height:14px}.time{display:flex;flex-direction:column;gap:3px;background:rgba(255,248,236,.82);border-radius:10px;padding:3px 8px 5px}
 .time span{font-size:12px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
 .bar{height:8px;border-radius:999px;background:rgba(23,50,74,.18);overflow:hidden}
 .bar i{display:block;height:100%;width:100%;background:var(--ink);border-radius:999px;transform-origin:left center}
@@ -34,7 +34,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .bar i.hp{background:#D9534F;transition:transform .15s}
 .icon{pointer-events:auto;width:36px;height:36px;border-radius:50%;border:2px solid var(--ink);background:var(--paper);font-size:13px;font-weight:700;padding:0;flex:none}
 
-.banner{position:absolute;left:12px;right:12px;top:52px;text-align:center;background:var(--gold);border:2px solid var(--ink);border-radius:12px;padding:3px 10px;font-family:var(--display);font-weight:700;font-size:16px;pointer-events:none}
+.banner{position:absolute;left:12px;right:12px;top:52px;text-align:center;background:var(--gold);border:2px solid var(--ink);border-radius:12px;padding:3px 10px;font-family:var(--display);font-weight:700;font-size:16px;pointer-events:none;text-wrap:balance}@media (max-width:374px){.banner{font-size:14px}}
 .hint{position:absolute;left:0;right:0;bottom:22px;text-align:center;color:#fff;font-weight:700;font-size:16px;text-shadow:0 1px 0 rgba(16,41,61,.6);pointer-events:none}
 
 .panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(16,41,61,.55)}
@@ -497,7 +497,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.78',
+  version: '0.79',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -1254,7 +1254,9 @@ function update(dt) {
   const total = CONFIG.boss.at + 14, sb = $('stageBar');      // v0.20：魔王出場後，上方長條改成魔王血量（D51：第 4 關血量顯示和上方長條疊在一起）
   if (boss && !won) { sb.classList.add('hp'); sb.style.transform = 'scaleX(' + Math.max(0, Math.min(1, barRatio(boss))) + ')'; } else { sb.classList.remove('hp'); sb.style.transform = 'scaleX(' + Math.min(1, daily ? daily.rt / (DAILY.len * 3) : t / total) + ')'; }
   /* D244：GPT 1830 B 窄版（寬度不到 375）魔王標籤只留名字，血量數字不顯示（原本被截成「阿根納 22…」），血條照舊 */
-  $('stageText').textContent = boss && boss.phased ? bossGoalText(boss) + '　' + Math.max(0, Math.ceil(BTIME() - (t - boss.born))) + ' 秒' : boss ? (innerWidth < 375 ? (T.boss.short || T.boss.name) : (T.boss.short || T.boss.name) + ' ' + Math.max(0, Math.ceil(boss.hp)) + ' / ' + boss.maxHp) : '分數 ' + scoreNow() + (stats.combo >= 3 ? '　連清 ' + stats.combo : '');
+  const goal = boss && boss.phased ? bossGoalText(boss) : null, secs = boss ? Math.max(0, Math.ceil(BTIME() - (t - boss.born))) + ' 秒' : '';
+  $('stageText').classList.toggle('two', Array.isArray(goal));
+  $('stageText').textContent = Array.isArray(goal) ? goal[0] + '\n' + (goal[1] ? (innerWidth < 375 ? goal[1].replace('礦石 ', '') + ' ' : goal[1] + '　') : '') + secs : goal ? goal + '　' + secs : boss ? (innerWidth < 375 ? (T.boss.short || T.boss.name) : (T.boss.short || T.boss.name) + ' ' + Math.max(0, Math.ceil(boss.hp)) + ' / ' + boss.maxHp) : '分數 ' + scoreNow() + (stats.combo >= 3 ? '　連清 ' + stats.combo : '');
   const ub = $('ultBtn'), full = gauge >= CONFIG.ult.need; ub.disabled = !full || !!ult; ub.style.setProperty('--fill', Math.round(gauge / CONFIG.ult.need * 100) + '%'); ub.classList.toggle('ready', full && !ult); const tag = $('ultTag'), word = full && !ult ? (NM() ? '祈福！' : '出動！') : ULTN(); if (tag.textContent !== word) tag.textContent = word;
   if (full && !toldUlt && !ult) { toldUlt = true; banner(ULTN() + '準備好了！按右下角'); jingle([659, 880], 120); }
   $('hint').hidden = firstMove || t > 8;
@@ -2582,7 +2584,7 @@ function drawCine() {      // 登場與換階段的字卡
 }
 function bossGoalText(f) {
   if (!f.phased) return null; const n = ['①', '②', '③'][f.phase - 1] + ' ';      /* D173：上方欄位太窄，「第 1 階段」縮成①，秒數才看得到 */
-  if (RM()) return n + (f.phase === 1 ? '打手臂礦石 ' + ((f.pools.armL <= 0) + (f.pools.armR <= 0)) + '/2' : f.phase === 2 ? '跨進鐵軌打頭' : '打胸口的煤核');
+  if (RM()) return [n + (f.phase === 1 ? '打手臂' : f.phase === 2 ? '進軌打頭' : '打煤核'), f.phase === 1 ? '礦石 ' + ((f.pools.armL <= 0) + (f.pools.armR <= 0)) + '/2' : ''];      /* D249：GPT 2350 A① 巨岩怪標籤兩行，首行階段目標、次行真實數字＋秒數，不再被截斷；窄版次行省掉「礦石」兩字 */
   return n + (f.phase === 1 ? '剝掉外殼 ' + (3 - f.layers) + '/3' : f.phase === 2 ? '打核心' : '打掉小團 ' + (3 - foes.filter((o) => o.type === 'minib').length) + '/3');
 }
 
