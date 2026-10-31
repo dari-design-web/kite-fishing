@@ -31,6 +31,7 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
 .hud .mid{display:flex;justify-content:center;gap:6px;margin-top:6px}
 .hud .mid span{font-size:12px;background:rgba(10,34,54,.55);border-radius:999px;padding:2px 10px}
 .hud .mid .cb{color:#FFE45C}
+.hud .mid{flex-wrap:wrap;row-gap:3px}.hud .mid span{white-space:nowrap}@media (max-width:374px){.hud .mid{gap:4px}.hud .mid span{font-size:11px;padding:2px 7px}}      /* D256：窄版公尺／速度／連吃／任務不再折成兩行 */
 .fever{position:absolute;right:26px;top:126px;overflow:visible;width:14px;height:120px;border-radius:8px;background:rgba(10,34,54,.55);border:2px solid rgba(255,255,255,.6);overflow:hidden;pointer-events:none}
 .fever i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#FFE45C,#FF8A3C)}
 .fever.on{box-shadow:0 0 14px #FFE45C;border-color:#FFE45C}
