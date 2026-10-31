@@ -118,7 +118,7 @@ function bubble(s, x, y) {      /* D254：泡泡可以兩行（\n 換行），�
   rrect(x - w / 2, y - hh, w, hh * 2, 14, C.paper, C.ink, 2); poly([x - 6, y + hh - 1, x + 6, y + hh - 1, x, y + hh + 7], C.paper); ctx.strokeStyle = C.ink; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - 6, y + hh); ctx.lineTo(x, y + hh + 7); ctx.lineTo(x + 6, y + hh); ctx.stroke();
   ctx.fillStyle = C.ink; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; L.forEach((t, i) => ctx.fillText(t, x, y + (i - (L.length - 1) / 2) * 16)); }
 const bubW = (s) => { ctx.font = FONT(13); return Math.max.apply(null, String(s).split('\n').map((t) => ctx.measureText(t).width)) + 18; };
-let floats = []; function pop(s, x, y, col, big) { floats.push({ s, x, y, col: col || C.paper, life: 1, big: !!big }); }
+let floats = []; function pop(s, x, y, col, big) { if (big) { let cur = y; floats.filter((f) => f.big && f.y < y + 26 && Math.abs(f.x - x) < 140).sort((a, b) => b.y - a.y).forEach((f) => { if (f.y > cur - 30) { if (cur - 30 < 128) f.life = Math.min(f.life, 0.2); else f.y = cur - 30; cur -= 30; } else cur = f.y; }); }      /* D255：疊貨櫃 21～30 層實玩——每疊一層大浮字都出在同一個高度，上一層還沒淡完的「完美 ×N」會疊在新浮字後面變成一團 → 舊的大浮字依序往上讓 30 點（連鎖讓開，出港浮字也不被蓋；再往上會碰到 y98 對話泡泡的就原地快速淡掉） */ floats.push({ s, x, y, col: col || C.paper, life: 1, big: !!big }); }
 function drawFloats(dt) { for (const f of floats) { f.life -= dt * 0.9; f.y -= 30 * dt; ctx.globalAlpha = clamp(f.life * 1.6, 0, 1); const k = 1 + Math.max(0, f.life - 0.85) * 2; text(f.s, f.x, f.y, (f.big ? 22 : 15) * k, f.col); } ctx.globalAlpha = 1; floats = floats.filter((f) => f.life > 0); }
 let parts = []; function burst(x, y, n, col, kind) { if (RM) n = Math.ceil(n / 3); for (let i = 0; i < n; i++) { const a = rnd(0, 6.28), v = rnd(60, 220); parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - (kind === 'drop' ? 80 : 0), life: 1, col: col || C.gold, r: rnd(2, 4.5), kind }); } }
 function drawParts(dt) { for (const p of parts) { p.life -= dt * 1.5; p.vy += 300 * dt; p.x += p.vx * dt; p.y += p.vy * dt; ctx.globalAlpha = clamp(p.life, 0, 1); if (p.kind === 'star') { ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.life * 4); poly([0, -p.r * 1.8, p.r * 0.5, -p.r * 0.5, p.r * 1.8, 0, p.r * 0.5, p.r * 0.5, 0, p.r * 1.8, -p.r * 0.5, p.r * 0.5, -p.r * 1.8, 0, -p.r * 0.5, -p.r * 0.5], p.col); ctx.restore(); } else ell(p.x, p.y, p.r, p.r, p.col); } ctx.globalAlpha = 1; parts = parts.filter((p) => p.life > 0); }
@@ -497,7 +497,7 @@ function makeStack() {
     if (g.sayT > 0 && g.say2T > 0) {      /* D254：兩個泡泡並排在原本那一行（y98），不往下疊，避開分數列、出港／金貨櫃浮字和落點；太寬時事件句在「，」後換行 */
       let e2 = g.say2; if (bubW(g.say) + 8 + bubW(e2) > W - 12 && e2.indexOf('，') > 0) e2 = e2.replace('，', '，\n');
       const wa = bubW(g.say), wb = bubW(e2), x0 = W / 2 - (wa + 8 + wb) / 2;
-      if (wa + 8 + wb > W - 12) bubble(g.say, W / 2, 98);      /* 換行後還是放不下（例如專注模式長句），只顯示後講的那句，不疊字 */
+      if (wa + 8 + wb > W - 12) { g.say2x = W / 2; g.say2w = e2; bubble(e2, W / 2, 98); }      /* D255（GPT 1320 A①）：換行後還是放不下時，操作資訊優先——只顯示事件句（起風／起霧／折返／趕船），地標／出港句不蓋掉它，不疊字也不縮字 */
       else { bubble(g.say, x0 + wa / 2, 98); g.say2x = x0 + wa + 8 + wb / 2; g.say2w = e2; bubble(e2, g.say2x, 98); }
     } else if (g.sayT > 0) bubble(g.say, W / 2, 98);
     else if (g.say2T > 0) bubble(g.say2x ? g.say2w : g.say2, g.say2x || W / 2, 98);      /* 地標句收起後，事件泡泡留在原位，不跳 */
