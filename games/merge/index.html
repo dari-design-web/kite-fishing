@@ -221,7 +221,7 @@ function makeMerge() {
   g.discover = (lv) => { if (mdex[lv]) return; mdex[lv] = Date.now(); store.set('kiteMiniDex1', mdex); g.newFound.push(lv); g.found = { lv, t: 2.4 }; jingle([784, 988, 1175], 80); };
   g.discover(0); g.discover(1); g.discover(2); g.found = null; g.newFound = [];      // 一開始會掉的三種算已經認識
   g.update = (dt) => {
-    g.t += dt; if (g.sayT > 0) g.sayT -= dt; if (g.bannerT > 0) g.bannerT -= dt; if (g.found) { g.found.t -= dt; if (g.found.t <= 0) g.found = null; }
+    g.t += dt; if (g.sayT > 0) g.sayT -= dt; if (g.bannerT > 0) g.bannerT -= dt; if (g.newT > 0) g.newT -= dt; if (g.found) { g.found.t -= dt; if (g.found.t <= 0) g.found = null; }
     if (g.chainT > 0) { g.chainT -= dt; if (g.chainT <= 0) g.chain = 0; }
     if (g.wantT > 0) { g.wantT -= dt; if (g.wantT <= 0 || g.q[0] !== g.wantLv) g.wantT = 0; }      /* D207（GPT 1525 B）：每局第一次普通合成，下一個預覽輕歪＋「我也要！」最多 0.6 秒；預覽換圖就收 */
     if (!g.fall && !g.done) { g.wait -= dt; if (g.wait <= 0) g.spawn(); }
@@ -277,10 +277,10 @@ function makeMerge() {
       const pts = SEAF[lv][3] * mul; g.score += pts; pop((mul > 1 ? '連鎖×' + mul + ' ' : '') + '+' + pts, x, y - 20 - (mul > 1 ? 24 : 0),      /* D251：GPT 0920 B① 連鎖浮字起點上移 24px，不跟小浮字疊 */
         mul > 1 || lv >= 5 ? C.gold : C.paper, mul > 1 || lv >= 5);
       g.balls.push({ lv, x, y, vx: 0, vy: -80, r: SEAF[lv][1], age: 0.5, rot: 0, sq: -0.2 });
-      if (lv > g.top) { g.top = lv; if (lv >= 4) { g.say = ['', '', '', '', '章魚出現了！', '海龜來了！', '鬼頭刀好帥！', '是海豚耶！', '翻車魚！快到了！', '鯨鯊！！我們合出鯨鯊了！'][lv]; g.sayT = 2; } }
+      if (lv > g.top) { g.top = lv; if (lv >= 4) { g.newT = 1; g.say = ['', '', '', '', '章魚出現了！', '海龜來了！', '鬼頭刀好帥！', '是海豚耶！', '翻車魚！快到了！', '鯨鯊！！我們合出鯨鯊了！'][lv]; g.sayT = 2; } }
       g.discover(lv);
     }
-    if (mul === 3) { g.say = '連鎖三次！'; g.sayT = 1.4; }
+    if (mul === 3 && !(g.newT > 0)) { g.say = '連鎖三次！'; g.sayT = 1.4; }      /* D262：新海鮮那句（鬼頭刀好帥！／鯨鯊！！…）講的 1 秒內不被「連鎖三次！」蓋掉，右上角連鎖 ×3 照樣顯示 */
     g.merges++; if (g.merges >= g.need) { g.lv++; g.merges = 0; g.need = MF.needBase + MF.needStep * g.lv; g.score += 10 * g.lv; g.banner = '第 ' + g.lv + ' 關・掉得更快了'; g.bannerT = 1.4; jingle([660, 880], 110); }
   };
   g.down = (x, y) => { g.tx = x; g.dropAt = null; g.pendingDrop = null; g.tap = { x, y, t: g.t }; };      // D124（Dari 10/19 14:57）：按住滑動＝移動，手放開就落下；點一下＝飛到那裡自動放手
@@ -319,7 +319,7 @@ function makeMerge() {
     const bw = 118; rrect(10, 47, bw, 9, 4.5, 'rgba(16,41,61,.6)'); rrect(10, 47, Math.max(9, bw * g.merges / g.need), 9, 4.5, C.leaf);
     hud(g.score, g.chain >= 2 ? '連鎖 ×' + g.chain : null, '第 ' + g.lv + ' 關');
     if (g.sayT > 0) bubble(g.say, clamp(kx + 30, 90, W - 90), 176);      // QA：不再蓋住分數列
-    if (g.bannerT > 0) { const k = clamp(g.bannerT * 1.5, 0, 1); ctx.globalAlpha = k; text(g.banner, W / 2, 260 - (1 - k) * 30, 24, C.gold, 'center', 900); ctx.globalAlpha = 1; }
+    if (g.bannerT > 0) { const k = clamp(g.bannerT * 1.5, 0, 1), by = 260 - (1 - k) * 30; ctx.globalAlpha = k; ctx.font = FONT(24, 900); const bw = ctx.measureText(g.banner).width + 28; pill(W / 2 - bw / 2, by - 21, bw, 42, 'rgba(16,41,61,.55)'); text(g.banner, W / 2, by, 24, C.gold, 'center', 900); ctx.globalAlpha = 1; }      /* D262（合成港第 5 關以後實玩）：後面關卡魚艙堆高，「第 N 關・掉得更快了」壓在海鮮和浮字上看不清 → 字後面墊半透明深藍圓角條 */
     if (g.found) drawFound(g.found);
   };
   return g;
