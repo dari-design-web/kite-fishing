@@ -664,7 +664,7 @@
     '.spP{display:inline-block;width:44px;height:44px;background-repeat:no-repeat;background-size:1000% 100%;background-position:0 0;vertical-align:middle}.opt .em .spP{width:44px;height:44px}' +
     '.lockRow{display:flex;flex-direction:column;align-items:center;gap:2px;margin:6px 0 2px;padding:8px;border:1.5px dashed #D9CBB0;border-radius:12px;color:#8A7A66;font-size:12px;text-align:center}.lockRow span{letter-spacing:2px;font-size:14px;opacity:.7}.aniH{display:flex;align-items:center;gap:6px}.aniH .spP{width:40px;height:40px}' +
     '.ordC[aria-pressed="true"]{border-color:#E39A1F;background:#FFF6E0}.oSwap{display:block;width:auto!important;flex:none;margin:-2px 0 8px auto;min-height:32px;padding:2px 12px;font-size:12px}.hmAni .bub .crate{font-size:22px;line-height:26px;width:26px;text-align:center}' +
-    '.hm .row{position:sticky;bottom:-1px;background:var(--paper,#FFFDF8);padding-top:8px;margin-bottom:-4px}';      /* D172：清單很長時「關閉」鈕黏在下面 */
+    '.hm .row{position:sticky;bottom:-18px;background:var(--paper,#FFFDF8);padding-top:8px;padding-bottom:14px;margin-bottom:-18px}';      /* D172：清單很長時「關閉」鈕黏在下面；D278：黏到卡片最底（含 18px 內距），按鈕下面不再露出後面捲動的字 */
   document.head.appendChild(css);
   window.HOME = { render: render, kitchen: kitchen, book: book, packHTML: packHTML, bindPack: bindPack, onDepart: onDepart, letterExtra: letterExtra, story: story, bentoKeys: function () { return BORDER; }, hbCount: hbCount, lidPeek: lidPeek, bentoIcon: bentoIcon, _H: H };
   setInterval(function () { if ($('home') && $('home').classList.contains('on') && !$('modal').classList.contains('on')) render(); }, FAST ? 1000 : 15000);
