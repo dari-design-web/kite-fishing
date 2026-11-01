@@ -21,7 +21,7 @@ canvas{height:100%;max-width:100%;aspect-ratio:360/600;border-radius:18px;touch-
 .how{width:100%;max-width:420px;font-size:13px;line-height:1.5;color:#CFE3EC;text-align:center;min-height:2.6em;margin:0;text-wrap:balance}
 .how b{color:var(--dusk)}
 .how .ptMore{border:0;background:none;color:#CFE3EC;font:800 12.5px/1.3 var(--round);padding:4px 10px;min-height:28px;cursor:pointer}.how .ptLong{display:block;max-width:340px;margin:0 auto;font-size:12px;line-height:1.45;color:#CFE3EC}.how .ptLong[hidden]{display:none}
-.dres{position:fixed;left:0;right:0;bottom:0;z-index:20;max-height:58vh;overflow:auto;padding:8px 12px calc(10px + env(safe-area-inset-bottom));background:#0E2A3D;border-radius:18px 18px 0 0;box-shadow:0 -6px 20px rgba(0,0,0,.35)}.dres[hidden]{display:none}.dres .dx{display:block;margin:0 auto 4px;border:0;background:none;color:#CFE3EC;font:inherit;font-size:13px;font-weight:800;min-height:32px}.dres .kd-res{margin:0}
+.dres{position:static;flex:0 0 auto;width:100%;max-width:420px;box-sizing:border-box;padding:8px 12px calc(10px + env(safe-area-inset-bottom));background:#0E2A3D;border-radius:18px;box-shadow:0 4px 14px rgba(0,0,0,.3)}.dres.kdFold .kd-res{display:none}body.kdEnd{overflow-y:auto}      /* D265（GPT 2330 B③）：今日挑戰面板放在變身／水族館按鈕下面，跟頁面一起捲，不再浮蓋結算 */.dres[hidden]{display:none}.dres .dx{display:block;margin:0 auto 4px;border:0;background:none;color:#CFE3EC;font:inherit;font-size:13px;font-weight:800;min-height:32px}.dres .kd-res{margin:0}
 .top{display:flex;align-items:center;gap:10px;width:100%;max-width:420px;font-weight:900;font-size:17px}
 .top .back{color:#CFE3EC;text-decoration:none;font-size:13px;font-weight:700;padding:6px 10px;border:2px solid #2B4A60;border-radius:12px;white-space:nowrap}
 .top b{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -54,7 +54,9 @@ const FONT = (s, w) => (w || 700) + ' ' + s + "px 'Zen Maru Gothic','Noto Sans T
 const rnd = (a, b) => a + Math.random() * (b - a), clamp = (v, a, b) => Math.max(a, Math.min(b, v)), pick = (a) => a[Math.floor(Math.random() * a.length)], lerp = (a, b, k) => a + (b - a) * k;
 /* G97 每日挑戰：?daily=official／practice → 掉落順序、風和事件用當天固定亂數 */
 const DS = window.KiteDaily ? KiteDaily.session() : null; let gR = Math.random; const grnd = (a, b) => a + gR() * (b - a), gpick = (a) => a[Math.floor(gR() * a.length)];
-function dailyBegin() { const dr0 = document.getElementById('dres'); if (dr0) dr0.hidden = true; if (!DS) return; if (DS.official && KiteDaily.left() <= 0) { DS.official = false; DS.practice = true; } KiteDaily.begin(DS); dailyTag(); }
+function dailyBegin() { const dr0 = document.getElementById('dres'); if (dr0) dr0.hidden = true; kdUnlock(); if (!DS) return; if (DS.official && KiteDaily.left() <= 0) { DS.official = false; DS.practice = true; } KiteDaily.begin(DS); dailyTag(); }
+function kdUnlock() { document.body.classList.remove('kdEnd'); const st = document.querySelector('.stage'); if (st) st.style.flex = ''; }
+function kdLock() { const st = document.querySelector('.stage'); if (st && !document.body.classList.contains('kdEnd')) { st.style.flex = '0 0 ' + st.offsetHeight + 'px'; document.body.classList.add('kdEnd'); } }      /* D265：遊戲畫面維持原大小，面板接在下面、整頁往下捲 */
 function dailyTag(extra) { if (!DS) return; const h = document.getElementById('how'); h.innerHTML = '<span class="kd-banner">' + (DS.official ? '📅 今日挑戰・正式（今天還有 ' + KiteDaily.left() + ' 次）' : '📅 今日挑戰・練習（不計榜）') + '</span><br>' + DS.td.vary + (extra || ''); }
 const RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const HOW = {
@@ -551,8 +553,8 @@ function drawEnd(e) {
     if (i === 0 && e.icon != null) { ctx.font = FONT(14, 900); drawSea(e.icon, W - 64 - ctx.measureText(r[1]).width - 16, y, 11, 0); } });
   if (e.found && e.found.length) text('新發現 ' + e.found.length + ' 種海鮮！', W / 2, 232 + e.rows.length * 34 + 4, 13, C.warn, 'center', 900, false);
   if (e.rank) text((DS ? '📅 ' : '🏆 本月') + e.rank, W / 2, e.found && e.found.length ? 390 : 232 + e.rows.length * 34 + 4, 13, '#2F7F86', 'center', 900, false);      // D133
-  text('最佳 ' + (best[mode] || e.s) + ' 分', W / 2, 408, 13, '#6A7F8E', 'center', 700, false);
-  endBtnR = btn('再玩一次', 426);
+  text(e.db ? e.db.label + ' ' + e.db.best + ' 分' : '最佳 ' + (best[mode] || e.s) + ' 分', W / 2, 408, 13, '#6A7F8E', 'center', 700, false);      /* D265 A②：每日挑戰顯示今日正式／練習最佳 */
+  endBtnR = btn(DS && !DS.official ? '再練一次' : '再玩一次', 426);      /* D265 C③：練習局主鈕改「再練一次」 */
   ctx.restore(); ctx.globalAlpha = 1;
 }
 
@@ -602,12 +604,14 @@ cv.addEventListener('pointerup', upH); cv.addEventListener('pointercancel', upH)
 document.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { if (state !== 'play') { const ev = new PointerEvent('pointerdown', { clientX: 0, clientY: 0 }); ev.kbd = true; cv.dispatchEvent(ev); upH(); } else if (mode === 'stack') G.tap(); else if (G.fall) G.release(); e.preventDefault(); } if (mode === 'merge' && state === 'play' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { G.tx = clamp(G.tx + (e.key === 'ArrowLeft' ? -30 : 30), 0, W); } });
 function finish() {
   if (window.KiteBoard) KiteBoard.ev('run_end', { game: mode });
-  const s = Math.round(G.score), nb = saveBest(mode, s);
+  const s = Math.round(G.score), nb = DS ? false : saveBest(mode, s);      /* D265（GPT 2330 A②）：每日挑戰（正式／練習）不寫一般最佳、不出一般「新紀錄！」 */
   let rk = null, dr = DS ? KiteDaily.finish(DS, s) : null; let tl = ''; try { if (!DS && window.KiteCore && KiteCore.reportPlay && s > 0) { const rep = () => KiteCore.reportPlay({ game: mode, level: 'all', score: s, lbAll: true }); rk = KiteCore.rankAround ? KiteCore.rankAround(mode, 'all', rep) : { res: rep() }; tl = KiteCore.tierLine ? KiteCore.tierLine(rk.res) : ''; } } catch (e) {}      // D141：前 3 局算進今日積分、可換點      // D123：進排行榜；D133：記下名次
   if (mode === 'merge') endInfo = { s, nb, t: 0, title: G.over > 1.6 ? '堆過紅線了' : '魚艙塞滿了', rows: [['最大合到', SEAF[G.top][0]], ['撐到', '第 ' + G.lv + ' 關'], ['合成次數', G.mergesAll + ' 次'], ['最長連鎖', '×' + Math.max(1, G.bestChain)]], icon: G.top, found: G.newFound, replay: G.show == null ? null : G.show };
-  else { const h = G.blocks.length - 1; if (h > (best.stackH || 0)) { best.stackH = h; store.set('kiteMiniBest1', best); } endInfo = { s, nb, t: 0, title: '貨櫃掉下去了', rows: [['疊了', h + ' 層'], ['裝滿貨船', G.ships + ' 艘'], ['完美', G.perfects + ' 次'], ['最長完美連擊', '×' + G.bestCombo]] }; }
+  else { const h = G.blocks.length - 1; if (!DS && h > (best.stackH || 0)) { best.stackH = h; store.set('kiteMiniBest1', best); } endInfo = { s, nb, t: 0, title: '貨櫃掉下去了', rows: [['疊了', h + ' 層'], ['裝滿貨船', G.ships + ' 艘'], ['完美', G.perfects + ' 次'], ['最長完美連擊', '×' + G.bestCombo]] }; }
+  endInfo.db = DS ? KiteDaily.dayBest(DS, s) : null;
   endInfo.rank = DS ? (DS.official && dr && dr.rank ? '今日挑戰第 ' + dr.rank + ' 名' : DS.official ? '' : '練習不計榜') : rk && KiteCore.rankText ? KiteCore.rankText(rk) : '';
-  if (DS) { const h = document.getElementById('dres'); h.innerHTML = '<button type="button" class="dx" aria-label="收起">收起 ▾</button>' + KiteDaily.resultHtml(DS, dr, s); KiteDaily.wire(h, s); h.hidden = false; h.querySelector('.dx').onclick = () => { h.hidden = true; }; }      // QA：今日挑戰結果改成下方面板，不再把遊戲畫面擠小
+  if (DS) { const h = document.getElementById('dres'), ab = document.getElementById('aqBar'); (ab || document.querySelector('.stage')).after(h); h.classList.remove('kdFold'); h.innerHTML = '<button type="button" class="dx" aria-expanded="true">收起 ▾</button>' + KiteDaily.resultHtml(DS, dr, s); KiteDaily.wire(h, s); kdLock(); h.hidden = false;
+    const dx = h.querySelector('.dx'); dx.onclick = () => { const f = h.classList.toggle('kdFold'); dx.textContent = f ? '📅 今日挑戰結果 ▴' : '收起 ▾'; dx.setAttribute('aria-expanded', f ? 'false' : 'true'); }; }      /* D265：收起改成摺成一條、點了再打開 */      // QA：今日挑戰結果改成下方面板，不再把遊戲畫面擠小
   else if (tl) { const rp = rk && rk.res, h = document.getElementById('how');
     /* D218（GPT 1045 A）：黃色點數條只留一句主句（判定與數字跟捕魚 D215／D216 同一套欄位），整串原計算收進下面「點數明細 ▾」，預設收合；本局沒算分照原說明、不出明細 */
     const main = rp && rp.tier && rp.counted ? (rp.tap && rp.claim ? '回樂園領 ' + rp.claim + ' 點！' : rp.pts >= rp.cap ? '今天拿滿' + rp.pts + '點囉！' : !rp.tap && rp.gain ? '這局拿到' + rp.gain + '點！' : rp.pts ? '今天累積' + rp.pts + '點' : rp.next ? '再' + rp.next.need.toLocaleString() + '分湊1點！' : '') : '';
