@@ -83,6 +83,9 @@ header h1{font-size:20px;margin:0;flex:1}
 .envelope{position:absolute;z-index:100;left:69.4%;top:76.8%;width:22.2%;height:16.2%;background:url(assets/letter_seal.png) center/contain no-repeat,url(assets/letter_env.png) center/contain no-repeat;animation:bob 1.6s infinite;cursor:pointer}
 .say{position:absolute;width:62%;text-align:center;pointer-events:none;z-index:130;transform:translate(-50%,-100%);transition:opacity .25s}
 .say.off{opacity:0}
+.say.flo{transform:none;text-align:center}.say.flo .bubble{max-width:100%;box-sizing:border-box;word-break:break-word}
+.say.flo .bubble::after{bottom:auto;top:-14px;left:var(--tx,50%);border-top-color:transparent;border-bottom-color:#fff}
+.say.flo.side .bubble::after{display:none}
 .say .bubble{position:relative;box-shadow:0 2px 6px rgba(0,0,0,.15)}
 .say .bubble::after{content:'';position:absolute;left:50%;bottom:-8px;margin-left:-6px;border:6px solid transparent;border-top-color:#fff}
 #home{flex-direction:column;overflow:hidden;padding:0;background:linear-gradient(#5A3F2A,#3E2B1D)}
@@ -340,7 +343,7 @@ header .back,.letter .skip{min-height:44px;min-width:44px;display:inline-flex;al
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.63',
+  version: '0.64',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 0,      // D80：遠行便當改用點數換，不再每 3 趟送 1 份（0＝關閉）
@@ -698,6 +701,30 @@ const PET = (() => {
     p.act = 'jump'; p.dur = 0.75; p.t = 0; p.then = null; emote('heart', true);
     say(pick(S.state === 'back' ? ['我回來了！', '快看信嘛～', '好想你喔！'] : ['嘿！', '摸摸頭～', '好癢！', '我在這裡！', '早安呀，一起玩！', '耶！我好開心喔！']), 2.2);
   }
+  /* D274：GPT 1430 A②——廚房的說話泡泡改放在小鳶下方地板，讓電鍋、鍋子和它們的標籤露出來。
+     腳下放得下就放腳下（尾巴朝上）；小鳶站太低放不下，就貼著地板放在小鳶旁邊比較寬的那一側（不蓋小鳶）。
+     原文、字級、顯示時間都不變，只換位置與寬度。 */
+  function sayFloor(sb, b) {
+    const room = $('room'), v = $('roomview'); if (!room || !v) return;
+    const R = room.getBoundingClientRect(), B = b.getBoundingClientRect(), V = v.getBoundingClientRect(); if (!R.width) return;
+    const vx0 = Math.max(0, V.left - R.left) + 6, vx1 = Math.min(R.width, V.right - R.left) - 6;
+    const bx0 = B.left - R.left + B.width * 0.12, bx1 = B.right - R.left - B.width * 0.12, bBot = B.bottom - R.top;
+    if (!sb.classList.contains('flo')) sb.classList.add('flo');
+    const bottomMax = R.height - 6, cx = (bx0 + bx1) / 2;
+    let w = Math.min(vx1 - vx0, R.width * 0.86);
+    sb.classList.remove('side'); sb.style.width = w + 'px';
+    let h = sb.offsetHeight;
+    if (bBot + 4 + h <= bottomMax) {
+      const l = Math.max(vx0, Math.min(vx1 - w, cx - w / 2));
+      sb.style.left = l + 'px'; sb.style.top = (bBot + 4) + 'px';
+      const tl = sb.querySelector('.bubble'); if (tl) tl.style.setProperty('--tx', Math.max(14, Math.min(w - 14, cx - l)) + 'px');
+      return;
+    }
+    const lw = bx0 - 4 - vx0, rw = vx1 - (bx1 + 4), right = rw >= lw;
+    w = Math.max(90, right ? rw : lw);
+    sb.classList.add('side'); sb.style.width = w + 'px'; h = sb.offsetHeight;
+    sb.style.left = (right ? bx1 + 4 : bx0 - 4 - w) + 'px'; sb.style.top = (bottomMax - h) + 'px';
+  }
   function frame(now) {
     const dt = Math.min(0.05, (now - (p.last || now)) / 1000); p.last = now;
     const b = $('bird');
@@ -721,7 +748,8 @@ const PET = (() => {
       b.style.transform = 'translateY(' + (-bob) + '%) rotate(' + rot + 'deg) scale(' + p.face + ',' + sq + ')';
       b.style.zIndex = Math.round(p.y);
       const headTop = p.y - hPct * 0.84 - bob * 0.3;
-      const sb = $('sayBox'); sb.style.left = Math.max(32, Math.min(68, p.x)) + '%'; sb.style.top = (headTop - 1) + '%';
+      const sb = $('sayBox');
+      if (ROOM().id === 'kitchen') sayFloor(sb, b); else { if (sb.classList.contains('flo')) { sb.classList.remove('flo', 'side'); sb.style.width = ''; } sb.style.left = Math.max(32, Math.min(68, p.x)) + '%'; sb.style.top = (headTop - 1) + '%'; }
       const em = $('emote'); em.style.left = (p.x + p.face * w * 0.46) + '%'; em.style.top = (headTop + 12) + '%';
       if (p.sayT > 0) { p.sayT -= dt; if (p.sayT <= 0) $('sayBox').classList.add('off'); }
       if (p.act === 'nap' && p.emoT < 0.3) emote('zzz', true);      // v0.15（D58②）：閉眼打瞌睡的整段都冒 ZZZ
@@ -1199,8 +1227,8 @@ function travelBgmSync() { if (travelBgmOn) BGM.play('travel_' + ({ ranch: 'scho
   document.addEventListener('pointerdown', () => { if (travelBgmOn) travelBgmSync(); }, { passive: true });
 })();
 </script>
-<script src="cook.js?v=0.63"></script>
-<script src="home.js?v=0.63"></script>
+<script src="cook.js?v=0.64"></script>
+<script src="home.js?v=0.64"></script>
 <script src="../shared/back_line.js"></script>
 <script>/* D104：旅行排行榜（明信片收藏數） */ if (window.KiteLB) { KiteLB.button(document.getElementById('lbSlot'), { title: '小鳶旅行收藏排行', travel: true }); setTimeout(function () { try { pushTravelStat(); } catch (e) {} }, 1500); }</script>
 </body>
