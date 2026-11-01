@@ -126,6 +126,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .card.result .total{font-size:40px}
 .card.result .rows{font-size:13px;gap:2px 12px;padding:6px 0}
 .card.result .rows:not(.open){grid-template-columns:auto 1fr}
+@media (max-width:360px){.card.result .rows.open span.xr{grid-column:1 / -1}.card.result .rows.open span.xr:nth-child(even){text-align:right;margin-top:-2px;padding-bottom:2px}}      /* D282（GPT 2030 A①）：窄版展開「更多紀錄」每列名稱在上、數值在下靠右，收起與 390 照舊 */
 .card.result .rows .rkL{grid-column:1 / -1;display:flex;justify-content:space-between;gap:12px}.card.result .rows .rkV{white-space:nowrap;font-weight:700;text-align:right}      /* D281：320 結算左欄依字寬，不再把「幸運魚・白帶魚」拆出單獨一個「魚」 */
 @media (prefers-reduced-motion:reduce){.kg.pop,.banner{animation:none}}
 
@@ -456,7 +457,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.43',
+  version: '0.44',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
