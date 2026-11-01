@@ -39,6 +39,15 @@
     try { var L = K.leaderboard('daily', td.date, 'all', 10); out.best = L.mine ? L.mine.score : 0; out.rank = L.mine ? L.mine.rank : 0; out.total = L.total; } catch (e) {}
     out.left = left(); return out;
   }
+  /* D265（GPT 2330 A②）：每日挑戰不寫一般最佳；正式／練習各記今日最佳（這支手機，台北日期＋題目；正式另取今日榜自己的分，取大的） */
+  function dayBest(s, score) {
+    if (!s) return null; var k = 'kiteMiniDailyBest1', d = {}, td = s.td, f = s.official ? 'o' : 'p', prev, isNew;
+    try { d = JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch (e) { d = {}; }
+    if (d.date !== td.date || d.game !== td.game) d = { date: td.date, game: td.game, o: 0, p: 0 };
+    prev = +d[f] || 0; isNew = score > prev; if (isNew) d[f] = score;
+    try { localStorage.setItem(k, JSON.stringify(d)); } catch (e) {}
+    return { best: Math.max(+d[f] || 0, score), prev: prev, isNew: isNew && prev > 0, label: s.official ? '今日正式最佳' : '今日練習最佳' };
+  }
   function shareText(score) { var td = today(), me = K.lbMe ? K.lbMe() : null; return '我' + (me ? '用「' + me.alias + '」' : '') + '在 ' + td.date.slice(5).replace('-', '/') + ' 的今日挑戰（' + td.name + '）拿到 ' + Number(score || 0).toLocaleString() + ' 分，一起來挑戰！' + location.origin + location.pathname.replace(/games\/[^/]+\/.*$/, '') + 'line/index.html?p=park'; }
   function copyShare(score, btn) { var t = shareText(score), ok = function () { if (btn) { var o = btn.textContent; btn.textContent = '已複製，貼給朋友吧！'; setTimeout(function () { btn.textContent = o; }, 1800); } };
     try { navigator.clipboard.writeText(t).then(ok, function () { prompt('複製這段文字給朋友：', t); }); } catch (e) { prompt('複製這段文字給朋友：', t); } }
@@ -48,12 +57,13 @@
     var h = '<div class="kd-res"><b>📅 今日挑戰・' + (s.official ? '正式' : '練習（不計榜）') + '</b>';
     if (s.official && r.tier && K.tierLine) h += '<div>🪙 ' + K.tierLine(r.tier) + '</div>';
     if (s.official) h += '<div>今日最佳 ' + Number(r.best).toLocaleString() + ' 分' + (r.rank ? '・今日第 ' + r.rank + ' 名' : '・名次更新中') + '</div><div>今天還有 ' + r.left + ' 次正式挑戰</div>';
-    h += '<div class="kd-btns">' + (r.left > 0 ? '<a class="kd-b" href="?daily=official">再正式挑戰</a>' : '') + '<a class="kd-b" href="?daily=practice">' + (s.official ? '練習' : '再練一次') + '</a>' + (s.official ? '<button type="button" class="kd-b" data-kd="share">挑戰朋友</button>' : '') + '<button type="button" class="kd-b" data-kd="lb">看今日榜</button></div></div>';
+    /* D265（GPT 2330 C③）：練習局結算卡主鈕已是「再練一次」，面板不再放重複的再練鈕 */
+    h += '<div class="kd-btns">' + (r.left > 0 ? '<a class="kd-b" href="?daily=official">再正式挑戰</a>' : '') + (s.official ? '<a class="kd-b" href="?daily=practice">練習</a>' : '') + (s.official ? '<button type="button" class="kd-b" data-kd="share">挑戰朋友</button>' : '') + '<button type="button" class="kd-b" data-kd="lb">看今日榜</button></div></div>';
     return h;
   }
   function wire(root, score) { if (!root) return; var b = root.querySelector('[data-kd=share]'); if (b) b.onclick = function () { copyShare(score, b); }; var l = root.querySelector('[data-kd=lb]'); if (l) l.onclick = function () { if (G.KiteLB) G.KiteLB.hub('daily'); }; }
   var css = '.kd-res{margin:8px 0;padding:8px 10px;border-radius:12px;background:#FFF1D6;color:#10293D;font-size:13px;font-weight:700;text-align:left;line-height:1.6}.kd-res b{display:block;font-size:14px}.kd-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.kd-b{flex:1 1 40%;min-height:38px;border:2px solid #10293D;border-radius:999px;background:#fff;color:#10293D;font:inherit;font-weight:800;font-size:13px;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center}' +
     '.kd-banner{display:inline-block;margin:6px auto 0;padding:4px 12px;border-radius:999px;background:#FFE45C;color:#10293D;font-weight:900;font-size:13px}';
   if (document.head) { var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st); }
-  G.KiteDaily = { tries: tries, on: on, conf: conf, GM: GM, VARY: VARY, DEF: DEF, today: today, rng: rng, used: used, left: left, session: session, begin: begin, finish: finish, shareText: shareText, copyShare: copyShare, resultHtml: resultHtml, wire: wire };
+  G.KiteDaily = { tries: tries, on: on, conf: conf, GM: GM, VARY: VARY, DEF: DEF, today: today, rng: rng, used: used, left: left, session: session, begin: begin, finish: finish, dayBest: dayBest, shareText: shareText, copyShare: copyShare, resultHtml: resultHtml, wire: wire };
 })(window);
