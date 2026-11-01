@@ -497,7 +497,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.79',
+  version: '0.80',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -3241,7 +3241,7 @@ function dailyTick(dt) { daily.rt += dt; const k = Math.min(2, Math.floor(daily.
 function dailyDraw() { if (!dailyFade) return; const a = 1 - (performance.now() - dailyFade.t0) / 1000 / DAILY.fade; if (a <= 0) { dailyFade = null; return; } ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = a; ctx.drawImage(dailyFade.c, 0, 0); ctx.restore(); }
 function dailyOpen() {
   daily = { route: dailyRoute(), rt: 0, k: 0, done: false }; const r = daily.route; stageNo = r.segs[0].id;
-  $('stageTitle').textContent = '🌊 今日潮汐航線　' + dailyMD(r.date); $('stageIntro').textContent = dailyNames(r).join(' → ') + '。三段各 30 秒，跟小鳶飛一趟今日航線！不計點數與星星。'; $('startPanel').classList.add('daily');
+  $('stageTitle').innerHTML = '<span style="white-space:nowrap">🌊 今日潮汐航線</span>　<span style="white-space:nowrap">' + dailyMD(r.date) + '</span>'; /* D269：320 寬「航線」不再被拆成兩行，放不下時日期整個換下一行 */ $('stageIntro').textContent = dailyNames(r).join(' → ') + '。三段各 30 秒，跟小鳶飛一趟今日航線！不計點數與星星。'; $('startPanel').classList.add('daily');
   reset(); mode = 'start'; show('startPanel');
 }
 function dailyFinish() {
