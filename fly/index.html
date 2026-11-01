@@ -498,7 +498,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.82',
+  version: '0.83',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -3256,7 +3256,7 @@ function dailyFinish() {
   $('resTitle').textContent = '這一趟飛到這裡！'; $('rank').textContent = ''; $('rank').hidden = true; $('bigStars').textContent = ''; $('cleanPct').textContent = sc;
   const rows = $('rows'); rows.textContent = ''; rows.classList.add('open');
   const add = (a, b, wide) => { const l = document.createElement('span'); l.textContent = a; const v = document.createElement('span'); v.textContent = b; if (wide) { v.style.gridColumn = '1 / -1'; v.style.textAlign = 'left'; v.style.fontWeight = '600'; } rows.append(l, v); };
-  add('今日航線 ' + dailyMD(day), dailyNames(daily.route).join(' → '), true); if (daily.done) { const dn = document.createElement('span'); dn.className = 'ddone'; dn.textContent = '三段都飛完 ✓'; dn.style.gridColumn = '1 / -1'; dn.style.textAlign = 'left'; dn.style.fontWeight = '700'; dn.style.color = '#2E8B57'; rows.append(dn); } /* D225（GPT 1755 A）：只在正常飛完三段時出現，敗局／中途結束不顯示 */ add('今日最佳', best + ' 分' + (old !== undefined && sc > old ? '　🎉' : ''));
+  add('今日航線 ' + dailyMD(day), dailyNames(daily.route).join(' → '), true); if (daily.done) { const dn = document.createElement('span'); dn.className = 'ddone'; dn.textContent = '三段都飛完 ✓'; dn.style.gridColumn = '1 / -1'; dn.style.textAlign = 'left'; dn.style.fontWeight = '700'; dn.style.color = '#2E8B57'; rows.append(dn); } /* D225（GPT 1755 A）：只在正常飛完三段時出現，敗局／中途結束不顯示 */ else { const tot = DAILY.len * daily.route.segs.length, nw = (x) => { const e = document.createElement('span'); e.style.whiteSpace = 'nowrap'; e.textContent = x; return e; }, ds = document.createElement('span'); ds.className = 'dstop'; ds.style.gridColumn = '1 / -1'; ds.style.textAlign = 'left'; ds.style.color = '#8A7356'; ds.style.fontWeight = '600'; ds.append(nw('停在第 ' + (daily.k + 1) + ' 段・' + ST().name), nw('（飛了 ' + Math.min(tot, Math.floor(daily.rt)) + '／' + tot + ' 秒）')); rows.append(ds); } /* D272：GPT 1330 A② 每日沒飛完時，用結束當刻的航段／地名／每日有效秒數（暫停不累加），整組換行不拆字 */ add('今日最佳', best + ' 分' + (old !== undefined && sc > old ? '　🎉' : ''));
   for (const id of ['moreRows', 'farBar', 'cheerBtn', 'unlockNote', 'ask']) { const e = $(id); if (e) e.hidden = true; }
   const tn = $('tipNote'); tn.textContent = '只存這支手機，不加點數或星星'; /* D224：縮短成一行，iPhone SE／13 不再剩「星。」單獨一行 */ tn.hidden = false;
   show('resultPanel');
