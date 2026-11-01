@@ -126,6 +126,9 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .card.result .total{font-size:40px}
 .card.result .rows{font-size:13px;gap:2px 12px;padding:6px 0}
 .card.result .rows:not(.open){grid-template-columns:auto 1fr}
+.card.result .moreRows{scroll-margin-bottom:76px}
+.card.result .rows .ptLines{white-space:pre-line;line-height:1.45}      /* D284（GPT 2130 B①）：點數怎麼算一段一行 */
+#luckyLine{display:flex;flex-wrap:wrap;justify-content:center;column-gap:.5em}.dexline .dxHead{display:flex;flex-wrap:wrap;column-gap:.6em}.lkSeg,.dxSeg{max-width:100%}      /* D284（GPT 2130 A①／C②）：幸運魚、圖鑑提示照語意整組換行 */
 @media (max-width:360px){.card.result .rows.open span.xr{grid-column:1 / -1}.card.result .rows.open span.xr:nth-child(even){text-align:right;margin-top:-2px;padding-bottom:2px}}      /* D282（GPT 2030 A①）：窄版展開「更多紀錄」每列名稱在上、數值在下靠右，收起與 390 照舊 */
 .card.result .rows .rkL{grid-column:1 / -1;display:flex;justify-content:space-between;gap:12px}.card.result .rows .rkV{white-space:nowrap;font-weight:700;text-align:right}      /* D281：320 結算左欄依字寬，不再把「幸運魚・白帶魚」拆出單獨一個「魚」 */
 @media (prefers-reduced-motion:reduce){.kg.pop,.banner{animation:none}}
@@ -457,7 +460,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.45',
+  version: '0.46',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -1295,9 +1298,9 @@ function renderStart() {
   { const i = CONFIG.stages.indexOf(LVL()); $('stgName').textContent = LVL().full || LVL().name; $('stgNo').textContent = '小鳶捕魚・第 ' + (i + 1) + ' 關'; }
   { const hr = $('howRule'), hw = LVL().how; if (hr && hw) { hr.querySelector('b').textContent = hw[0]; hr.querySelector('span').textContent = hw[1]; } }
   if (0) { let nl = $('nightLine'); if (!nl) { nl = document.createElement('p'); nl.id = 'nightLine'; nl.className = 'lucky nightTip'; $('sessionNote').after(nl); } const nt = CONFIG.sessions.find((x) => x.id === 'night'); nl.hidden = !NIGHT_NOW && !DUSK_NOW; const dk = CONFIG.sessions.find((x) => x.id === 'dusk'); nl.textContent = NIGHT_NOW ? (nt && isOpen(nt) ? '🌙 現在是晚上，漁船的燈亮了，夜釣場小卷特別多！' : '🌙 現在是晚上～先玩過「午後」「黃昏」，就能開放夜釣場') : (dk && isOpen(dk) ? '🌇 太陽快下山了，黃昏場的白帶魚正多！' : '🌇 傍晚了～先玩一局「午後」，就能開放黃昏場'); }
-  { let lk = $('luckyLine'); if (!lk) { lk = document.createElement('p'); lk.id = 'luckyLine'; lk.className = 'lucky'; $('sessionNote').after(lk); } lk.textContent = '🍀 今日幸運魚：' + CONFIG.fish[LK()].name + '（抓到分數 ×1.5，明天會換）'; }
+  { let lk = $('luckyLine'); if (!lk) { lk = document.createElement('p'); lk.id = 'luckyLine'; lk.className = 'lucky'; $('sessionNote').after(lk); } lk.textContent = ''; const a = document.createElement('span'), b = document.createElement('span'); a.className = b.className = 'lkSeg'; a.textContent = '🍀 今日幸運魚：' + CONFIG.fish[LK()].name; b.textContent = '抓到分數 ×' + LUCKY_MUL + '，明天會換'; lk.append(a, b); }      /* D284（GPT 2130 A①）：魚名一組、倍率一組，放不下就照語意換行 */
   const L = SP(), vb = LVL().verb || '抓', got = L.filter((k) => dex[k]), miss = L.filter((k) => !dex[k]), dl = $('dexLine'); dl.textContent = '';
-  const head = document.createElement('div'); head.textContent = (lvl === 'keelung' ? '港邊' : LVL().name) + '圖鑑 ' + got.length + ' / ' + L.length + (miss.length ? '　還沒' + vb + '過：' + CONFIG.fish[miss[0]].name + '（' + hintOf(miss[0]) + '）' : '　全部都' + vb + '到了！'); dl.appendChild(head);
+  const head = document.createElement('div'); { const sg = (t) => { const x = document.createElement('span'); x.className = 'dxSeg'; x.textContent = t; head.appendChild(x); }; sg((lvl === 'keelung' ? '港邊' : LVL().name) + '圖鑑 ' + got.length + ' / ' + L.length); if (miss.length) { sg('還沒' + vb + '過：' + CONFIG.fish[miss[0]].name); sg(hintOf(miss[0])); } else sg('全部都' + vb + '到了！'); } head.className = 'dxHead'; dl.appendChild(head);      /* D284（GPT 2130 C②）：圖鑑數／魚名／時段提示各一組，不拆成殘字 */
   const chips = document.createElement('div'); chips.className = 'chips';
   for (const k of L) { const c = document.createElement('span'); c.textContent = dex[k] ? CONFIG.fish[k].name : '？？'; if (!dex[k]) c.className = 'no'; chips.appendChild(c); }
   dl.appendChild(chips);
@@ -1416,17 +1419,18 @@ function finish() { BGM.stop(); if (window.KiteBoard) KiteBoard.ev('run_end', { 
   /* v0.28（C-185，D71）：把這局分數送進官方 LINE 的「遊戲分數存摺」（每關每天前幾次才算、活動時段乘倍數；規則在後台改）。沒有載入共用資料層時（G 槽複本）就跳過 */
   window.__lastRank = null; if (window.KiteCore) { try { const rk = KiteCore.rankAround ? KiteCore.rankAround('fish', sid, () => KiteCore.reportPlay({ game: 'fish', level: sid, score: PTS(kg), sec: t })) : { res: KiteCore.reportPlay({ game: 'fish', level: sid, score: PTS(kg), sec: t }) }, rp = rk.res; window.__lastRank = rk;
     /* D215（GPT 2325 A）：點數區只突出一句（回樂園領 N 點／今天已拿滿／這局 +N 點／再 X 分就拿到第 1 點），整串計算收進「更多紀錄」的「點數明細」；N 與條件照舊，不另算 */
+    const ptSegs = rp.tier && rp.counted ? ['今天累計 ' + rp.today.toLocaleString() + ' 分' + (rp.pts ? '＝' + rp.pts + ' 點' : '') + (!rp.tap && rp.gain ? '（這局 +' + rp.gain + ' 點）' : ''), rp.tap ? (rp.lit ? '這局新亮 ' + rp.lit + ' 格' + (rp.claim ? '，回樂園領 ' + rp.claim + ' 點！' : '') : rp.claim ? '回樂園領 ' + rp.claim + ' 點！' : '') : '', rp.next ? (rp.pts ? '再 ' + rp.next.need.toLocaleString() + ' 分多 1 點' : '再 ' + rp.next.need.toLocaleString() + ' 分就拿到第 1 點') : rp.pts >= rp.cap ? '今天已拿滿' : '', rp.mult > 1 ? rp.event + ' ×' + rp.mult : ''].filter(Boolean) : null;      /* D284（GPT 2130 B①）：點數怎麼算照原本「・」的語意段，一段一行；內容與條件照舊 */
     const ptLong = (rp.tier ? (rp.counted ? '今天累計 ' + rp.today.toLocaleString() + ' 分' + (rp.pts ? '＝' + rp.pts + ' 點' : '') + (rp.tap ? (rp.lit ? '・這局新亮 ' + rp.lit + ' 格' : '') + (rp.claim ? '，回樂園領 ' + rp.claim + ' 點！' : '') : rp.gain ? '（這局 +' + rp.gain + ' 點）' : '') + (rp.next ? (rp.pts ? '・再 ' + rp.next.need.toLocaleString() + ' 分多 1 點' : '・再 ' + rp.next.need.toLocaleString() + ' 分就拿到第 1 點') : rp.pts >= rp.cap ? '・今天已拿滿' : '') + (rp.mult > 1 ? '・' + rp.event + ' ×' + rp.mult : '') : '今天這場已經算過分了（明天再來）') : rp.counted ? '+' + rp.add + ' 分' + (rp.mult > 1 ? '（' + rp.event + ' ×' + rp.mult + '）' : '') + '・存摺 ' + rp.bank + ' 分' : '今天這場已經算過分了（明天再來）'), ptMain = rp.tier && rp.counted ? (rp.tap && rp.claim ? '回樂園領 ' + rp.claim + ' 點！' : rp.pts >= rp.cap ? '今天拿滿' + rp.pts + '點囉！' : !rp.tap && rp.gain ? '這局拿到' + rp.gain + '點！' : rp.pts ? '今天累積' + rp.pts + '點' : rp.next ? '再' + rp.next.need.toLocaleString() + '分湊1點！' : '今天 ' + rp.today.toLocaleString() + ' 分') : ptLong;      /* D216（GPT 0835 A）：四種非可領句換短句，N／X 照原欄位 */
-    add(rp.tier ? '官方 LINE 點數' : '官方 LINE 分數存摺', ptMain); if (rp.tier && rp.counted) { rows.lastChild.classList.add('ptMain'); if (rp.tap && rp.claim) rows.lastChild.classList.add('claim'); window.__ptDetail = ptLong; } else window.__ptDetail = null; } catch (e) {} }
+    add(rp.tier ? '官方 LINE 點數' : '官方 LINE 分數存摺', ptMain); if (rp.tier && rp.counted) { rows.lastChild.classList.add('ptMain'); if (rp.tap && rp.claim) rows.lastChild.classList.add('claim'); window.__ptDetail = ptSegs ? ptSegs.join('\n') : ptLong; } else window.__ptDetail = null; } catch (e) {} }
   if (window.KiteCore && KiteCore.rankText && window.__lastRank) { const tx = KiteCore.rankText(window.__lastRank); if (tx) { add('本月排名', tx + '\u00a0🏆'); const rv = rows.lastChild, rl = rv.previousSibling; rl.classList.add('rkL'); rv.classList.add('rkV'); const ph = document.createElement('span'); ph.hidden = true; rv.before(ph); rl.appendChild(rv); } }      /* D281：名次整段不拆，左右兩格合成一整行 */      // D133：結算直接看到名次
   xr = true;      /* D174：下面這些收進「更多紀錄」，結算先只看漁獲、幸運魚、最佳、點數、名次 */
-  if (window.__ptDetail) add('點數怎麼算', window.__ptDetail);      /* D215：原本的整串點數計算；D221（GPT 1355 B）標籤同步四款用字 */
+  if (window.__ptDetail) { add('點數怎麼算', window.__ptDetail); rows.lastChild.classList.add('ptLines'); }      /* D215：原本的整串點數計算；D221（GPT 1355 B）標籤同步四款用字 */
   /* v0.24（C-162）：結算多一行「今天」——這支手機今天玩了幾局、一共抓了幾條（只記在這支手機；過了午夜重新算） */
   { const d = new Date(), day = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(), td = prog.today && prog.today.d === day ? prog.today : { d: day, g: 0, n: 0 };
     td.g++; td.n += stats.hits || 0; prog.today = td; saveProg();
     add('今天', '第 ' + td.g + ' 局・一共抓了 ' + td.n + ' 條' + (td.g >= 3 ? ' 🎣' : '')); }
   add('鯨鯊加倍時段', PTS(stats.kgInEvent) + ' 分'); add('連抓加成（最多連 ' + stats.bestCombo + '）', '+' + PTS(stats.comboBonus) + ' 分'); add('命中率', acc + '%（' + stats.hits + '/' + stats.dives + '）'); add('抓到垃圾', stats.trash + ' 次');
-  { rows.classList.remove('open'); let mb = $('moreRows'); if (!mb) { mb = document.createElement('button'); mb.type = 'button'; mb.id = 'moreRows'; mb.className = 'moreRows'; rows.after(mb); } mb.textContent = '更多紀錄 ▾'; mb.onclick = () => { const o = rows.classList.toggle('open'); mb.textContent = o ? '收起 ▴' : '更多紀錄 ▾'; }; }
+  { rows.classList.remove('open'); let mb = $('moreRows'); if (!mb) { mb = document.createElement('button'); mb.type = 'button'; mb.id = 'moreRows'; mb.className = 'moreRows'; rows.after(mb); } mb.textContent = '更多紀錄 ▾'; mb.onclick = () => { const o = rows.classList.toggle('open'); mb.textContent = o ? '收起 ▴' : '更多紀錄 ▾'; if (o) try { mb.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {} };      /* D284（GPT 2130 待確認 1）：展開後把「收起」捲到固定「再玩一局」上方，最後一列不被蓋住 */ }
   // 港邊圖鑑冊：六種漁獲的小卡，抓過的可以點開看小知識；這局新抓到的標成金色
   const SPL = SP(), got = SPL.filter((k) => dex[k]).length, box = $('dex'), fact = $('fact'); box.textContent = '';
   const tell = (k, b, hi) => { fact.textContent = '';
