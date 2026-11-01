@@ -56,7 +56,8 @@
     if (!s || !r) return '';
     var h = '<div class="kd-res"><b>📅 今日挑戰・' + (s.official ? '正式' : '練習（不計榜）') + '</b>';
     if (s.official && r.tier && K.tierLine) h += '<div>🪙 ' + K.tierLine(r.tier) + '</div>';
-    if (s.official) h += '<div>今日最佳 ' + Number(r.best).toLocaleString() + ' 分' + (r.rank ? '・今日第 ' + r.rank + ' 名' : '・名次更新中') + '</div><div>今天還有 ' + r.left + ' 次正式挑戰</div>';
+    /* D266（GPT 0830 A②）：卡上已有這支手機的「今日正式最佳」，面板只留今日榜（雲端實際回傳）的名次 */
+    if (s.official) h += '<div>今日榜：' + (r.rank ? '第 ' + r.rank + ' 名' : '名次更新中') + '</div><div>今天還有 ' + r.left + ' 次正式挑戰</div>';
     /* D265（GPT 2330 C③）：練習局結算卡主鈕已是「再練一次」，面板不再放重複的再練鈕 */
     h += '<div class="kd-btns">' + (r.left > 0 ? '<a class="kd-b" href="?daily=official">再正式挑戰</a>' : '') + (s.official ? '<a class="kd-b" href="?daily=practice">練習</a>' : '') + (s.official ? '<button type="button" class="kd-b" data-kd="share">挑戰朋友</button>' : '') + '<button type="button" class="kd-b" data-kd="lb">看今日榜</button></div></div>';
     return h;
