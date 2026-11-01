@@ -102,6 +102,11 @@
     if (hm) { var e = hm.querySelector('.hmSay'); if (!e) { e = document.createElement('p'); e.className = 'hmSay'; hm.insertBefore(e, hm.firstChild); } e.textContent = '小鳶：' + t; e.classList.remove('pop'); void e.offsetWidth; e.classList.add('pop'); return; }
     try { var sb = $('say'), box = $('sayBox'); if (sb && box) { sb.textContent = t; box.classList.remove('off'); clearTimeout(say.t); say.t = setTimeout(function () { box.classList.add('off'); }, 2600); } else toast('小鳶：' + t); } catch (x) {}
   }
+  function sayLines(L) {      /* D280：GPT 1930 A③——說話泡泡按語意分行，名字整組不拆（L：每行是 [文字, 是名字] 的陣列） */
+    var sb = $('say'), box = $('sayBox'); if (!sb || !box) { say(L.map(function (r) { return r.map(function (x) { return x[0]; }).join(''); }).join('')); return; }
+    sb.textContent = ''; L.forEach(function (r) { var ln = document.createElement('span'); ln.className = 'sayLn'; r.forEach(function (x) { if (x[1]) { var n = document.createElement('span'); n.className = 'sayNm'; n.textContent = x[0]; ln.appendChild(n); } else ln.appendChild(document.createTextNode(x[0])); }); sb.appendChild(ln); });
+    box.classList.remove('off'); clearTimeout(say.t); say.t = setTimeout(function () { box.classList.add('off'); }, 2600);
+  }
   function have(need) { var h = H(); return Object.keys(need).every(function (v) { return (h.fridge[v] || 0) >= need[v]; }); }
   function lack(need) { var h = H(), a = []; Object.keys(need).forEach(function (v) { var d = need[v] - (h.fridge[v] || 0); if (d > 0) a.push(itemName(v) + '×' + d); }); return a.join('、'); }
   var UNIT = { gohan: '碗', egg: '顆' };      /* D192：GPT 1820 B——白飯「碗」、雞蛋「顆」、其他「份」，只改顯示 */
@@ -200,7 +205,7 @@
     var o = ADOPT[i], c = CARE[i], A0 = ANI[o.k], prof = Object.keys(A0.make).map(function (g) { return GOOD[g].name + ' ' + A0.make[g] + ' 分'; }).join('、') || o.note || '';
     modal('<div class="vCard">' + vimg(c.f) + '<div class="vMood">' + spP(o.k) + '<b>' + A0.name + '</b></div></div><h3>' + A0.em + ' ' + A0.name + '</h3>' + (line ? '<p>' + line + '</p>' : '') + '<p class="mu sm" id="hmProf" style="display:none">' + A0.name + '的小檔案：' + (o.note || prof) + '。來了以後會在牧場跟大家一起走來走去' + (prof && o.k !== 'dog' ? '，定時產' + Object.keys(A0.make).map(function (g) { return GOOD[g].name; }).join('和') : '') + '。</p><div class="row"><button class="btn ghost" id="hmLook">先看看牠</button><button class="btn" id="hmInv">邀請來住</button></div><div class="row" style="margin-top:6px"><button class="btn ghost" id="hmLater">晚點再說</button></div>');
     $('hmLook').onclick = function () { $('hmProf').style.display = ''; say(A0.says[0]); };
-    $('hmInv').onclick = function () { var h = H(); h.adopted = h.adopted || [0]; if (h.adopted.indexOf(i) >= 0) return; h.adopted.push(i); adoptAdd(o.k); var nz = h.zoo[h.zoo.length - 1]; sv(); close(); say('歡迎' + A0.name + '加入牧場！謝謝' + FR[c.f].n + '～'); HI = { id: nz.id, until: Date.now() + 800 }; zooRender(true); setTimeout(function () { HI = {}; var q = document.querySelector('.hmHi'); if (q) q.remove(); }, 820); };      /* D279：GPT 1830 B②——剛邀請來的動物第一次登場頭上「我來了！」0.8 秒，只在按邀請當下一次 */
+    $('hmInv').onclick = function () { var h = H(); h.adopted = h.adopted || [0]; if (h.adopted.indexOf(i) >= 0) return; h.adopted.push(i); adoptAdd(o.k); var nz = h.zoo[h.zoo.length - 1]; sv(); close(); sayLines([[['歡迎', 0], [A0.name, 1], ['來牧場！', 0]], [['謝謝', 0], [FR[c.f].n, 1], ['～', 0]]]); HI = { id: nz.id, until: Date.now() + 800 }; zooRender(true); setTimeout(function () { HI = {}; var q = document.querySelector('.hmHi'); if (q) q.remove(); }, 820); };      /* D279：GPT 1830 B②——剛邀請來的動物第一次登場頭上「我來了！」0.8 秒，只在按邀請當下一次 */
     $('hmLater').onclick = adoptSheet;
   }
   var POS = {}, zooT = 0, HI = {};
