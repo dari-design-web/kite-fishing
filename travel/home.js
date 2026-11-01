@@ -258,7 +258,7 @@
       html += fishOpt(h);      /* D175：香煎白帶魚小碟（練習） */
       if (lockedD.length) html += '<div class="lockRow"><span>' + lockedD.map(function () { return '❔'; }).join('') + '</span>還有 ' + lockedD.length + ' 道招牌菜：在港灣蓋章認識港口朋友，就會學到</div>';      /* D174：還沒學會的不再一排排灰色，收成一行 */
     }
-    html += '</div><p class="mu sm">' + (tab === 'bento' ? '手作便當可以帶小鳶出門旅行（打包時在「便當」裡選）。手作便當的旅行不會撿到點數或券；點數便當還是到港口換禮換。' : '配菜帶出門，第一次帶回來會有一張料理小記。') + '</p><p class="mu sm">冰箱：' + fridgeLine() + '</p><div class="row"><button class="btn ghost" id="hmOrd">📋 訂單</button><button class="btn ghost" id="hmBook">📖 菜譜</button><button class="btn ghost" id="hmX">關閉</button></div>';
+    html += '</div><p class="mu sm">' + (tab === 'bento' ? '手作便當可以帶小鳶出門旅行（打包時在「便當」裡選）。手作便當的旅行不會撿到點數或券；點數便當還是到港口換禮換。' : '配菜帶出門，第一次帶回來會有一張料理小記。') + '</p><p class="mu sm">冰箱：' + fridgeLine() + '</p><div class="row r3"><button class="btn ghost" id="hmOrd">📋 訂單</button><button class="btn ghost" id="hmBook">📖 菜譜</button><button class="btn ghost" id="hmX">關閉</button></div>';
     modal(html);
     document.querySelectorAll('.hmT button').forEach(function (b) { b.onclick = function () { kitchen(b.dataset.t); }; });
     document.querySelectorAll('.hm .opt[data-k]').forEach(function (b) { b.onclick = function () { cook('d', b.dataset.k); }; });
