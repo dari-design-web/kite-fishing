@@ -200,13 +200,21 @@
     var o = ADOPT[i], c = CARE[i], A0 = ANI[o.k], prof = Object.keys(A0.make).map(function (g) { return GOOD[g].name + ' ' + A0.make[g] + ' 分'; }).join('、') || o.note || '';
     modal('<div class="vCard">' + vimg(c.f) + '<div class="vMood">' + spP(o.k) + '<b>' + A0.name + '</b></div></div><h3>' + A0.em + ' ' + A0.name + '</h3>' + (line ? '<p>' + line + '</p>' : '') + '<p class="mu sm" id="hmProf" style="display:none">' + A0.name + '的小檔案：' + (o.note || prof) + '。來了以後會在牧場跟大家一起走來走去' + (prof && o.k !== 'dog' ? '，定時產' + Object.keys(A0.make).map(function (g) { return GOOD[g].name; }).join('和') : '') + '。</p><div class="row"><button class="btn ghost" id="hmLook">先看看牠</button><button class="btn" id="hmInv">邀請來住</button></div><div class="row" style="margin-top:6px"><button class="btn ghost" id="hmLater">晚點再說</button></div>');
     $('hmLook').onclick = function () { $('hmProf').style.display = ''; say(A0.says[0]); };
-    $('hmInv').onclick = function () { var h = H(); h.adopted = h.adopted || [0]; if (h.adopted.indexOf(i) >= 0) return; h.adopted.push(i); adoptAdd(o.k); sv(); close(); say('歡迎' + A0.name + '加入牧場！謝謝' + FR[c.f].n + '～'); zooRender(true); };
+    $('hmInv').onclick = function () { var h = H(); h.adopted = h.adopted || [0]; if (h.adopted.indexOf(i) >= 0) return; h.adopted.push(i); adoptAdd(o.k); var nz = h.zoo[h.zoo.length - 1]; sv(); close(); say('歡迎' + A0.name + '加入牧場！謝謝' + FR[c.f].n + '～'); HI = { id: nz.id, until: Date.now() + 800 }; zooRender(true); setTimeout(function () { HI = {}; var q = document.querySelector('.hmHi'); if (q) q.remove(); }, 820); };      /* D279：GPT 1830 B②——剛邀請來的動物第一次登場頭上「我來了！」0.8 秒，只在按邀請當下一次 */
     $('hmLater').onclick = adoptSheet;
   }
-  var POS = {}, zooT = 0;
+  var POS = {}, zooT = 0, HI = {};
   /* D168：G105 共居牧場（room_ranch_v2）＋五種動物 10 格動作圖（sprite_*.webp）。雞豬牛羊：走0–3 吃4–5 睡6–7 開心8–9；狗：走0–3 坐4–5 搖尾6–9。
      動物大小照 G105_共居牧場座標_v3 display_size（÷1080）；走動範圍：草地多邊形 y 68～93%。 */
   var ASZ = { chicken: 15.7, pig: 17.6, cow: 22.2, sheep: 18, dog: 16.7 };
+  function hiShow(f, e) {      /* D279：「我來了！」放在牧場最上層（不被小鳶蓋住），碰到說話泡泡或右上按鈕列就改放動物腳下 */
+    var hi = document.createElement('span'); hi.className = 'hmHi'; hi.textContent = '我來了！'; f.appendChild(hi);
+    var fr = f.getBoundingClientRect(), ar = e.getBoundingClientRect(), w = hi.offsetWidth, hh = hi.offsetHeight;
+    var x = Math.max(4, Math.min(fr.width - w - 4, ar.left - fr.left + ar.width / 2 - w / 2)), y = ar.top - fr.top - hh + ar.height * 0.12;
+    function hit(y0) { var bad = false; document.querySelectorAll('#say,#hmAd,#hmCA,#hmFr').forEach(function (q) { var r = q.getBoundingClientRect(); if (!r.width || getComputedStyle(q).visibility === 'hidden') return; var t = y0 + fr.top, l = x + fr.left; if (l < r.right && l + w > r.left && t < r.bottom && t + hh > r.top) bad = true; }); return bad; }
+    if (y < 2 || hit(y)) y = Math.min(fr.height - hh - 2, ar.bottom - fr.top + 2);
+    hi.style.left = x + 'px'; hi.style.top = y + 'px';
+  }
   function night() { var hh = new Date().getHours(); return hh >= 21 || hh < 6; }
   function zooRender(force) {
     var f = $('hmFarm'); if (!f || S.room !== 'ranch') return;
@@ -219,6 +227,7 @@
       var r = readyOf(a), pz = POS[a.id], mode = r.length ? (a.k === 'dog' ? 'wag' : 'joy') : pz.walk ? 'walk' : a.k === 'dog' ? (pz.eat ? 'sit' : 'idle') : night() && !pz.walk ? 'sleep' : pz.eat ? 'eat' : 'idle', src = '<span class="sp ' + a.k + ' ' + mode + '"></span>';
       var key = mode + r.join(',');
       if (force || e.dataset.key !== key) { e.dataset.key = key; e.classList.toggle('ready', !!r.length); e.innerHTML = '<span class="aw">' + src + '</span>' + (r.length ? '<span class="bub">' + r.map(function (g) { return GOOD[g].meat ? '<span class="pb crate">📦</span>' : img('product_' + g, 'pb'); }).join('')      /* D172：肉品不從動物頭上冒，改成合作農場備料箱（G104 C） */ + '</span>' : ''); e.setAttribute('aria-label', ANI[a.k].name + (r.length ? '：可以收' : '')); }
+      if (HI.id === a.id && Date.now() < HI.until && !r.length && !f.querySelector('.hmHi')) hiShow(f, e);
       e.style.zIndex = Math.round(POS[a.id].y); e.style.width = ASZ[a.k] + '%';
       e.style.setProperty('--fx', POS[a.id].f);
     });
@@ -629,6 +638,7 @@
     '@keyframes awX{0%,100%{transform:translateX(-14%)}45%,55%{transform:translateX(14%)}}@keyframes awF{0%{scale:1 1}50%{scale:-1 1}}' +
     '@keyframes awBob{50%{translate:0 -3%}}@keyframes awPeck{0%,60%,100%{rotate:0deg}70%,85%{rotate:16deg;translate:4% 6%}}@keyframes awEat{50%{rotate:6deg;translate:0 3%}}@keyframes awJoy{0%,100%{translate:0 0}30%{translate:0 -10%}45%{translate:0 0}60%{translate:0 -5%}}' +
     '.hmZoo{position:absolute;inset:0;pointer-events:none}.hmAni{position:absolute;width:18%;aspect-ratio:1;transform:translate(-50%,-90.6%);border:0;background:none;padding:0;pointer-events:auto;cursor:pointer;transition-property:left,top;transition-timing-function:linear;-webkit-tap-highlight-color:transparent}.hmAni.cow{width:26%}.hmAni.pig{width:22%}.hmAni.chicken{width:16%}.hmAni.dog{width:15%}' +
+    '.hmHi{position:absolute;white-space:nowrap;background:#fff;color:#2B3A40;border-radius:12px;padding:3px 9px;font-size:13px;font-weight:700;line-height:1.3;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none;z-index:204;animation:hiPop .8s ease-out both}@keyframes hiPop{0%{opacity:0;margin-bottom:-6px}18%{opacity:1;margin-bottom:0}80%{opacity:1}100%{opacity:0}}' +
     '.hmAni .aw{position:absolute;inset:0;transform:scaleX(var(--fx,1));transition:transform .2s}.hmAni .sp{position:absolute;inset:0;background-repeat:no-repeat;background-size:1000% 100%;background-position:0 0}' +
     '.hmAni .sp.chicken{background-image:url(' + A + 'sprite_chicken.webp)}' +
     '.hmAni .sp.pig{background-image:url(' + A + 'sprite_pig.webp)}' +
