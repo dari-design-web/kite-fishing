@@ -30,7 +30,7 @@
     '.ck .fly{position:fixed;z-index:70;width:34px;height:34px;pointer-events:none;transition:transform .35s ease-in,opacity .35s;display:flex;align-items:center;justify-content:center;font-size:26px}.ck .fly img{width:100%}' +
     '.ck.dual .top b{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}body:has(.ck) #hmAct,body:has(.ck) .roomwrap .chip,body:has(.ck) #hmFarm,body:has(.ck) #sayBox{visibility:hidden}' +
     '.ck .hz.toss .pot{animation:ckTs .35s}@keyframes ckTs{30%{transform:translateX(-50%) translateY(-8px) rotate(-6deg)}70%{transform:translateX(-50%) rotate(4deg)}}' +
-    '.ck .done{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(30,20,10,.6);color:#fff;text-align:center;gap:6px}.ck .done .stars{font-size:44px;letter-spacing:4px}.ck .done b{font-size:20px}';
+    '.ck.ckEnd .tip,.ck.ckEnd .tray{visibility:hidden}.ck .done{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(30,20,10,.6);color:#fff;text-align:center;gap:6px}.ck .done .stars{font-size:44px;letter-spacing:4px}.ck .done b{font-size:20px}';
   document.head.appendChild(css);
 
   /* recipe：{ name, need:{k:n}, kind:'bento'|'dish', items:{k:{name,e,type,img,cut}} }；type：chop 要切、cook 直接下鍋、rice 裝飯 */
@@ -168,7 +168,7 @@
         ended = true; clearInterval(tickT);
         var sec = Math.round((Date.now() - t0) / 1000), stars = Math.max(1, 3 - (burnt ? 1 : 0) - (sec > LIM ? 1 : 0) - (pots.some(function (p) { return p.need && (p.stir || 0) < 2; }) ? 1 : 0));
         var d = el('div', 'done', '<div style="font-size:64px">' + (G > 1 ? '🧾' : r.kind === 'bento' ? '🍱' : '🍽️') + '</div><b>' + (G > 1 ? '兩張訂單都完成！' : r.name + '完成！') + '</b><div class="stars">' + '⭐'.repeat(stars) + '<span style="opacity:.3">' + '⭐'.repeat(3 - stars) + '</span></div><p>' + sec + ' 秒' + (burnt ? '・有一點焦' : '') + (stars >= 3 ? '・完美！' : '') + '</p>');
-        w.appendChild(d); setTimeout(function () { w.remove(); onDone(stars); }, 1600);
+        w.appendChild(d); w.classList.add('ckEnd'); setTimeout(function () { w.remove(); onDone(stars); }, 1600);      /* D275：GPT 1530 B①——完成卡期間收起提示列與籃子列 */
         return true;
       }
       return false;
@@ -186,7 +186,14 @@
       });
     }, 100);
     order(); tray(); boardState(); pots.forEach(function (p, g) { potState(g); }); boxState();
-    tip(G > 1 ? '兩張訂單一起做：①用左爐、②用右爐，自己決定先做哪個' : list.some(function (x) { return x.it.type === 'chop'; }) ? '從上面的籃子拿菜，放到砧板切' : '從上面的籃子拿食材');
+    tip(G > 1 ? '兩張訂單一起做：①用左爐、②用右爐，自己決定先做哪個' : firstTip());
+    function firstTip() {      /* D275：GPT 1530 A①——開場句照第一個要處理的食材與實際動作寫，不再一律「砧板切」 */
+      var x = list.filter(function (y) { return y.st === 'basket'; })[0]; if (!x) return '從上面的籃子拿食材';
+      var nm = x.it.name;
+      if (x.it.type === 'chop') return '從籃子拿' + nm + '，放到砧板' + steps(x.it)[0].v;
+      if (x.it.type === 'cook') return '從籃子拿' + nm + '，放進' + potName(x.g);
+      return '先拿' + nm + '，再點飯鍋裝飯';
+    }
   }
   window.COOK = { start: start };
 })();
