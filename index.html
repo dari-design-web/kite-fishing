@@ -460,7 +460,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.46',
+  version: '0.47',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -673,7 +673,10 @@ function spawn(p0, forced) {
 }
 
 /* ====== 特效粒子 ====== */
-function comboBadge() { const c = $('combo'); if (!c) return; if (stats.combo >= 2) { c.hidden = false; c.textContent = '連抓 ×' + stats.combo; c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); } else c.hidden = true; }
+function comboBadge() { const c = $('combo'); if (!c) return; if (stats.combo >= 2) { c.hidden = false; c.textContent = '連抓 ×' + stats.combo; c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); } else c.hidden = true;  bannerPad(); }
+/* D285：鯨鯊加倍中，連抓徽章會蓋到上方橫幅開頭的字；橫幅左邊讓出徽章的寬度，字放在剩下的空間置中 */
+function bannerPad() { const c = $('combo'), b = $('banner'); if (!c || !b) return; if (c.hidden || b.hidden) { b.style.paddingLeft = ''; return; }
+  const pr = c.parentNode.getBoundingClientRect(), br = b.getBoundingClientRect(), right = pr.left + pr.width / 2 + c.offsetWidth / 2; b.style.paddingLeft = Math.max(10, Math.ceil(right - br.left + 6)) + 'px'; }
 function say(text, x, y, color, slow) { floats.push({ age: 0, text, x: Math.max(48, Math.min(W - 48, x)), y, life: 1, color: color || '#fff', rate: slow ? 0.5 : 0.9, rise: slow ? 12 : 26 }); }   // slow：停留久一點（約 2 秒）
 function part(kind, x, y, o) { parts.push(Object.assign({ kind, x, y, vx: 0, vy: 0, life: 1, fade: 1.6, size: 3, rot: rand(0, 6.28) }, o)); }
 function splash(x) { const s = CONFIG.surfaceY; rings.push({ x, y: s, life: 1, flat: true }); for (let i = 0; i < 7; i++) part('drop', x + rand(-8, 8), s, { vx: rand(-70, 70), vy: rand(-170, -70), g: 520, fade: 1.8, size: rand(1.5, 2.8) }); }
@@ -853,7 +856,7 @@ function update(dt) {
   const left = Math.ceil(CONFIG.duration - t);
   $('timeText').textContent = '剩 ' + left + ' 秒';
   const bar = $('timeBar'); bar.style.transform = 'scaleX(' + (1 - t / CONFIG.duration) + ')'; bar.classList.toggle('low', left <= 5);
-  $('banner').hidden = !inEvent; $('kg').classList.toggle('x2', inEvent); ultUI();
+  if ($('banner').hidden !== !inEvent) { $('banner').hidden = !inEvent; bannerPad(); } $('kg').classList.toggle('x2', inEvent); ultUI();
   $('hint').hidden = firstCatchDone || t > 12;
 }
 
