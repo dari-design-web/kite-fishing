@@ -343,7 +343,7 @@ header .back,.letter .skip{min-height:44px;min-width:44px;display:inline-flex;al
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.65',
+  version: '0.66',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 0,      // D80：遠行便當改用點數換，不再每 3 趟送 1 份（0＝關閉）
@@ -650,6 +650,11 @@ const PET = (() => {
   const AREA = { x0: 26, x1: 78, y0: 82, y1: 95 };      // 地板上可以走的範圍（底圖的百分比）；換房間時換成該房間的範圍
   const rnd = (a, b2) => a + Math.random() * (b2 - a);
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
+  function sayClear(sb) {      /* D276：花園／牧場右上「全部收／委託／冰箱」按鈕會蓋住小鳶的說話泡泡（320 牧場「我想睡一下下」只露半句）→ 泡泡碰到按鈕列就往下移到按鈕下面 */
+    const ha = $('hmAct'); if (!ha || !ha.children.length || sb.classList.contains('off')) return;
+    const r = ha.getBoundingClientRect(), q = sb.getBoundingClientRect(); if (!r.height || q.right < r.left || q.left > r.right) return;
+    const d = r.bottom + 6 - q.top; if (d > 0) sb.style.top = 'calc(' + sb.style.top + ' + ' + Math.ceil(d) + 'px)';
+  }
   function say(t, sec) { p.say = t; p.sayT = sec || 2.8; $('say').textContent = t; $('sayBox').classList.remove('off'); }
   function emote(k, float) { const e = $('emote'); e.hidden = false; e.innerHTML = EMO[k]; e.className = 'emote' + (float ? ' float' : ''); void e.offsetWidth; p.emoT = float ? 2 : 2.4; }
   function go(x, y) { p.sx = p.x; p.sy = p.y; p.tx = Math.max(AREA.x0, Math.min(AREA.x1, x)); p.ty = Math.max(AREA.y0, Math.min(AREA.y1, y)); p.face = p.tx >= p.x ? 1 : -1; p.act = 'walk'; p.t = 0; p.dur = Math.max(0.6, Math.hypot(p.tx - p.x, (p.ty - p.y) * 2) / 14); }
@@ -749,7 +754,7 @@ const PET = (() => {
       b.style.zIndex = Math.round(p.y);
       const headTop = p.y - hPct * 0.84 - bob * 0.3;
       const sb = $('sayBox');
-      if (ROOM().id === 'kitchen') sayFloor(sb, b); else { if (sb.classList.contains('flo')) { sb.classList.remove('flo', 'side'); sb.style.width = ''; } sb.style.left = Math.max(32, Math.min(68, p.x)) + '%'; sb.style.top = (headTop - 1) + '%'; }
+      if (ROOM().id === 'kitchen') sayFloor(sb, b); else { if (sb.classList.contains('flo')) { sb.classList.remove('flo', 'side'); sb.style.width = ''; } sb.style.left = Math.max(32, Math.min(68, p.x)) + '%'; sb.style.top = (headTop - 1) + '%'; sayClear(sb); }
       const em = $('emote'); em.style.left = (p.x + p.face * w * 0.46) + '%'; em.style.top = (headTop + 12) + '%';
       if (p.sayT > 0) { p.sayT -= dt; if (p.sayT <= 0) $('sayBox').classList.add('off'); }
       if (p.act === 'nap' && p.emoT < 0.3) emote('zzz', true);      // v0.15（D58②）：閉眼打瞌睡的整段都冒 ZZZ
@@ -1227,8 +1232,8 @@ function travelBgmSync() { if (travelBgmOn) BGM.play('travel_' + ({ ranch: 'scho
   document.addEventListener('pointerdown', () => { if (travelBgmOn) travelBgmSync(); }, { passive: true });
 })();
 </script>
-<script src="cook.js?v=0.65"></script>
-<script src="home.js?v=0.65"></script>
+<script src="cook.js?v=0.66"></script>
+<script src="home.js?v=0.66"></script>
 <script src="../shared/back_line.js"></script>
 <script>/* D104：旅行排行榜（明信片收藏數） */ if (window.KiteLB) { KiteLB.button(document.getElementById('lbSlot'), { title: '小鳶旅行收藏排行', travel: true }); setTimeout(function () { try { pushTravelStat(); } catch (e) {} }, 1500); }</script>
 </body>

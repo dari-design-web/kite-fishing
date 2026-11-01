@@ -102,9 +102,9 @@
       stepDo();
     });
     (function () {      /* D189：削皮、剝玉米粒、攪蛋用滑的。D203 修：真手機上 touch-action:manipulation 會被當成捲動、pointer 事件被取消 → 砧板改 touch-action:none，並用 touch 事件為主 */
-      var bd = $('ckBoard'), sx = null, sy = 0;
-      function st(x, y) { sx = x; sy = y; }
-      function mv(x, y) { if (sx == null || !board || board.st !== 'board') return false; var c = cur(); if (!c || c.g !== 'swipe') return false; var dx = x - sx, dy = y - sy, ok = c.dir === 'down' ? dy > 30 : Math.abs(dx) > 30; if (ok) { sx = x; sy = y; stepDo(); } return true; }
+      var bd = $('ckBoard'), sx = null, sy = 0, used = false;      /* D276：GPT 1630 A②——每次按下到放開最多算 1 下，同一次連滑不重複算 */
+      function st(x, y) { sx = x; sy = y; used = false; }
+      function mv(x, y) { if (sx == null || !board || board.st !== 'board') return false; var c = cur(); if (!c || c.g !== 'swipe') return false; var dx = x - sx, dy = y - sy, ok = c.dir === 'down' ? dy > 30 : Math.abs(dx) > 30; if (ok && !used) { used = true; stepDo(); } return true; }
       bd.style.touchAction = 'none';
       if ('ontouchstart' in window) {
         bd.addEventListener('touchstart', function (e) { var q = e.touches[0]; st(q.clientX, q.clientY); }, { passive: true });
