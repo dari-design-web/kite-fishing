@@ -129,15 +129,15 @@
         p.st = 'served'; list.forEach(function (x) { if (x.st === 'pot' && x.g === g) x.st = 'done'; }); fly($(PID[g]), 'ckBox', '🥘'); tip(wasBurn ? '有點焦焦的…沒關係，還是很香！' : MARK[g] + '起鍋！剛剛好～'); order(); potState(g); boxState(); check(); return;
       }
       if (p.st === 'cooking') { p.stir = (p.stir || 0) + 1; p.bonus = Math.min(2400, (p.bonus || 0) + 350); var pe = $(PID[g]); pe.classList.remove('toss'); void pe.offsetWidth; pe.classList.add('toss'); var stT = ['翻！', '再翻一下～', '炒得香香的！', '翻得好！'][p.stir % 4] + '（翻炒 ' + p.stir + ' 下，越勻越不容易焦）'; if (!p.danced) { p.danced = true; tip('鍋裡跳舞囉！'); danceT = setTimeout(function () { danceT = 0; $('ckTip').textContent = stT; }, 800); } else tip(stT); return; }      /* D189：煮的時候點鍋子翻炒：每翻一下，「剛好」的時間多 0.35 秒 */
-      if (p.st === 'served') { tip(MARK[g] + '已經起鍋了'); return; }
-      tip(p.need ? '先把' + MARK[g] + '的食材放進' + potName(g) + '（切好的菜、蛋、肉、奶）' : '這道不用開火喔');
+      if (p.st === 'served') { var rl = list.some(function (x) { return x.g === g && x.it.type === 'rice' && x.st !== 'done'; }); tip(MARK[g] + '已經起鍋了' + (rl ? '，還差點飯鍋裝' + (MARK[g] ? MARK[g] + '的' : '') + '飯' : '')); return; }      /* D274：實玩時起鍋後再點爐子，只說「已經起鍋了」，看不出還差裝飯 → 補一句 */
+      tip(p.need ? '先把' + (MARK[g] ? MARK[g] + '的' : '') + '食材放進' + potName(g) + '（切好的菜、蛋、肉、奶）' : '這道不用開火喔');
     }
     tap($('ckPot'), function () { potTap(0); });
     if (G > 1) tap($('ckPot2'), function () { potTap(1); });
     tap($('ckRice'), function () {
       var x = list.find(function (y) { return y.st === 'rice'; }) || list.find(function (y) { return y.st === 'basket' && y.it.type === 'rice'; });
       if (!x) { tip(needRice.some(function (n) { return n; }) ? '飯已經裝好了' : '這道不用裝飯'); return; }
-      x.st = 'done'; riceIn[x.g]++; fly($('ckRice'), 'ckBox', '🍚'); tip(riceIn[x.g] >= needRice[x.g] ? MARK[x.g] + '的飯裝好了！' : '再裝一份' + MARK[x.g] + '的飯'); order(); tray(); boxState(); check();
+      x.st = 'done'; riceIn[x.g]++; fly($('ckRice'), 'ckBox', '🍚'); tip(riceIn[x.g] >= needRice[x.g] ? (MARK[x.g] ? MARK[x.g] + '的' : '') + '飯裝好了！' : '再裝一份' + (MARK[x.g] ? MARK[x.g] + '的' : '') + '飯');      /* D274：單張訂單沒有①②，不再出現「的飯裝好了」「先把的食材」 */ order(); tray(); boxState(); check();
     });
     tap($('ckBox'), function () { if (!check()) tip(riceIn.some(function (n, g) { return n < needRice[g]; }) ? '還要裝飯（點飯鍋）' : '還要等鍋子裡的菜'); });
     function potState(g) {
