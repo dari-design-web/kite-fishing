@@ -138,6 +138,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .pinfo{display:flex;flex-direction:column;gap:4px;margin:0 0 4px;padding:8px 10px;border-radius:12px;background:#FFF6E0;font-size:14px;text-align:left}
 .pinfo div{display:flex;justify-content:space-between;gap:8px}
 .pinfo em{font-style:normal;font-weight:700}
+.pinfo.dly em{display:flex;flex-wrap:wrap;justify-content:flex-end;text-align:right}.pinfo.dly div>span{white-space:nowrap}
 .pinfo .ok{color:#2E8F5A}.pinfo .no{color:#C0503A}.pinfo .wait{color:#8A7356}
 .far{margin:2px 0 8px;text-align:left}
 .far .ft{position:relative;height:12px;margin:14px 14px 4px;border-radius:6px;background:#E8DDCC}
@@ -497,7 +498,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.81',
+  version: '0.82',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -3265,6 +3266,8 @@ function pause() { if (mode !== 'play') return; mode = 'pause'; BGM.stop(); kite
 /* v0.35（C-140）：暫停時看得到這一關的三顆星條件，和「照現在這樣過關的話」拿不拿得到；還有體力 */
 function pauseInfo() {
   const box = $('pauseInfo'); if (!box) return;
+  if (daily) { const nw = (x) => '<span style="white-space:nowrap">' + x + '</span>', tot = DAILY.len * daily.route.segs.length; box.classList.add('dly'); box.innerHTML = '<div><span>今日航線</span><em class="wait">' + nw('第 ' + (daily.k + 1) + '／' + daily.route.segs.length + ' 段') + nw('・' + ST().name) + '</em></div><div><span>已飛</span><em class="wait">' + nw(Math.min(tot, Math.floor(daily.rt)) + '／' + tot + ' 秒') + '</em></div><div><span>剩下體力</span><em class="' + (kite.hearts <= 1 ? 'no' : 'ok') + '">' + Math.max(0, kite.hearts) + ' / ' + LV().hearts + '</em></div>'; return; }      /* D271：GPT 1230 A② 每日航線不計星星，暫停卡改當局航段／已飛遊戲秒數（暫停不累加）／剩下體力 */
+  box.classList.remove('dly');
   const w0 = won; won = true; let sv; try { sv = starsOf(); } finally { won = w0; }
   const rows = ST().stars.map((nm, k) => k === 0 ? ['★ ' + nm, '還在努力', 'wait'] : sv[k] ? ['★ ' + nm, '目前做得到', 'ok'] : /不超過|沒有受傷/.test(nm) ? ['★ ' + nm, '這局拿不到了', 'no'] : ['★ ' + nm, '還沒達到', 'wait']);      // 被打到／小船受傷是扣了就回不來；救朋友、乾淨度是還在進行
   rows.push(['剩下體力', Math.max(0, kite.hearts) + ' / ' + LV().hearts, kite.hearts <= 1 ? 'no' : 'ok']);
