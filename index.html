@@ -460,7 +460,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.57',
+  version: '0.58',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -704,12 +704,12 @@ function resolveDive() {
     const watch = false;      // D120（Dari 10/19「第三關一樣抓，抓了上面有個相機也奇怪」）：取消 D119 的觀察模式，第 3 關跟其他關一樣抓走
     if (watch) { best.seen = true; best.seenT = t; best.vx *= LVL().leave; } else things.splice(things.indexOf(best), 1);
     const def = CONFIG.fish[best.type], inEvent = EVENT(), mult = inEvent ? CONFIG.ult.mult : 1, lucky = best.type === LK(), gain = def.kg * mult * (lucky ? LUCKY_MUL : 1);
-    kg += gain; stats.hits++; stats.counts[best.type]++; if (inEvent) stats.kgInEvent += gain; else { energy = Math.min(CONFIG.ult.need, energy + (def.rare ? 3 : def.kg >= 1.5 ? 2 : 1)); ultUI(); } kite.carry = watch ? null : best.type; firstCatchDone = true; if (watch) { stars(best.x, best.y, 8, 55, '#FFFFFF'); flash = Math.max(flash, 0.18); } if (best.jp === 'air') { stats.jumps = (stats.jumps || 0) + 1; }
+    kg += gain; stats.hits++; stats.counts[best.type]++; if (inEvent) stats.kgInEvent += gain; else { energy = Math.min(CONFIG.ult.need, energy + (def.rare ? 3 : def.kg >= 1.5 ? 2 : 1)); ultUI(); } kite.carry = watch ? null : best.type; firstCatchDone = true; if (watch) { stars(best.x, best.y, 8, 55, '#FFFFFF'); flash = Math.max(flash, 0.18); } if (best.jp === 'air') { stats.jumps = (stats.jumps || 0) + 1; } /* D296：空中抓到的浮字放高 40px（下限 84），小鳶抓完往上飛時不會蓋住字 */
     stats.combo++; stats.bestCombo = Math.max(stats.bestCombo, stats.combo); stats.missRun = 0;
     if (window.KiteBoard) KiteBoard.ev('fish_catch', { sp: best.type });      /* D175：告示板委託 */
     if (!dex[best.type]) { dex[best.type] = true; stats.newDex.push(best.type); try { localStorage.setItem('kiteFishingDex2', JSON.stringify(dex)); } catch (e) {} }
     const lk1 = lucky && !stats.luckyGot; if (lucky) stats.luckyGot = 1;      /* D194（GPT C）：每局第一次抓到幸運魚，得分浮字改「🍀 幸運魚 +實得分」；之後用一般浮字 */
-    say(lk1 ? '🍀 幸運魚 +' + PTS(gain) + (mult > 1 ? '（×' + mult + '×' + LUCKY_MUL + '）' : '') : (watch ? '記錄 ' : best.jp === 'air' ? '空中抓到 ' : '') + def.name + ' +' + PTS(gain) + (mult > 1 ? ' ×' + mult : ''), tx, ty - 18, mult > 1 || def.rare || lucky ? '#FFE08A' : '#fff'); if (lucky) stars(tx, ty, 6, 60, '#FFE08A');
+    say(lk1 ? '🍀 幸運魚 +' + PTS(gain) + (mult > 1 ? '（×' + mult + '×' + LUCKY_MUL + '）' : '') : (watch ? '記錄 ' : best.jp === 'air' ? '空中抓到 ' : '') + def.name + ' +' + PTS(gain) + (mult > 1 ? ' ×' + mult : ''), tx, best.jp === 'air' ? Math.max(84, ty - 40) : ty - 18, mult > 1 || def.rare || lucky ? '#FFE08A' : '#fff'); if (lucky) stars(tx, ty, 6, 60, '#FFE08A');
     if (stats.combo >= CONFIG.combo.from) { kg += CONFIG.combo.bonus; stats.comboBonus += CONFIG.combo.bonus; if (stats.combo === CONFIG.combo.from || stats.combo % 5 === 0) say('連抓 ' + stats.combo + '！', tx, ty - 48, '#BFF0D0'); stars(tx, ty, 5, 50, '#9FF0C8'); }      /* C-94：連抓只在第 3、5、10…條跳字，其他用徽章；薄荷綠小水花（ChatGPT C-88 建議） */
     bubbles(tx, ty, 5);
     if (best.type === 'squid') ink(tx, ty);
