@@ -46,7 +46,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .combo.bump{animation:pop .25s ease-out}
 @keyframes pop{50%{transform:scale(1.15)}}
 .time{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
-.time span{font-size:12px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.time span{font-size:12px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;align-self:flex-start;background:rgba(255,255,255,.72);border-radius:7px;padding:0 6px;line-height:17px} /* D295：GPT 1630 B③ 倒數字後淡白圓角底（傍晚紫天空對比） */
 .bar{height:8px;border-radius:999px;background:rgba(23,50,74,.18);overflow:hidden}
 .bar i{display:block;height:100%;width:100%;background:var(--ink);border-radius:999px;transform-origin:left center}
 .bar i.low{background:var(--coral)}
@@ -99,7 +99,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .dex{display:flex;flex-wrap:wrap;gap:4px;justify-content:center}
 .dex button{border:1.5px solid var(--ink);border-radius:12px;background:#fff;padding:3px 3px 2px;font-size:11.5px;display:inline-flex;flex-direction:column;align-items:center;gap:1px;min-width:44px}.dex button img{height:20px;max-width:40px;object-fit:contain}.dex button img.sil{filter:brightness(0);opacity:.35}
 .dex button.fresh{background:var(--gold)}
-#stage.dark .time span{color:#F5F8FA;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+#stage.dark .time span{color:#F5F8FA;text-shadow:0 1px 2px rgba(0,0,0,.6);background:rgba(16,41,61,.35)}
 #stage.dark .bar i{background:#FFE08A}#stage.dark .bar i.low{background:var(--coral)}
 .pick{display:flex;gap:6px;justify-content:center}
 .pick button{flex:1;border:2px solid var(--ink);border-radius:12px;background:transparent;padding:5px 4px;font-size:13px;font-weight:700;line-height:1.3}
@@ -460,7 +460,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.56',
+  version: '0.57',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -1294,7 +1294,7 @@ function draw() {
   }
   if (flash > 0) { ctx.fillStyle = 'rgba(255,248,220,' + flash * (calm ? Math.min(0.2, CONFIG.flash) : CONFIG.flash) + ')'; ctx.fillRect(0, 0, W, H); }
   ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.font = "700 16px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif";
-  for (const f of floats) { const k = calm ? 1 : 1 + Math.max(0, 0.15 - f.age) / 0.15 * 0.45; if (f.hw == null) { f.hw = ctx.measureText(f.text).width / 2 + 4; const q = f.text.indexOf('（'); if (f.hw * 2 + 20 > W && q > 0) { f.lines = [f.text.slice(0, q), f.text.slice(q)]; f.hw = Math.max(...f.lines.map((l) => ctx.measureText(l).width)) / 2 + 4; } }      /* D290：放不下就在倍率括號前換行，括號整組不拆 */ const fx = Math.max(f.hw * k + 10, Math.min(W - f.hw * k - 10, f.x)); /* D232：浮字依實際字寬夾在畫面內（原本固定留 48，長句在右邊會被切掉）；D289：邊距 4→10，鯨鯊加倍中抓幸運魚「×2」不再貼齊畫面邊 */ ctx.save(); ctx.translate(fx, f.y); ctx.scale(k, k); ctx.globalAlpha = Math.min(1, f.life * 1.6); ctx.lineWidth = 4; ctx.strokeStyle = '#10293D'; ctx.fillStyle = f.color; if (f.lines) f.lines.forEach((l, i) => { const ly = (i - 0.5) * 19; ctx.strokeText(l, 0, ly); ctx.fillText(l, 0, ly); }); else { ctx.strokeText(f.text, 0, 0); ctx.fillText(f.text, 0, 0); } ctx.restore(); }      // C-94：字跳出來時先放大一點再縮回
+  for (const f of floats) { const k = calm ? 1 : 1 + Math.max(0, 0.15 - f.age) / 0.15 * 0.45; if (f.hw == null) { f.hw = ctx.measureText(f.text).width / 2 + 4; const q = f.text.indexOf('（'); if (f.hw * 2 + 20 > W && q > 0) { f.lines = [f.text.slice(0, q), f.text.slice(q)]; f.hw = Math.max(...f.lines.map((l) => ctx.measureText(l).width)) / 2 + 4; } }      /* D290：放不下就在倍率括號前換行，括號整組不拆 */ const fx = Math.max(f.hw * k + 10, Math.min(W - f.hw * k - 10, f.x)); /* D232：浮字依實際字寬夾在畫面內（原本固定留 48，長句在右邊會被切掉）；D289：邊距 4→10，鯨鯊加倍中抓幸運魚「×2」不再貼齊畫面邊 */ ctx.save(); ctx.translate(fx, f.y); ctx.scale(k, k); ctx.globalAlpha = Math.min(1, f.life * 1.6); ctx.lineWidth = f.y < CONFIG.surfaceY ? 5.5 : 4; /* D295：GPT 1630 B③ 天空區浮字深描邊 4→5.5，水下不變 */ ctx.strokeStyle = '#10293D'; ctx.fillStyle = f.color; if (f.lines) f.lines.forEach((l, i) => { const ly = (i - 0.5) * 19; ctx.strokeText(l, 0, ly); ctx.fillText(l, 0, ly); }); else { ctx.strokeText(f.text, 0, 0); ctx.fillText(f.text, 0, 0); } ctx.restore(); }      // C-94：字跳出來時先放大一點再縮回
   ctx.globalAlpha = 1;
 }
 
