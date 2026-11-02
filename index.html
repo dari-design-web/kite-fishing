@@ -460,7 +460,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.50',
+  version: '0.51',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -679,7 +679,7 @@ function bannerPad() { const c = $('combo'), b = $('banner'); if (!c || !b) retu
   const pr = c.parentNode.getBoundingClientRect(), br = b.getBoundingClientRect(), right = pr.left + pr.width / 2 + c.offsetWidth / 2; b.style.paddingLeft = Math.max(10, Math.ceil(right - br.left + 6)) + 'px'; }
 function sayClear(text, x, y, color) { /* D287：沉船浮字遇到畫面上其他浮字時往下錯開 24px 為基準（不夠位置就往上），完整字框不重疊、不碰底部提示與鯨鯊鈕 */
   ctx.save(); ctx.font = "700 16px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif"; const hw = ctx.measureText(text).width / 2 + 4; ctx.restore();
-  const box = (cx, hh, yy) => { const fx = Math.max(hh + 4, Math.min(W - hh - 4, Math.max(48, Math.min(W - 48, cx)))); return [fx - hh, fx + hh, yy - 12, yy + 12]; };
+  const box = (cx, hh, yy) => { const fx = Math.max(hh + 10, Math.min(W - hh - 10, Math.max(48, Math.min(W - 48, cx)))); return [fx - hh, fx + hh, yy - 12, yy + 12]; };
   const hit = (yy) => { const a = box(x, hw, yy); return floats.some((f) => { const b = box(f.x, f.hw != null ? f.hw : hw, f.y); if (!(a[0] < b[1] && b[0] < a[1])) return false; for (let q = 0; q <= 1.1; q += 0.1) { if (f.life - f.rate * q <= 0) break; const dy = (f.y - f.rise * q) - (yy - 26 * q); if (Math.abs(dy) < 23.9) return true; } return false; }); }; /* 整段浮起過程都檢查（慢浮字升得慢，下面的會追上） */
   const low = H - 96; let yy = y;
   if (hit(yy)) { let d = y; for (let i = 0; i < 6 && hit(d); i++) d += 24; if (!hit(d) && d <= low) yy = d; else { let u = y; for (let i = 0; i < 6 && hit(u); i++) u -= 24; yy = hit(u) ? Math.min(d, low) : u; } }
@@ -1284,7 +1284,7 @@ function draw() {
   }
   if (flash > 0) { ctx.fillStyle = 'rgba(255,248,220,' + flash * (calm ? Math.min(0.2, CONFIG.flash) : CONFIG.flash) + ')'; ctx.fillRect(0, 0, W, H); }
   ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.font = "700 16px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif";
-  for (const f of floats) { const k = calm ? 1 : 1 + Math.max(0, 0.15 - f.age) / 0.15 * 0.45; if (f.hw == null) f.hw = ctx.measureText(f.text).width / 2 + 4; const fx = Math.max(f.hw * k + 4, Math.min(W - f.hw * k - 4, f.x)); /* D232：浮字依實際字寬夾在畫面內（原本固定留 48，長句在右邊會被切掉） */ ctx.save(); ctx.translate(fx, f.y); ctx.scale(k, k); ctx.globalAlpha = Math.min(1, f.life * 1.6); ctx.lineWidth = 4; ctx.strokeStyle = '#10293D'; ctx.strokeText(f.text, 0, 0); ctx.fillStyle = f.color; ctx.fillText(f.text, 0, 0); ctx.restore(); }      // C-94：字跳出來時先放大一點再縮回
+  for (const f of floats) { const k = calm ? 1 : 1 + Math.max(0, 0.15 - f.age) / 0.15 * 0.45; if (f.hw == null) f.hw = ctx.measureText(f.text).width / 2 + 4; const fx = Math.max(f.hw * k + 10, Math.min(W - f.hw * k - 10, f.x)); /* D232：浮字依實際字寬夾在畫面內（原本固定留 48，長句在右邊會被切掉）；D289：邊距 4→10，鯨鯊加倍中抓幸運魚「×2」不再貼齊畫面邊 */ ctx.save(); ctx.translate(fx, f.y); ctx.scale(k, k); ctx.globalAlpha = Math.min(1, f.life * 1.6); ctx.lineWidth = 4; ctx.strokeStyle = '#10293D'; ctx.strokeText(f.text, 0, 0); ctx.fillStyle = f.color; ctx.fillText(f.text, 0, 0); ctx.restore(); }      // C-94：字跳出來時先放大一點再縮回
   ctx.globalAlpha = 1;
 }
 
@@ -1504,7 +1504,7 @@ $('copyBtn').onclick = () => {
   const fallback = () => { log.value = text; log.hidden = false; log.focus(); log.select(); $('copyBtn').textContent = '請長按上方文字複製'; };
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
 };
-window.__kiteGame = { CONFIG, lucky: () => LK(), stageState: () => ({ lvl, rule: RULE(), lamp, jumpAt }), setSession: (s) => { lvl = s; renderStart(); show('startPanel'); }, callWhale, fillEnergy: () => { energy = CONFIG.ult.need; ultUI(); }, tod: () => ({ start: todStart, idx: todIdx, id: session, fade: todFade }), energy: () => energy, prog: () => prog, state: () => ({ mode, session, t, kg, kite, things: things.map((o) => ({ type: o.type, x: o.x, y: o.y, vx: o.vx, move: o.move })), stats, shark: !!shark, flash }), skip: (s) => { t = s; }, testEnd: (k, h, lc) => { kg = k; if (h) stats.hits = h; if (lc) stats.counts[LK()] = lc; finish(); } };      // v0.20：testEnd 只給自動測試用（指定分數直接結算）
+window.__kiteGame = { CONFIG, say, lucky: () => LK(), stageState: () => ({ lvl, rule: RULE(), lamp, jumpAt }), setSession: (s) => { lvl = s; renderStart(); show('startPanel'); }, callWhale, fillEnergy: () => { energy = CONFIG.ult.need; ultUI(); }, tod: () => ({ start: todStart, idx: todIdx, id: session, fade: todFade }), energy: () => energy, prog: () => prog, state: () => ({ mode, session, t, kg, kite, things: things.map((o) => ({ type: o.type, x: o.x, y: o.y, vx: o.vx, move: o.move })), stats, shark: !!shark, flash }), skip: (s) => { t = s; }, testEnd: (k, h, lc) => { kg = k; if (h) stats.hits = h; if (lc) stats.counts[LK()] = lc; finish(); } };      // v0.20：testEnd 只給自動測試用（指定分數直接結算）
 /* C-81／C-82（Dari 10/13 01:03）：音樂開關、暫停鈕改圖示；選單畫面也有音樂，每個場景不同曲子 */
 const MENU_TRACK = () => 'fish_' + session, PLAY_TRACK = () => 'fish_' + session;
 function drawSnd() { const h = SND_ICON[soundOn ? 'on' : 'off']; for (const b of [$('soundBtn'), $('menuSnd')]) { if (!b) continue; b.innerHTML = h; b.setAttribute('aria-pressed', String(!soundOn)); b.setAttribute('aria-label', soundOn ? '音樂開著，點一下關掉' : '音樂關著，點一下打開'); } }
