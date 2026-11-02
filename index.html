@@ -53,7 +53,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .icon{pointer-events:auto;width:36px;height:36px;border-radius:50%;border:2px solid var(--ink);background:var(--paper);font-size:13px;font-weight:700;padding:0;flex:none}
 
 .banner{position:absolute;left:12px;right:12px;top:52px;text-align:center;background:var(--gold);border:2px solid var(--ink);border-radius:12px;padding:3px 10px;font-family:var(--display);font-weight:700;font-size:16px;pointer-events:none}
-.hint{position:absolute;left:0;right:0;bottom:22px;text-align:center;color:#fff;font-weight:700;font-size:16px;text-shadow:0 1px 0 rgba(16,41,61,.6);pointer-events:none}
+.hint{position:absolute;left:0;right:0;bottom:22px;padding:0 92px 0 12px;text-align:center;color:#fff;font-weight:700;font-size:16px;text-shadow:0 1px 0 rgba(16,41,61,.6);pointer-events:none} /* D286：底部提示讓出右下鯨鯊按鈕寬度，320 不再被蓋住 */
 
 .panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(16,41,61,.55)}
 .card{width:100%;max-width:300px;max-height:100%;overflow:auto;background:var(--paper);border:2px solid var(--ink);border-radius:18px;padding:20px 18px;display:flex;flex-direction:column;gap:12px;text-align:center}
@@ -460,7 +460,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.47',
+  version: '0.48',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
