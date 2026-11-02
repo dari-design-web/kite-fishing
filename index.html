@@ -460,7 +460,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.49',
+  version: '0.50',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -698,7 +698,7 @@ function resolveDive() {
   for (const o of things) { if (o.hid || o.seen || o.jp === 'hint') continue; const d = Math.hypot(o.x - tx, o.y - ty); if (d < o.r + CONFIG.kite.hitPad && d < bd) { best = o; bd = d; } }
   rings.push({ x: tx, y: ty, life: 1 });
   if (best && best.type === 'trash') {
-    things.splice(things.indexOf(best), 1); stats.trash++; stats.combo = 0; comboBadge(); kite.stunNext = true; kite.carry = 'trash';
+    things.splice(things.indexOf(best), 1); stats.trash++; stats.combo = 0; comboBadge(); kite.stunNext = true; kite.stunSaid = false; kite.carry = 'trash';
     say('抓到垃圾，暈一下', tx, ty - 18, '#FFD0C4'); beep(140, 0.25, 'square', 0.05, -60);
   } else if (best) {
     const watch = false;      // D120（Dari 10/19「第三關一樣抓，抓了上面有個相機也奇怪」）：取消 D119 的觀察模式，第 3 關跟其他關一樣抓走
@@ -1215,6 +1215,11 @@ function drawKite() {
     else { const d = CONFIG.fish[k.carry], s = Math.min(0.75, 30 / d.sw); ctx.rotate(Math.sin(clock * 22) * 0.22); ctx.scale(s, s); drawFish(k.carry, 0); }
   }
   ctx.restore();
+  if (k.state === 'stun') { /* D288：暈的時候頭上三顆小星星繞圈（原本只有沒圖時才畫金色小弧，有拍翅圖時看不出在暈） */
+    ctx.save(); ctx.translate(k.x, k.y - 30); ctx.fillStyle = 'rgba(43,58,64,.25)'; ctx.beginPath(); ctx.ellipse(0, 0, 17, 5, 0, 0, 6.2832); ctx.fill();
+    for (let i = 0; i < 3; i++) { const a = clock * 5 + i * 2.094, sx = Math.cos(a) * 16, sy = Math.sin(a) * 5, s = 4.5 + Math.sin(a) * 1.2; ctx.save(); ctx.translate(sx, sy); ctx.fillStyle = '#FFE08A'; ctx.strokeStyle = '#7A5A12'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, -s); ctx.quadraticCurveTo(0, 0, s, 0); ctx.quadraticCurveTo(0, 0, 0, s); ctx.quadraticCurveTo(0, 0, -s, 0); ctx.quadraticCurveTo(0, 0, 0, -s); ctx.fill(); ctx.stroke(); ctx.restore(); }
+    ctx.restore(); }
 }
 function drawParts(front) {
   for (const q of parts) {
@@ -1477,6 +1482,7 @@ cv.addEventListener('pointerdown', (e) => {
   const airFish = RULE() === 'jump' && things.some((o) => o.jp === 'air' && Math.hypot(o.x - x, o.y - y) < o.r + CONFIG.kite.hitPad + 6);      // D119 第 4 關：跳起來的飛魚可以在水面上點
   if (y < CONFIG.surfaceY + 12 && !airFish) { stats.skyTaps++; say(RULE() === 'jump' ? '等飛魚跳起來再點' : '點水面下的魚', x, CONFIG.surfaceY + 30, '#fff'); return; }
   if (RULE() === 'reef' && things.some((o) => o.hid && Math.hypot(o.x - x, o.y - y) < o.r + CONFIG.kite.hitPad) && !things.some((o) => !o.hid && !o.seen && Math.hypot(o.x - x, o.y - y) < o.r + CONFIG.kite.hitPad)) { stats.reefTaps = (stats.reefTaps || 0) + 1; say('等牠游出石頭旁，再點！', x, y - 20, '#FFE08A'); return; }      // D119 第 3 關：躲在礁石後的魚不能點，也不算失誤
+  if ((kite.state === 'stun' || kite.stunNext) && !kite.stunSaid) { kite.stunSaid = true; sayClear('暈暈的…等一下再點', kite.x, CONFIG.skyY + 48, '#FFD0C4'); } /* D288：暈的時候點畫面，提示一次（每次暈只說一次） */
   if (kite.state !== 'glide' || kite.wait > 0) { stats.blocked++; kite.queued = { x, y, t: performance.now() }; return; }      // QA 10/21：小鳶還在飛時點的位置先記住，回到空中就照那裡衝（原本六成的點擊被直接忽略）
   diveTo(x, y);
 });
