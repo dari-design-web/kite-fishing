@@ -460,7 +460,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.55',
+  version: '0.56',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -1032,8 +1032,10 @@ function drawStage(front) {      // D119：第 2～4 關畫在魚前／魚後的
     for (const o of things) if (o.jp === 'hint') {
       const k = Math.min(1, o.jt / J.hint);
       ctx.save(); ctx.translate(o.x0, S); if (!sprite('s4_splash', 44 + k * 10, 44 + k * 10)) { ctx.strokeStyle = 'rgba(255,255,255,' + (0.5 + 0.4 * Math.sin(clock * 14)) + ')'; ctx.lineWidth = 2.5; for (let i = 0; i < 2; i++) { ctx.beginPath(); ctx.ellipse(0, 0, 10 + i * 8 + k * 6, 3 + i * 2, 0, 0, 6.2832); ctx.stroke(); } } ctx.restore();
-      ctx.strokeStyle = 'rgba(255,255,255,' + (0.25 + 0.35 * k) + ')'; ctx.lineWidth = 2; ctx.setLineDash([3, 6]); ctx.beginPath();
-      for (let i = 0; i <= 20; i++) { const u = i / 20, x = o.x0 + o.dir * o.jdx * u, y = S - o.jh * 4 * u * (1 - u); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke(); ctx.setLineDash([]);
+      ctx.setLineDash([3, 6]); ctx.lineCap = 'round'; ctx.beginPath();      /* D294：弧線底下墊一層深色描邊，傍晚亮天空／白天也看得到 */
+      for (let i = 0; i <= 20; i++) { const u = i / 20, x = o.x0 + o.dir * o.jdx * u, y = S - o.jh * 4 * u * (1 - u); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+      ctx.strokeStyle = 'rgba(16,41,61,' + (0.3 + 0.3 * k) + ')'; ctx.lineWidth = 4.5; ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,' + (0.55 + 0.4 * k) + ')'; ctx.lineWidth = 2.2; ctx.stroke(); ctx.setLineDash([]); ctx.lineCap = 'butt';
       ctx.fillStyle = 'rgba(16,41,61,.35)'; ctx.beginPath(); ctx.ellipse(o.x0 - o.dir * 6, S + 14, 12, 4, 0, 0, 6.2832); ctx.fill();
     }
   }
