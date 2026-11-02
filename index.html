@@ -460,7 +460,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.54',
+  version: '0.55',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -1044,13 +1044,18 @@ function drawMark(o) {      // 第 3 關：記錄過的魚頭上亮相機標記
   if (!sprite('s3_mark', 24, 24)) { ctx.fillStyle = '#FFF8EA'; ctx.strokeStyle = PAL.line; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-10, -7, 20, 14, 3) : ctx.rect(-10, -7, 20, 14); ctx.fill(); ctx.stroke(); ctx.fillRect(-4, -10, 8, 4); ell(0, 0, 4.5, 4.5, '#5FB3D9', PAL.line); }
   ctx.restore();
 }
+/* D293：和平島夜晚水下背景（含光束）整片淡深藍 #081A32 α0.15；畫在背景之後、魚／生物／浮字／UI 之前，所以只壓背景。換天色時跟著淡入淡出 */
+function reefNightTint() {
+  const po = prevBg ? CONFIG.sessions.find((x) => x.bg === prevBg) : null, w = (SES().id === 'night' ? 1 - todFade : 0) + (po && po.id === 'night' ? todFade : 0);
+  if (w <= 0) return; const s = CONFIG.surfaceY; ctx.fillStyle = 'rgba(8,26,50,' + (0.15 * w).toFixed(3) + ')'; ctx.fillRect(0, s, W, H - s);
+}
 function drawBackground() {
   const sa = lvl !== 'keelung' ? img['bg_' + lvl + '_' + SES().id] : null, pic = sa || img[SES().bg] || img.bg;
   if (pic) { ctx.drawImage(pic, 0, 0, W, H); const pv = lvl !== 'keelung' ? 'bg_' + lvl + '_' + (CONFIG.sessions.find((x) => x.bg === prevBg) || {}).id : prevBg;
     if (todFade > 0 && img[pv] && sa) { ctx.globalAlpha = todFade; ctx.drawImage(img[pv], 0, 0, W, H); ctx.globalAlpha = 1; }
     else if (lvl !== 'keelung' && !sa) { stageSky(SES().id, 1); if (todFade > 0) { const po = CONFIG.sessions.find((x) => x.bg === prevBg); if (po) stageSky(po.id, todFade); } }
     else if (todFade > 0 && img[prevBg]) { ctx.globalAlpha = todFade; ctx.drawImage(img[prevBg], 0, 0, W, H); ctx.globalAlpha = 1; }
-    drawWater(); if (SES().light && lvl === 'keelung') drawLamp(); drawSurface(); return; }
+    drawWater(); if (lvl === 's3') reefNightTint(); if (SES().light && lvl === 'keelung') drawLamp(); drawSurface(); return; }
   const s = CONFIG.surfaceY;
   ctx.fillStyle = '#BFE3F0'; ctx.fillRect(0, 0, W, s);
   ell(300, 52, 22, 22, '#FFF3C4');
@@ -1265,7 +1270,7 @@ function draw() {
   }
   drawStage(true); drawCovers(true);
   if (RULE() === 'reef') for (const o of things) {      // 礁石後面的魚：只看得到淡淡的影子；記錄過的魚亮標記
-    if (o.hid && !o.seen) { ctx.save(); ctx.globalAlpha = 0.3; ctx.translate(o.x, o.y); if (o.vx < 0) ctx.scale(-1, 1); drawFish(o.type, o.ph); ctx.restore(); }
+    if (o.hid && !o.seen) { ctx.save(); ctx.globalAlpha = SES().id === 'night' ? 0.45 : 0.3; /* D293：夜晚礁石後的魚影 0.45（白天／傍晚維持 0.3） */ ctx.translate(o.x, o.y); if (o.vx < 0) ctx.scale(-1, 1); drawFish(o.type, o.ph); ctx.restore(); }
     if (o.seen) drawMark(o);
   }
   for (const r of rings) {
