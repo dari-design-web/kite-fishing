@@ -460,7 +460,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.51',
+  version: '0.52',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -709,7 +709,7 @@ function resolveDive() {
     if (window.KiteBoard) KiteBoard.ev('fish_catch', { sp: best.type });      /* D175：告示板委託 */
     if (!dex[best.type]) { dex[best.type] = true; stats.newDex.push(best.type); try { localStorage.setItem('kiteFishingDex2', JSON.stringify(dex)); } catch (e) {} }
     const lk1 = lucky && !stats.luckyGot; if (lucky) stats.luckyGot = 1;      /* D194（GPT C）：每局第一次抓到幸運魚，得分浮字改「🍀 幸運魚 +實得分」；之後用一般浮字 */
-    say(lk1 ? '🍀 幸運魚 +' + PTS(gain) + (mult > 1 ? ' ×' + mult : '') : (watch ? '記錄 ' : best.jp === 'air' ? '空中抓到 ' : '') + def.name + ' +' + PTS(gain) + (mult > 1 ? ' ×' + mult : ''), tx, ty - 18, mult > 1 || def.rare || lucky ? '#FFE08A' : '#fff'); if (lucky) stars(tx, ty, 6, 60, '#FFE08A');
+    say(lk1 ? '🍀 幸運魚 +' + PTS(gain) + (mult > 1 ? '（×' + mult + '×' + LUCKY_MUL + '）' : '') : (watch ? '記錄 ' : best.jp === 'air' ? '空中抓到 ' : '') + def.name + ' +' + PTS(gain) + (mult > 1 ? ' ×' + mult : ''), tx, ty - 18, mult > 1 || def.rare || lucky ? '#FFE08A' : '#fff'); if (lucky) stars(tx, ty, 6, 60, '#FFE08A');
     if (stats.combo >= CONFIG.combo.from) { kg += CONFIG.combo.bonus; stats.comboBonus += CONFIG.combo.bonus; if (stats.combo === CONFIG.combo.from || stats.combo % 5 === 0) say('連抓 ' + stats.combo + '！', tx, ty - 48, '#BFF0D0'); stars(tx, ty, 5, 50, '#9FF0C8'); }      /* C-94：連抓只在第 3、5、10…條跳字，其他用徽章；薄荷綠小水花（ChatGPT C-88 建議） */
     bubbles(tx, ty, 5);
     if (best.type === 'squid') ink(tx, ty);
@@ -1276,15 +1276,18 @@ function draw() {
   if (kite.state === 'dive') { ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.arc(kite.tx, kite.ty, 14, 0, 6.2832); ctx.stroke(); ctx.setLineDash([]); }
   drawKite();
   drawParts(true);
+  const lkPut = [];      /* D290（GPT 1130 B②）：兩條幸運魚靠近時小圓會疊；照固定順序，後面那顆往上移到剛好分開（圓徑 22＋間距 6），不移魚、不改加成 */
+  for (const o of luckyAt) { let by = o.y - o.r - 12; for (let i = 0; i < 4; i++) { const c = lkPut.find((p) => Math.abs(p.x - o.x) < 28 && Math.abs(p.y - by) < 28); if (!c) break; by = c.y - 28; } by = Math.max(64, by); lkPut.push({ x: o.x, y: by }); o.lkY = by; }
   for (const o of luckyAt) {      /* D194：米白小圓底＋幸運草，輕輕上下晃；第一次出現時提醒一句 */
-    const cy = o.y - o.r - 12 + Math.sin(clock * 3 + o.ph) * 2.5;
+    const cy = o.lkY + Math.sin(clock * 3 + o.ph) * 2.5;
+    if (o.lkY < o.y - o.r - 13) { ctx.save(); ctx.globalAlpha = 0.6; ctx.strokeStyle = '#E8C25A'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(o.x, cy + 11); ctx.lineTo(o.x, o.y - o.r - 3); ctx.stroke(); ctx.restore(); }      /* 往上移的那顆拉一條細線指回自己的魚 */
     ctx.save(); ctx.globalAlpha = 0.92; ell(o.x, cy, 11, 11, '#FFF6DC', null); ctx.lineWidth = 1.5; ctx.strokeStyle = '#E8C25A'; ctx.stroke(); ctx.globalAlpha = 1;
     ctx.font = "14px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('🍀', o.x, cy + 1); ctx.restore();
     if (!stats.luckyHint && o.x > 30 && o.x < W - 30) { stats.luckyHint = 1; say('🍀 幸運魚游過來了！', W / 2, o.y - o.r - 34, '#FFE08A', true); }
   }
   if (flash > 0) { ctx.fillStyle = 'rgba(255,248,220,' + flash * (calm ? Math.min(0.2, CONFIG.flash) : CONFIG.flash) + ')'; ctx.fillRect(0, 0, W, H); }
   ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.font = "700 16px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif";
-  for (const f of floats) { const k = calm ? 1 : 1 + Math.max(0, 0.15 - f.age) / 0.15 * 0.45; if (f.hw == null) f.hw = ctx.measureText(f.text).width / 2 + 4; const fx = Math.max(f.hw * k + 10, Math.min(W - f.hw * k - 10, f.x)); /* D232：浮字依實際字寬夾在畫面內（原本固定留 48，長句在右邊會被切掉）；D289：邊距 4→10，鯨鯊加倍中抓幸運魚「×2」不再貼齊畫面邊 */ ctx.save(); ctx.translate(fx, f.y); ctx.scale(k, k); ctx.globalAlpha = Math.min(1, f.life * 1.6); ctx.lineWidth = 4; ctx.strokeStyle = '#10293D'; ctx.strokeText(f.text, 0, 0); ctx.fillStyle = f.color; ctx.fillText(f.text, 0, 0); ctx.restore(); }      // C-94：字跳出來時先放大一點再縮回
+  for (const f of floats) { const k = calm ? 1 : 1 + Math.max(0, 0.15 - f.age) / 0.15 * 0.45; if (f.hw == null) { f.hw = ctx.measureText(f.text).width / 2 + 4; const q = f.text.indexOf('（'); if (f.hw * 2 + 20 > W && q > 0) { f.lines = [f.text.slice(0, q), f.text.slice(q)]; f.hw = Math.max(...f.lines.map((l) => ctx.measureText(l).width)) / 2 + 4; } }      /* D290：放不下就在倍率括號前換行，括號整組不拆 */ const fx = Math.max(f.hw * k + 10, Math.min(W - f.hw * k - 10, f.x)); /* D232：浮字依實際字寬夾在畫面內（原本固定留 48，長句在右邊會被切掉）；D289：邊距 4→10，鯨鯊加倍中抓幸運魚「×2」不再貼齊畫面邊 */ ctx.save(); ctx.translate(fx, f.y); ctx.scale(k, k); ctx.globalAlpha = Math.min(1, f.life * 1.6); ctx.lineWidth = 4; ctx.strokeStyle = '#10293D'; ctx.fillStyle = f.color; if (f.lines) f.lines.forEach((l, i) => { const ly = (i - 0.5) * 19; ctx.strokeText(l, 0, ly); ctx.fillText(l, 0, ly); }); else { ctx.strokeText(f.text, 0, 0); ctx.fillText(f.text, 0, 0); } ctx.restore(); }      // C-94：字跳出來時先放大一點再縮回
   ctx.globalAlpha = 1;
 }
 
@@ -1504,7 +1507,7 @@ $('copyBtn').onclick = () => {
   const fallback = () => { log.value = text; log.hidden = false; log.focus(); log.select(); $('copyBtn').textContent = '請長按上方文字複製'; };
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
 };
-window.__kiteGame = { CONFIG, say, lucky: () => LK(), stageState: () => ({ lvl, rule: RULE(), lamp, jumpAt }), setSession: (s) => { lvl = s; renderStart(); show('startPanel'); }, callWhale, fillEnergy: () => { energy = CONFIG.ult.need; ultUI(); }, tod: () => ({ start: todStart, idx: todIdx, id: session, fade: todFade }), energy: () => energy, prog: () => prog, state: () => ({ mode, session, t, kg, kite, things: things.map((o) => ({ type: o.type, x: o.x, y: o.y, vx: o.vx, move: o.move })), stats, shark: !!shark, flash }), skip: (s) => { t = s; }, testEnd: (k, h, lc) => { kg = k; if (h) stats.hits = h; if (lc) stats.counts[LK()] = lc; finish(); } };      // v0.20：testEnd 只給自動測試用（指定分數直接結算）
+window.__kiteGame = { CONFIG, say, rawThings: () => things, floats: () => floats, lucky: () => LK(), stageState: () => ({ lvl, rule: RULE(), lamp, jumpAt }), setSession: (s) => { lvl = s; renderStart(); show('startPanel'); }, callWhale, fillEnergy: () => { energy = CONFIG.ult.need; ultUI(); }, tod: () => ({ start: todStart, idx: todIdx, id: session, fade: todFade }), energy: () => energy, prog: () => prog, state: () => ({ mode, session, t, kg, kite, things: things.map((o) => ({ type: o.type, x: o.x, y: o.y, vx: o.vx, move: o.move })), stats, shark: !!shark, flash }), skip: (s) => { t = s; }, testEnd: (k, h, lc) => { kg = k; if (h) stats.hits = h; if (lc) stats.counts[LK()] = lc; finish(); } };      // v0.20：testEnd 只給自動測試用（指定分數直接結算）
 /* C-81／C-82（Dari 10/13 01:03）：音樂開關、暫停鈕改圖示；選單畫面也有音樂，每個場景不同曲子 */
 const MENU_TRACK = () => 'fish_' + session, PLAY_TRACK = () => 'fish_' + session;
 function drawSnd() { const h = SND_ICON[soundOn ? 'on' : 'off']; for (const b of [$('soundBtn'), $('menuSnd')]) { if (!b) continue; b.innerHTML = h; b.setAttribute('aria-pressed', String(!soundOn)); b.setAttribute('aria-label', soundOn ? '音樂開著，點一下關掉' : '音樂關著，點一下打開'); } }
