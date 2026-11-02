@@ -460,7 +460,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.59',
+  version: '0.60',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -855,7 +855,7 @@ function update(dt) {
     if (d <= step) { kite.x = kite.tx; kite.y = kite.ty; resolveDive(); } else { kite.x += dx / d * step; kite.y += dy / d * step; }
   } else if (kite.state === 'rise') {
     const hx = Math.max(44, Math.min(W - 44, kite.x)), dx = hx - kite.x, dy = CONFIG.skyY - kite.y, d = Math.hypot(dx, dy), step = K.riseSpeed * dt;
-    if (d <= step) { kite.x = hx; kite.y = CONFIG.skyY; kite.carry = null; if (kite.knockTrip) floats = floats.filter((f) => !f.busy); /* D297：回到空中收「等我回來，再點喔」，其他浮字不動 */ if (kite.stunNext) { kite.stunNext = false; kite.state = 'stun'; kite.wait = K.stun; } else { kite.state = 'glide'; kite.wait = K.cooldown; } }
+    if (d <= step) { kite.x = hx; kite.y = CONFIG.skyY; kite.carry = null; if (kite.knockTrip) { if (kite.stunNext) floats = floats.filter((f) => !f.busy); else busyBack(); } /* D298：回到空中，同一筆「等我回來，再點喔」改成「可以再點喔」停 0.6 秒再淡（D297 原本直接收掉），其他浮字不動 */ if (kite.stunNext) { kite.stunNext = false; kite.state = 'stun'; kite.wait = K.stun; } else { kite.state = 'glide'; kite.wait = K.cooldown; } }
     else { kite.x += dx / d * step; kite.y += dy / d * step; }
   } else if (kite.state === 'stun') { kite.wait -= dt; if (kite.wait <= 0) { kite.state = 'glide'; kite.wait = 0; } }
   const s = CONFIG.surfaceY; if ((prevKiteY < s) !== (kite.y < s)) { splash(kite.x); beep(300, 0.08, 'sine', 0.03, 200); } prevKiteY = kite.y;
@@ -1497,14 +1497,16 @@ cv.addEventListener('pointerdown', (e) => {
   diveTo(x, y);
 });
 function diveTo(x, y) {
-  stats.dives++; kite.tx = x; kite.ty = Math.max(CONFIG.skyY + 8, Math.min(H - 30, y)); kite.state = 'dive'; kite.lock = null; kite.knockTrip = false; kite.knockSaid = false;
+  stats.dives++; kite.tx = x; kite.ty = Math.max(CONFIG.skyY + 8, Math.min(H - 30, y)); kite.state = 'dive'; kite.lock = null; kite.knockTrip = false; kite.knockSaid = false; floats = floats.filter((f) => !f.busy); /* D298：新的一趟受理（或又去敲沉船）只收這句 */
   { let bd = 1e9; for (const o of things) { if (!CONFIG.fish[o.type] || o.hid || o.seen || o.jp === 'hint') continue; const d = Math.hypot(o.x - x, o.y - y); if (d < o.r + 4 && d < bd) { bd = d; kite.lock = o; } } }      /* D173：直接點在魚身上就追那條魚（深水魚游得快，原本小鳶飛到時魚早就走了，白帶魚、赤鯮幾乎抓不到）；瞄準小幫手的「附近也算」仍照 ?assist=1 */
   if (CONFIG.assist.on && !kite.lock) { let bd = CONFIG.assist.radius; for (const o of things) { if (!CONFIG.fish[o.type] || o.hid || o.seen || o.jp === 'hint') continue; const d = Math.hypot(o.x - x, o.y - y); if (d < bd) { bd = d; kite.lock = o; } } } beep(700, 0.18, 'sawtooth', 0.03, -420);
 }
 setInterval(() => { if (mode !== 'play' || !kite.queued) return; const q = kite.queued, ready = kite.state === 'glide' && !(kite.wait > 0), old = performance.now() - q.t >= 500;
   if (old) { kite.queued = null; busyMiss(); return; } if (!ready) return; kite.queued = null; diveTo(q.x, q.y); }, 40);
+/* D298：GPT 1930 A②——回到可受理的空中，同一筆提示改「可以再點喔」，先停 0.6 秒再淡（hold 也算進 sayClear） */
+function busyBack() { kite.backAt = performance.now(); const f = floats.find((g) => g.busy); if (!f) return; f.text = '可以再點喔'; f.age = 0; f.life = 1; f.hold = 0.6; ctx.save(); ctx.font = "700 16px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif"; f.hw = ctx.measureText(f.text).width / 2 + 4; ctx.restore(); }
 /* D297：GPT 1830 B③——敲沉船來回時先點的位置，0.5 秒內沒輪到就確定不會執行：這時才說一次「等我回來，再點喔」（每趟最多一次；等待中、已執行都不說） */
-function busyMiss() { if (!kite.knockTrip || kite.knockSaid || kite.state === 'glide') return; kite.knockSaid = true; stats.busyMiss = (stats.busyMiss || 0) + 1; sayClear('等我回來，再點喔', kite.x, Math.max(CONFIG.skyY + 48, kite.y - 34), '#FFE08A'); floats[floats.length - 1].busy = true; }      /* D173：小鳶還在飛時先點的位置只記 0.5 秒（原本 1.2 秒，衝下去時魚早游走了） */
+function busyMiss() { if (!kite.knockTrip || kite.knockSaid) return; if (kite.state === 'glide') { if (performance.now() - (kite.backAt || -1e9) <= 80) { kite.knockSaid = true; stats.busyMiss = (stats.busyMiss || 0) + 1; sayClear('可以再點喔', kite.x, CONFIG.skyY + 48, '#FFE08A'); const f = floats[floats.length - 1]; f.busy = true; f.hold = 0.6; } return; } /* D298：過期和回到空中在同一刻（約 560ms 那種），直接說返回句 */ kite.knockSaid = true; stats.busyMiss = (stats.busyMiss || 0) + 1; sayClear('等我回來，再點喔', kite.x, Math.max(CONFIG.skyY + 48, kite.y - 34), '#FFE08A'); floats[floats.length - 1].busy = true; }      /* D173：小鳶還在飛時先點的位置只記 0.5 秒（原本 1.2 秒，衝下去時魚早游走了） */
 $('startBtn').onclick = start; $('againBtn').onclick = start; $('menuBtn').onclick = toMap; $('toMapBtn').onclick = toMap; $('restartBtn').onclick = start; $('pauseMapBtn').onclick = toMap; $('resumeBtn').onclick = resume; $('pauseBtn').onclick = () => (mode === 'pause' ? resume() : pause());
 $('soundBtn').onclick = toggleSound; $('ultBtn').onclick = callWhale;
 document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
