@@ -460,7 +460,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.48',
+  version: '0.49',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -677,6 +677,13 @@ function comboBadge() { const c = $('combo'); if (!c) return; if (stats.combo >=
 /* D285：鯨鯊加倍中，連抓徽章會蓋到上方橫幅開頭的字；橫幅左邊讓出徽章的寬度，字放在剩下的空間置中 */
 function bannerPad() { const c = $('combo'), b = $('banner'); if (!c || !b) return; if (c.hidden || b.hidden) { b.style.paddingLeft = ''; return; }
   const pr = c.parentNode.getBoundingClientRect(), br = b.getBoundingClientRect(), right = pr.left + pr.width / 2 + c.offsetWidth / 2; b.style.paddingLeft = Math.max(10, Math.ceil(right - br.left + 6)) + 'px'; }
+function sayClear(text, x, y, color) { /* D287：沉船浮字遇到畫面上其他浮字時往下錯開 24px 為基準（不夠位置就往上），完整字框不重疊、不碰底部提示與鯨鯊鈕 */
+  ctx.save(); ctx.font = "700 16px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif"; const hw = ctx.measureText(text).width / 2 + 4; ctx.restore();
+  const box = (cx, hh, yy) => { const fx = Math.max(hh + 4, Math.min(W - hh - 4, Math.max(48, Math.min(W - 48, cx)))); return [fx - hh, fx + hh, yy - 12, yy + 12]; };
+  const hit = (yy) => { const a = box(x, hw, yy); return floats.some((f) => { const b = box(f.x, f.hw != null ? f.hw : hw, f.y); if (!(a[0] < b[1] && b[0] < a[1])) return false; for (let q = 0; q <= 1.1; q += 0.1) { if (f.life - f.rate * q <= 0) break; const dy = (f.y - f.rise * q) - (yy - 26 * q); if (Math.abs(dy) < 23.9) return true; } return false; }); }; /* 整段浮起過程都檢查（慢浮字升得慢，下面的會追上） */
+  const low = H - 96; let yy = y;
+  if (hit(yy)) { let d = y; for (let i = 0; i < 6 && hit(d); i++) d += 24; if (!hit(d) && d <= low) yy = d; else { let u = y; for (let i = 0; i < 6 && hit(u); i++) u -= 24; yy = hit(u) ? Math.min(d, low) : u; } }
+  say(text, x, yy, color); floats[floats.length - 1].hw = hw; }
 function say(text, x, y, color, slow) { floats.push({ age: 0, text, x: Math.max(48, Math.min(W - 48, x)), y, life: 1, color: color || '#fff', rate: slow ? 0.5 : 0.9, rise: slow ? 12 : 26 }); }   // slow：停留久一點（約 2 秒）
 function part(kind, x, y, o) { parts.push(Object.assign({ kind, x, y, vx: 0, vy: 0, life: 1, fade: 1.6, size: 3, rot: rand(0, 6.28) }, o)); }
 function splash(x) { const s = CONFIG.surfaceY; rings.push({ x, y: s, life: 1, flat: true }); for (let i = 0; i < 7; i++) part('drop', x + rand(-8, 8), s, { vx: rand(-70, 70), vy: rand(-170, -70), g: 520, fade: 1.8, size: rand(1.5, 2.8) }); }
@@ -736,7 +743,7 @@ function knockCover(x, y) {      // D123：點到沉船＝敲一下，裡面的�
     const rareT = pool.find((q) => CONFIG.fish[q].rare);      // 玩家角度：洞口畫了金光，偶爾要真的敲出寶——每局最多一次、約 1/5 機率衝出稀有魚
     if (rareT && !stats.wreckRare && Math.random() < 0.2) { const def = CONFIG.fish[rareT], dir = Math.random() < 0.5 ? 1 : -1; stats.wreckRare = 1; things.push({ type: rareT, x: hx, y: hy - 4, y0: hy, vx: dir * def.speed[0] * 1.2, r: def.r, ph: 0, move: def.move || '', panic: 3.2, pvy: rand(-60, 60), pt: 0, scareT: 4, fromWreck: true, treasure: true }); n++; stars(hx, hy, 24, 120, '#FFD54A'); stars(hx, hy, 12, 60, '#FFFFFF'); beep(880, 0.12, 'triangle', 0.06, 30); beep(1320, 0.18, 'triangle', 0.05, 40); } }
   for (const o of things) { if (o.type === 'trash' || o.fromWreck) continue; const dx = (o.x - c.x) / (c.rx + o.r), dy = (o.y - c.y) / (c.ry + o.r); if (dx * dx + dy * dy < 1.3) { o.scareT = 2.2; o.vx = (o.vx >= 0 ? 1 : -1) * Math.abs(o.vx) * 1.3; n++; stars(o.x, o.y, 4, 30, '#FFE08A'); } }
-  if (things.some((o) => o.treasure && !o.saidT && (o.saidT = 1))) say('✨ 沉船裡的寶魚「' + CONFIG.fish[things.find((o) => o.treasure).type].name + '」衝出來了！', W / 2, y - 24, '#FFD54A'); else say(n ? '咚咚！' + n + ' 條魚從沉船衝出來了，快抓！' : '咚咚！沉船裡的魚剛跑光，等一下再敲', x, y - 24, n ? '#FFE08A' : '#CFE6F2'); stats.knocks = (stats.knocks || 0) + 1; stats.combo = 0; comboBadge(); return true;
+  if (things.some((o) => o.treasure && !o.saidT && (o.saidT = 1))) sayClear('✨ 沉船裡的寶魚「' + CONFIG.fish[things.find((o) => o.treasure).type].name + '」衝出來了！', W / 2, y - 24, '#FFD54A'); else sayClear(n ? '咚咚！' + n + ' 條魚衝出來了！' : '咚咚！沉船裡的魚剛跑光，等一下再敲', x, y - 24, n ? '#FFE08A' : '#CFE6F2'); /* D287：GPT 0830 A③ 句子縮短；同時有別的浮字就往下錯開 24px，不疊字 */ stats.knocks = (stats.knocks || 0) + 1; stats.combo = 0; comboBadge(); return true;
 }
 function drawCovers(front) {      // D123：基隆嶼海底：後面畫沙紋、海草，前面畫沉船與礁石（有 G89 圖就用圖）
   const C = LVL().covers; if (!C) return;
