@@ -309,8 +309,8 @@ function makeMerge() {
     const kx = g.kx, ky = KF + Math.sin(tt * 3) * 3;
     if (f && f.held) { const k = clamp(f.hold / f.hold0, 0, 1); ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(f.x, f.y, f.r + 6, 0, 6.283); ctx.stroke(); ctx.strokeStyle = k < 0.3 ? C.warn : C.gold; ctx.beginPath(); ctx.arc(f.x, f.y, f.r + 6, -1.571, -1.571 + 6.283 * k); ctx.stroke(); }
     drawKiteCarry(kx, ky, 0.85, tt * 9, 'kite_hold', f && f.held);
-    /* 下一個。D300（GPT 2230 A②）：小鳶飛到右邊（離右牆 130 以內）時，整框連標題與海鮮圖移到左上分數下方、照常清楚（原本淡到 0.12 看不到）；離開右邊回右上。只換位置，預覽內容不變 */
-    const nbL = kx > W - 130, nbX = nbL ? 10 : W - 74, nbY = nbL ? 64 : 84, nbC = nbX + 31; g.nbL = nbL; pill(nbX, nbY, 62, 72, 'rgba(16,41,61,.62)'); rrect(nbX, nbY, 62, 72, 14, null, 'rgba(255,255,255,.35)', 1.5);
+    /* 下一個。D300（GPT 2230 A②）：小鳶飛到右邊（離右牆 130 以內）時，整框連標題與海鮮圖移到左上分數下方、照常清楚（原本淡到 0.12 看不到）；離開右邊回右上。只換位置，預覽內容不變。D301（GPT 2335 A③）：換到左上後要退到離右牆 160 以外才回右上，130～160 之間維持上次那一側，不會左右來回閃 */
+    const nbL = kx > W - 130 ? true : kx < W - 160 ? false : !!g.nbL, nbX = nbL ? 10 : W - 74, nbY = nbL ? 64 : 84, nbC = nbX + 31; g.nbL = nbL; pill(nbX, nbY, 62, 72, 'rgba(16,41,61,.62)'); rrect(nbX, nbY, 62, 72, 14, null, 'rgba(255,255,255,.35)', 1.5);
     const wk = g.wantT > 0 ? g.wantT / 0.6 : 0; text(wk ? '我也要！' : '下一個', nbC, nbY + 12, 11, wk ? '#FFE6A6' : '#CFE3EC', 'center', 700, false);
     drawSea(g.q[0], nbC, nbY + 36, Math.min(15, SEAF[g.q[0]][1]), wk && !RM ? 0.09 * Math.sin(Math.PI * (1 - wk)) : 0); ctx.globalAlpha = 0.55; drawSea(g.q[1], nbC, nbY + 62, Math.min(9, SEAF[g.q[1]][1]), 0); ctx.globalAlpha = 1;
     // 合成路線（底部）：這局合到的亮起來，從沒合過的是剪影
