@@ -55,7 +55,7 @@
   function resultHtml(s, r, score) {
     if (!s || !r) return '';
     var h = '<div class="kd-res"><b>📅 今日挑戰・' + (s.official ? '正式' : '練習（不計榜）') + '</b>';
-    if (s.official && r.tier && K.tierLine) h += '<div>🪙 ' + K.tierLine(r.tier) + '</div>';
+    if (s.official && r.tier && K.tierLine) h += '<div>🪙 ' + String(K.tierLine(r.tier)).split('・').map(function (x) { return '<span class="kd-seg">' + x.replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }) + '</span>'; }).join('・') + '</div>';      /* D305：點數句以「・」分段，每段不拆（320 不再剩一個「點」掉到下一行） */
     /* D266（GPT 0830 A②）：卡上已有這支手機的「今日正式最佳」，面板只留今日榜（雲端實際回傳）的名次 */
     if (s.official) h += '<div>今日榜：' + (r.rank ? '第 ' + r.rank + ' 名' : '名次更新中') + '</div><div>今天還有 ' + r.left + ' 次正式挑戰</div>';
     /* D265（GPT 2330 C③）：練習局結算卡主鈕已是「再練一次」，面板不再放重複的再練鈕 */
@@ -64,7 +64,7 @@
   }
   function wire(root, score) { if (!root) return; var b = root.querySelector('[data-kd=share]'); if (b) b.onclick = function () { copyShare(score, b); }; var l = root.querySelector('[data-kd=lb]'); if (l) l.onclick = function () { if (G.KiteLB) G.KiteLB.hub('daily'); }; }
   var css = '.kd-res{margin:8px 0;padding:8px 10px;border-radius:12px;background:#FFF1D6;color:#10293D;font-size:13px;font-weight:700;text-align:left;line-height:1.6}.kd-res b{display:block;font-size:14px}.kd-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.kd-b{flex:1 1 40%;min-height:38px;border:2px solid #10293D;border-radius:999px;background:#fff;color:#10293D;font:inherit;font-weight:800;font-size:13px;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center}' +
-    '.kd-banner{display:inline-block;margin:6px auto 0;padding:4px 12px;border-radius:999px;background:#FFE45C;color:#10293D;font-weight:900;font-size:13px}';
+    '.kd-seg{white-space:nowrap}.kd-banner{display:inline-block;margin:6px auto 0;padding:4px 12px;border-radius:999px;background:#FFE45C;color:#10293D;font-weight:900;font-size:13px}';
   if (document.head) { var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st); }
   G.KiteDaily = { tries: tries, on: on, conf: conf, GM: GM, VARY: VARY, DEF: DEF, today: today, rng: rng, used: used, left: left, session: session, begin: begin, finish: finish, dayBest: dayBest, shareText: shareText, copyShare: copyShare, resultHtml: resultHtml, wire: wire };
 })(window);
