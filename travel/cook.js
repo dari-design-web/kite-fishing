@@ -22,7 +22,7 @@
     '.ck .tray{display:flex;gap:6px;flex-wrap:wrap;margin:0 10px 6px;min-height:48px;padding:6px;border-radius:14px;background:rgba(139,94,60,.92);box-shadow:0 2px 8px rgba(0,0,0,.25)}.ck .tray:empty::after{content:"籃子空了";color:#F3E3C8;font-size:13px;margin:auto}.ck .tray.hl{box-shadow:0 0 0 3px #F4BB42}' +
     '.ck .tray button{border:0;border-radius:12px;background:#FFF8EA;padding:4px 8px 4px 4px;font:700 13px/1.1 inherit;font-family:inherit;display:flex;align-items:center;gap:4px;min-height:44px;cursor:pointer}.ck .tray button[disabled]{opacity:.35}.ck .tray img{width:34px;height:34px;object-fit:contain}.ck .tray .e{font-size:24px;width:34px;text-align:center}' +
     '.ck .desk{position:relative;width:100%;aspect-ratio:1080/700;background:url(' + A + 'kitchen_counter.webp) center/100% 100% no-repeat}' +
-    '.ck .hz{position:absolute;border:0;background:none;padding:0;cursor:pointer;border-radius:14px;-webkit-tap-highlight-color:transparent}.ck .hz.hl{box-shadow:0 0 0 3px #F4BB42;animation:ckP 1s infinite}@keyframes ckP{50%{box-shadow:0 0 0 6px rgba(244,187,66,.5)}}' +
+    '.ck .hz{position:absolute;border:0;background:none;padding:0;cursor:pointer;border-radius:14px;-webkit-tap-highlight-color:transparent}.ck .hz.ckc{box-shadow:0 0 0 2px rgba(110,180,235,.9)}.ck .hz.hl{box-shadow:0 0 0 3px #F4BB42;animation:ckP 1s infinite}@keyframes ckP{50%{box-shadow:0 0 0 6px rgba(244,187,66,.5)}}' +
     '.ck .hz .lb{position:absolute;left:50%;bottom:-2px;transform:translate(-50%,100%);white-space:nowrap;font:800 11px/1 sans-serif;color:#fff;background:rgba(74,52,38,.85);border-radius:8px;padding:3px 6px;pointer-events:none}' +
     '.ck .onb{position:absolute;left:50%;top:50%;width:44%;transform:translate(-50%,-55%);pointer-events:none;transition:transform .08s}.ck .onb img{width:100%;display:block}.ck .onb .e{font-size:30px;text-align:center;display:block}.ck .hz.chop .onb{transform:translate(-50%,-45%) scale(.94)}' +
     '.ck .knife{position:absolute;right:4%;top:-30%;font-size:26px;pointer-events:none;transform-origin:80% 80%}.ck .knife img{width:30px;display:block}.ck .hz.chop .knife{transform:rotate(-30deg) translateY(10px)}' +
@@ -96,7 +96,7 @@
     }
     function boardState() { var kn = $('ckKn'), c0 = cur(); if (kn) kn.innerHTML = board && c0 && c0.v === '撒鹽' && board.st !== 'cut' ? '<img src="' + A + 'salt_shaker.webp" alt="鹽罐">' : '🔪';      /* D190：撒鹽時刀子換成 GPT 鹽罐 */
       $('ckOnB').innerHTML = board ? pic(board.it, board.st === 'cut' || (board.si || 0) > 0 && !!board.it.cutMid) : ''; var c = cur(); $('ckCB').style.width = board && c && board.st !== 'cut' ? Math.min(100, chop / c.n * 100) + '%' : board ? '100%' : '0'; $('ckCBw').style.display = board ? '' : 'none'; }
-    function maybeCook(g) { var p = pots[g]; if (p.st === 'idle' && p.n >= p.need && p.need > 0) { p.st = 'cooking'; p.t = Date.now(); tip(G > 1 ? MARK[g] + potName(g) + '開火！點鍋子翻炒，兩個鍋子都要顧，好了就起鍋' : '開火！一直點鍋子翻炒，炒得勻比較不會焦，顧好鍋子，好了就點爐子起鍋'); } potState(g); }
+    function maybeCook(g) { var p = pots[g]; if (p.st === 'idle' && p.n >= p.need && p.need > 0) { p.st = 'cooking'; p.t = Date.now(); tip(MARK[g] + '開火囉！點點鍋子翻炒～'); } potState(g); }      /* D315：GPT 2130 A③——開火只講當下翻炒，好了再提示起鍋 */
     tap($('ckBasket'), function () { $('ckTray').classList.add('hl'); setTimeout(function () { var t = $('ckTray'); if (t) t.classList.remove('hl'); }, 900); tip('食材在上面的籃子裡，點一樣拿出來'); });
     tap($('ckBoard'), function () {
       if (!board) { tip('先從籃子拿要切的菜'); return; }
@@ -140,7 +140,7 @@
     tap($('ckRice'), function () {
       var x = list.find(function (y) { return y.st === 'rice'; }) || list.find(function (y) { return y.st === 'basket' && y.it.type === 'rice'; });
       if (!x) { tip(needRice.some(function (n) { return n; }) ? '飯已經裝好了' : '這道不用裝飯'); return; }
-      x.st = 'done'; riceIn[x.g]++; fly($('ckRice'), 'ckBox', '🍚'); tip(riceIn[x.g] >= needRice[x.g] ? (MARK[x.g] ? MARK[x.g] + '的' : '') + '飯裝好了！' : '再裝一份' + (MARK[x.g] ? MARK[x.g] + '的' : '') + '飯');      /* D274：單張訂單沒有①②，不再出現「的飯裝好了」「先把的食材」 */ order(); tray(); boxState(); check();
+      x.st = 'done'; riceIn[x.g]++; fly($('ckRice'), 'ckBox', '🍚'); var pg = pots[x.g]; tip(riceIn[x.g] >= needRice[x.g] ? (pg.st === 'ready' ? MARK[x.g] + '好了！點爐子起鍋～' : pg.st === 'burn' ? MARK[x.g] + '焦了！快點爐子起鍋～' : (MARK[x.g] ? MARK[x.g] + '的' : '') + '飯裝好了！' + (pg.st === 'cooking' ? '回鍋子翻炒～' : '')) : '再裝一份' + (MARK[x.g] ? MARK[x.g] + '的' : '') + '飯');      /* D274：單張訂單沒有①②，不再出現「的飯裝好了」「先把的食材」 */ order(); tray(); boxState(); check();
     });
     tap($('ckBox'), function () { if (!check()) tip(riceIn.some(function (n, g) { return n < needRice[g]; }) ? '還要裝飯（點飯鍋）' : '還要等鍋子裡的菜'); });
     function potState(g) {
@@ -160,6 +160,7 @@
     }
     function hl() {
       ['ckBoard', 'ckRice', 'ckBox'].concat(PID.slice(0, G)).forEach(function (id) { $(id).classList.remove('hl'); });
+      pots.forEach(function (p, g) { if (g < G) $(PID[g]).classList.toggle('ckc', p.st === 'cooking'); });      /* D315：煮中淡藍細框（只導引），好了換原金框 */
       if (board && board.st === 'board') $('ckBoard').classList.add('hl');
       if (board && board.st === 'cut') $(PID[board.g]).classList.add('hl');
       pots.forEach(function (p, g) { if (p.st === 'ready' || p.st === 'burn') $(PID[g]).classList.add('hl'); });
@@ -184,7 +185,7 @@
         if (p.st !== 'cooking' && p.st !== 'ready' && p.st !== 'burn') return;
         var a = Date.now() - p.t, b = $(g ? 'ckPot2B' : 'ckPB');
         if (a < COOK_MS) { b.style.width = a / COOK_MS * 100 + '%'; }
-        else if (a < COOK_MS + GOOD_MS + (p.bonus || 0)) { if (p.st !== 'ready') { p.st = 'ready'; potState(g); } b.style.width = '100%'; }
+        else if (a < COOK_MS + GOOD_MS + (p.bonus || 0)) { if (p.st !== 'ready') { p.st = 'ready'; potState(g); tip(MARK[g] + '好了！點爐子起鍋～'); } b.style.width = '100%'; }
         else if (p.st !== 'burn') { p.st = 'burn'; potState(g); }
       });
     }, 100);
