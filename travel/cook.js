@@ -86,6 +86,16 @@
     function fly(fromEl, toId, html) {
       try { var a = fromEl.getBoundingClientRect(), b = $(toId).getBoundingClientRect(), f = el('div', 'fly', html); f.style.left = a.left + a.width / 2 - 17 + 'px'; f.style.top = a.top + 'px'; w.appendChild(f); requestAnimationFrame(function () { f.style.transform = 'translate(' + (b.left + b.width / 2 - a.left - a.width / 2) + 'px,' + (b.top + b.height / 2 - a.top - 17) + 'px) scale(.8)'; f.style.opacity = '.3'; }); setTimeout(function () { f.remove(); }, 380); } catch (x) {}
     }
+    function readyTip(g) { var p = pots[g]; return MARK[g] + (p.st === 'burn' ? '焦了！快點' : '好了！點') + (G > 1 ? potName(g) : '爐子') + '起鍋～'; }      /* D316：GPT 2230 A③——雙爐帶實際爐（①好了！點左爐起鍋～），單爐原句 */
+    function nextTip() {      /* D316：起鍋後照目前狀態重新產生下一步 */
+      var g, x, i;
+      for (g = 0; g < G; g++) if (pots[g].st === 'ready' || pots[g].st === 'burn') { tip(readyTip(g)); return; }
+      if (board) { if (board.st === 'cut') tip(MARK[board.g] + board.it.name + '切好了，點' + potName(board.g) + '放進鍋'); else stepTip(); return; }
+      x = list.find(function (y) { return y.st === 'rice'; }); if (x) { tip('點飯鍋，把' + (MARK[x.g] ? MARK[x.g] + '的' : '') + '飯裝進' + (r.kind === 'bento' ? '便當盒' : '盤子')); return; }
+      for (i = 0; i < list.length; i++) { x = list[i]; if (x.st === 'basket' && (x.it.type !== 'cook' || pots[x.g].st === 'idle')) { tip(MARK[x.g] + basketTip(x)); return; } }
+      for (g = 0; g < G; g++) if (pots[g].st === 'cooking') { tip(MARK[g] + '還在煮，點點' + (G > 1 ? potName(g) : '鍋子') + '翻炒～'); return; }
+    }
+    function basketTip(x) { var nm = x.it.name; if (x.it.type === 'chop') return '從籃子拿' + nm + '，放到砧板' + steps(x.it)[0].v; if (x.it.type === 'cook') return '從籃子拿' + nm + '，放進' + potName(x.g); return '先拿' + nm + '，再點飯鍋裝飯'; }
     function potName(g) { return G > 1 ? (g ? '右爐' : '左爐') : '爐子'; }
     function take(i, btn) {
       var x = list[i];
@@ -129,7 +139,7 @@
       if (p.st === 'ready' || p.st === 'burn') {
         if (p.st === 'burn') burnt = true;
         var wasBurn = p.st === 'burn';
-        p.st = 'served'; list.forEach(function (x) { if (x.st === 'pot' && x.g === g) x.st = 'done'; }); fly($(PID[g]), 'ckBox', '🥘'); tip(wasBurn ? '有點焦焦的…沒關係，還是很香！' : MARK[g] + '起鍋！剛剛好～'); order(); potState(g); boxState(); check(); return;
+        p.st = 'served'; list.forEach(function (x) { if (x.st === 'pot' && x.g === g) x.st = 'done'; }); fly($(PID[g]), 'ckBox', '🥘'); var sv = wasBurn ? '有點焦焦的…沒關係，還是很香！' : MARK[g] + '起鍋！剛剛好～'; tip(sv); order(); potState(g); boxState(); if (!check()) setTimeout(function () { var tt = $('ckTip'); if (!ended && tt && tt.textContent === sv) nextTip(); }, 1200); return;      /* D316：GPT 2230 A③——起鍋 1.2 秒後依現況接下一步，不回放舊句 */
       }
       if (p.st === 'cooking') { p.stir = (p.stir || 0) + 1; p.bonus = Math.min(2400, (p.bonus || 0) + 350); var pe = $(PID[g]); pe.classList.remove('toss'); void pe.offsetWidth; pe.classList.add('toss'); var stT = ['翻！', '再翻一下～', '炒得香香的！', '翻得好！'][p.stir % 4] + '（翻炒 ' + p.stir + ' 下，越勻越不容易焦）'; if (!p.danced) { p.danced = true; tip('鍋裡跳舞囉！'); danceT = setTimeout(function () { danceT = 0; $('ckTip').textContent = stT; }, 800); } else tip(stT); return; }      /* D189：煮的時候點鍋子翻炒：每翻一下，「剛好」的時間多 0.35 秒 */
       if (p.st === 'served') { var rl = list.some(function (x) { return x.g === g && x.it.type === 'rice' && x.st !== 'done'; }); tip(MARK[g] + '已經起鍋了' + (rl ? '，還差點飯鍋裝' + (MARK[g] ? MARK[g] + '的' : '') + '飯' : '')); return; }      /* D274：實玩時起鍋後再點爐子，只說「已經起鍋了」，看不出還差裝飯 → 補一句 */
@@ -140,7 +150,7 @@
     tap($('ckRice'), function () {
       var x = list.find(function (y) { return y.st === 'rice'; }) || list.find(function (y) { return y.st === 'basket' && y.it.type === 'rice'; });
       if (!x) { tip(needRice.some(function (n) { return n; }) ? '飯已經裝好了' : '這道不用裝飯'); return; }
-      x.st = 'done'; riceIn[x.g]++; fly($('ckRice'), 'ckBox', '🍚'); var pg = pots[x.g]; tip(riceIn[x.g] >= needRice[x.g] ? (pg.st === 'ready' ? MARK[x.g] + '好了！點爐子起鍋～' : pg.st === 'burn' ? MARK[x.g] + '焦了！快點爐子起鍋～' : (MARK[x.g] ? MARK[x.g] + '的' : '') + '飯裝好了！' + (pg.st === 'cooking' ? '回鍋子翻炒～' : '')) : '再裝一份' + (MARK[x.g] ? MARK[x.g] + '的' : '') + '飯');      /* D274：單張訂單沒有①②，不再出現「的飯裝好了」「先把的食材」 */ order(); tray(); boxState(); check();
+      x.st = 'done'; riceIn[x.g]++; fly($('ckRice'), 'ckBox', '🍚'); var pg = pots[x.g]; tip(riceIn[x.g] >= needRice[x.g] ? (pg.st === 'ready' || pg.st === 'burn' ? readyTip(x.g) : (MARK[x.g] ? MARK[x.g] + '的' : '') + '飯裝好了！' + (pg.st === 'cooking' ? '回鍋子翻炒～' : '')) : '再裝一份' + (MARK[x.g] ? MARK[x.g] + '的' : '') + '飯');      /* D274：單張訂單沒有①②，不再出現「的飯裝好了」「先把的食材」 */ order(); tray(); boxState(); check();
     });
     tap($('ckBox'), function () { if (!check()) tip(riceIn.some(function (n, g) { return n < needRice[g]; }) ? '還要裝飯（點飯鍋）' : '還要等鍋子裡的菜'); });
     function potState(g) {
@@ -185,8 +195,8 @@
         if (p.st !== 'cooking' && p.st !== 'ready' && p.st !== 'burn') return;
         var a = Date.now() - p.t, b = $(g ? 'ckPot2B' : 'ckPB');
         if (a < COOK_MS) { b.style.width = a / COOK_MS * 100 + '%'; }
-        else if (a < COOK_MS + GOOD_MS + (p.bonus || 0)) { if (p.st !== 'ready') { p.st = 'ready'; potState(g); tip(MARK[g] + '好了！點爐子起鍋～'); } b.style.width = '100%'; }
-        else if (p.st !== 'burn') { p.st = 'burn'; potState(g); }
+        else if (a < COOK_MS + GOOD_MS + (p.bonus || 0)) { if (p.st !== 'ready') { p.st = 'ready'; potState(g); tip(readyTip(g)); } b.style.width = '100%'; }
+        else if (p.st !== 'burn') { p.st = 'burn'; potState(g); tip(readyTip(g)); }      /* D316：GPT 2230——焦了也立即提醒一次（雙爐帶爐號），不改焦掉結果 */
       });
     }, 100);
     order(); tray(); boardState(); pots.forEach(function (p, g) { potState(g); }); boxState();
