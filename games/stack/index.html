@@ -21,7 +21,7 @@ canvas{height:100%;max-width:100%;aspect-ratio:360/600;border-radius:18px;touch-
 .how{width:100%;max-width:420px;font-size:13px;line-height:1.5;color:#CFE3EC;text-align:center;min-height:2.6em;margin:0;text-wrap:balance}
 .how b{color:var(--dusk)}
 .how .ptMore{border:0;background:none;color:#CFE3EC;font:800 12.5px/1.3 var(--round);padding:4px 10px;min-height:28px;cursor:pointer}.how .ptLong{display:block;max-width:340px;margin:0 auto;font-size:12px;line-height:1.45;color:#CFE3EC}.how .ptLong[hidden]{display:none}
-.dres{position:static;flex:0 0 auto;width:100%;max-width:420px;box-sizing:border-box;padding:8px 12px calc(10px + env(safe-area-inset-bottom));background:#0E2A3D;border-radius:18px;box-shadow:0 4px 14px rgba(0,0,0,.3)}.dres.kdFold .kd-res{display:none}body.kdEnd{overflow-y:auto}      /* D265（GPT 2330 B③）：今日挑戰面板放在變身／水族館按鈕下面，跟頁面一起捲，不再浮蓋結算 */.dres[hidden]{display:none}.dres .dx{display:block;margin:0 auto 4px;border:0;background:none;color:#CFE3EC;font:inherit;font-size:13px;font-weight:800;min-height:32px}.dres .kd-res{margin:0}
+.dres{position:static;flex:0 0 auto;width:100%;max-width:420px;box-sizing:border-box;padding:8px 12px calc(10px + env(safe-area-inset-bottom));background:#0E2A3D;border-radius:18px;box-shadow:0 4px 14px rgba(0,0,0,.3)}.dres.kdFold .kd-res{display:none}body.kdEnd{overflow-y:auto}body.kdEnd #how{display:none}#kdDown{display:block;margin:0 auto;border:0;background:none;color:#FFE45C;font:800 13px/20px inherit;font-family:inherit;padding:2px 14px;min-height:24px;cursor:pointer}#kdDown[hidden]{display:none}      /* D308（GPT 1430 B②）：疊貨櫃結算提示「往下看今日挑戰結果 ▾」，字級同合成港，間距照本款原樣 */      /* D305：今日挑戰結算時，面板已寫正式／練習與剩幾次，下面黃條不再重複 */      /* D265（GPT 2330 B③）：今日挑戰面板放在變身／水族館按鈕下面，跟頁面一起捲，不再浮蓋結算 */.dres[hidden]{display:none}.dres .dx{display:block;margin:0 auto 4px;border:0;background:none;color:#CFE3EC;font:inherit;font-size:13px;font-weight:800;min-height:32px}.dres .kd-res{margin:0}
 .top{display:flex;align-items:center;gap:10px;width:100%;max-width:420px;font-weight:900;font-size:17px}
 .top .back{color:#CFE3EC;text-decoration:none;font-size:13px;font-weight:700;padding:6px 10px;border:2px solid #2B4A60;border-radius:12px;white-space:nowrap}
 .top b{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -55,7 +55,9 @@ const rnd = (a, b) => a + Math.random() * (b - a), clamp = (v, a, b) => Math.max
 /* G97 每日挑戰：?daily=official／practice → 掉落順序、風和事件用當天固定亂數 */
 const DS = window.KiteDaily ? KiteDaily.session() : null; let gR = Math.random; const grnd = (a, b) => a + gR() * (b - a), gpick = (a) => a[Math.floor(gR() * a.length)];
 function dailyBegin() { const dr0 = document.getElementById('dres'); if (dr0) dr0.hidden = true; kdUnlock(); if (!DS) return; if (DS.official && KiteDaily.left() <= 0) { DS.official = false; DS.practice = true; } KiteDaily.begin(DS); dailyTag(); }
-function kdUnlock() { document.body.classList.remove('kdEnd'); const st = document.querySelector('.stage'); if (st) st.style.flex = ''; }
+/* D308（GPT 1430 B②）：疊貨櫃今日挑戰結算（正式＋練習）——遊戲畫面下、結果面板上方加「往下看今日挑戰結果 ▾」，點了先展開再捲到面板；再玩就收起 */
+function kdHint(h) { let k = document.getElementById('kdDown'); if (!k) { k = document.createElement('button'); k.type = 'button'; k.id = 'kdDown'; k.textContent = '往下看今日挑戰結果 ▾'; k.onclick = () => { const d = document.getElementById('dres'); if (d.classList.contains('kdFold')) d.querySelector('.dx').click(); d.scrollIntoView({ behavior: 'smooth', block: 'start' }); }; } h.before(k); k.hidden = false; }
+function kdUnlock() { const k = document.getElementById('kdDown'); if (k) k.hidden = true; document.body.classList.remove('kdEnd'); const st = document.querySelector('.stage'); if (st) st.style.flex = ''; }
 function kdLock() { const st = document.querySelector('.stage'); if (st && !document.body.classList.contains('kdEnd')) { st.style.flex = '0 0 ' + st.offsetHeight + 'px'; document.body.classList.add('kdEnd'); } }      /* D265：遊戲畫面維持原大小，面板接在下面、整頁往下捲 */
 function dailyTag(extra) { if (!DS) return; const h = document.getElementById('how'); h.innerHTML = '<span class="kd-banner">' + (DS.official ? '📅 今日挑戰・正式（今天還有 ' + KiteDaily.left() + ' 次）' : '📅 今日挑戰・練習（不計榜）') + '</span><br>' + DS.td.vary + (extra || ''); }
 const RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -132,7 +134,7 @@ function hud(score, mid, right) {
   if (right) { ctx.font = FONT(14); const w = ctx.measureText(right).width + 26; pill(W - 10 - w, 10, w, 32); text(right, W - 10 - w / 2, 26, 14, C.paper, 'center', 700, false); }
   if (mid) { ctx.font = FONT(13); const w = ctx.measureText(mid).width + 24; pill(W / 2 - w / 2, 48, w, 26, 'rgba(16,41,61,.62)'); text(mid, W / 2, 61, 13, C.paper, 'center', 700, false); }
 }
-function btn(label, y, col) { const w = 184, x = W / 2 - w / 2; rrect(x, y + 4, w, 46, 23, 'rgba(0,0,0,.25)'); rrect(x, y, w, 46, 23, col || C.leaf, C.ink, 3); text(label, W / 2, y + 23, 18, C.paper, 'center', 900); return { x, y, w, h: 46 }; }
+function btn(label, y, col) { ctx.font = FONT(18, 900); const w = Math.min(W - 60, Math.max(184, Math.ceil(ctx.measureText(label).width) + 40)), x = W / 2 - w / 2;      /* D308：字比較長（再正式挑戰（剩 N 次））時按鈕跟著變寬，不縮字 */ rrect(x, y + 4, w, 46, 23, 'rgba(0,0,0,.25)'); rrect(x, y, w, 46, 23, col || C.leaf, C.ink, 3); text(label, W / 2, y + 23, 18, C.paper, 'center', 900); return { x, y, w, h: 46 }; }
 function panel(y, h) { rrect(22, y + 5, W - 44, h, 24, 'rgba(0,0,0,.25)'); rrect(22, y, W - 44, h, 24, C.paper, C.ink, 3); }
 
 /* ================= A. 合成港 ================= */
@@ -566,7 +568,7 @@ function drawEnd(e) {
   if (e.found && e.found.length) text('新發現 ' + e.found.length + ' 種海鮮！', W / 2, 232 + e.rows.length * 34 + 4, 13, C.warn, 'center', 900, false);
   if (e.rank) text((DS ? '📅 ' : '🏆 本月') + e.rank, W / 2, e.found && e.found.length ? 390 : 232 + e.rows.length * 34 + 4, 13, '#2F7F86', 'center', 900, false);      // D133
   text(e.db ? e.db.label + ' ' + e.db.best + ' 分' : '最佳 ' + (best[mode] || e.s) + ' 分', W / 2, 408, 13, '#6A7F8E', 'center', 700, false);      /* D265 A②：每日挑戰顯示今日正式／練習最佳 */
-  endBtnR = btn(DS && !DS.official ? '再練一次' : '再玩一次', 426);      /* D265 C③：練習局主鈕改「再練一次」 */
+  endBtnR = btn(DS && !DS.official ? '再練一次' : DS && KiteDaily.left() > 0 ? '再正式挑戰（剩 ' + KiteDaily.left() + ' 次）' : '再玩一次', 426);      /* D265 C③：練習局主鈕改「再練一次」；D308（GPT 1430 A②）：疊貨櫃正式局主鈕「再正式挑戰（剩 N 次）」（N＝結算後實際剩下），用完照原本「再玩一次」 */
   ctx.restore(); ctx.globalAlpha = 1;
 }
 
@@ -601,7 +603,7 @@ function finish() {
   else { const h = G.blocks.length - 1; if (!DS && h > (best.stackH || 0)) { best.stackH = h; store.set('kiteMiniBest1', best); } endInfo = { s, nb, t: 0, title: '貨櫃掉下去了', rows: [['疊了', h + ' 層'], ['裝滿貨船', G.ships + ' 艘'], ['完美', G.perfects + ' 次'], ['最長完美連擊', '×' + G.bestCombo]], horn: G.ships > 0 ? 1 : -1 }; }
   endInfo.db = DS ? KiteDaily.dayBest(DS, s) : null;
   endInfo.rank = DS ? (DS.official ? '' : '練習不計榜') : rk && KiteCore.rankText ? KiteCore.rankText(rk) : '';
-  if (DS) { const h = document.getElementById('dres'), ab = document.getElementById('aqBar'); (ab || document.querySelector('.stage')).after(h); h.classList.remove('kdFold'); h.innerHTML = '<button type="button" class="dx" aria-expanded="true">收起 ▾</button>' + KiteDaily.resultHtml(DS, dr, s); KiteDaily.wire(h, s); kdLock(); h.hidden = false;
+  if (DS) { const h = document.getElementById('dres'), ab = document.getElementById('aqBar'); (ab || document.querySelector('.stage')).after(h); h.classList.remove('kdFold'); h.innerHTML = '<button type="button" class="dx" aria-expanded="true">收起 ▾</button>' + KiteDaily.resultHtml(DS, dr, s, { mainOfficial: true }); KiteDaily.wire(h, s); kdLock(); h.hidden = false; kdHint(h);
     const dx = h.querySelector('.dx'); dx.onclick = () => { const f = h.classList.toggle('kdFold'); dx.textContent = f ? '📅 今日挑戰結果 ▴' : '收起 ▾'; dx.setAttribute('aria-expanded', f ? 'false' : 'true'); }; }      /* D265：收起改成摺成一條、點了再打開 */      // QA：今日挑戰結果改成下方面板，不再把遊戲畫面擠小
   else if (tl) { const rp = rk && rk.res, h = document.getElementById('how');
     /* D219（GPT 1150 A，同步合成 D218）：黃色點數條只留一句主句（判定與數字跟捕魚 D215／D216 同一套欄位），整串原計算收進下面「點數明細 ▾」，預設收合；本局沒算分照原說明、不出明細 */
@@ -630,7 +632,7 @@ function toot() { const now = performance.now(); if (now - hornT < 1100) return;
   if (snd && navigator.vibrate) try { navigator.vibrate([90, 140, 110]); } catch (e) {} }
 let tab = 'stack';      // D119：放進遊戲大廳的單一遊戲版（不計分・隨時玩）
 setMode(HOW[tab] ? tab : 'merge'); requestAnimationFrame(frame); dailyTag();
-window.__mini = { get G() { return G; }, get state() { return state; }, setMode, IMG, SEAF, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; } };      /* D263：測試掛勾加 pop／floats */      /* D254：測試掛勾，固定亂數 */
+window.__mini = { get G() { return G; }, get state() { return state; }, setMode, finish, IMG, SEAF, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; } };      /* D263：測試掛勾加 pop／floats；D307 加 finish */      /* D254：測試掛勾，固定亂數 */
 })();
 </script>
 <script>(function () { var b = document.getElementById('backBtn'); b.addEventListener('click', function (e) { if (window.__mini && window.__mini.state === 'play' && !confirm('這局還在進行，確定要離開嗎？（分數不會記錄）')) e.preventDefault(); }); /* QA：遊戲中按返回先確認 */ /* D161：一律回小鳶樂園（遊戲大廳），不再回舊版測試首頁 */ })();</script>
