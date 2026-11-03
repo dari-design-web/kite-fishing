@@ -52,14 +52,19 @@
   function copyShare(score, btn) { var t = shareText(score), ok = function () { if (btn) { var o = btn.textContent; btn.textContent = '已複製，貼給朋友吧！'; setTimeout(function () { btn.textContent = o; }, 1800); } };
     try { navigator.clipboard.writeText(t).then(ok, function () { prompt('複製這段文字給朋友：', t); }); } catch (e) { prompt('複製這段文字給朋友：', t); } }
   /* 結算區塊（HTML），三個小遊戲共用 */
-  function resultHtml(s, r, score) {
-    if (!s || !r) return '';
+  function esc(x) { return String(x).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+  function seg(x) { return '<span class="kd-seg">' + esc(x) + '</span>'; }
+  function resultHtml(s, r, score, opt) {
+    if (!s || !r) return ''; opt = opt || {};
     var h = '<div class="kd-res"><b>📅 今日挑戰・' + (s.official ? '正式' : '練習（不計榜）') + '</b>';
-    if (s.official && r.tier && K.tierLine) h += '<div>🪙 ' + String(K.tierLine(r.tier)).split('・').map(function (x) { return '<span class="kd-seg">' + x.replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }) + '</span>'; }).join('・') + '</div>';      /* D305：點數句以「・」分段，每段不拆（320 不再剩一個「點」掉到下一行） */
+    if (s.official && r.tier && K.tierLine) { var tl = String(K.tierLine(r.tier));
+      /* D306（GPT 1230 A③）：正式局先寫「本局 N 分 → 換算積分 M 分」（M＝這局實際記進今日積分的分數，跟 reportDaily 同一個算法），下一行才是「今日積分共…」；換算／取整／領點規則都不改 */
+      if (r.tier.counted) { var sc = Math.max(0, Math.round(score || 0)), cv = Math.round(sc * (K.scoreW ? K.scoreW(s.td.game) : 1)); h += '<div>🎮 ' + seg('本局 ' + sc.toLocaleString() + ' 分') + ' ' + seg('→ 換算積分 ' + cv.toLocaleString() + ' 分') + '</div>'; tl = tl.replace(/^今日積分 /, '今日積分共 '); }
+      h += '<div>🪙 ' + tl.split('・').map(seg).join('・') + '</div>'; }      /* D305：點數句以「・」分段，每段不拆（320 不再剩一個「點」掉到下一行） */
     /* D266（GPT 0830 A②）：卡上已有這支手機的「今日正式最佳」，面板只留今日榜（雲端實際回傳）的名次 */
     if (s.official) h += '<div>今日榜：' + (r.rank ? '第 ' + r.rank + ' 名' : '名次更新中') + '</div><div>今天還有 ' + r.left + ' 次正式挑戰</div>';
-    /* D265（GPT 2330 C③）：練習局結算卡主鈕已是「再練一次」，面板不再放重複的再練鈕 */
-    h += '<div class="kd-btns">' + (r.left > 0 ? '<a class="kd-b" href="?daily=official">再正式挑戰</a>' : '') + (s.official ? '<a class="kd-b" href="?daily=practice">練習</a>' : '') + (s.official ? '<button type="button" class="kd-b" data-kd="share">挑戰朋友</button>' : '') + '<button type="button" class="kd-b" data-kd="lb">看今日榜</button></div></div>';
+    /* D265（GPT 2330 C③）：練習局結算卡主鈕已是「再練一次」，面板不再放重複的再練鈕；D306（GPT 1230 B②）：opt.mainOfficial＝結算卡主鈕已是「再正式挑戰（剩 N 次）」，正式面板不再放重複的正式鈕（練習面板照留） */
+    h += '<div class="kd-btns">' + (r.left > 0 && !(s.official && opt.mainOfficial) ? '<a class="kd-b" href="?daily=official">再正式挑戰</a>' : '') + (s.official ? '<a class="kd-b" href="?daily=practice">練習</a>' : '') + (s.official ? '<button type="button" class="kd-b" data-kd="share">挑戰朋友</button>' : '') + '<button type="button" class="kd-b" data-kd="lb">看今日榜</button></div></div>';
     return h;
   }
   function wire(root, score) { if (!root) return; var b = root.querySelector('[data-kd=share]'); if (b) b.onclick = function () { copyShare(score, b); }; var l = root.querySelector('[data-kd=lb]'); if (l) l.onclick = function () { if (G.KiteLB) G.KiteLB.hub('daily'); }; }
