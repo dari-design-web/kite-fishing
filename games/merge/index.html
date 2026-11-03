@@ -312,7 +312,8 @@ function makeMerge() {
     drawKiteCarry(kx, ky, 0.85, tt * 9, 'kite_hold', f && f.held);
     /* 下一個。D300（GPT 2230 A②）：小鳶飛到右邊（離右牆 130 以內）時，整框連標題與海鮮圖移到左上分數下方、照常清楚（原本淡到 0.12 看不到）；離開右邊回右上。只換位置，預覽內容不變。D301（GPT 2335 A③）：換到左上後要退到離右牆 160 以外才回右上，130～160 之間維持上次那一側，不會左右來回閃 */
     /* D303（GPT 0930 B②）：結算後重播變身時不畫「下一個」整框（含兩個預覽），背景跟結算一樣只剩遮暗的局面；資料與 130／160 換側規則不變 */
-    if (!(state === 'end' && RP)) {
+    /* D304（GPT 1030 A②）：結算卡（不只重播）也不畫「下一個」整框，卡片上緣外不再露出約 12px；只藏顯示，資料與換側規則不變 */
+    if (state !== 'end') {
     const nbL = kx > W - 130 ? true : kx < W - 160 ? false : !!g.nbL, nbX = nbL ? 10 : W - 74, nbY = nbL ? 64 : 84, nbC = nbX + 31; g.nbL = nbL; pill(nbX, nbY, 62, 72, 'rgba(16,41,61,.62)'); rrect(nbX, nbY, 62, 72, 14, null, 'rgba(255,255,255,.35)', 1.5);
     const wk = g.wantT > 0 ? g.wantT / 0.6 : 0; text(wk ? '我也要！' : '下一個', nbC, nbY + 12, 11, wk ? '#FFE6A6' : '#CFE3EC', 'center', 700, false);
     drawSea(g.q[0], nbC, nbY + 36, Math.min(15, SEAF[g.q[0]][1]), wk && !RM ? 0.09 * Math.sin(Math.PI * (1 - wk)) : 0); ctx.globalAlpha = 0.55; drawSea(g.q[1], nbC, nbY + 62, Math.min(9, SEAF[g.q[1]][1]), 0); ctx.globalAlpha = 1;
@@ -572,7 +573,8 @@ function drawReplay(dt) {
   RP.t += dt; const t = RP.t, lv = RP.lv, a = lv - 1, k0 = clamp(t * 4, 0, 1);
   if (t > 3.2) { RP = null; AQ.ui(); return; }
   ctx.fillStyle = 'rgba(14,34,50,' + 0.6 * k0 + ')'; ctx.fillRect(0, 0, W, H);
-  const rA = Math.min(SEAF[a][1] * 1.25, 44), rB = Math.min(SEAF[lv][1] * 1.3, 66), MT = 1.0;
+  /* D304（GPT 1030 B②）：小海鮮重播偏小 → 結果主角顯示半徑至少 40，兩隻來源用同一個倍率一起放大（保持原本大小比例，不是各自設 40）；大海鮮照原上限 44／66。只影響重播畫面，局中碰撞／圖鑑／等級不變；卡高照新半徑（含 1.28 彈大）重算後固定 */
+  const rA0 = SEAF[a][1] * 1.25, rB0 = SEAF[lv][1] * 1.3, rF = rB0 < 40 ? 40 / rB0 : 1, rA = Math.min(rA0 * rF, 44), rB = Math.min(rB0 * rF, 66), MT = 1.0;
   /* D303（GPT 0930 A②）：卡片高度依這次重播最大的海鮮（合成後彈大 1.28 倍）一次算好、整段固定，不逐幀變；標題、海鮮、兩行字、返回字之間不再留大片空白。卡片中心維持 y300 */
   if (!RP.L) { const pk = Math.max(rB * (RM ? 1 : 1.28), rA), h = 34 + 16 + pk * 2 + 22 + 30 + 30 + 18, y0 = Math.round(300 - h / 2), ty = y0 + 34, cy0 = ty + 16 + pk, t1 = cy0 + pk + 22; RP.L = { y0, h: Math.round(h), ty, cy: cy0, t1, t2: t1 + 30, tr: t1 + 60 }; }
   const L = RP.L, cy = L.cy;
