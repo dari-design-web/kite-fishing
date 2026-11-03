@@ -399,6 +399,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && sta
 
 function start() { reset(); if (window.KiteBoard) KiteBoard.start('swim'); if (DS) { gR = KiteDaily.rng(DS.td.seed); if (DS.official && KiteDaily.left() <= 0) { DS.official = false; DS.practice = true; } KiteDaily.begin(DS); if (DS.td.key === 'shield') P.shield = CFG.shield; dailyTag(); } $('startCard').hidden = true; $('endCard').hidden = true; $('pauseCard').hidden = true; $('hud').hidden = false; $('fever').hidden = false; $('lvl').hidden = false; $('pauseBtn').hidden = false; state = 'play'; last = performance.now(); music(); beep([523, 659, 784], 90); tip('左右滑換水道・上下滑一次換一層', true, 2.4); }
 function end() {
+  { const zi = Math.max(0, Math.floor(dist / CFG.zoneLen)); if (zi !== zone) setZone(zi, true); bookCheck(); }      /* D312（GPT 1830 B）：結算前先照距離對齊區域與旅行冊，「到了○○」「下一站還差」不會出現負數 */
   if (window.KiteBoard) { KiteBoard.ev('swim_time', { sec: playT }); KiteBoard.ev('run_end', { game: 'swim' }); }      /* D175：告示板委託 */
   state = 'end'; music(); $('hud').hidden = true; $('fever').hidden = true; $('lvl').hidden = true; $('pauseBtn').hidden = true; $('tip').hidden = true; $('pw').innerHTML = ''; helper.style.display = 'none'; $('feverfx').classList.remove('on'); stage.querySelectorAll('.pop,.zone').forEach((e) => e.remove());
   const s = score, nb = !DS && s > bestNow, db = DS ? KiteDaily.dayBest(DS, s) : null; if (nb) {      /* D265（GPT 2330 A②）：每日挑戰不寫一般最佳、不出一般新紀錄，改記今日正式／練習最佳 */ bestNow = s; try { localStorage.setItem('kiteSwimBest1', String(s)); } catch (e) {} }
