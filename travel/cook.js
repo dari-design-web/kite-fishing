@@ -7,7 +7,10 @@
   /* 工作檯 1080×700 上的互動區（G105_工作檯座標_v2 hit_rect_normalized：x0,y0,x1,y1） */
   var HIT = { basket: [0.124, 0.107, 0.281, 0.271], board: [0.306, 0.293, 0.565, 0.469], stove: [0.595, 0.174, 0.723, 0.307], stove2: [0.765, 0.174, 0.895, 0.307], rice: [0.096, 0.314, 0.264, 0.471], box: [0.659, 0.357, 0.895, 0.476] };
   function $(id) { return document.getElementById(id); }
-  function tap(e0, fn) { var last = 0; e0.addEventListener('pointerdown', function (e) { if (e.button > 0) return; e.preventDefault(); last = Date.now(); fn(); }); e0.addEventListener('click', function () { if (Date.now() - last < 700) return; fn(); }); }
+  /* D314：手機點了籃子裡第一樣（例：小白菜），籃子重畫後，手機補的 click 會落在補位的下一顆（白飯），一次拿走兩樣、提示被蓋成「點飯鍋」。
+     任何一顆剛被 pointerdown 點過的 0.5 秒內，其他按鈕的補 click 一律不算（同 home.js D167 的 __hmGhost） */
+  var ghostT = 0;
+  function tap(e0, fn) { var last = 0; e0.addEventListener('pointerdown', function (e) { if (e.button > 0) return; e.preventDefault(); last = ghostT = Date.now(); fn(); }); e0.addEventListener('click', function () { if (Date.now() - last < 700 || Date.now() - ghostT < 500) return; fn(); }); }
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   function pct(r) { return 'left:' + r[0] * 100 + '%;top:' + r[1] / 0.7 * 70 + '%;width:' + (r[2] - r[0]) * 100 + '%;height:' + (r[3] - r[1]) * 100 + '%'; }
   var css = el('style');
