@@ -177,7 +177,7 @@
   function book(after) {
     var s = state(), fr = free(s), ov = document.createElement('div'); ov.className = 'kb-ov';
     var h = '<div class="kb-sheet"><h3>我的港口記憶</h3><p class="kb-tip">每天完成一張卡，就有一枚貼紙。一天最多 1 枚，貼紙不會過期，也不會被用掉。</p>';
-    h += s.recs.length ? '<div class="kb-grid">' + s.recs.slice().reverse().map(function (r) { return '<div class="kb-cell">' + sticker(r, 64) + '<small>' + esc(r.day.slice(5).replace('-', '/')) + '</small><span>' + esc(r.line) + '</span></div>'; }).join('') + '</div>' : '<p class="kb-tip"><b>還沒有貼紙。</b>關閉面板，在告示板選一張委託試試看！</p>';
+    h += s.recs.length ? '<div class="kb-grid">' + s.recs.slice().reverse().map(function (r) { return '<div class="kb-cell">' + sticker(r, 64) + '<small>' + esc(r.day.slice(5).replace('-', '/')) + '</small><span>' + esc(r.line) + '</span></div>'; }).join('') + '</div>' : '<p class="kb-tip"><b>還沒有貼紙。</b>關閉面板，在告示板選一張委託<span class="kb-nw">試試看！</span></p>';
     h += fr.length >= POSTER_N ? '<button type="button" class="kb-make" data-kb2="make">集滿 ' + POSTER_N + ' 枚，做港口海報</button><p class="kb-tip kb-sm" style="text-align:center">做成海報，貼紙也會留著喔！</p>' : '<p class="kb-tip">再集 ' + (POSTER_N - fr.length) + ' 枚，就能做' + (s.posters.length ? '下一張' : '') + '海報！不用連續來。</p>';
     if (s.posters.length) h += '<h3>我的海報</h3>' + s.posters.slice().reverse().map(function (p) { return posterHtml(p, s); }).join('');
     h += '<button type="button" class="kb-x" data-kb2="x">關閉</button></div>';
