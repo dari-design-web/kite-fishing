@@ -71,7 +71,7 @@ button{font-family:inherit}
 .stk.sel .del,.stk.sel .rot{display:flex}
 .stk .del{left:-18px;top:-18px;background:var(--red)}
 .stk .rot{right:-18px;bottom:-18px;background:var(--teal);cursor:nwse-resize}
-.hint{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:6;background:rgba(20,28,32,.7);color:#fff;font-size:12px;border-radius:999px;padding:4px 12px;white-space:nowrap;pointer-events:none}
+.hint{position:absolute;left:10px;bottom:max(52px,calc(var(--hb,0%) + 8px));z-index:6;background:rgba(20,28,32,.7);color:#fff;font-size:12px;border-radius:999px;padding:4px 12px;white-space:nowrap;pointer-events:none}
 .tray{padding:8px 0 0;color:#FFF4E2}
 .sheet{position:fixed;inset:0;z-index:50;background:rgba(14,20,24,.55);display:flex;align-items:flex-end}
 .sheet[hidden]{display:none}
@@ -399,7 +399,7 @@ const SND_ICON = (() => {
 </script>
 <script>
 /* 小鳶合照館 原型 v0.1（工作單 11 v4 P2）。貼紙、相框、解鎖方式都是建議，等 Dari 確認；正式素材之後開單給 ChatGPT */
-const CFG = { version: '0.28', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
+const CFG = { version: '0.29', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
 const $ = (id) => document.getElementById(id);
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.top = ''; e.style.display = 'block'; avoidLabel(e); clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = 'none'), 2400); }
@@ -512,8 +512,11 @@ function drawFrame(c) {
     c.fillStyle = '#3E2B1D'; c.font = font('900', 34); c.fillText('本週小鳶在' + WEEK[1], 96, 1320);
     c.fillStyle = '#8A7565'; c.font = font('500', 28); c.fillText('一起來' + WEEK[1] + '走走吧　' + today(), 96, 1370);
   }
+  placeHint(c);
   $('fname').textContent = '相框：' + FRAMES[frameI] + (frameI === 1 ? '（' + SEASONS[seasonI][0] + '）' : '');
 }
+/* D324（GPT 1330 A③）：「點下面的貼紙放上來」泡泡從上緣移到預覽下部偏左，放在相框下緣花樣的上方 8px；至少高過右下自拍鈕那一列（52px），不會貼底也不會壓到上緣地名 */
+function placeHint(c) { let top = CFG.H; try { const x0 = 60, w = 480, y0 = Math.round(CFG.H * 0.6), h = CFG.H - y0, d = c.getImageData(x0, y0, w, h).data; let gap = 0; for (let y = h - 1; y >= 0; y--) { let hit = false; for (let x = 0; x < w; x += 3) if (d[(y * w + x) * 4 + 3] > 60) { hit = true; break; } if (hit) { top = y0 + y; gap = 0; } else if (++gap >= 30 && (top < CFG.H || y < h - 220)) break; } } catch (e) { top = CFG.H; } $('hint').style.setProperty('--hb', ((CFG.H - top) / CFG.H * 100).toFixed(2) + '%'); $('hint').dataset.decoTop = top; }
 function redrawFrame() { drawFrame($('frameCv').getContext('2d')); }
 
 /* ---- 畫面來源：相機、相簿、示範背景 ---- */
