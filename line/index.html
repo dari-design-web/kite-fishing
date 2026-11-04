@@ -598,7 +598,15 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
   /* D100：在官方 LINE 裡打開時用 LINE 帳號登入（LIFF_ID 設好之後才會動作）；換手機時從雲端找回點數 */
   K.liffStart({ login: true }).then(function (m) { if (!m) return; hello && hello(); var t = stack[stack.length - 1]; if (t && $('sheet').classList.contains('on')) R[t[0]](t[1]); });
   var p0 = new URLSearchParams(location.search).get('p'); if (!p0) { var ls0 = new URLSearchParams(location.search).get('liff.state'); if (ls0) { try { p0 = new URLSearchParams(ls0.replace(/^[^?]*\?/, '')).get('p'); } catch (e) {} } }  /* 從 liff.line.me 進來時頁面在 liff.state 裡 */  p0 = { card: 'points', prize: 'shop', games: 'park', events: 'news' }[p0] || p0; if (new URLSearchParams(location.search).get('tab') === 'bento') shopF = 'bento'; if (p0 && R[p0]) open(p0); else if (INLIFF) open('park');      // 舊連結（v1 選單名稱）也能開
-  window.__line = { open: open, go: go, claim: claim, close: close };
+  /* D325（GPT 1430 B①）：從樂園點遊戲離開時，同一分頁記下樂園捲到哪；從遊戲回來（?p=park）內容就位後還原一次，玩家先動了就不拉。首訪／新分頁／沒有記錄照原本從最上面開 */
+  $('sbody').addEventListener('click', function (e) { var a = e.target.closest && e.target.closest('a[href]'); var t = stack[stack.length - 1]; if (!a || !t || t[0] !== 'park') return; var h = a.getAttribute('href') || ''; if (h.charAt(0) === '#' || !/\.html/.test(h)) return; try { sessionStorage.setItem('kiteParkY', JSON.stringify({ y: $('sbody').scrollTop, t: Date.now() })); } catch (er) {} }, true);
+  var parkRestore = { done: true, y: 0 };
+  (function () { var r = null; try { r = JSON.parse(sessionStorage.getItem('kiteParkY') || 'null'); sessionStorage.removeItem('kiteParkY'); } catch (er) {} var t = stack[stack.length - 1]; if (!r || !(r.y > 0) || !t || t[0] !== 'park' || Date.now() - (r.t || 0) > 3 * 3600e3) return;
+    var sb = $('sbody'), t0 = Date.now(); parkRestore = { done: false, y: Math.round(r.y) };
+    var stop = function () { parkRestore.done = true; ['touchstart', 'wheel', 'keydown', 'pointerdown'].forEach(function (k) { sb.removeEventListener(k, stop, true); }); };
+    ['touchstart', 'wheel', 'keydown', 'pointerdown'].forEach(function (k) { sb.addEventListener(k, stop, true); });
+    (function tick() { if (parkRestore.done) return; var cur = stack[stack.length - 1]; if (!cur || cur[0] !== 'park' || !$('sheet').classList.contains('on')) return stop(); var max = sb.scrollHeight - sb.clientHeight; if (max >= parkRestore.y || Date.now() - t0 > 2500) { sb.scrollTop = Math.min(parkRestore.y, Math.max(0, max)); return stop(); } setTimeout(tick, 80); })(); })();
+  window.__line = { open: open, go: go, claim: claim, close: close, parkRestore: function () { return parkRestore; } };
 })();
 </script>
 </body>
