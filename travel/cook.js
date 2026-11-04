@@ -39,7 +39,7 @@
   /* recipe：{ name, need:{k:n}, kind:'bento'|'dish', items:{k:{name,e,type,img,cut}} }；type：chop 要切、cook 直接下鍋、rice 裝飯 */
   function start(r, onDone) {
     var R = r.dual || [r], G = R.length, MARK = G > 1 ? ['①', '②'] : ['', ''], LIM = LIMIT * G + (G > 1 ? 10 : 0);
-    var t0 = Date.now(), burnt = false, ended = false, tickT;
+    var t0 = Date.now(), burnt = false, burntG = [], ended = false, tickT;
     var list = [];
     R.forEach(function (rr, g) { Object.keys(rr.need).forEach(function (k) { for (var i = 0; i < rr.need[k]; i++) list.push({ k: k, g: g, it: rr.items[k], st: 'basket' }); }); });
     var needRice = R.map(function (rr, g) { return list.filter(function (x) { return x.g === g && x.it.type === 'rice'; }).length; }), riceIn = R.map(function () { return 0; });
@@ -137,7 +137,7 @@
         board.st = 'pot'; p.n++; fly($('ckBoard'), PID[g], pic(board.it, true)); board = null; chop = 0; boardState(); var lb0 = $('ckBL'); if (lb0) lb0.textContent = '砧板'; order(); tray(); maybeCook(g); return;
       }
       if (p.st === 'ready' || p.st === 'burn') {
-        if (p.st === 'burn') burnt = true;
+        if (p.st === 'burn') { burnt = true; burntG[g] = true; }
         var wasBurn = p.st === 'burn';
         p.st = 'served'; list.forEach(function (x) { if (x.st === 'pot' && x.g === g) x.st = 'done'; }); fly($(PID[g]), 'ckBox', '🥘'); var sv = wasBurn ? MARK[g] + '有點焦焦的…沒關係，還是很香！' : MARK[g] + '起鍋！剛剛好～'; tip(sv); order(); potState(g); boxState(); if (!check()) setTimeout(function () { var tt = $('ckTip'); if (!ended && tt && tt.textContent === sv) nextTip(); }, 1200); return;      /* D316：GPT 2230 A③——起鍋 1.2 秒後依現況接下一步，不回放舊句；D317 B：焦鍋句帶實際爐號（①有點焦焦的…） */
       }
@@ -182,8 +182,8 @@
       if (R.every(function (rr, g) { return riceIn[g] >= needRice[g] && (pots[g].st === 'served' || !pots[g].need); })) {
         ended = true; clearInterval(tickT);
         var sec = Math.round((Date.now() - t0) / 1000), stars = Math.max(1, 3 - (burnt ? 1 : 0) - (sec > LIM ? 1 : 0) - (pots.some(function (p) { return p.need && (p.stir || 0) < 2; }) ? 1 : 0));
-        var d = el('div', 'done', '<div style="font-size:64px">' + (G > 1 ? '🧾' : r.kind === 'bento' ? '🍱' : '🍽️') + '</div><b>' + (G > 1 ? '兩張訂單都完成！' : r.name + '完成！') + '</b><div class="stars">' + '⭐'.repeat(stars) + '<span style="opacity:.3">' + '⭐'.repeat(3 - stars) + '</span></div><p>' + sec + ' 秒' + (burnt ? '・有一點焦' : '') + (stars >= 3 ? '・完美！' : '') + '</p>');
-        w.appendChild(d); w.classList.add('ckEnd'); setTimeout(function () { w.remove(); onDone(stars); }, 1600);      /* D275：GPT 1530 B①——完成卡期間收起提示列與籃子列 */
+        var d = el('div', 'done', '<div style="font-size:64px">' + (G > 1 ? '🧾' : r.kind === 'bento' ? '🍱' : '🍽️') + '</div><b>' + (G > 1 ? '兩張訂單都完成！' : r.name + '完成！') + '</b><div class="stars">' + '⭐'.repeat(stars) + '<span style="opacity:.3">' + '⭐'.repeat(3 - stars) + '</span></div><p>' + sec + ' 秒' + (burnt ? '・' + MARK.filter(function (m, i) { return i < G && burntG[i]; }).join('、') + '有一點焦' : '') + (stars >= 3 ? '・完美！' : '') + '</p>');
+        w.appendChild(d); w.classList.add('ckEnd'); setTimeout(function () { w.remove(); onDone(stars); }, 1600);      /* D275：GPT 1530 B①——完成卡期間收起提示列與籃子列；D318：GPT 0830 A③——完成卡小字帶實際焦鍋爐號（①有一點焦／①、②有一點焦），單爐沿原 */
         return true;
       }
       return false;
