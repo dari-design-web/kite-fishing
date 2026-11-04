@@ -123,9 +123,11 @@
   function free(s) { var used = {}; s.posters.forEach(function (p) { p.recs.forEach(function (id) { used[id] = 1; }); }); return s.recs.filter(function (r) { return !used[r.id]; }); }
   function cardHtml() {
     var s = state(), d = day(), sel = s.sel, q = sel && qById(sel.id), fr = free(s).length, h = '<div class="kb-card" id="kbCard"><div class="kb-h"><b>📋 今日港口告示板</b><button type="button" class="kb-bk" data-kb="book">我的港口記憶 ' + s.recs.length + '</button></div>';
+    var ok = justPicked; justPicked = 0;      /* D328（GPT 1730 A②）：剛按「選這張」才在已選卡上方說「選好了！」，換題／重畫不再出現 */
     if (q) {
+      if (ok) h += '<p class="kb-ok">選好了！</p>';
       var c = sel.c, g = q.game;
-      h += '<div class="kb-on"><img src="' + icon(g) + '" alt=""><div class="t"><small>' + esc(GAME[g].name) + (sel.vi ? '・簡單版' : '') + '</small><b>' + esc(q.v[sel.vi].line) + '</b><span>' + esc(condText(q, sel.vi, sel.crop)) + '</span>' +
+      h += '<div class="kb-on"><img src="' + icon(g) + '" alt=""><div class="t"><small>' + esc(GAME[g].name) + (sel.vi ? '・簡單版' : '') + '</small><b>' + nb(q.v[sel.vi].line) + '</b><span>' + esc(condText(q, sel.vi, sel.crop)) + '</span>' +
         (c.n > 1 ? '<span class="kb-bar"><i style="width:' + Math.round(100 * sel.n / c.n) + '%"></i></span><span class="kb-n">' + sel.n + '／' + c.n + (c.ev === 'swim_time' ? ' 秒' : c.uniq ? ' 種' : '') + '</span>' : '') +
         (sel.full ? '<span class="kb-n">做好了！明天打開就收進來</span>' : '') + '</div></div>' +
         '<div class="kb-btns"><a class="go" href="' + link(g) + '">去玩</a>' + (sel.vi ? '' : '<button type="button" data-kb="easy">換簡單題</button>') + '<button type="button" data-kb="drop">重選一張</button></div>' + (sel.vi ? '' : '<p class="kb-tip kb-sm">換成簡單題，進度會從 0 開始。</p>');
@@ -135,18 +137,32 @@
       var cs = candidates(d);
       h += cs.length ? '<p class="kb-tip">挑一張喜歡的來玩，小鳶幫你記！<br>今天完成一張，就有一枚貼紙。</p><div class="kb-list">' + cs.map(function (q) {
         var crop = target(q, 0, d);
-        return '<button type="button" class="kb-q" data-kb="pick" data-id="' + q.id + '"><img src="' + icon(q.game) + '" alt=""><span><small>' + esc(GAME[q.game].name) + '</small><b>' + esc(q.v[0].line) + '</b><em>' + esc(condText(q, 0, crop)) + '</em></span><i>選這張</i></button>';
+        return '<button type="button" class="kb-q" data-kb="pick" data-id="' + q.id + '"><img src="' + icon(q.game) + '" alt=""><span><small>' + esc(GAME[q.game].name) + '</small><b>' + nb(q.v[0].line) + '</b><em>' + esc(condText(q, 0, crop)) + '</em></span><i>選這張</i></button>';
       }).join('') + '</div>' : '<p class="kb-tip">今天暫時沒有可以做的委託。</p>';
     }
     h += '<div class="kb-foot">' + (fr >= POSTER_N ? '🎉 貼紙夠了！點「我的港口記憶」做一張港口海報' : '集到 ' + POSTER_N + ' 枚貼紙，就能做海報！<br>一天最多 1 枚，不用連續來。') + '<br>目前 ' + fr + '／' + POSTER_N + ' 枚・貼紙不換點數</div></div>';
     return h;
+  }
+  var justPicked = 0;
+  /* D328（GPT 1730 C）：標題最後一段不拆行，窄卡不會剩一個字自己一行（「合在一起！」整段一起換行） */
+  function nb(t) {
+    t = String(t || ''); var k = t.indexOf('合在一起！'), n = k >= 0 && k + 5 === t.length ? 5 : Math.min(3, t.length);
+    return esc(t.slice(0, t.length - n)) + '<span class="kb-nw">' + esc(t.slice(t.length - n)) + '</span>';
+  }
+  /* D328（GPT 1730 B②）：這次選卡重畫後捲一次，讓告示板頂在捲動區上緣下 8px（捲動區外的頁首不會蓋到） */
+  function toCard(root) {
+    var c = (root && root.querySelector('#kbCard')) || document.getElementById('kbCard'); if (!c) return;
+    var p = c.parentElement; while (p && p !== document.body) { var o = getComputedStyle(p).overflowY; if ((o === 'auto' || o === 'scroll') && p.scrollHeight > p.clientHeight) break; p = p.parentElement; }
+    var rm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches, bh = rm ? 'auto' : 'smooth';
+    if (p && p !== document.body) { var y = Math.max(0, c.getBoundingClientRect().top - p.getBoundingClientRect().top + p.scrollTop - 8); try { p.scrollTo({ top: y, behavior: bh }); } catch (e) { p.scrollTop = y; } }
+    else { var y2 = Math.max(0, c.getBoundingClientRect().top + (window.pageYOffset || 0) - 8); try { window.scrollTo({ top: y2, behavior: bh }); } catch (e) { window.scrollTo(0, y2); } }
   }
   function wire(root, rerender) {
     if (!root) return; var re = function () { if (rerender) rerender(); else { var c = root.querySelector('#kbCard'); if (c) c.outerHTML = cardHtml(); wire(root); } };
     root.querySelectorAll('[data-kb]').forEach(function (b) {
       var k = b.getAttribute('data-kb');
       b.onclick = function () {
-        if (k === 'pick') { accept(b.getAttribute('data-id'), 0); re(); }
+        if (k === 'pick') { accept(b.getAttribute('data-id'), 0); justPicked = 1; re(); justPicked = 0; toCard(root); }
         else if (k === 'easy') { easier(); re(); }
         else if (k === 'drop') { drop(); re(); }
         else if (k === 'book') book(re);
@@ -174,6 +190,7 @@
   var css = '.kb-card{margin:12px 12px 0;padding:12px;border-radius:18px;background:linear-gradient(135deg,#E9F6FB,#CDEBF5);color:#10293D;box-shadow:0 6px 16px rgba(0,0,0,.18);font-size:13px}' +
     '.kb-h{display:flex;align-items:center;justify-content:space-between;gap:8px}.kb-h b{font-size:15px}.kb-bk{border:2px solid #10293D;border-radius:999px;background:#fff;color:#10293D;font:inherit;font-weight:800;font-size:12px;padding:4px 10px;min-height:32px}' +
     '.kb-tip{margin:6px 0;font-size:12px;opacity:.85;line-height:1.5}.kb-tip.kb-sm{font-size:11px;margin:4px 0 0}.kb-list{display:flex;flex-direction:column;gap:6px}' +
+    '.kb-nw,.kb-q b .kb-nw,.kb-on b .kb-nw{display:inline;white-space:nowrap;font-size:inherit;flex:none}.kb-ok{margin:6px 0 0;font-weight:900;font-size:14px;color:#10293D}' +
     '.kb-q{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:2px solid #9CC9DA;border-radius:14px;background:#fff;color:#10293D;font:inherit;padding:6px 8px;min-height:56px}.kb-q img{width:42px;height:42px;flex:none}.kb-q span{flex:1;min-width:0;display:flex;flex-direction:column}.kb-q small{font-size:11px;opacity:.7}.kb-q b{font-size:14px}.kb-q em{font-style:normal;font-size:11px;opacity:.75}.kb-q i{font-style:normal;flex:none;background:#FFE45C;border-radius:999px;padding:4px 10px;font-weight:900;font-size:12px}' +
     '.kb-on{display:flex;gap:8px;align-items:flex-start;margin-top:6px;background:#fff;border-radius:14px;padding:8px}.kb-on img{width:46px;height:46px;flex:none}.kb-on .t{display:flex;flex-direction:column;min-width:0;flex:1}.kb-on small{font-size:11px;opacity:.7}.kb-on b{font-size:15px}.kb-on span{font-size:12px}' +
     '.kb-bar{display:block;height:8px;border-radius:99px;background:#DDEFF5;margin-top:4px;overflow:hidden}.kb-bar i{display:block;height:100%;background:#2E9CC0;border-radius:99px}.kb-n{font-weight:800;font-size:12px;margin-top:2px}' +
