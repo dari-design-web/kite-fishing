@@ -139,7 +139,7 @@
       if (p.st === 'ready' || p.st === 'burn') {
         if (p.st === 'burn') burnt = true;
         var wasBurn = p.st === 'burn';
-        p.st = 'served'; list.forEach(function (x) { if (x.st === 'pot' && x.g === g) x.st = 'done'; }); fly($(PID[g]), 'ckBox', '🥘'); var sv = wasBurn ? '有點焦焦的…沒關係，還是很香！' : MARK[g] + '起鍋！剛剛好～'; tip(sv); order(); potState(g); boxState(); if (!check()) setTimeout(function () { var tt = $('ckTip'); if (!ended && tt && tt.textContent === sv) nextTip(); }, 1200); return;      /* D316：GPT 2230 A③——起鍋 1.2 秒後依現況接下一步，不回放舊句 */
+        p.st = 'served'; list.forEach(function (x) { if (x.st === 'pot' && x.g === g) x.st = 'done'; }); fly($(PID[g]), 'ckBox', '🥘'); var sv = wasBurn ? MARK[g] + '有點焦焦的…沒關係，還是很香！' : MARK[g] + '起鍋！剛剛好～'; tip(sv); order(); potState(g); boxState(); if (!check()) setTimeout(function () { var tt = $('ckTip'); if (!ended && tt && tt.textContent === sv) nextTip(); }, 1200); return;      /* D316：GPT 2230 A③——起鍋 1.2 秒後依現況接下一步，不回放舊句；D317 B：焦鍋句帶實際爐號（①有點焦焦的…） */
       }
       if (p.st === 'cooking') { p.stir = (p.stir || 0) + 1; p.bonus = Math.min(2400, (p.bonus || 0) + 350); var pe = $(PID[g]); pe.classList.remove('toss'); void pe.offsetWidth; pe.classList.add('toss'); var stT = ['翻！', '再翻一下～', '炒得香香的！', '翻得好！'][p.stir % 4] + '（翻炒 ' + p.stir + ' 下，越勻越不容易焦）'; if (!p.danced) { p.danced = true; tip('鍋裡跳舞囉！'); danceT = setTimeout(function () { danceT = 0; $('ckTip').textContent = stT; }, 800); } else tip(stT); return; }      /* D189：煮的時候點鍋子翻炒：每翻一下，「剛好」的時間多 0.35 秒 */
       if (p.st === 'served') { var rl = list.some(function (x) { return x.g === g && x.it.type === 'rice' && x.st !== 'done'; }); tip(MARK[g] + '已經起鍋了' + (rl ? '，還差點飯鍋裝' + (MARK[g] ? MARK[g] + '的' : '') + '飯' : '')); return; }      /* D274：實玩時起鍋後再點爐子，只說「已經起鍋了」，看不出還差裝飯 → 補一句 */
@@ -156,10 +156,11 @@
     function potState(g) {
       var p = pots[g], id = PID[g], s = $(id === 'ckPot' ? 'ckPS' : 'ckPot2S'), b = $(id === 'ckPot' ? 'ckPB' : 'ckPot2B'), bw = $(id === 'ckPot' ? 'ckPBw' : 'ckPot2Bw'), im = $(id + 'Img'), nm = MARK[g] + potName(g);
       bw.className = 'bar' + (p.st === 'ready' ? ' ok' : p.st === 'burn' ? ' burn' : '');
-      if (p.st === 'idle') { s.textContent = p.need ? nm + ' ' + p.n + '/' + p.need : nm; b.style.width = p.need ? p.n / p.need * 100 + '%' : '0'; im.innerHTML = p.n ? '<img src="' + A + 'pot_cooking.webp" alt="" style="filter:grayscale(.6)">' : ''; }
+      if (p.st === 'idle') { s.textContent = p.need ? (G > 1 ? MARK[g] : nm + ' ') + p.n + '/' + p.need : nm; b.style.width = p.need ? p.n / p.need * 100 + '%' : '0'; im.innerHTML = p.n ? '<img src="' + A + 'pot_cooking.webp" alt="" style="filter:grayscale(.6)">' : ''; }
       else if (p.st === 'cooking') { s.textContent = MARK[g] + '煮煮煮…'; im.innerHTML = '<img src="' + A + 'pot_cooking.webp" alt=""><span class="steam">♨️</span>'; }
-      else if (p.st === 'ready') { s.textContent = MARK[g] + '好了！快起鍋'; im.innerHTML = '<img src="' + A + 'pot_ready.webp" alt=""><span class="steam">✨</span>'; }
-      else if (p.st === 'burn') { s.textContent = MARK[g] + '焦了！快起鍋'; im.innerHTML = '<img src="' + A + 'pot_overdone.webp" alt=""><span class="steam">💨</span>'; }
+      else if (p.st === 'ready') { s.textContent = MARK[g] + (G > 1 ? '好了' : '好了！快起鍋'); im.innerHTML = '<img src="' + A + 'pot_ready.webp" alt=""><span class="steam">✨</span>'; }
+      else if (p.st === 'burn') { s.textContent = MARK[g] + (G > 1 ? '焦了' : '焦了！快起鍋'); im.innerHTML = '<img src="' + A + 'pot_overdone.webp" alt=""><span class="steam">💨</span>'; }
+      /* D317：GPT 2330 A①——雙爐鍋旁只寫爐號＋狀態（①0/1、②好了、②焦了），完整指令留提示列；單爐不變 */
       else { s.textContent = MARK[g] + '起鍋了'; b.style.width = '100%'; im.innerHTML = ''; }
       hl();
     }
