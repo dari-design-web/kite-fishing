@@ -169,7 +169,7 @@
       };
     });
   }
-  /* 我的港口記憶：貼紙冊＋海報 */
+  /* 我的港口記憶：貼紙冊＋海報（D329：海報內貼紙最寬 64px、不超過內框 28%，320 不再被框蓋到） */
   function posterHtml(p, s) {
     var rs = p.recs.map(function (id) { return s.recs.filter(function (r) { return r.id === id; })[0]; }).filter(Boolean);
     return '<div class="kb-poster"><img class="f" src="' + BASE + 'shared/assets/board/poster_frame.webp" alt=""><div class="in">' + rs.map(function (r) { return sticker(r, 64); }).join('') + '</div><b class="ti">我的港口記憶</b><span class="no">' + esc(rs[0] ? rs[0].day.slice(5).replace('-', '/') : '') + ' ～ ' + esc(rs.length ? rs[rs.length - 1].day.slice(5).replace('-', '/') : '') + '・' + rs.length + ' 枚貼紙</span></div>';
@@ -177,7 +177,7 @@
   function book(after) {
     var s = state(), fr = free(s), ov = document.createElement('div'); ov.className = 'kb-ov';
     var h = '<div class="kb-sheet"><h3>我的港口記憶</h3><p class="kb-tip">每天完成一張卡，就有一枚貼紙。一天最多 1 枚，貼紙不會過期，也不會被用掉。</p>';
-    h += s.recs.length ? '<div class="kb-grid">' + s.recs.slice().reverse().map(function (r) { return '<div class="kb-cell">' + sticker(r, 64) + '<small>' + esc(r.day.slice(5).replace('-', '/')) + '</small><span>' + esc(r.line) + '</span></div>'; }).join('') + '</div>' : '<p class="kb-tip"><b>還沒有貼紙。</b>回樂園選一張告示板委託試試看！</p>';
+    h += s.recs.length ? '<div class="kb-grid">' + s.recs.slice().reverse().map(function (r) { return '<div class="kb-cell">' + sticker(r, 64) + '<small>' + esc(r.day.slice(5).replace('-', '/')) + '</small><span>' + esc(r.line) + '</span></div>'; }).join('') + '</div>' : '<p class="kb-tip"><b>還沒有貼紙。</b>關閉面板，在告示板選一張委託試試看！</p>';
     h += fr.length >= POSTER_N ? '<button type="button" class="kb-make" data-kb2="make">集滿 ' + POSTER_N + ' 枚，做港口海報</button><p class="kb-tip kb-sm" style="text-align:center">做成海報，貼紙也會留著喔！</p>' : '<p class="kb-tip">再集 ' + (POSTER_N - fr.length) + ' 枚，就能做' + (s.posters.length ? '下一張' : '') + '海報！不用連續來。</p>';
     if (s.posters.length) h += '<h3>我的海報</h3>' + s.posters.slice().reverse().map(function (p) { return posterHtml(p, s); }).join('');
     h += '<button type="button" class="kb-x" data-kb2="x">關閉</button></div>';
@@ -202,6 +202,7 @@
     '.kb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.kb-cell{display:flex;flex-direction:column;align-items:center;text-align:center;background:#F3F9FB;border-radius:12px;padding:6px 4px}.kb-cell small{font-weight:800}.kb-cell span{font-size:11px;line-height:1.3}' +
     '.kb-make,.kb-x{display:block;width:100%;min-height:44px;margin-top:10px;border:2px solid #10293D;border-radius:999px;background:#fff;color:#10293D;font:inherit;font-weight:900;font-size:14px}.kb-make{background:#FFE45C}.kb-x{position:sticky;bottom:0}' +
     '.kb-poster{position:relative;width:100%;max-width:360px;margin:8px auto;aspect-ratio:560/700}.kb-poster .f{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}.kb-poster .in{position:absolute;left:18%;top:18%;width:64%;height:62%;z-index:1;background:#DFF1F7;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:4px}' +
+    '.kb-poster .in .kb-st{width:min(64px,28%)!important;height:auto!important;aspect-ratio:1/1}' +
     '.kb-poster .ti{position:absolute;left:20%;right:20%;top:6%;height:7%;z-index:3;display:flex;align-items:center;justify-content:center;font-size:18px}.kb-poster .no{position:absolute;left:23%;right:29%;top:86%;z-index:3;text-align:center;font-size:11px;font-weight:800}' +
     '.kb-toast{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translate(-50%,-150%);z-index:10000;max-width:90vw;padding:8px 14px;border-radius:999px;background:#10293D;color:#FFE45C;font-weight:900;font-size:13px;box-shadow:0 6px 16px rgba(0,0,0,.3);transition:transform .25s;pointer-events:none;text-align:center}.kb-toast.on{transform:translate(-50%,0)}.kb-toast.big{font-size:14px;border-radius:16px;background:#FFE45C;color:#10293D}';
   if (document.head) { var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st); }
