@@ -142,6 +142,15 @@ summary{font-weight:700;font-size:14px;cursor:pointer}
 /* D319：結果卡內容比畫面高時，flex 會把章壓扁（320×568 只剩 4px 高、375 剩 115px）→ 卡片內每一塊都不縮，改成卡片內捲動；矮螢幕章 120px */
 .sheet>*{flex-shrink:0}
 @media (max-height:600px){.sheet .big{width:120px;height:120px}}
+/* D320（GPT 0930 A③）：矮螢幕（高 ≤600）單章結果卡「看護照」底列固定在卡片底部、實際佔位，上面內容自己捲；高螢幕沿原 */
+.sheet .ft{width:100%}
+@media (max-height:600px){.sheet .ft{position:sticky;bottom:-18px;margin-bottom:-18px;padding:10px 0 18px;background:var(--card);box-shadow:0 -10px 10px -8px rgba(0,0,0,.18);z-index:2}}
+/* D320（GPT 0930 B）：稀有章說明 13px／600／深金、正常行高 */
+.again.vname{font-size:13px;font-weight:600;color:#8C6414;line-height:1.5}
+/* D320（GPT 0930 D）：集滿卡小標移到「你現在是」那排，稱號自己一整列、原字級自然換行 */
+.gotT .tt{display:flex;flex-direction:column;flex:1;min-width:0}
+.gotT .tt .ttop{display:flex;align-items:center;gap:6px}
+.gotT .tt b{overflow-wrap:anywhere}
 .sheet .big .stampv{animation:pslam .45s cubic-bezier(.3,1.6,.6,1) both}
 .say{display:flex;gap:10px;align-items:flex-end;text-align:left;width:100%}
 .say img{width:64px;flex:none;animation:hover 2.4s ease-in-out infinite}
@@ -447,7 +456,7 @@ const SND_ICON = (() => {
 /* BGM-END */
 </script>
 <script>
-const CFG = { version: '2.1', showRec: false, key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
+const CFG = { version: '2.2', showRec: false, key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
 const FRAMES = [[53.3333, 40.4444], [25.0463, 46.1481], [18.9352, 75.4815], [44.4907, 86.7407], [75.9722, 77.4815], [80.5093, 56.037]], FRAME_R = 10.37;      // v0.8：G-50 港區小地圖六圈中心（%）；章容器 224px＝寬 20.74%（ChatGPT 地圖位置 JSON）
 const ROUTE = [[1, 2, [[[462.8, 559.4], [449.0, 561.0], [429.0, 568.0], [410.0, 578.0], [378.3, 588.2]]]], [2, 3, [[[330.7, 717.1], [339.0, 730.0], [337.8, 734.0]], [[294.0, 784.0], [285.0, 790.0], [301.0, 820.0], [313.0, 859.0], [313.0, 902.0], [299.0, 934.0], [287.3, 944.5]]]], [3, 4, [[[290.9, 1089.4], [315.0, 1109.0], [339.0, 1130.0], [360.0, 1145.0], [372.6, 1147.7]]]], [4, 5, [[[590.5, 1181.6], [615.0, 1184.0], [638.0, 1178.0], [662.0, 1171.0], [688.0, 1157.0], [709.0, 1138.0], [736.5, 1115.3]]]], [5, 6, [[[750.1, 963.3], [721.0, 929.0], [730.0, 903.0], [740.0, 879.0], [752.0, 857.0], [786.2, 827.8]]]], [6, 1, [[[797.0, 674.6], [784.0, 660.0], [760.0, 636.0], [742.0, 613.0], [718.0, 591.0], [700.0, 579.0], [686.0, 575.3]]]]];      // 每段 [起站, 終站, 可見路段（原圖像素）]；稱號帶的斷口不補線
 /* 6 個蓋章點（實際位置待 Dari 現勘）。color：每站主色（工作單 18）；title：蓋到就拿到的稱號（建議）；riddle：還沒去時的提示 */
@@ -630,7 +639,7 @@ function scan(id) {
   pressSheet(s, nv || v, () => showStory(s, true, fresh, first ? '' : '同一站不同天再蓋，章升級到 Lv' + lvOf(s.id) + '！', P.var[s.id]));
 }
 function againSheet(s) {
-  $('sheet').innerHTML = '<div class="big">' + stampV(s, P.var[s.id] || '') + '</div><h3>今天已經蓋過「' + s.name + '」章了</h3><p class="again">章已經收在護照裡。' + (n() < 6 ? '還差 ' + (6 - n()) + ' 個章' + (nextSpot() ? '，下一站猜猜看：<b>' + nextSpot().riddle + '</b>' : '') : '6 個都蓋好了！') + '</p><p class="again" style="font-size:13px">換一天再來蓋，這個章會升級喔。</p><button class="btn" type="button" id="ovOk">看護照</button>';
+  $('sheet').innerHTML = '<div class="big">' + stampV(s, P.var[s.id] || '') + '</div><h3>今天已經蓋過「' + s.name + '」章了</h3><p class="again">章已經收在護照裡。' + (n() < 6 ? '還差 ' + (6 - n()) + ' 個章' + (nextSpot() ? '，下一站猜猜看：<b>' + nextSpot().riddle + '</b>' : '') : '6 個都蓋好了！') + '</p><p class="again" style="font-size:13px">換一天再來蓋，這個章會升級喔。</p><div class="ft"><button class="btn" type="button" id="ovOk">看護照</button></div>';
   $('ov').hidden = false; sfx('pop');
   $('ovOk').onclick = () => { $('ov').hidden = true; render(); };
 }
@@ -674,11 +683,11 @@ function showStory(s, fresh, newTitles, extra, v) {
   /* D86（Dari 10/16）：同一次解鎖好幾個稱號時（例如蓋完第 6 章會一起拿到隱藏稱號），只放大第一個，其他收成一行，不再一張一張疊 */
   const isHid = (t) => COMBOS.some((c) => c.title === t) || t === SECRET.title;
   const got = newTitles.length ? '<div class="gotT"><div>🏅 <span>拿到稱號<br><b>' + newTitles[0] + '</b></span>' + (isHid(newTitles[0]) ? '<i>隱藏稱號</i>' : '') + '</div></div>' + (newTitles.length > 1 ? '<p class="again" style="margin-top:6px">還一起拿到 ' + (newTitles.length - 1) + ' 個稱號：<b>' + newTitles.slice(1).map((t) => t + (isHid(t) ? '（隱藏）' : '')).join('、') + '</b>（在護照「我的稱號」看）</p>' : '') : '';
-  $('sheet').innerHTML = '<div class="big">' + stampV(s, v) + '</div><h3>' + (fresh ? (extra ? '章升級了！' : '蓋到「' + s.name + '」章了！') : s.name + '章・' + s.title) + '</h3>' + (v ? '<p class="again" style="color:#B07D1A;font-weight:700">這是「' + VAR_NAME[v] + '」章</p>' : '') + (extra ? '<p class="again">' + extra + '</p>' : '') + got +
+  $('sheet').innerHTML = '<div class="big">' + stampV(s, v) + '</div><h3>' + (fresh ? (extra ? '章升級了！' : '蓋到「' + s.name + '」章了！') : s.name + '章・' + s.title) + '</h3>' + (v ? '<p class="again vname">這是「' + VAR_NAME[v] + '」章</p>' : '') + (extra ? '<p class="again">' + extra + '</p>' : '') + got +
     '<div class="say"><img src="../travel/assets/' + (fresh ? 'kite_happy' : 'kite_home') + '.png" alt=""><p>' + (fresh && s.say ? s.say : s.lines.join('<br>')) + '</p></div>' +      // v1.3（G-61⑤）：剛蓋完只說一句，完整台詞留在重看
     (s.rec && CFG.showRec ? '<div class="rec">' + s.rec + '</div>' : '') +
     (fresh && OBS[s.id] ? '<div class="obs' + ((P.found || {})[s.id] ? ' done' : '') + '" id="obs"><b>👀 一起找找看</b><p>' + ((P.found || {})[s.id] ? '一起找到了！' : OBS[s.id]) + '</p>' + ((P.found || {})[s.id] ? '' : '<div class="row"><button class="yes" type="button" id="obsYes">找到了！</button><button class="no" type="button" id="obsNo">略過</button></div>') + '</div>' : '') +
-    '<p class="again">' + (n() < 6 ? '還差 ' + (6 - n()) + ' 個章' : '6 個都蓋好了！') + '</p>' + (fresh && nextSpot() ? '<div class="nextTip">🧭 下一站猜猜看：<b>' + nextSpot().riddle + '</b></div>' : '') + '<button class="btn" type="button" id="ovOk">看護照</button>';      // v0.20（C-141）：蓋完章馬上給下一站的謎語，不用回護照找
+    '<p class="again">' + (n() < 6 ? '還差 ' + (6 - n()) + ' 個章' : '6 個都蓋好了！') + '</p>' + (fresh && nextSpot() ? '<div class="nextTip">🧭 下一站猜猜看：<b>' + nextSpot().riddle + '</b></div>' : '') + '<div class="ft"><button class="btn" type="button" id="ovOk">看護照</button></div>';      // v0.20（C-141）：蓋完章馬上給下一站的謎語，不用回護照找
   $('ov').hidden = false;
   if (newTitles.length) setTimeout(() => sfx('pop'), 300);
   if ($('obsYes')) { $('obsYes').onclick = () => { P.found = P.found || {}; P.found[s.id] = Date.now(); save(); const o = $('obs'); o.classList.add('done'); o.querySelector('p').textContent = '一起找到了！可以在港口札記寫下今天的發現～'; o.querySelector('.row').remove(); sfx('chime'); nod(); }; $('obsNo').onclick = () => $('obs').remove(); }
@@ -698,7 +707,7 @@ function checkDone(last, newTitles) {
   P.complete = true; P.rewarded = true; save(); confetti(); sfx('chime');
   const more = (newTitles || []).filter((t) => t !== '東三東四港灣探險家');
   $('sheet').innerHTML = (last ? '<p class="again" style="font-weight:700;color:' + last.color + '">咚！第 6 個「' + last.name + '」章也蓋好了' + (P.var[last.id] ? '（' + VAR_NAME[P.var[last.id]] + '章）' : '') + '</p>' : '') + '<img src="assets/pc_passport.jpg" alt="港灣探險護照紀念明信片" style="width:100%;border-radius:8px;border:5px solid #fff;box-shadow:0 6px 16px rgba(0,0,0,.25);transform:rotate(-2deg)"><h3>港灣探險護照集滿了！</h3>' +
-    '<div class="gotT"><div>🏅 <span>你現在是<br><b>東三東四港灣探險家</b></span><i>集滿稱號</i></div></div>' +
+    '<div class="gotT"><div>🏅 <span class="tt"><span class="ttop">你現在是<i>集滿稱號</i></span><b>東三東四港灣探險家</b></span></div></div>' +
     '<div class="say"><img src="../travel/assets/item_umbrella.png" alt=""><p>謝謝你陪我走完一圈！<br>這把雨傘送給你，<br>下雨天也可以帶我去旅行喔～</p></div>' +
     (more.length ? '<p class="again">還一起拿到稱號：<b>' + more.join('、') + '</b></p>' : '') + '<p class="again">拿到：護照紀念明信片（小屋收藏冊「港灣護照」）、小鳶的雨傘（小屋背包），6 個章也都變成合照館的貼紙了。' + (P.secret ? '' : '聽說還有一個祕密章……') + '</p><button class="btn" type="button" id="doneCard">📷 儲存完成卡</button><a class="btn light" href="../photo/" style="display:block;text-align:center;margin-top:8px;text-decoration:none">去合照館用章合照</a><button class="btn light" type="button" id="ovOk" style="margin-top:8px">回護照</button>';
   $('ov').hidden = false; $('ovOk').onclick = () => { $('ov').hidden = true; render(); }; $('doneCard').onclick = () => { $('ov').hidden = true; render(); sharePassport(); };
