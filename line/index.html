@@ -357,10 +357,11 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
     var k = function (v) { return v >= 1000 ? (Math.round(v / 100) / 10) + 'k' : String(v); };
     var nodes = T.map(function (t, i) { var idx = i + 1, st = idx <= gotB ? 'got' : idx <= base ? 'lit' : 'off', kind = (idx % 5 === 0) ? 'chest' : 'coin'; return '<button type="button" class="trk-node ' + (st === 'off' ? '' : st) + '" data-tk="' + idx + '" aria-label="' + (st === 'lit' ? '亮了，點一下領取' : st === 'got' ? '已領 1 點' : '累計 ' + t[0] + ' 分可領 1 點') + '"' + (st === 'lit' ? '' : ' tabindex="-1"') + '><img src="assets/trk_' + kind + '_' + st + '.png" alt=""></button>'; }).join('');
     var labs = T.map(function (t) { return '<span class="' + (gt.total >= t[0] ? 'on' : '') + '">' + k(t[0]) + '</span>'; }).join('');
-    var claim = gt.claim, ev = gt.capMax > gt.cap || bonus > 0, full = gt.pts >= gt.cap && !claim && (base >= n);
+    var claim = gt.claim, ev = gt.capMax > gt.cap || bonus > 0;
     var evMore = Math.max(0, gt.cap - gt.pts);      // D103：加倍活動時 10 格領完，還可以靠活動遊戲多送
-    var msg = claim ? '亮了 <b style="color:var(--orange)">' + claim + '</b> 點，點一下領！' : full ? '今天收齊啦，明天再玩！' : gt.next ? '再 <b>' + gt.next.need.toLocaleString() + '</b> 分，點亮下一格！' : base >= n && evMore && ev ? '10 格都領完了！再玩活動遊戲，最多還能多送 <b>' + evMore + '</b> 點' : gt.pts >= gt.cap ? '今天的上限領滿了，明天再玩！' : '';
-    msg += got ? '<br><span class="muted" style="font-size:12px">今天已領 <b>' + got + '</b> 點（積分格 ' + gotB + (gotE ? '＋活動加送 ' + gotE : '') + '）</span>' : '';
+    var allB = n > 0 && gotB >= n;      /* D331：GPT 2030 B——只有十格真的全部領過才說「積分格 N 格已領完」；達末門檻但還有可領時照樣是「現在可領」 */
+    var msg = claim ? '現在可領 <b style="color:var(--orange)">' + claim + '</b> 點' : allB ? '積分格 ' + n + ' 格已領完' + (evMore && ev ? '！再玩活動遊戲，最多還能多送 <b>' + evMore + '</b> 點' : '，明天再玩！') : gt.next ? '再 <b>' + gt.next.need.toLocaleString() + '</b> 分，點亮下一格！' : gt.pts >= gt.cap ? '今天的上限領滿了，明天再玩！' : '';      /* D331：GPT 2030 A③ 主句「現在可領 N 點」 */
+    msg += got ? '<br><span class="muted" style="font-size:12px">今天已領過 <b>' + got + '</b> 點（積分格 ' + gotB + (gotE ? '＋活動加送 ' + gotE : '') + '）</span>' : '';
     return '<div class="trk" id="trk"><div class="trk-h"><b>今日遊戲積分</b><span class="sp"></span><span class="tot">今天 <b>' + gt.total.toLocaleString() + '</b> 分</span></div>' +
       '<div class="trk-row" style="--n:' + n + '">' + nodes + '</div><div class="trk-bar"><i style="width:' + fill.toFixed(1) + '%"></i></div><div class="trk-lab" style="--n:' + n + '">' + labs + '</div>' +
       (ev ? '<div class="trk-ev' + (evLeft > 0 ? ' lit' : '') + '"><img src="assets/trk_event.png" alt="">' + (bonus ? (evLeft > 0 ? '活動加送 <b>+' + evLeft + '</b> 點' + (gotE ? '（已領 ' + gotE + '）' : '') : '活動加送已領 <b>' + bonus + '</b> 點') : '今天有加倍活動，玩活動遊戲會多送點數') + '</div>' : '') +
