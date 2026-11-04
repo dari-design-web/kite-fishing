@@ -398,7 +398,7 @@ const SND_ICON = (() => {
 </script>
 <script>
 /* 小鳶合照館 原型 v0.1（工作單 11 v4 P2）。貼紙、相框、解鎖方式都是建議，等 Dari 確認；正式素材之後開單給 ChatGPT */
-const CFG = { version: '0.26', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
+const CFG = { version: '0.27', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
 const $ = (id) => document.getElementById(id);
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = 'none'), 2400); }
@@ -684,8 +684,8 @@ function capture() {
   cv.toBlob((blob) => { lastBlob = blob; $('out').src = URL.createObjectURL(blob); kiteSay(); show('preview'); }, 'image/jpeg', 0.92);
 }
 let lastBlob = null;
-function fname() { const d = new Date(); return '小鳶合照_' + d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0') + '_' + String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0') + '.jpg'; }
-function save() { if (!lastBlob) return; KiteSaveImg(lastBlob, fname(), () => toast('已送出下載，請到下載項目或相簿確認照片')); }      // QA：LINE 裡改成長按存圖
+function fname() { const d = new Date(); return 'kite_photo_' + d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0') + '_' + String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0') + '.jpg'; }
+function save() { if (!lastBlob) return; KiteSaveImg(lastBlob, fname(), () => toast('已送出下載，請到下載項目或相簿確認照片')); }      /* QA：LINE 裡改成長按存圖；D322：檔名改英文 kite_photo_YYYYMMDD_HHMM.jpg，避免中文檔名被瀏覽器換成 download */
 async function share() {
   if (!lastBlob) return;
   const f = new File([lastBlob], fname(), { type: 'image/jpeg' });
