@@ -3,16 +3,16 @@
 (function (G) {
   'use strict';
   function inLine() { return / Line\//i.test(navigator.userAgent) || /FBAN|FBAV|Instagram/i.test(navigator.userAgent); }
-  function show(url) {
+  function show(url, tip) {
     var o = document.createElement('div');
     o.setAttribute('style', 'position:fixed;inset:0;z-index:2147483600;background:rgba(10,20,26,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;color:#fff;font:700 16px/1.5 system-ui,sans-serif;text-align:center');
-    o.innerHTML = '<div>👇 長按圖片 →「儲存到照片」</div><img alt="要存的圖片" style="max-width:100%;max-height:72vh;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.4);-webkit-touch-callout:default;user-select:auto"><button type="button" style="min-height:46px;padding:0 28px;border-radius:999px;border:2px solid #fff;background:transparent;color:#fff;font:inherit">關閉</button>';
+    o.innerHTML = '<div>👇 長按圖片 →「儲存到照片」' + (tip ? '<br><span style="font-weight:400;font-size:14px">' + tip + '</span>' : '') + '</div><img alt="要存的圖片" style="max-width:100%;max-height:72vh;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.4);-webkit-touch-callout:default;user-select:auto"><button type="button" style="min-height:46px;padding:0 28px;border-radius:999px;border:2px solid #fff;background:transparent;color:#fff;font:inherit">關閉</button>';
     o.querySelector('img').src = url; o.querySelector('button').onclick = function () { o.remove(); };
     document.body.appendChild(o);
   }
-  G.KiteSaveImg = function (blob, name, after) {
+  G.KiteSaveImg = function (blob, name, after, tip) {      /* D321：tip 是長按面板標題下的一行小字（選填） */
     var url = URL.createObjectURL(blob);
-    if (inLine()) { var r = new FileReader(); r.onload = function () { show(r.result); }; r.readAsDataURL(blob); return 'show'; }
+    if (inLine()) { var r = new FileReader(); r.onload = function () { show(r.result, tip); }; r.readAsDataURL(blob); return 'show'; }
     var a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); if (after) after(); return 'download';
   };
 })(window);

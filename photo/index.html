@@ -398,7 +398,7 @@ const SND_ICON = (() => {
 </script>
 <script>
 /* 小鳶合照館 原型 v0.1（工作單 11 v4 P2）。貼紙、相框、解鎖方式都是建議，等 Dari 確認；正式素材之後開單給 ChatGPT */
-const CFG = { version: '0.25', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
+const CFG = { version: '0.26', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
 const $ = (id) => document.getElementById(id);
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = 'none'), 2400); }
@@ -690,7 +690,7 @@ async function share() {
   if (!lastBlob) return;
   const f = new File([lastBlob], fname(), { type: 'image/jpeg' });
   if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: '小鳶合照館' }); } catch (e) {} }
-  else { save(); toast('這個瀏覽器不能直接分享，已送出下載；請從下載項目或相簿分享到 LINE'); }
+  else if (lastBlob) { KiteSaveImg(lastBlob, fname(), () => toast('這個瀏覽器不能直接分享，已送出下載；請從下載項目或相簿分享到 LINE'), '存好後，到相簿把照片分享到 LINE'); }      /* D321：LINE 裡不能直接分享時開長按存圖面板，面板上直接說存好再去相簿分享，不再跳「已送出下載」 */
 }
 
 /* ---- 按鈕 ---- */
@@ -754,7 +754,7 @@ $('saveBtn').onclick = save; $('shareBtn').onclick = share; $('againBtn').onclic
 LOCS.forEach((l) => { img('pc_' + l[0] + '_a_v2', 'jpg').onload = () => { if ($('shoot').classList.contains('on')) redrawFrame(); }; });
 window.__photo = { stks: () => stks, add: (id) => addSticker(STK.find((d) => d.id === id)), capture, setFrame: (i, s) => { frameI = i; if (s !== undefined) seasonI = s; redrawFrame(); }, useImage };
 </script>
-<script src="../shared/save_img.js"></script>
+<script src="../shared/save_img.js?v=2"></script>
 <script src="../shared/back_line.js"></script>
 </body>
 </html>
