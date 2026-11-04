@@ -38,7 +38,7 @@
     if (sy.st === 'local') h += '<div class="klb-sync">目前只顯示這支手機的成績</div>';
     else if (sy.st === 'old') h += '<div class="klb-sync">雲端尚未更新，暫時只看得到自己的成績</div>';
     else if (sy.st === 'wait') h += '<div class="klb-sync">正在讀取大家的成績…</div>';
-    else if (sy.st === 'fail') h += '<div class="klb-sync">連不上雲端，暫時只看得到自己的成績</div>';
+    else if (sy.st === 'fail') h += o.daily ? '%%KLBSY%%' : '<div class="klb-sync">連不上雲端，暫時只看得到自己的成績</div>';      /* D327（GPT 1630 A①）：今日榜連不上雲端只留一處合併提示，等算完自己的成績再填 */
     if (o.sum) {
       h += '<div class="klb-per"><button type="button" data-p="month" aria-pressed="' + (st.period === 'month') + '">本月</button><button type="button" data-p="all" aria-pressed="' + (st.period === 'all') + '">全部</button></div>';
       R = K.sumBoard(st.period, 10);
@@ -56,8 +56,12 @@
       if (!o.daily) h += '<div class="klb-per"><button type="button" data-p="month" aria-pressed="' + (st.period === 'month') + '">本月</button><button type="button" data-p="all" aria-pressed="' + (st.period === 'all') + '">全部</button></div>';
       var td = o.daily && G.KiteDaily ? G.KiteDaily.today() : null; if (td) h += '<div class="klb-sync" style="background:#EAF6F4;color:#10293D">📅 ' + esc(td.date) + '・' + esc(td.name) + '：' + esc(td.vary) + '</div>';
       R = K.leaderboard(o.game, tab[0] === '__today' ? K.dayKey() : tab[0], o.daily ? 'all' : st.period, 10);
-      h += R.top.length ? '<ol>' + R.top.map(function (r) { return row(r, '', K.fmtScore(r.score) + ' 分'); }).join('') + '</ol>' : '<div class="klb-empty">' + (sy.st === 'wait' ? '正在讀取' + (o.daily ? '今日榜' : '排行榜') + '…' : sy.st !== 'ok' ? '暫時無法讀取' + (o.daily ? '今日榜' : '排行榜') : o.daily ? '今天還沒有人上榜' : (st.period === 'month' ? '這個月' : '') + '還沒有人上榜，快來搶第一！') + '</div>'; /* D268（GPT 1030 B②）：今日空榜不再喊搶第一（按鈕負責邀請）；沒連上雲端時不說「沒有人上榜」 */
-      h += R.mine ? (R.mine.rank > 10 ? '<div class="klb-me">你目前第 <b>' + R.mine.rank + '</b> 名・最高 ' + K.fmtScore(R.mine.score) + ' 分</div>' : '') : (o.daily && td && G.KiteDaily.on() && G.KiteDaily.left() > 0 ? '<div class="klb-me klb-go"><span>你今天還沒正式挑戰</span><a href="' + td.url + 'official">去正式挑戰 ▶</a></div>' : '<div class="klb-me">' + (o.daily ? '你今天還沒正式挑戰' : '你這關還沒有成績') + '</div>');
+      h += R.top.length ? '<ol>' + R.top.map(function (r) { return row(r, '', K.fmtScore(r.score) + ' 分'); }).join('') + '</ol>' : '<div class="klb-empty">' + (sy.st === 'wait' ? '正在讀取' + (o.daily ? '今日榜' : '排行榜') + '…' : sy.st === 'fail' && o.daily ? '' : sy.st !== 'ok' ? '暫時無法讀取' + (o.daily ? '今日榜' : '排行榜') : o.daily ? '今天還沒有人上榜' : (st.period === 'month' ? '這個月' : '') + '還沒有人上榜，快來搶第一！') + '</div>'; /* D268（GPT 1030 B②）：今日空榜不再喊搶第一（按鈕負責邀請）；沒連上雲端時不說「沒有人上榜」 */
+      var dOn = o.daily && td && G.KiteDaily.on(), dZero = dOn && G.KiteDaily.left() === 0;      /* D327（GPT 1630 B）：確實剩 0 次才說用完，主鈕改當日練習；已有成績照樣顯示 */
+      h += R.mine ? (R.mine.rank > 10 ? '<div class="klb-me">你目前第 <b>' + R.mine.rank + '</b> 名・最高 ' + K.fmtScore(R.mine.score) + ' 分</div>' : '') : dZero ? '' : (dOn && G.KiteDaily.left() > 0 ? '<div class="klb-me klb-go"><span>你今天還沒正式挑戰</span><a href="' + td.url + 'official">去正式挑戰 ▶</a></div>' : '<div class="klb-me">' + (o.daily ? '你今天還沒正式挑戰' : '你這關還沒有成績') + '</div>');
+      if (dZero) h += '<div class="klb-me klb-go klb-zero"><span>今天的正式挑戰次數已用完</span><a href="' + td.url + 'practice">先練習（不計榜）</a></div>';
+      h = h.replace('<div class="klb-empty"></div>', '');
+      if (h.indexOf('%%KLBSY%%') >= 0) h = h.replace('%%KLBSY%%', '<div class="klb-sync">暫時連不上雲端，今日榜無法讀取' + (R.mine ? '，目前僅顯示自己的成績。' : '。') + '</div>');
       if (o.daily) h += '<p class="klb-note">只比今天同一題的正式挑戰，同分同名次</p>';
       else if (o.mini) h += '<p class="klb-note">每人取最高一局</p>';
       else h += '<button type="button" class="klb-sumlk" data-sum="1">看累積總分 ›</button>';
