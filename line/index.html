@@ -201,7 +201,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
 .kv{display:flex;flex-direction:column;gap:2px;font-size:12.5px;color:var(--muted);margin-top:6px}.gcard .kv b{display:inline;color:var(--ink);font-size:12.5px}
 .mgsrc{margin:-4px 2px 12px;font-size:12px;line-height:1.5;color:var(--muted)}
 .stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 12px}
-.stat3 div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center;font-size:12px;color:var(--muted)}.stat3 b{display:block;font-size:20px;color:var(--ink)}.stat3 .nw,.kv .nw,.oldbank .nw{white-space:nowrap}
+.stat3 div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center;font-size:12px;color:var(--muted)}.stat3 b{display:block;font-size:20px;color:var(--ink)}.stat3 .nw,.kv .nw,.oldbank .nw{white-space:nowrap}.nwg{white-space:nowrap}/* D342（GPT 1430 A）：「進度紀錄」整組不拆 */
 /* G59 T04：還沒上傳實物照片的贈品標「示意圖」 */
 .good .im .demo,.detail .im .demo{position:absolute;left:6px;bottom:6px;background:rgba(43,38,32,.72);color:#fff;font-size:12px;font-weight:700;padding:2px 7px;border-radius:999px;line-height:1.5}.detail .im{position:relative}
 
@@ -244,6 +244,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
 (function () {
   var $ = function (id) { return document.getElementById(id); }, K = KiteCore, scanner = null;
   var KITE = '../travel/assets/kite_hello.png';
+  function nwPg(h) { return String(h).replace('進度紀錄', '<span class="nwg">進度紀錄</span>'); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function toast(t) { var e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(function () { e.style.display = 'none'; }, 2400); }
   function hm(t) { var d = new Date(t), h = d.getHours(); return (h < 12 ? '上午 ' : '下午 ') + ((h + 11) % 12 + 1) + ':' + String(d.getMinutes()).padStart(2, '0'); }
@@ -337,7 +338,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
       var rule = multi && !gc.maint ? '<span class="rule"><span class="rl">各關分開計分，</span>每關每日<span class="nw">最多 ' + per + ' 次。</span></span>' : '';
       /* D336（GPT 0930 D）：捕魚／飛行的圖鑑、星星標明是這支手機的累積紀錄，不是今天的成績 */
       var mine = g.id === 'fish' || g.id === 'fly';
-      var bar = pr.max ? '<span class="bar"><i style="width:' + pct(pr) + '%"></i></span><span class="pg">' + (mine && pr.none ? '這支手機還沒有累積紀錄' : esc(pr.label) + (mine ? '<span class="pgs">這支手機的累積紀錄</span>' : '')) + '</span>' : '';
+      var bar = pr.max ? '<span class="bar"><i style="width:' + pct(pr) + '%"></i></span><span class="pg">' + (mine && pr.none ? '這支手機還沒有累積紀錄' : nwPg(esc(pr.label)) + (mine ? '<span class="pgs">這支手機的累積紀錄</span>' : '')) + '</span>' : '';
       var inner = '<img class="ic" src="' + g.icon + '" alt="" style="animation-delay:' + (i * .35) + 's" onerror="this.src=\'../hub/btn/btn_' + g.id + '.png\'">' + (big ? '<span class="tx">' : '') + '<span class="chips">' + chip + '</span><b>' + esc(G0.name) + '</b><span class="tip">' + esc(g.tip) + '</span>' + rule + bar + (big ? '</span>' : '');
       return gc.maint ? '<div class="booth off' + (big ? ' feat' : '') + '" style="animation-delay:' + (i * .06) + 's">' + inner + '</div>' : '<a class="booth' + (big ? ' feat' : '') + '" data-g="' + g.id + '" href="' + gameLink(g) + '" style="animation-delay:' + (i * .06) + 's">' + inner + '</a>';
     };
@@ -436,7 +437,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
       if (lv.length) { kv.push('<span>紀錄內遊玩 <b>' + mine.length + ' 次</b></span>'); var anyB = lv.some(function (l) { return l in best; });      /* D339（GPT 1230 A①）：整款沒分數只說一次；0 分算有分數 */
         if (!anyB) kv.push('<span><b>目前會員紀錄中還沒有這款遊戲的分數</b></span>');
         lv.forEach(function (l) { kv.push('<span>' + esc(G0.levels[l]) + (l in best ? ' 會員紀錄內最高 <b>' + best[l].toLocaleString() + '</b> 分' : anyB ? ' <b>紀錄中沒有分數</b>' : '')      /* G59 T16：玩過 0 分也算玩過 */ + '・<span class="nw">今天可算分 <b>' + K.triesLeft(g.id, l) + '</b> 次</span>' + (K.triesLeft(g.id, l) ? '' : '<span class="nw">（仍可繼續玩）</span>') + '</span>'); }); }
-      return '<div class="card"><div class="gcard"><img src="' + g.icon + '" alt="" onerror="this.src=\'../hub/btn/btn_' + g.id + '.png\'"><div class="g"><b>' + esc(G0.name) + '</b>' + (pr.max ? '<div class="gbar"><i style="width:' + pct(pr) + '%"></i></div><span class="muted">' + esc(pr.label) + '</span>' : '') + '<div class="kv">' + kv.join('') + '</div>' +
+      return '<div class="card"><div class="gcard"><img src="' + g.icon + '" alt="" onerror="this.src=\'../hub/btn/btn_' + g.id + '.png\'"><div class="g"><b>' + esc(G0.name) + '</b>' + (pr.max ? '<div class="gbar"><i style="width:' + pct(pr) + '%"></i></div><span class="muted">' + nwPg(esc(pr.label)) + '</span>' : '') + '<div class="kv">' + kv.join('') + '</div>' +
         (lv.length && TIER && b > 0 ? '<div class="oldbank" style="margin-top:8px"><div class="muted">舊存摺（改制前）</div><div class="row" style="margin-top:2px"><span class="muted" style="flex:2"><span class="nw">' + b.toLocaleString() + ' 分</span>・<span class="nw">' + (n ? '可換 ' + n + ' 點' : '尚不足兌換 1 點') + '</span></span><button class="btn" data-cv="' + g.id + '"' + (n ? '' : ' disabled') + ' style="min-height:38px;padding:6px 12px">換點</button></div><p class="note" style="margin:4px 0 0">這是改制前留下的分數；現在新玩的遊戲不再存入舊存摺。</p></div>'      /* D340（GPT 1330 B）：tier 舊存摺兩層＋改制說明；bank 模式照舊 */
         : lv.length && !TIER ? '<div class="row" style="margin-top:8px"><span class="muted" style="flex:2">' + (TIER ? '舊存摺（改制前）' : '存摺') + ' ' + b.toLocaleString() + ' 分' + (n ? '・可換 ' + n + ' 點' : '・還差 ' + (per - b % per).toLocaleString() + ' 分') + '</span><button class="btn" data-cv="' + g.id + '"' + (n ? '' : ' disabled') + ' style="min-height:38px;padding:6px 12px">換點</button></div>' : '') +
         '<a class="btn alt full" style="margin-top:8px;min-height:38px" href="' + gameLink(g) + '">去玩</a></div></div></div>';
