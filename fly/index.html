@@ -499,7 +499,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.92',
+  version: '0.93',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -601,7 +601,7 @@ if (EASY2) CONFIG.levels.easy.bossHp = 0.8;
 /* D346（Dari 11/05 18:40：最後的魔王普遍簡單太多）：D341 羽毛加倍後魔王血量 ×1.8、停留時間 ×1.6 */
 const BOSS_HPK = { 1: 1.5, 2: 1.8, 3: 1.4, 4: 1.8, 5: 1.4, 6: 1.4, 7: 1.0, 8: 1.8 }, BOSS_K = { get hp() { return BOSS_HPK[ST().id] || 1.5; }, time: 1.6 };      /* 每關分開調：bot 量（無敵、基本羽毛）約 30～65 秒，第 7 關原本就長不加 */
 const SPD = () => LVF('speed') * (ST().speed || 1), BHP = () => LVF('bossHp') * (ST().bossHp || 1) * BOSS_K.hp, BTIME = () => (PHASED() ? CONFIG.bossFx.time : CONFIG.boss.leaveAfter) * LVF('bossTime') * (ST().bossHp || 1) * BOSS_K.time;      // 速度、大垃圾團血量與停留時間 = 難度倍率 × 關卡倍率
-const ASSET_FILES = { fx_hit_spark: 'fx_hit_spark.png', fx_boss_warn: 'fx_boss_warn.png', trash: 'trash.png', fish_small: 'fish_small.png', fish_squid: 'fish_squid.png', whaleshark: 'whaleshark.png', shark_top: 'whaleshark_top.png', night_bag: 'night_bag.png', night_temple: 'night_temple.png', jiao_flat: 'jiao_flat.png', jiao_convex: 'jiao_convex.png', lantern: 'lantern.png',
+const ASSET_FILES = { fx_weak_ring: 'fx_weak_ring.png', fx_hit_spark: 'fx_hit_spark.png', fx_boss_warn: 'fx_boss_warn.png', trash: 'trash.png', fish_small: 'fish_small.png', fish_squid: 'fish_squid.png', whaleshark: 'whaleshark.png', shark_top: 'whaleshark_top.png', night_bag: 'night_bag.png', night_temple: 'night_temple.png', jiao_flat: 'jiao_flat.png', jiao_convex: 'jiao_convex.png', lantern: 'lantern.png',
   kite_a: 'kite_top_a.png', kite_b: 'kite_top_b.png', kite_fly: 'kite_top_fly.png', feather: 'feather.png', turtle: 'turtle_top.png', fx_wind_route: 'fx_wind_route.png', lamp_garbage_cover: 'lamp_garbage_cover.png', squid_top: 'squid_top.png', dolphin_top: 'dolphin_top.png', squid_king: 'squid_king.png', fx_tentacle_anim: 'fx_tentacle_anim.png', fx_wave_band_anim: 'fx_wave_band_anim.png', fx_vortex_anim: 'fx_vortex_anim.png', fx_hex_wave_anim: 'fx_hex_wave_anim.png', fx_hit_spark: 'fx_hit_spark.png', fx_whaleshark_wave_anim: 'fx_whaleshark_wave_anim.png', fx_sacred_light_anim: 'fx_sacred_light_anim.png', fx_rainbow_mirror_anim: 'fx_rainbow_mirror_anim.png', fx_rail_trail_anim: 'fx_rail_trail_anim.png', fx_tentacle: 'fx_tentacle.png', fx_ink_ring: 'fx_ink_ring.png', fx_ink_splat: 'fx_ink_splat.png', fx_hex_wave: 'fx_hex_wave.png', fx_shell_shield: 'fx_shell_shield.png', fx_wave_band: 'fx_wave_band.png', fx_splash: 'fx_splash.png', fx_rainbow: 'fx_rainbow.png', fx_vortex: 'fx_vortex.png', fx_water_trail: 'fx_water_trail.png', fx_whaleshark_wave: 'fx_whaleshark_wave.png', fx_sacred_light: 'fx_sacred_light.png', fx_rainbow_mirror: 'fx_rainbow_mirror.png', fx_rail_trail: 'fx_rail_trail.png',      // G92 大絕招特效（沒圖時用程式畫的） fx_rock_0: 'fx_rock_0.png', fx_rock_1: 'fx_rock_1.png', fx_rock_2: 'fx_rock_2.png', fx_boss_boom: 'fx_boss_boom.png', dragon_black_head: 'dragon_black_head.png', dragon_black_body: 'dragon_black_body.png', dragon_blue_head: 'dragon_blue_head.png', dragon_blue_body: 'dragon_blue_body.png', ult_squidking: 'ult_squidking.png', ult_dragons: 'ult_dragons.png', ult_squid: 'ult_squid.png', ult_dolphin: 'ult_dolphin.png', ult_turtle: 'ult_turtle.png',      // G88（D122 新圖，沒有圖時用程式畫的）
   can: 'foe_can.png', bag: 'foe_bag.png', butt: 'foe_butt.png', foam: 'foe_foam.png', barrel: 'foe_barrel.png', tire: 'foe_tire.png', oil: 'foe_oil.png', goo: 'foe_goo.png',
   battery: 'foe_battery.png', sprayer: 'foe_sprayer.png', log: 'foe_log.png', net: 'foe_net.png', tangle: 'foe_tangle.png', boss: 'foe_boss.png',
@@ -2433,9 +2433,14 @@ function miniCleared(o) {      // 打掉一小團；三團都打掉就過關（�
 }
 
 /* ---- 每一幀：分階段魔王的行為。回傳 true 表示已處理（第 1 關第 1 階段沿用原本的衝撞與丟垃圾） ---- */
+function weakTell(f) {      /* D349：GPT 2120 A——弱點每一段第一次亮起時說「弱點亮了！」，金圈放大彈出（窗口、倍率照舊） */
+  const W_ = weakPoints(f); if (!W_.length || f.weakSaid === f.phase) return;
+  f.weakSaid = f.phase; f.weakAt = clock; const w = W_[0]; say('弱點亮了！', f.x + w[1], f.y + w[2] + w[3] + 34, '#FFE08A');
+}
 function updatePhased(f, dt) {
   if (f.dying !== undefined) return true;
   if (cine > 0) return true;
+  weakTell(f);
   return RM() ? updateJianji2(f, dt) : updateBlob2(f, dt);
 }
 function updateBlob2(f, dt) {
@@ -2620,7 +2625,9 @@ function drawBossFx() {
     if (RM() && !img.r_boss_armL) { for (const k of ['armL', 'armR']) if (f.pools[k] <= 0) { const x = f.x + (k === 'armL' ? -48 : 48), y = f.y + 20; ctx.save(); ctx.globalAlpha = 0.85; ell(x, y, 20, 16, 'rgba(60,52,46,.9)'); ctx.strokeStyle = '#2B292C'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - 12, y - 10); ctx.lineTo(x + 2, y + 2); ctx.lineTo(x - 4, y + 12); ctx.moveTo(x + 10, y - 8); ctx.lineTo(x, y + 4); ctx.stroke(); ctx.restore(); } }      // 斷掉的手臂（佔位）
     if (RM() && f.phase === 3 && !img.r_boss_core) { ctx.save(); ctx.translate(f.x, f.y + 16); const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 22); g.addColorStop(0, '#FFF2B0'); g.addColorStop(0.4, '#FF8A3C'); g.addColorStop(1, 'rgba(120,30,10,.9)'); ell(0, 0, 18, 16, '#2B292C', PAL.line); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 13 + Math.sin(clock * 8), 0, 6.2832); ctx.fill(); ctx.restore(); }      // 胸口的煤核
     if (!RM() && f.phase === 2 && !img.boss_core) { ctx.save(); ctx.translate(f.x, f.y + 4); const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 20); g.addColorStop(0, '#F4FFE0'); g.addColorStop(0.5, '#9FE07A'); g.addColorStop(1, 'rgba(60,120,60,.2)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 15 + Math.sin(clock * 8), 0, 6.2832); ctx.fill(); ctx.restore(); }      // 大垃圾團的核心
-    for (const w of weakPoints(f)) { const x = f.x + w[1], y = f.y + w[2], p = 0.6 + 0.4 * Math.sin(clock * 8); ctx.strokeStyle = 'rgba(255,255,255,' + p + ')'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, w[3] + 4, 0, 6.2832); ctx.stroke(); ctx.strokeStyle = 'rgba(255,224,138,.95)'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.arc(x, y, w[3] + 9 + p * 2, 0, 6.2832); ctx.stroke(); ctx.setLineDash([]); poly([x - 6, y + w[3] + 22, x + 6, y + w[3] + 22, x, y + w[3] + 13], '#FFE08A', PAL.line); }      // 弱點：白圈加金色虛線圈與往上的小箭頭
+    for (const w of weakPoints(f)) { const x = f.x + w[1], y = f.y + w[2], p = 0.6 + 0.4 * Math.sin(clock * 8), ring = img.fx_weak_ring;
+      if (ring) { const pop = Math.max(0, 1 - (clock - (f.weakAt || -9)) / 0.35), d = 2 * (w[3] + 12) * (1 + 0.06 * Math.sin(clock * 6) + 0.5 * pop); ctx.save(); ctx.globalAlpha = 0.8 + 0.2 * p; ctx.translate(x, y); ctx.rotate(clock * 0.8); ctx.drawImage(ring, -d / 2, -d / 2, d, d); ctx.restore(); ctx.strokeStyle = 'rgba(255,255,255,' + (0.35 + 0.4 * p) + ')'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, w[3] + 3, 0, 6.2832); ctx.stroke(); poly([x - 6, y + w[3] + 24, x + 6, y + w[3] + 24, x, y + w[3] + 15], '#FFE08A', PAL.line); continue; }      /* D349：GPT 弱點金圈（weakpoint_gold_ring_v1 裁切縮小）；白細圈＝可打範圍，判定不變 */
+      ctx.strokeStyle = 'rgba(255,255,255,' + p + ')'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, w[3] + 4, 0, 6.2832); ctx.stroke(); ctx.strokeStyle = 'rgba(255,224,138,.95)'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.arc(x, y, w[3] + 9 + p * 2, 0, 6.2832); ctx.stroke(); ctx.setLineDash([]); poly([x - 6, y + w[3] + 22, x + 6, y + w[3] + 22, x, y + w[3] + 13], '#FFE08A', PAL.line); }      // 弱點：白圈加金色虛線圈與往上的小箭頭
   }
   for (const o of foes) if (o.suck) { ctx.strokeStyle = 'rgba(255,176,160,.55)'; ctx.setLineDash([3, 5]); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(f.x, f.y); ctx.stroke(); ctx.setLineDash([]); }
   for (const o of foes) if (o.type === 'minib') { if (o.dash === 'warn') { const half = o.r + CONFIG.kite.r; hazard(o.dashX - half, o.y, half * 2, 580 - o.y + half); } ctx.save(); ctx.translate(o.x, o.y); hpBar(-o.r - 10, 40, 5, o.hp / o.maxHp); ctx.restore(); }
