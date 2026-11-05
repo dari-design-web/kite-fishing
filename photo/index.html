@@ -99,6 +99,8 @@ button{font-family:inherit}
 .timerBtn{position:absolute;right:8px;bottom:8px;z-index:7;min-height:36px;padding:6px 12px;border-radius:999px;border:2px solid rgba(255,244,226,.9);background:rgba(20,28,32,.6);color:#FFF4E2;font-size:13px;font-weight:700}
 .timerBtn.on{background:#E2702A;border-color:#FFF4E2}
 .cdsay{position:absolute;left:50%;top:40px;transform:translateX(-50%);z-index:8;white-space:nowrap;padding:6px 16px;border-radius:999px;background:rgba(62,43,29,.55);color:#fff;font-size:20px;font-weight:800;letter-spacing:1px;pointer-events:none}
+.cdlook{position:absolute;left:50%;top:86px;transform:translateX(-50%);z-index:9;white-space:nowrap;padding:6px 22px;border-radius:999px;background:#ffcf4a;color:#5a3a12;font-size:34px;font-weight:900;letter-spacing:2px;box-shadow:0 4px 14px rgba(0,0,0,.25);pointer-events:none;animation:cdlookpop .35s ease-out both}
+@keyframes cdlookpop{0%{transform:translateX(-50%) scale(.6);opacity:0}70%{transform:translateX(-50%) scale(1.08);opacity:1}100%{transform:translateX(-50%) scale(1)}}
 .cdnum{position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;font-size:120px;font-weight:800;color:#fff;text-shadow:0 4px 18px rgba(0,0,0,.45);pointer-events:none;animation:cdpop .9s ease-out both}
 @keyframes cdpop{0%{transform:scale(1.6);opacity:0}25%{transform:scale(1);opacity:1}100%{transform:scale(.9);opacity:.85}}
 .side{width:64px;height:64px;font-size:11px;color:#FFF4E2;text-align:center;border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
@@ -399,7 +401,7 @@ const SND_ICON = (() => {
 </script>
 <script>
 /* 小鳶合照館 原型 v0.1（工作單 11 v4 P2）。貼紙、相框、解鎖方式都是建議，等 Dari 確認；正式素材之後開單給 ChatGPT */
-const CFG = { version: '0.29', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
+const CFG = { version: '0.30', W: 1080, H: 1440, all: /[?&]all=1/.test(location.search) };
 const $ = (id) => document.getElementById(id);
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.top = ''; e.style.display = 'block'; avoidLabel(e); clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = 'none'), 2400); }
@@ -742,7 +744,9 @@ function countdown(done) {
   const cs = document.createElement('div'); cs.className = 'cdsay'; cs.textContent = '一起說茄子！'; st.appendChild(cs);
   const step = () => {
     st.querySelectorAll('.cdnum').forEach((e) => e.remove());
-    if (n === 0) { cs.remove(); hn.hidden = hh; counting = false; done(); return; }
+    if (n === 0) { cs.remove(); st.querySelectorAll('.cdlook').forEach((e) => e.remove()); hn.hidden = hh; counting = false; done(); return; }
+    /* D358：最後 1 秒在上緣（茄子條下面、不擋臉）跳出大大的「看鏡頭！」，拍照那一刻收起，不會進到照片；倒數時間不變 */
+    if (n === 1) { const lk = document.createElement('div'); lk.className = 'cdlook'; lk.textContent = '看鏡頭！'; st.appendChild(lk); }
     const d = document.createElement('div'); d.className = 'cdnum'; d.textContent = n; st.appendChild(d); sfx('pop'); n--; setTimeout(step, 1000);
   };
   step();
