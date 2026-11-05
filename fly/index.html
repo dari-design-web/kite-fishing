@@ -498,13 +498,13 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.84',
+  version: '0.85',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
   bg: { harbor: 24, market: 45, pier: 40, rail: 50, blend: 90, closeAt: 60 },   // 整張手繪底圖：第 1 關、第 2 關每秒捲多少、兩張圖交疊淡接的高度、第 2 關幾秒後換收攤街段
   kite: { hearts: 5, r: 12, safe: 1.6, followLift: 64, followSpeed: 16, minY: 130, maxY: 560 },      /* D173：600→560，小鳶不會飛到右下大招鈕底下看不見 */   // r 是小鳶的碰撞半徑
-  feather: { every: 0.18, speed: 540, r: 6, powerTime: 9, galeTime: 6 },                          // 風之羽：發射間隔、速度、碰撞半徑、強化與疾風的持續秒數
+  feather: { every: 0.15, speed: 540, r: 6, powerTime: 9, galeTime: 6 },                          // 風之羽：發射間隔、速度、碰撞半徑、強化與疾風的持續秒數
   combo: { window: 1.6, bonusFrom: 5 },                                                           // 連清：幾秒內沒再清掉就中斷；連到第幾件起，鯨鯊多集 1 分
   ult: { need: 90, bossDamage: 50 },                                                              // 鯨鯊：集滿需要幾分、對大垃圾團的清除量
   pal: { time: 10, every: 0.45, max: 2 },
@@ -801,14 +801,31 @@ function hearts(x, y, n) { for (let i = 0; i < n; i++) part('heart', x + rand(-1
 /* ====== 清掉、爆炸、救援 ====== */
 const PICK_NOTE = { jerky: '魚乾：補體力', power: '羽毛：變強', gale: '疾風：加速' };
 function addPick(kind, x, y) { picks.push({ kind, x, y, first: !seenPick[kind] }); seenPick[kind] = true; }      // first：這種道具這一局第一次出現
+function burst(f, d) {
+  const big = f.type === 'boss' || f.type === 'minib' || d.score >= 2, n = big ? 12 : 7;
+  rings.push({ x: f.x, y: f.y, r: 6, max: f.r * (big ? 2.4 : 1.7), life: 1, color: '255,246,214' });
+  for (let i = 0; i < n; i++) { const a = R(0, 6.2832), sp = R(90, big ? 260 : 190); part('star', f.x, f.y, { vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, size: R(2.5, big ? 5 : 4), fade: R(2.2, 3.2), color: i % 3 ? '#FFF3C4' : '#FFE08A' }); }
+  const g = big ? 4 : 2; for (let i = 0; i < g; i++) { const dx = kite.x - f.x, dy = kite.y - f.y; part('star', f.x + R(-8, 8), f.y + R(-8, 8), { vx: dx * 1.6 + R(-40, 40), vy: dy * 1.6 + R(-40, 40), size: 3.5, fade: 1.6, color: '#FFD45A' }); }
+  if (big) shake = Math.max(shake, 0.14);
+}
+/* D341：畫面空的時候補一排小垃圾（一下就清掉、撞到不扣血、不掉道具、不算分數和乾淨度），讓畫面一直有東西可以打 */
+let fillAcc = 0;
+function fillUp(dt) {
+  if (boss || endTimer > 0 || t < 2.5 || cine > 0 || !ST() || NEWT()) return;
+  fillAcc += dt; if (fillAcc < 0.75) return; fillAcc = 0;
+  const live = foes.filter((f) => f.y > -60 && f.y < H * 0.75 && !T[f.type].solid).length; if (live >= 11) return;
+  const n = 5 + Math.floor(R(0, 4)), kind = R(0, 1) < 0.5 ? 'row' : 'vee', cx = R(90, W - 90), ty = R(0, 1) < 0.6 ? 'bottle' : 'can';
+  for (let i = 0; i < n; i++) { const o = i - (n - 1) / 2, x = kind === 'row' ? cx + o * 34 : cx + o * 30, y = kind === 'row' ? -30 : -30 - Math.abs(o) * 26; const f = mk(ty, Math.max(24, Math.min(W - 24, x)), y, { noCount: true, fill: true, hp: 1 }); f.vy = 72; f.vx = kind === 'row' ? Math.sin(t) * 18 : 0; }
+}
 function clearFoe(f, how) {      // how：'' 羽毛或墨汁、'blast' 被炸到、'ult' 鯨鯊、'sweep' 過關收尾
   const calmClear = how === 'ult' || how === 'sweep';      // 這兩種不分裂、不爆炸、不掉道具
   const i = foes.indexOf(f); if (i < 0) return; foes.splice(i, 1);
   const d = T[f.type];
-  if (!f.noCount) { stats.cleared++; stats.byType[f.type] = (stats.byType[f.type] || 0) + 1; } stats.score += d.score;
+  if (!f.noCount) { stats.cleared++; stats.byType[f.type] = (stats.byType[f.type] || 0) + 1; } if (!f.fill) stats.score += d.score;
+  if (!calmClear) burst(f, d);      /* D341：清掉時爆開＋金光飛向小鳶 */
   if (window.KiteBoard && !f.noCount && how !== 'sweep' && f.type !== 'boss' && !d.friend) KiteBoard.ev('fly_clear');      /* D175：告示板委託（收尾自動清、魔王不算） */
   if (how !== 'sweep') { stats.combo++; stats.comboT = CONFIG.combo.window; stats.bestCombo = Math.max(stats.bestCombo, stats.combo); }
-  if (!calmClear) gauge = Math.min(CONFIG.ult.need, gauge + d.score + (stats.combo >= CONFIG.combo.bonusFrom ? 1 : 0));      // 鯨鯊清掉的不再幫鯨鯊集氣
+  if (!calmClear) gauge = Math.min(CONFIG.ult.need, gauge + (f.fill ? 0.5 : d.score) + (stats.combo >= CONFIG.combo.bonusFrom ? 1 : 0));      // 鯨鯊清掉的不再幫鯨鯊集氣
   if (stats.combo >= 5 && stats.combo % 5 === 0) say('連清 ' + stats.combo + '！', f.x, f.y - 26, '#BFF0D0');
   burst(f.x, f.y, f.type === 'boss' ? 36 : 6, how === 'ult' ? '#FFE08A' : '#BFF0D0'); if (!NEWT()) bubbles(f.x, f.y, 3);      // D123：第 5～8 關不冒泡泡
   if (how === 'ult') { if (booms.filter((b) => b.mini).length < 6) booms.push({ t: 0, x: f.x, y: f.y, mini: true, done: true }); stats.ultCleared++;      // G93：命中火花最多同時 6 個、不逐隻震動      // D127 命中爆點
@@ -821,7 +838,7 @@ function clearFoe(f, how) {      // how：'' 羽毛或墨汁、'blast' 被炸到
   if (d.rescue) rescue(d.rescue, f.x, f.y, f);
   menuHit(f, how);
   if (f.give) addPick(f.give, f.x, f.y);
-  else if (!d.rescue && f.type !== 'drop' && f.type !== 'chip' && f.type !== 'butt' && f.type !== 'boss' && f.type !== 'lamp' && f.type !== 'fire' && !calmClear) {
+  else if (!f.fill && !d.rescue && f.type !== 'drop' && f.type !== 'chip' && f.type !== 'butt' && f.type !== 'boss' && f.type !== 'lamp' && f.type !== 'fire' && !calmClear) {
     const roll = rnd(), D = CONFIG.drops, J = D.jerky * LVF('jerky'); if (roll < J) addPick('jerky', f.x, f.y); else if (roll < J + D.power) addPick('power', f.x, f.y); else if (roll < J + D.power + D.gale) addPick('gale', f.x, f.y);
   }
   if (f.type === 'minib') miniCleared(f);
@@ -1109,13 +1126,15 @@ function update(dt) {
   if (kite.galeT > 0) kite.galeT -= dt;
   if (kite.powerT > 0) { kite.powerT -= dt; if (kite.powerT <= 0 && kite.power > 1) { kite.power--; kite.powerT = kite.power > 1 ? CONFIG.feather.powerTime : 0; } }
   if (stats.comboT > 0) { stats.comboT -= dt; if (stats.comboT <= 0) stats.combo = 0; }
+  fillUp(dt);
   // 自動發射風之羽
   fireAcc += dt;
   if (fireAcc >= CONFIG.feather.every * (kite.galeT > 0 ? 0.5 : 1) && endTimer <= 0) {
     fireAcc = 0; const v = CONFIG.feather.speed, p = kite.power;
-    if (p === 1) shots.push({ x: kite.x, y: kite.y - 22, vx: 0, vy: -v });
-    else if (p === 2) { shots.push({ x: kite.x - 9, y: kite.y - 18, vx: 0, vy: -v }); shots.push({ x: kite.x + 9, y: kite.y - 18, vx: 0, vy: -v }); }
-    else { shots.push({ x: kite.x, y: kite.y - 22, vx: 0, vy: -v }); shots.push({ x: kite.x - 8, y: kite.y - 16, vx: -95, vy: -v }); shots.push({ x: kite.x + 8, y: kite.y - 16, vx: 95, vy: -v }); }
+    /* D341（Dari 11/05：參考噠噠戰機的射擊與飽滿度）：一開始就兩排羽毛；強化 3 排；再強化 5 支扇形 */
+    if (p === 1) { shots.push({ x: kite.x - 7, y: kite.y - 20, vx: 0, vy: -v }); shots.push({ x: kite.x + 7, y: kite.y - 20, vx: 0, vy: -v }); }
+    else if (p === 2) { shots.push({ x: kite.x, y: kite.y - 22, vx: 0, vy: -v }); shots.push({ x: kite.x - 12, y: kite.y - 18, vx: 0, vy: -v }); shots.push({ x: kite.x + 12, y: kite.y - 18, vx: 0, vy: -v }); }
+    else { shots.push({ x: kite.x, y: kite.y - 22, vx: 0, vy: -v }); shots.push({ x: kite.x - 8, y: kite.y - 18, vx: -60, vy: -v }); shots.push({ x: kite.x + 8, y: kite.y - 18, vx: 60, vy: -v }); shots.push({ x: kite.x - 12, y: kite.y - 16, vx: -125, vy: -v }); shots.push({ x: kite.x + 12, y: kite.y - 16, vx: 125, vy: -v }); }
   }
   // 小卷跟班：跟在小鳶兩側，幫忙噴墨
   for (const p of pals) {
@@ -1193,7 +1212,7 @@ function update(dt) {
     if (T[f.type].solid) { if (Math.abs(s.x - f.x) < f.w / 2 + 3 && Math.abs(s.y - f.y) < 14) { s.dead = true; part('drop', s.x, s.y, { size: 2, fade: 5, color: '#D9B48A' }); } continue; }      // 漂流木：羽毛打到就沒了，木頭不受影響
     if (RM() && f.rail && f.noCount && (f.type === 'can' || f.type === 'butt')) continue;      // D112：刺蝟列車是鐵軌危險，不是目標，羽毛直接穿過（不再出現「打了沒反應」）
     if (f.bar) { if (f.hp > 0 && Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { f.hp = 0; part('star', s.x, s.y, { size: 3, fade: 4, color: '#fff' }); } continue; }      // D112：暴走連射的子彈一碰就散，羽毛繼續往前飛（不然子彈會變成魔王的盾）
-    if (Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { s.dead = true; if (f === boss && f.phased) { if (!bossShot(f, s)) s.dead = false; continue; } if (RM() && railBlocks(f)) { clank(s.x, s.y); if (!stats.toldBlock && !newHold()) { stats.toldBlock = true; say(f.type === 'tire' ? '灰盾＝躲殼打不動，等綠圈' : f.type === 'battery' ? '灰盾＝大叫打不動，等綠圈' : '灰盾＝縮成球打不動，等綠圈', f.x, f.y - 34, '#FFFFFF', false, '#1F3A4D'); } continue; } const x2 = f === boss && f.atk === 'devour' && f.mouth >= 1, bk = TH() === 'beam' ? beamK(f, s) : NEWT() && f === boss ? shellK(f, s) : 1; if (bk < 0) continue; f.hp -= (x2 ? 2 : 1) * bk; if (x2 && !stats.toldX2) { stats.toldX2 = true; say('打嘴巴 傷害 ×2', f.x, f.y + 84, '#FFE08A'); } f.hitT = 0.08; part('star', s.x, s.y, { size: 3, fade: 4, color: s.ink ? '#C9B6F2' : '#fff' }); }
+    if (Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { s.dead = true; if (f === boss && f.phased) { if (!bossShot(f, s)) s.dead = false; continue; } if (RM() && railBlocks(f)) { clank(s.x, s.y); if (!stats.toldBlock && !newHold()) { stats.toldBlock = true; say(f.type === 'tire' ? '灰盾＝躲殼打不動，等綠圈' : f.type === 'battery' ? '灰盾＝大叫打不動，等綠圈' : '灰盾＝縮成球打不動，等綠圈', f.x, f.y - 34, '#FFFFFF', false, '#1F3A4D'); } continue; } const x2 = f === boss && f.atk === 'devour' && f.mouth >= 1, bk = TH() === 'beam' ? beamK(f, s) : NEWT() && f === boss ? shellK(f, s) : 1; if (bk < 0) continue; f.hp -= (x2 ? 2 : 1) * bk; if (x2 && !stats.toldX2) { stats.toldX2 = true; say('打嘴巴 傷害 ×2', f.x, f.y + 84, '#FFE08A'); } f.hitT = 0.08; if (f.type !== 'boss' && f.type !== 'minib' && f.hp > 0) f.y -= 2.5; part('star', s.x, s.y, { size: 3, fade: 4, color: s.ink ? '#C9B6F2' : '#fff' }); }
   }
   shots = shots.filter((s) => !s.dead && s.y > -20 && s.x > -20 && s.x < W + 20);
   updateRing(dt); bossFinalCheck(real);
@@ -1203,6 +1222,7 @@ function update(dt) {
     if (foes.indexOf(f) < 0 || ((f.hidden || f.ghost) && !f.gone)) continue;      // D112：藏起來的魔王（第 1 關裂成小團時）時間到要能真的離場，不然會卡住
     const dT = T[f.type], touch = dT.solid ? Math.hypot(Math.max(Math.abs(kite.x - f.x) - f.w / 2, 0), Math.max(Math.abs(kite.y - f.y) - 11, 0)) < K.r : Math.hypot(f.x - kite.x, f.y - kite.y) < f.r + K.r;
     const out = f.cross ? (f.vx > 0 ? f.x > W + 40 : f.x < -40) : (f.y > H + f.r + 10 || f.x < -60 || f.x > W + 60 || (f.aimed && f.y < -30));
+    if (kite.hearts > 0 && f.hp > 0 && touch && f.fill) { f.hp = 0; clearFoe(f, ''); continue; }
     if (kite.hearts > 0 && f.hp > 0 && touch) {
       if (kite.safe <= 0 && !ult) { const d = dT; hurt(d.name); if (d.blast) { f.hp = 0; clearFoe(f, ''); } else if (f.type !== 'boss' && f.type !== 'minib' && !d.rescue && !d.solid && f.type !== 'oil' && f.type !== 'tire' && f.type !== 'sprayer') { foes.splice(foes.indexOf(f), 1); if (!f.noCount) stats.leaked++; } }
     } else if (out || f.gone) {
@@ -2851,7 +2871,7 @@ function twinkle(x, y, s, a) { ctx.globalAlpha = Math.max(0, a); ctx.fillStyle =
 function drawShot(s) {
   ctx.save(); ctx.translate(s.x, s.y);
   if (s.ink) { ctx.lineWidth = 1.2; ell(0, 0, 4.5, 6, '#4A3A6B', PAL.line); }
-  else { ctx.rotate(Math.atan2(s.vx, -s.vy)); ctx.lineWidth = 1.2; if (s.lit) { glow(16, '255,226,150', 0.9); } if (kite.power > 1) ell(0, 0, 6.5, 14, 'rgba(255,224,120,' + (0.22 + 0.08 * kite.power) + ')'); if (sprite('feather', 10, 25)) { ctx.restore(); return; } poly([0, -9, 3.5, -2, 2.5, 6, 0, 9, -2.5, 6, -3.5, -2], '#FFF3C4', PAL.line); ctx.strokeStyle = PAL.gold; ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(0, 8); ctx.stroke(); }
+  else { ctx.rotate(Math.atan2(s.vx, -s.vy)); ctx.lineWidth = 1.2; if (s.lit) { glow(16, '255,226,150', 0.9); } ell(0, 12, 3, 13, 'rgba(255,240,190,.35)'); if (kite.power > 1) ell(0, 0, 6.5, 14, 'rgba(255,224,120,' + (0.22 + 0.08 * kite.power) + ')'); if (sprite('feather', 10, 25)) { ctx.restore(); return; } poly([0, -9, 3.5, -2, 2.5, 6, 0, 9, -2.5, 6, -3.5, -2], '#FFF3C4', PAL.line); ctx.strokeStyle = PAL.gold; ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(0, 8); ctx.stroke(); }
   ctx.restore();
 }
 function drawPick(p) {
