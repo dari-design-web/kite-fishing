@@ -498,7 +498,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.88',
+  version: '0.89',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -803,7 +803,7 @@ function hearts(x, y, n) { for (let i = 0; i < n; i++) part('heart', x + rand(-1
 const PICK_NOTE = { jerky: '魚乾：補體力', power: '羽毛：變強', gale: '疾風：加速' };
 function addPick(kind, x, y) { picks.push({ kind, x, y, first: !seenPick[kind] }); seenPick[kind] = true; }      // first：這種道具這一局第一次出現
 function clearBurst(f, d) {      /* D343：原本跟星星 burst(x, y, n) 同名，蓋掉了舊的星星爆開（D341 起各處星星變成 NaN），改名 */
-  const big = f.type === 'boss' || f.type === 'minib' || d.score >= 2, n = big ? 12 : 7;
+  const big = f.type === 'boss' || f.type === 'minib' || d.score >= 2, n = (big ? 12 : 7) >> (t >= 50 && t < 54 && !big ? 1 : 0);      /* D345：50–54 秒小的清掉時星星減半，畫面少一點重疊 */
   /* D343：GPT 研究②——清除圈分小中大（直徑：小 0.10–0.16W／中 0.18–0.22W／大 0.22–0.28W），亮峰約 0.08 秒、總長 0.3 秒；魔王照舊 */
   if (f.type === 'boss') rings.push({ x: f.x, y: f.y, r: 6, max: f.r * 2.4, life: 1, color: '255,246,214' });
   else { const tier = f.fill || d.score <= 1 ? 0 : d.score === 2 && f.type !== 'minib' ? 1 : 2, lo = [0.10, 0.18, 0.22][tier], hi = [0.16, 0.22, 0.28][tier], k = Math.max(0, Math.min(1, (f.r - 8) / 18)), dia = W * (lo + (hi - lo) * k);
@@ -816,6 +816,7 @@ function clearBurst(f, d) {      /* D343：原本跟星星 burst(x, y, n) 同名
 let fillAcc = 0;
 function fillUp(dt) {
   if (boss || endTimer > 0 || t < 2.5 || cine > 0 || !ST() || NEWT()) return;
+  if (t >= 50 && t < 54) { fillAcc = 0; return; }      /* D345：GPT 1720 C——50–54 秒短喘，這四秒不補小垃圾（原本的計分波次、固定事件照舊） */
   fillAcc += dt; if (fillAcc < 0.75) return; fillAcc = 0;
   const live = foes.filter((f) => f.y > -60 && f.y < H * 0.75 && !T[f.type].solid).length; if (live >= 11) return;
   const n = 5 + Math.floor(R(0, 4)), kind = R(0, 1) < 0.5 ? 'row' : 'vee', cx = R(90, W - 90), ty = R(0, 1) < 0.6 ? 'bottle' : 'can';
@@ -2790,7 +2791,15 @@ function drawTurtle(wig) {      // 海龜（俯視）
 function sos(r) { const y = -r - 12 + Math.sin(clock * 6) * 2; ctx.lineWidth = 1.6; ell(0, y, 9, 9, '#FFF8EA', PAL.line); ctx.fillStyle = '#E8674A'; ctx.font = '700 13px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.fillText('!', 0, y + 4.5); }
 function hpBar(y, w, h, v) { ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(16,41,61,.5)'; ctx.fillRect(-w / 2, y, w, h); ctx.fillStyle = '#BFF0D0'; ctx.fillRect(-w / 2, y, w * Math.max(0, Math.min(1, v)), h); if (h > 5) { ctx.strokeStyle = '#10293D'; ctx.lineWidth = 1.5; ctx.strokeRect(-w / 2, y, w, h); } }
 /* 用素材畫一個垃圾。回傳 false 代表這種垃圾沒有素材或還沒載入，改畫佔位圖 */
-const HERO_W = { net: 0.26, tangle: 0.24 };      /* D344：oil 原本就畫約 0.22W（54×1.45），先不列主角 */
+const HERO_W = { net: 0.26, tangle: 0.24 };
+/* D345：GPT 1720 B——放大主角只把最外側鬆散網絲／袋角淡到約 .6（外緣約 12% 寬漸淡），中間網結、袋口與被困朋友照舊清楚；不加核心圈、碰撞不變 */
+const featherCache = {};
+function feathered(key) {
+  if (featherCache[key]) return featherCache[key]; const im = img[key]; if (!im || !im.width) return null;
+  const c = document.createElement('canvas'), w = c.width = im.width, h = c.height = im.height, g = c.getContext('2d'); g.drawImage(im, 0, 0);
+  const R = Math.max(w, h) / 2, gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, R); gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(0.75, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,.6)');
+  g.globalCompositeOperation = 'destination-in'; g.fillStyle = gr; g.fillRect(0, 0, w, h); return (featherCache[key] = c);
+}      /* D344：oil 原本就畫約 0.22W（54×1.45），先不列主角 */
 function drawFoeSprite(f) {
   if (f.type === 'bound') { drawBound(f); return true; }
   const ty = f.type, r = f.r, SS = ST().spr && ST().spr[ty]; let S = SS && (img[SS[0]] || !NEWT()) ? SS : SPR[ty];      // D119：第 5～8 關的圖還沒交時退回原本的圖
@@ -2803,7 +2812,7 @@ function drawFoeSprite(f) {
   if (RM() && drawRailFoe(f)) return true;
   if (ty === 'log' && ST().theme === 'market') { drawAwning(f.w, 26, Math.round(f.x0)); return true; }      // 夜市：條紋雨棚取代漂流木
   if (!S || !img[S[0]]) return false;
-  const a = ctx.globalAlpha, pic = () => sprite(S[0], S[1], S[2]);
+  const a = ctx.globalAlpha, pic = () => { const fc = f.hero && feathered(S[0]); if (fc) { ctx.drawImage(fc, -S[1] / 2, -S[2] / 2, S[1], S[2]); return true; } return sprite(S[0], S[1], S[2]); };
   if (ty === 'log') {      // 漂流木：兩端的圓頭維持原比例，只拉長中段，長短木頭的圓頭才不會變形
     const im = img.log, sw = im.width, sh = im.height, h = S[2], w = f.w, m = sw * 0.0375, cs = sw * 0.15, full = cs * h / sh, cd = Math.min(w / 2, full), sc = cs * cd / full;      // cd：圓頭畫多寬；木段太短時只取圓頭外側的 sc 這一段，不壓扁
     if (w > cd * 2) ctx.drawImage(im, m + cs, 0, sw - 2 * (m + cs), sh, -w / 2 + cd - 0.5, -h / 2, w - 2 * cd + 1, h);
