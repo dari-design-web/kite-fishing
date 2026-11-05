@@ -498,7 +498,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.85',
+  version: '0.86',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -2871,7 +2871,8 @@ function twinkle(x, y, s, a) { ctx.globalAlpha = Math.max(0, a); ctx.fillStyle =
 function drawShot(s) {
   ctx.save(); ctx.translate(s.x, s.y);
   if (s.ink) { ctx.lineWidth = 1.2; ell(0, 0, 4.5, 6, '#4A3A6B', PAL.line); }
-  else { ctx.rotate(Math.atan2(s.vx, -s.vy)); ctx.lineWidth = 1.2; if (s.lit) { glow(16, '255,226,150', 0.9); } ell(0, 12, 3, 13, 'rgba(255,240,190,.35)'); if (kite.power > 1) ell(0, 0, 6.5, 14, 'rgba(255,224,120,' + (0.22 + 0.08 * kite.power) + ')'); if (sprite('feather', 10, 25)) { ctx.restore(); return; } poly([0, -9, 3.5, -2, 2.5, 6, 0, 9, -2.5, 6, -3.5, -2], '#FFF3C4', PAL.line); ctx.strokeStyle = PAL.gold; ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(0, 8); ctx.stroke(); }
+  else { ctx.rotate(Math.atan2(s.vx, -s.vy)); ctx.lineWidth = 1.2; if (s.lit) { glow(16, '255,226,150', 0.9); } ell(0, 14, 2.6, 12, 'rgba(225,246,255,.42)'); ell(0, 0, 8, 15, 'rgba(225,246,255,.24)');      /* D342：GPT 1415／1530 研究①——羽毛外加淡青白光暈、短尾跡改淡青白，夜市金色背景裡也跳得出來 */
+     if (kite.power > 1) ell(0, 0, 6.5, 14, 'rgba(255,224,120,' + (0.22 + 0.08 * kite.power) + ')'); if (sprite('feather', 10, 25)) { ctx.restore(); return; } poly([0, -9, 3.5, -2, 2.5, 6, 0, 9, -2.5, 6, -3.5, -2], '#FFF3C4', PAL.line); ctx.strokeStyle = PAL.gold; ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(0, 8); ctx.stroke(); }
   ctx.restore();
 }
 function drawPick(p) {
@@ -3186,6 +3187,7 @@ function draw() {
   hzRects = [];
   ctx.save(); if (shake > 0 && !calm) ctx.translate(rand(-4, 4) * Math.min(1, shake * 4), rand(-4, 4) * Math.min(1, shake * 4));
   drawBackground();
+  if (ST().theme === 'market') { ctx.fillStyle = 'rgba(16,30,62,.12)'; ctx.fillRect(-10, -10, W + 20, H + 20); }      /* D342：GPT 研究④——夜市背景加一層淡深藍，讓目標和羽毛往前跳 */
   if (NEWT()) drawNewUnder();
   for (const c of friends) drawFriend(c);
   for (const p of picks) drawPick(p);
