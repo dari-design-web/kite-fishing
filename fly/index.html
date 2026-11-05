@@ -499,7 +499,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.96',
+  version: '0.97',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -601,7 +601,7 @@ if (EASY2) CONFIG.levels.easy.bossHp = 0.8;
 /* D346（Dari 11/05 18:40：最後的魔王普遍簡單太多）：D341 羽毛加倍後魔王血量 ×1.8、停留時間 ×1.6 */
 const BOSS_HPK = { 1: 2.4, 2: 1.8, 3: 1.4, 4: 1.8, 5: 1.4, 6: 1.4, 7: 1.0, 8: 1.8 }, BOSS_K = { get hp() { return BOSS_HPK[ST().id] || 1.5; }, time: 1.6 };      /* 每關分開調：bot 量（無敵、基本羽毛）約 30～65 秒，第 7 關原本就長不加 */
 const SPD = () => LVF('speed') * (ST().speed || 1), BHP = () => LVF('bossHp') * (ST().bossHp || 1) * BOSS_K.hp, BTIME = () => (PHASED() ? CONFIG.bossFx.time : CONFIG.boss.leaveAfter) * LVF('bossTime') * (ST().bossHp || 1) * BOSS_K.time;      // 速度、大垃圾團血量與停留時間 = 難度倍率 × 關卡倍率
-const ASSET_FILES = { fx_clean_frag: 'fx_clean_frag.png', fx_rage_glow: 'fx_rage_glow.png', fx_weak_ring: 'fx_weak_ring.png', fx_hit_spark: 'fx_hit_spark.png', fx_boss_warn: 'fx_boss_warn.png', trash: 'trash.png', fish_small: 'fish_small.png', fish_squid: 'fish_squid.png', whaleshark: 'whaleshark.png', shark_top: 'whaleshark_top.png', night_bag: 'night_bag.png', night_temple: 'night_temple.png', jiao_flat: 'jiao_flat.png', jiao_convex: 'jiao_convex.png', lantern: 'lantern.png',
+const ASSET_FILES = { gate1_l: 'fx2/gate1_l.png', gate1_m: 'fx2/gate1_m.png', gate1_r: 'fx2/gate1_r.png', gate2_l: 'fx2/gate2_l.png', gate2_m: 'fx2/gate2_m.png', gate2_r: 'fx2/gate2_r.png', gate3_l: 'fx2/gate3_l.png', gate3_m: 'fx2/gate3_m.png', gate3_r: 'fx2/gate3_r.png', gate4_l: 'fx2/gate4_l.png', gate4_m: 'fx2/gate4_m.png', gate4_r: 'fx2/gate4_r.png', bul_oil: 'fx2/bul_oil.png', bul_coal: 'fx2/bul_coal.png', bul_engine: 'fx2/bul_engine.png', bul_trash: 'fx2/bul_trash.png', bul_gold: 'fx2/bul_gold.png', danger_band: 'fx2/danger_band.png', danger_vortex: 'fx2/danger_vortex.png', safe_ring: 'fx2/safe_ring.png', warn_wave: 'fx2/warn_wave.png', warn_rock: 'fx2/warn_rock.png', warn_beam: 'fx2/warn_beam.png', wind_r: 'fx2/wind_r.png', elite_crown: 'fx2/elite_crown.png',      /* D353：GPT 0050 補圖 25 張 */ fx_clean_frag: 'fx_clean_frag.png', fx_rage_glow: 'fx_rage_glow.png', fx_weak_ring: 'fx_weak_ring.png', fx_hit_spark: 'fx_hit_spark.png', fx_boss_warn: 'fx_boss_warn.png', trash: 'trash.png', fish_small: 'fish_small.png', fish_squid: 'fish_squid.png', whaleshark: 'whaleshark.png', shark_top: 'whaleshark_top.png', night_bag: 'night_bag.png', night_temple: 'night_temple.png', jiao_flat: 'jiao_flat.png', jiao_convex: 'jiao_convex.png', lantern: 'lantern.png',
   kite_a: 'kite_top_a.png', kite_b: 'kite_top_b.png', kite_fly: 'kite_top_fly.png', feather: 'feather.png', turtle: 'turtle_top.png', fx_wind_route: 'fx_wind_route.png', lamp_garbage_cover: 'lamp_garbage_cover.png', squid_top: 'squid_top.png', dolphin_top: 'dolphin_top.png', squid_king: 'squid_king.png', fx_tentacle_anim: 'fx_tentacle_anim.png', fx_wave_band_anim: 'fx_wave_band_anim.png', fx_vortex_anim: 'fx_vortex_anim.png', fx_hex_wave_anim: 'fx_hex_wave_anim.png', fx_hit_spark: 'fx_hit_spark.png', fx_whaleshark_wave_anim: 'fx_whaleshark_wave_anim.png', fx_sacred_light_anim: 'fx_sacred_light_anim.png', fx_rainbow_mirror_anim: 'fx_rainbow_mirror_anim.png', fx_rail_trail_anim: 'fx_rail_trail_anim.png', fx_tentacle: 'fx_tentacle.png', fx_ink_ring: 'fx_ink_ring.png', fx_ink_splat: 'fx_ink_splat.png', fx_hex_wave: 'fx_hex_wave.png', fx_shell_shield: 'fx_shell_shield.png', fx_wave_band: 'fx_wave_band.png', fx_splash: 'fx_splash.png', fx_rainbow: 'fx_rainbow.png', fx_vortex: 'fx_vortex.png', fx_water_trail: 'fx_water_trail.png', fx_whaleshark_wave: 'fx_whaleshark_wave.png', fx_sacred_light: 'fx_sacred_light.png', fx_rainbow_mirror: 'fx_rainbow_mirror.png', fx_rail_trail: 'fx_rail_trail.png',      // G92 大絕招特效（沒圖時用程式畫的） fx_rock_0: 'fx_rock_0.png', fx_rock_1: 'fx_rock_1.png', fx_rock_2: 'fx_rock_2.png', fx_boss_boom: 'fx_boss_boom.png', dragon_black_head: 'dragon_black_head.png', dragon_black_body: 'dragon_black_body.png', dragon_blue_head: 'dragon_blue_head.png', dragon_blue_body: 'dragon_blue_body.png', ult_squidking: 'ult_squidking.png', ult_dragons: 'ult_dragons.png', ult_squid: 'ult_squid.png', ult_dolphin: 'ult_dolphin.png', ult_turtle: 'ult_turtle.png',      // G88（D122 新圖，沒有圖時用程式畫的）
   can: 'foe_can.png', bag: 'foe_bag.png', butt: 'foe_butt.png', foam: 'foe_foam.png', barrel: 'foe_barrel.png', tire: 'foe_tire.png', oil: 'foe_oil.png', goo: 'foe_goo.png',
   battery: 'foe_battery.png', sprayer: 'foe_sprayer.png', log: 'foe_log.png', net: 'foe_net.png', tangle: 'foe_tangle.png', boss: 'foe_boss.png',
@@ -786,7 +786,7 @@ function spawn(e) {
     for (let i = 0; i < (e.n || 6); i++) mk(e.foe || 'bottle', e.x, -20 - i * 34, { split: { y: 230 + (i % 2) * 6, dir: i % 2 ? 1 : -1 }, vy: 95 * SPD(), noCount: true });
     return;
   }
-  if (e.type === 'gate') { const g = 62, lw = Math.max(0, e.x - g), rw = Math.max(0, W - e.x - g); if (lw > 20) mk('log', lw / 2, -20, { noCount: true, w: lw }); if (rw > 20) mk('log', W - rw / 2, -20, { noCount: true, w: rw }); if (!toldGate) { toldGate = true; guide = { x: e.x, y: -20, half: g, vy: T.log.speed[0] * SPD() }; say('從缺口穿過去', e.x, 170, '#FFFFFF', false, '#1F3A4D');      /* D235：GPT 1025 A① 白字＋深藍薄描邊 */ } return; }
+  if (e.type === 'gate') { const g = 62, lw = Math.max(0, e.x - g), rw = Math.max(0, W - e.x - g); if (lw > 20) mk('log', lw / 2, -20, { noCount: true, w: lw, gate: 'L' }); if (rw > 20) mk('log', W - rw / 2, -20, { noCount: true, w: rw, gate: 'R' }); if (!toldGate) { toldGate = true; guide = { x: e.x, y: -20, half: g, vy: T.log.speed[0] * SPD() }; say('從缺口穿過去', e.x, 170, '#FFFFFF', false, '#1F3A4D');      /* D235：GPT 1025 A① 白字＋深藍薄描邊 */ } return; }
   if (e.type === 'side' && RM()) { addRush(e.n + 2); return; }      // 第 4 關：側邊橫衝改成鐵軌上的刺蝟列車
   if (e.type === 'side') { warns.push({ y: Math.max(150, Math.min(590, kite.y)), fromLeft: e.fromLeft, n: e.n, t: LV().warn }); beep(880, 0.08, 'square', 0.04); return; }
   if (e.type === 'chaser') { const f = mk('chaser', e.x, H + 24); f.vy = 0; say(NM() ? '後面有小燈籠追來，持續移動' : RM() ? '後面有煤渣團追來，持續移動' : '後面有污水泡，持續移動', e.x, H - 60, '#FFD0C4'); return; }
@@ -1094,7 +1094,7 @@ function drawNewOver() {
   if (boss && !boss.hidden && boss.openT > 0) { const pulse = 1 + Math.sin(clock * 10) * 0.05; ctx.save(); ctx.translate(boss.x, boss.y); ctx.scale(pulse, pulse); ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(120,230,160,.9)'; ctx.beginPath(); ctx.arc(0, 0, boss.r + 14, 0, 6.2832); ctx.stroke(); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.beginPath(); ctx.arc(0, 0, boss.r + 14, -1.571, -1.571 + 6.2832 * Math.min(1, boss.openT / NW2.open)); ctx.stroke(); ctx.restore(); }
   for (const g of gusts) {      // 風：先出箭頭與風紋，再吹
     const warnP = Math.min(1, g.t / g.warn), on = g.t >= g.warn, a = on ? 0.9 : 0.35 + 0.45 * Math.abs(Math.sin(clock * 8)), s = gustNow();
-    ctx.save(); ctx.translate(W / 2, boss ? 230 : 112); if (g.dir < 0) ctx.scale(-1, 1); ctx.globalAlpha = a; poly([-46, -9, 22, -9, 22, -20, 50, 0, 22, 20, 22, 9, -46, 9], '#FFFFFF', '#10293D'); ctx.restore();
+    ctx.save(); ctx.translate(W / 2, boss ? 230 : 112); if (g.dir < 0) ctx.scale(-1, 1); ctx.globalAlpha = a; if (img.wind_r) ctx.drawImage(img.wind_r, -60, -30, 120, 60); else poly([-46, -9, 22, -9, 22, -20, 50, 0, 22, 20, 22, 9, -46, 9], '#FFFFFF', '#10293D'); ctx.restore();      /* D353：風向箭頭換 GPT 風筆觸 */
     ctx.globalAlpha = 1;
     const n = on ? 9 : Math.round(3 + warnP * 3);
     for (let i = 0; i < n; i++) { const y = 150 + ((i * 59) % 440), sp = (clock * (on ? 320 : 120) + i * 97) % (W + 160) - 80, x = g.dir > 0 ? sp : W - sp;
@@ -1863,6 +1863,7 @@ function drawFood(kind, k) { const S = FOOD_SPR[kind]; if (!S || !img[S[0]]) ret
 function drawTaotie(f) {
   if (!img.boss_idle || !img.boss_open) return drawTaotieOld(f);
   const r = f.r, br = calm ? 0 : Math.sin(clock * 2), open = f.mouth >= 1;
+  if ((f.tell || open) && img.danger_vortex) { const R0 = Math.min(190, CONFIG.taotie.suckR || 190) * (open ? 1 : 0.6 + 0.4 * Math.min(1, (f.atkT || 0) / (CONFIG.taotie.suckWarn || 1))); ctx.save(); ctx.globalAlpha = open ? 0.42 : 0.26; ctx.rotate(calm ? 0 : -clock * (open ? 4 : 1.5)); ctx.drawImage(img.danger_vortex, -R0, -R0, R0 * 2, R0 * 2); ctx.restore(); }      /* D353：饕餮要吸／吸的時候腳下出現 GPT 吸入漩渦（大小＝吸的範圍） */
   glow(r + 34 + br * 4, open ? '220,90,170' : f.tell ? '230,120,200' : '150,70,140', f.tell ? 0.6 + 0.2 * Math.sin(clock * 20) : 0.45);
   ctx.save(); if (f.tell && !calm) ctx.translate(rand(-2, 2), rand(-2, 2)); ctx.rotate(Math.sin(clock * 1.5) * 0.04);
   sprite(open ? 'boss_open' : 'boss_idle', 128, 117); ctx.restore();
@@ -2858,8 +2859,19 @@ function feathered(key) {
   const R = Math.max(w, h) / 2, gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, R); gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(0.75, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,.6)');
   g.globalCompositeOperation = 'destination-in'; g.fillStyle = gr; g.fillRect(0, 0, w, h); return (featherCache[key] = c);
 }      /* D344：oil 原本就畫約 0.22W（54×1.45），先不列主角 */
+function drawGate(f) {      /* D353：左邊那段＝中段平鋪＋右端（缺口那側）；右邊那段＝左端（缺口那側）＋中段平鋪 */
+  const s = ST().id, L = img['gate' + s + '_l'], M = img['gate' + s + '_m'], Rr = img['gate' + s + '_r']; if (!L || !M || !Rr) return false;
+  const h = 30, k = h / 96, w = f.w, cap = f.gate === 'L' ? Rr : L, cw = Math.min(w, cap.width * k), mw = M.width * k;
+  ctx.save(); ctx.beginPath(); ctx.rect(-w / 2 - 1, -h, w + 2, h * 2); ctx.clip();
+  if (f.gate === 'L') { for (let x = w / 2 - cw - mw + 4; x > -w / 2 - mw; x -= mw - 2) ctx.drawImage(M, x, -h / 2, mw, h); ctx.drawImage(cap, w / 2 - cw, -h / 2, cap.width * k, h); }
+  else { ctx.drawImage(cap, -w / 2 + cw - cap.width * k, -h / 2, cap.width * k, h); for (let x = -w / 2 + cw - 4; x < w / 2; x += mw - 2) ctx.drawImage(M, x, -h / 2, mw, h); }
+  ctx.restore(); return true;
+}
 function drawFoeSprite(f) {
   if (f.type === 'bound') { drawBound(f); return true; }
+  if (f.gate && drawGate(f)) return true;      /* D353：缺口閘門換 GPT 三段圖 */
+  if (f.type === 'barrel' && !NM() && !PM() && !RM()) { const k = TH() === 'coast' ? 'warn_rock' : TH() === 'beam' ? 'warn_beam' : 'warn_wave'; if (img[k]) { const s = 34 * (1 + Math.sin(clock * 8) * 0.06); sprite(k, s, s); return true; } }      /* D353：會爆炸的怪換 GPT 警示圖（原本程式畫紅圈⚠） */
+  if (f.aimed && (f.type === 'fire' || f.type === 'drop')) { const k = PM() ? 'bul_engine' : RM() ? 'bul_coal' : NM() ? '' : ST().id === 1 ? 'bul_oil' : 'bul_trash'; if (k && img[k]) { const s = f.r * 2.1; if (k === 'bul_trash' || k === 'bul_coal') ctx.rotate(clock * 4 + f.ph); else if (k === 'bul_engine') ctx.rotate(Math.atan2(f.vy || 1, f.vx || 0) - Math.PI); sprite(k, s, s); return true; } }      /* D353：魔王子彈換 GPT 圖 */
   const ty = f.type, r = f.r, SS = ST().spr && ST().spr[ty]; let S = SS && (img[SS[0]] || !NEWT()) ? SS : SPR[ty];      // D119：第 5～8 關的圖還沒交時退回原本的圖
   if (ty === 'boss' && NEWT() && S === SS) { const alt = TH() === 'wind' && f.sig === 'blow' ? 's5_boss_blow' : TH() === 'netbay' && f.sig === 'netw' ? 's7_boss_open' : TH() === 'coast' && f.sig === 'tail' ? 's6_boss_tail' : TH() === 'beam' && f.dying !== undefined ? 's8_boss_end' : TH() === 'beam' && (f.bph || 1) > 1 ? 's8_boss_' + f.bph : ''; if (alt && img[alt]) S = [alt, S[1], S[2]]; }      // D119：魔王出招時換姿勢
   if (ty === 'boss' && TH() === 'beam') { const k = f.dying !== undefined ? 's8_dragon_end' : 's8_dragon_' + (f.bph || 1); if (img[k] || img.s8_dragon_1) { sprite(img[k] ? k : 's8_dragon_1', 190, 190); return true; } drawDragonBoss(f); return true; }      // D123 鯨龍
@@ -2908,7 +2920,7 @@ function drawFoeSprite(f) {
 function drawFoe(f) {
   if (f.hidden) return; ctx.save(); ctx.translate(f.x, f.y); ctx.lineWidth = 1.6; ctx.lineJoin = 'round';
   if (f.hitT > 0) { if (CANF) ctx.filter = 'brightness(2.3) saturate(.6)'; else ctx.globalAlpha = 0.55; } if (f.ghost) ctx.globalAlpha = 0.12;
-  if (f.elite) { const pu = Math.sin(clock * 6 + f.ph) * 0.1; glow(f.r * 1.9, '255,214,90', 0.55 + pu); ctx.scale(1.35, 1.35); }
+  if (f.elite) { const pu = Math.sin(clock * 6 + f.ph) * 0.1; glow(f.r * 1.9, '255,214,90', 0.55 + pu); if (img.elite_crown) ctx.drawImage(img.elite_crown, -11, -f.r * 1.45 - 16 + Math.sin(clock * 5) * 1.5, 22, 22); ctx.scale(1.35, 1.35); }
   if (f.jit > 0) { f.jit -= 1 / 60; ctx.translate(Math.random() * 5 - 2.5, Math.random() * 4 - 2); }
   const r = f.r, ty = f.type, big = FOE_BIG(ty); if (big) ctx.scale(FOE_VIS, FOE_VIS); if (ty === 'boss') { const bv = bossVis(); ctx.scale(bv, bv); }      /* D351 */      // 素材圖用固定尺寸，整個放大 1.35
   if (drawFoeSprite(f)) { ctx.restore(); return; }
@@ -3252,6 +3264,7 @@ function hazard(x, y, w, h) {      // 紅區：紅底加斜紋，疊在藍色海
   const a = 0.75 + 0.25 * Math.sin(clock * 20);
   ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
   ctx.fillStyle = 'rgba(226,60,44,' + 0.36 * a + ')'; ctx.fillRect(x, y, w, h);
+  if (img.danger_band) { if (!hazPat) { hazPat = ctx.createPattern(img.danger_band, 'repeat'); } const sc = 0.32; hazPat.setTransform(new DOMMatrix([sc, 0, 0, sc, calm ? 0 : (clock * 30) % (335 * sc), 0])); ctx.globalAlpha = 0.5 + 0.2 * a; ctx.fillStyle = hazPat; ctx.fillRect(x, y, w, h); ctx.restore(); ctx.globalAlpha = 1; return; }      /* D353：紅區改 GPT 危險帶平鋪 */
   ctx.strokeStyle = 'rgba(255,84,62,' + 0.6 * a + ')'; ctx.lineWidth = 7; ctx.beginPath();
   const o = calm ? 0 : (clock * 40) % 26; for (let d = -h - 26 + o; d < w + 26; d += 26) { ctx.moveTo(x + d, y + h); ctx.lineTo(x + d + h, y); } ctx.stroke();
   ctx.restore();
@@ -3259,7 +3272,7 @@ function hazard(x, y, w, h) {      // 紅區：紅底加斜紋，疊在藍色海
 function drawClearRings() {      /* D344：GPT 1620 A——清除圈畫在怪、敵彈、警示、小鳶下面；大圈內填 .03、外環峰值 .55，中圈 .08／.8，小圈照舊 */
   for (const r of rings) { if (!r.clr) continue; const L = Math.max(0, r.life), sa = [1, 0.8, 0.55][r.tier || 0], fa = [0.18, 0.08, 0.03][r.tier || 0]; ctx.strokeStyle = 'rgba(' + r.color + ',' + L * sa + ')'; ctx.lineWidth = r.lw || 5; ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, 6.2832); ctx.stroke(); ctx.fillStyle = 'rgba(' + r.color + ',' + L * fa + ')'; ctx.fill(); }
 }
-let hzRects = [];
+let hzRects = [], hazPat = null;
 function pickInHazard(p) { return hzRects.some((r) => p.x + 150 > Math.min(r[0], r[0] + r[2]) && p.x - 150 < Math.max(r[0], r[0] + r[2]) && p.y + 44 > Math.min(r[1], r[1] + r[3]) && p.y - 30 < Math.max(r[1], r[1] + r[3])); }
 function draw() {
   hzRects = [];
@@ -3286,7 +3299,7 @@ function draw() {
     ctx.strokeStyle = 'rgba(255,208,196,.9)'; ctx.lineWidth = 2; ctx.setLineDash([10, 8]); ctx.beginPath(); ctx.moveTo(boss.slamX - half, 0); ctx.lineTo(boss.slamX - half, low); ctx.moveTo(boss.slamX + half, 0); ctx.lineTo(boss.slamX + half, low); ctx.stroke(); ctx.setLineDash([]);
   }
   if (hzRects.length) for (const p of picks) if (pickInHazard(p)) drawPick(p);      /* D247：GPT 2250 A②——掉落道具和第一次說明字被紅警示條（鐵軌亮紅等）蓋住，碰到紅區的道具在紅區上面再畫一次；紅區、時間、判定、遮罩照明都不動，怪獸路障不上提 */
-  if (guide) { const a = 0.35 + 0.25 * Math.sin(clock * 10); ctx.fillStyle = 'rgba(191,240,208,' + a + ')'; ctx.fillRect(guide.x - guide.half, guide.y - 16, guide.half * 2, 32); for (const dx of [-26, 0, 26]) poly([guide.x + dx - 7, guide.y + 6, guide.x + dx, guide.y - 6, guide.x + dx + 7, guide.y + 6], 'rgba(255,255,255,.95)'); }      // 第一個缺口：亮起來並標出往前的箭頭
+  if (guide) { const a = 0.35 + 0.25 * Math.sin(clock * 10); if (img.wind_r) { const gr = ctx.createLinearGradient(guide.x - guide.half, 0, guide.x + guide.half, 0); gr.addColorStop(0, 'rgba(191,240,208,0)'); gr.addColorStop(0.5, 'rgba(191,240,208,' + a + ')'); gr.addColorStop(1, 'rgba(191,240,208,0)'); ctx.fillStyle = gr; ctx.fillRect(guide.x - guide.half, guide.y - 22, guide.half * 2, 44); ctx.save(); ctx.translate(guide.x, guide.y - 4 - Math.abs(Math.sin(clock * 5)) * 6); ctx.rotate(-Math.PI / 2); ctx.globalAlpha = 0.95; ctx.drawImage(img.wind_r, -26, -13, 52, 26); ctx.restore(); } else { ctx.fillStyle = 'rgba(191,240,208,' + a + ')'; ctx.fillRect(guide.x - guide.half, guide.y - 16, guide.half * 2, 32); for (const dx of [-26, 0, 26]) poly([guide.x + dx - 7, guide.y + 6, guide.x + dx, guide.y - 6, guide.x + dx + 7, guide.y + 6], 'rgba(255,255,255,.95)'); }      /* D353：缺口提示改淡綠光帶＋往上的風筆觸 */ }      // 第一個缺口：亮起來並標出往前的箭頭
   if (ult) { if (ult.t < 0.75) drawUltAura(ult); if (ult.kind) drawUlt2(); else if (ult.jiao) drawJiao(); else drawUlt(); }
   for (const s of shots) drawShot(s);
   for (const p of pals) drawPal(p);
