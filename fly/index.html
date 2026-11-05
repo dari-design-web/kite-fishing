@@ -499,7 +499,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.97',
+  version: '0.98',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -761,6 +761,7 @@ function eliteMaybe(f) {
 function mk(type, x, y, o) {
   const d = T[type], f = Object.assign({ type, x, y, x0: x, vx: 0, vy: R(d.speed[0], d.speed[1]) * SPD() * (type === 'can' && E2() ? 0.8 : 1), hp: d.hp, r: d.r * (FOE_BIG(type) ? 1.18 : 1), ph: R(0, 6.28), give: '', rot: R(-0.5, 0.5), age: 0, zapAcc: R(0, 1) }, o);
   if (!(o && (o.noCount || o.fill))) eliteMaybe(f);
+  if (o && o.bar && Math.random() < 0.25) f.gold = true;      /* D354：魔王連射約 1/4 是金色子彈——打掉 +2 分、鯨鯊集氣 +3、金星爆開（GPT bul_gold） */
   foes.push(f); if (!f.noCount) stats.spawned++; if (d.rescue) { stats.trapped++; stats.trappedBy[d.rescue]++; } return f;      // noCount：只是要閃的障礙，不算在乾淨度裡
 }
 function spawn(e) {
@@ -824,6 +825,7 @@ function hitFx(f, n) {
 }
 function clearBurst(f, d) {      /* D343：原本跟星星 burst(x, y, n) 同名，蓋掉了舊的星星爆開（D341 起各處星星變成 NaN），改名 */
   if (f.elite) { stats.score += 3; say('精英 +3', f.x, f.y - 30, '#FFE08A'); }
+  if (f.gold) { stats.score += 2; gauge = Math.min(CONFIG.ult.need, gauge + 3); for (let i = 0; i < 8; i++) { const a = i / 8 * 6.2832; part('star', f.x, f.y, { vx: Math.cos(a) * 160, vy: Math.sin(a) * 160, size: 3.5, fade: 2.6, color: '#FFE08A' }); } if (!stats.toldGold) { stats.toldGold = true; say('金色子彈打掉有加分！', f.x, f.y - 26, '#FFE08A'); } beep(1320, 0.08, 'triangle', 0.04, 300); }
   const big = f.type === 'boss' || f.type === 'minib' || f.elite || d.score >= 2, n = (big ? 12 : 7) >> (t >= 50 && t < 54 && !big ? 1 : 0);      /* D345：50–54 秒小的清掉時星星減半，畫面少一點重疊 */
   /* D343：GPT 研究②——清除圈分小中大（直徑：小 0.10–0.16W／中 0.18–0.22W／大 0.22–0.28W），亮峰約 0.08 秒、總長 0.3 秒；魔王照舊 */
   if (f.type === 'boss') rings.push({ x: f.x, y: f.y, r: 6, max: f.r * 2.4, life: 1, color: '255,246,214' });
@@ -2871,6 +2873,7 @@ function drawFoeSprite(f) {
   if (f.type === 'bound') { drawBound(f); return true; }
   if (f.gate && drawGate(f)) return true;      /* D353：缺口閘門換 GPT 三段圖 */
   if (f.type === 'barrel' && !NM() && !PM() && !RM()) { const k = TH() === 'coast' ? 'warn_rock' : TH() === 'beam' ? 'warn_beam' : 'warn_wave'; if (img[k]) { const s = 34 * (1 + Math.sin(clock * 8) * 0.06); sprite(k, s, s); return true; } }      /* D353：會爆炸的怪換 GPT 警示圖（原本程式畫紅圈⚠） */
+  if (f.gold && img.bul_gold) { const s = f.r * 2.4 * (1 + Math.sin(clock * 12) * 0.08); ctx.rotate(clock * 3); glow(s * 0.9, '255,220,110', 0.5); sprite('bul_gold', s, s); return true; }
   if (f.aimed && (f.type === 'fire' || f.type === 'drop')) { const k = PM() ? 'bul_engine' : RM() ? 'bul_coal' : NM() ? '' : ST().id === 1 ? 'bul_oil' : 'bul_trash'; if (k && img[k]) { const s = f.r * 2.1; if (k === 'bul_trash' || k === 'bul_coal') ctx.rotate(clock * 4 + f.ph); else if (k === 'bul_engine') ctx.rotate(Math.atan2(f.vy || 1, f.vx || 0) - Math.PI); sprite(k, s, s); return true; } }      /* D353：魔王子彈換 GPT 圖 */
   const ty = f.type, r = f.r, SS = ST().spr && ST().spr[ty]; let S = SS && (img[SS[0]] || !NEWT()) ? SS : SPR[ty];      // D119：第 5～8 關的圖還沒交時退回原本的圖
   if (ty === 'boss' && NEWT() && S === SS) { const alt = TH() === 'wind' && f.sig === 'blow' ? 's5_boss_blow' : TH() === 'netbay' && f.sig === 'netw' ? 's7_boss_open' : TH() === 'coast' && f.sig === 'tail' ? 's6_boss_tail' : TH() === 'beam' && f.dying !== undefined ? 's8_boss_end' : TH() === 'beam' && (f.bph || 1) > 1 ? 's8_boss_' + f.bph : ''; if (alt && img[alt]) S = [alt, S[1], S[2]]; }      // D119：魔王出招時換姿勢
