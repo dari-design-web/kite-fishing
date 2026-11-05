@@ -201,7 +201,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
 .kv{display:flex;flex-direction:column;gap:2px;font-size:12.5px;color:var(--muted);margin-top:6px}.gcard .kv b{display:inline;color:var(--ink);font-size:12.5px}
 .mgsrc{margin:-4px 2px 12px;font-size:12px;line-height:1.5;color:var(--muted)}
 .stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 12px}
-.stat3 div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center;font-size:12px;color:var(--muted)}.stat3 b{display:block;font-size:20px;color:var(--ink)}
+.stat3 div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center;font-size:12px;color:var(--muted)}.stat3 b{display:block;font-size:20px;color:var(--ink)}.stat3 .nw,.kv .nw{white-space:nowrap}
 /* G59 T04：還沒上傳實物照片的贈品標「示意圖」 */
 .good .im .demo,.detail .im .demo{position:absolute;left:6px;bottom:6px;background:rgba(43,38,32,.72);color:#fff;font-size:12px;font-weight:700;padding:2px 7px;border-radius:999px;line-height:1.5}.detail .im{position:relative}
 
@@ -423,7 +423,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
     var m = K.member(), c = K.cfg(), P = progress(), plays = m.plays || [], today = K.dayKey();
     var tp = plays.filter(function (p) { return K.dayKey(p.t) === today; }).length, sec = plays.reduce(function (s, p) { return s + (p.sec || 0); }, 0), bank = Object.keys(m.scoreBank || {}).reduce(function (s, k) { return s + (m.scoreBank[k] || 0); }, 0);
     var TIER = c.gamePointMode === 'tier', gt = K.gameToday();
-    var html = '<div class="stat3"><div><b>' + tp + '</b>今天玩了（次）</div><div><b>' + Math.round(sec / 60) + '</b>最近遊玩（分鐘）</div>' + (TIER ? '<div><b>' + gt.pts + '/' + gt.cap + '</b>今天遊戲點</div>' : '<div><b>' + bank.toLocaleString() + '</b>分數存摺（分）</div>') + '</div>';
+    var html = '<div class="stat3"><div><b>' + tp + '</b>今天玩了<span class="nw">（次）</span></div><div><b>' + Math.round(sec / 60) + '</b>最近遊玩<span class="nw">（分鐘）</span></div>' + (TIER ? '<div><b>' + gt.pts + '/' + gt.cap + '</b>今天遊戲點</div>' : '<div><b>' + bank.toLocaleString() + '</b>分數存摺<span class="nw">（分）</span></div>') + '</div>';
     html += '<p class="note mgsrc">圖鑑、星星等進度保存在這支手機；場次與分數依會員目前保留的最近最多 800 局（全部遊戲合計）顯示。最近遊玩分鐘也依目前保留的最近最多 800 局計算。</p>';      /* D338（GPT 1130 B／C） */
     if (TIER && c.gameClaim === 'tap') html += track(gt).replace('class="trk"', 'class="trk" style="margin:0 0 12px;box-shadow:none;border:1px solid #EDE5D6"');
     else if (TIER) html += '<div class="card"><b>今天累計 ' + gt.total.toLocaleString() + ' 分 → ' + gt.pts + ' 點</b><span class="muted">' + (gt.next ? '・再 ' + gt.next.need.toLocaleString() + ' 分多 1 點' : '・今天已拿滿') + '</span>' + tierTable(gt.total) + '</div>';
@@ -432,7 +432,9 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
       mine.forEach(function (p) { best[p.level] = Math.max(best[p.level] || 0, p.score || 0); });
       var b = (m.scoreBank || {})[g.id] || 0, per = K.perPoint(g.id), n = Math.floor(b / per);
       var kv = (pr.extra || []).map(function (x) { return '<span>' + x[0] + ' <b>' + esc(x[1]) + '</b></span>'; });
-      if (lv.length) { kv.push('<span>紀錄內遊玩 <b>' + mine.length + ' 次</b></span>'); lv.forEach(function (l) { kv.push('<span>' + esc(G0.levels[l]) + (l in best ? ' 會員紀錄內最高 <b>' + best[l].toLocaleString() + '</b> 分' : ' <b>目前會員紀錄中沒有這關分數</b>')      /* G59 T16：玩過 0 分也算玩過 */ + '・今天可算分 <b>' + K.triesLeft(g.id, l) + '</b> 次' + (K.triesLeft(g.id, l) ? '' : '（仍可繼續玩）') + '</span>'); }); }
+      if (lv.length) { kv.push('<span>紀錄內遊玩 <b>' + mine.length + ' 次</b></span>'); var anyB = lv.some(function (l) { return l in best; });      /* D339（GPT 1230 A①）：整款沒分數只說一次；0 分算有分數 */
+        if (!anyB) kv.push('<span><b>目前會員紀錄中還沒有這款遊戲的分數</b></span>');
+        lv.forEach(function (l) { kv.push('<span>' + esc(G0.levels[l]) + (l in best ? ' 會員紀錄內最高 <b>' + best[l].toLocaleString() + '</b> 分' : anyB ? ' <b>紀錄中沒有分數</b>' : '')      /* G59 T16：玩過 0 分也算玩過 */ + '・<span class="nw">今天可算分 <b>' + K.triesLeft(g.id, l) + '</b> 次</span>' + (K.triesLeft(g.id, l) ? '' : '<span class="nw">（仍可繼續玩）</span>') + '</span>'); }); }
       return '<div class="card"><div class="gcard"><img src="' + g.icon + '" alt="" onerror="this.src=\'../hub/btn/btn_' + g.id + '.png\'"><div class="g"><b>' + esc(G0.name) + '</b>' + (pr.max ? '<div class="gbar"><i style="width:' + pct(pr) + '%"></i></div><span class="muted">' + esc(pr.label) + '</span>' : '') + '<div class="kv">' + kv.join('') + '</div>' +
         (lv.length && (!TIER || b > 0) ? '<div class="row" style="margin-top:8px"><span class="muted" style="flex:2">' + (TIER ? '舊存摺（改制前）' : '存摺') + ' ' + b.toLocaleString() + ' 分' + (n ? '・可換 ' + n + ' 點' : '・還差 ' + (per - b % per).toLocaleString() + ' 分') + '</span><button class="btn" data-cv="' + g.id + '"' + (n ? '' : ' disabled') + ' style="min-height:38px;padding:6px 12px">換點</button></div>' : '') +
         '<a class="btn alt full" style="margin-top:8px;min-height:38px" href="' + gameLink(g) + '">去玩</a></div></div></div>';
