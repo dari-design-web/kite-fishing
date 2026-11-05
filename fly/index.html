@@ -499,12 +499,12 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.90',
+  version: '0.91',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
   bg: { harbor: 24, market: 45, pier: 40, rail: 50, blend: 90, closeAt: 60 },   // 整張手繪底圖：第 1 關、第 2 關每秒捲多少、兩張圖交疊淡接的高度、第 2 關幾秒後換收攤街段
-  kite: { hearts: 5, r: 12, safe: 1.6, followLift: 64, followSpeed: 16, minY: 130, maxY: 560 },      /* D173：600→560，小鳶不會飛到右下大招鈕底下看不見 */   // r 是小鳶的碰撞半徑
+  kite: { hearts: 5, r: 8, safe: 1.6, followLift: 64, followSpeed: 16, minY: 130, maxY: 560 },      /* D173：600→560，小鳶不會飛到右下大招鈕底下看不見；D347：碰撞半徑 r 12→8（看起來危險、判定寬鬆，魔王戰顯示中心小白點） */   // r 是小鳶的碰撞半徑
   feather: { every: 0.15, speed: 540, r: 6, powerTime: 9, galeTime: 6 },                          // 風之羽：發射間隔、速度、碰撞半徑、強化與疾風的持續秒數
   combo: { window: 1.6, bonusFrom: 5 },                                                           // 連清：幾秒內沒再清掉就中斷；連到第幾件起，鯨鯊多集 1 分
   ult: { need: 90, bossDamage: 50 },                                                              // 鯨鯊：集滿需要幾分、對大垃圾團的清除量
@@ -2793,6 +2793,7 @@ function drawKite() {
   ctx.lineCap = 'round';      // 剩餘時間：金色弧線是羽毛強化、青色弧線是疾風，會慢慢縮短
   if (k.power > 1) { ctx.strokeStyle = 'rgba(255,224,138,.95)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(0, 0, 33, -1.5708, -1.5708 + 6.2832 * Math.max(0, k.powerT / CONFIG.feather.powerTime)); ctx.stroke(); }
   if (k.galeT > 0) { ctx.strokeStyle = 'rgba(170,232,246,.95)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(0, 0, 38, -1.5708, -1.5708 + 6.2832 * Math.max(0, k.galeT / CONFIG.feather.galeTime)); ctx.stroke(); }
+  if (boss && boss.dying === undefined) { ctx.lineWidth = 1.5; ell(0, 0, 4, 4, 'rgba(255,255,255,.95)', 'rgba(31,58,77,.9)'); }      /* D347：魔王戰顯示小鳶真正的被打判定（中心小白點） */
   ctx.restore();
 }
 function drawTurtle(wig) {      // 海龜（俯視）
@@ -3225,6 +3226,7 @@ function draw() {
   for (const p of picks) drawPick(p);
   if (RM()) drawTrainLane();
   drawClearRings();
+  if (boss && boss.rage && boss.dying === undefined && !boss.hidden) { const rr = boss.r || T.boss.r, pz = calm ? 0 : Math.sin(clock * (boss.rage > 1 ? 9 : 6)); ctx.save(); ctx.translate(boss.x, boss.y); glow(rr * 2.4 + pz * 6, boss.rage > 1 ? '255,60,40' : '255,110,70', (boss.rage > 1 ? 0.42 : 0.28) + pz * 0.06); ctx.restore(); }      /* D347：魔王生氣／暴走時身後泛紅光（第二段更紅、脈動更快） */
   for (const f of foes) drawFoe(f);
   if (NEWT()) drawNewOver();
   drawClouds(); drawMinionTells(); drawTaotieZones(); drawVents(); drawMarketUI(); if (PM()) { drawBoats(); drawEscort(); drawAgenorZones(); } if (RM()) { drawSmokeClouds(); for (const f of foes) drawRailFoeState(f); drawTunnelDark(); drawRushes(); drawMascots(); drawJianjiZones(); } drawBossFx();
