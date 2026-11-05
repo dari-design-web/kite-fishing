@@ -114,6 +114,8 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
 .booth .tip{display:block;font-size:11.5px;color:var(--muted);margin:0 2px;line-height:1.35;min-height:31px}
 .booth .chip{position:absolute;top:14px;left:14px;font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.92);color:var(--teal)}
 .booth .chip.o{background:var(--orange);color:#fff}.booth .chip.gr{background:rgba(0,0,0,.55);color:#fff}
+.booth .chips{display:flex;flex-wrap:wrap;gap:4px;margin:8px 2px 0}.booth .chips .chip{position:static;line-height:1.35}.booth .chips .chip:not(.o):not(.gr){background:#E6F2F1}.booth .chip .nw{white-space:nowrap}.booth.feat .chips{margin-top:0}.booth.feat .tip{min-height:0}
+.booth .rule{display:block;font-size:11.5px;color:#5B5348;margin:4px 2px 0;line-height:1.35}.booth .pgs{display:block;font-size:11px;color:var(--muted);opacity:.85}
 .booth .bar{display:block;height:6px;border-radius:3px;background:#EFE6D6;margin:6px 2px 0;overflow:hidden}.booth .bar i{display:block;height:100%;background:linear-gradient(90deg,#2F7F86,#55B5B0);border-radius:3px}
 .booth .pg{display:block;font-size:11px;color:var(--muted);margin:3px 2px 0}
 .booth.feat{grid-column:1/-1;display:flex;gap:12px;align-items:center;padding:10px;background:linear-gradient(135deg,#FFF6E0,#FFE7C2)}
@@ -328,9 +330,14 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
     var booth = function (g, i, big) {
       var G0 = K.GAMES[g.id], gc = (c.games || {})[g.id] || {}; if (gc.on === false) return '';
       var lv = Object.keys(G0.levels), ev = K.eventMult(g.id), l = lv.reduce(function (a, x) { return a + K.triesLeft(g.id, x); }, 0), pr = P[g.id] || {};
-      var chip = gc.maint ? '<span class="chip gr">🔧 維護中</span>' : ev.mult > 1 ? '<span class="chip o">點數 ×' + ev.mult + '</span>' : lv.length ? (l > 0 ? '<span class="chip">今天還能算分 ' + l + ' 次</span>' : '<span class="chip">今天算分用完・仍可玩</span>') : '<span class="chip">不計分・隨時玩</span>';
-      var bar = pr.max ? '<span class="bar"><i style="width:' + Math.round(100 * pr.n / pr.max) + '%"></i></span><span class="pg">' + esc(pr.label) + '</span>' : '';
-      var inner = '<img class="ic" src="' + g.icon + '" alt="" style="animation-delay:' + (i * .35) + 's" onerror="this.src=\'../hub/btn/btn_' + g.id + '.png\'">' + (big ? '<span class="tx">' : '') + chip + '<b>' + esc(G0.name) + '</b><span class="tip">' + esc(g.tip) + '</span>' + bar + (big ? '</span>' : '');
+      /* D336（GPT 0930 A／B／C）：小標改成遊戲名上方的資訊列（不浮在圖上、不壓名字）；活動「點數 ×N」與算分次數兩個都留；多關遊戲次數註明各關合計＋每關每日上限（上限照實際設定） */
+      var multi = lv.length > 1, per = multi ? ((c.gameTries || {})[g.id] != null ? c.gameTries[g.id] : c.triesPerLevel) : 0;
+      var chip = gc.maint ? '<span class="chip gr">🔧 維護中</span>' : (ev.mult > 1 ? '<span class="chip o">點數 ×' + ev.mult + '</span>' : '') + (lv.length ? (l > 0 ? '<span class="chip">今天還能算分 ' + l + ' 次' + (multi ? '<span class="nw">（各關合計）</span>' : '') + '</span>' : '<span class="chip">今天算分用完<span class="nw">・仍可玩</span></span>') : '<span class="chip">不計分・隨時玩</span>');
+      var rule = multi && !gc.maint ? '<span class="rule">各關分開計分，每關每日最多 ' + per + ' 次。</span>' : '';
+      /* D336（GPT 0930 D）：捕魚／飛行的圖鑑、星星標明是這支手機的累積紀錄，不是今天的成績 */
+      var mine = g.id === 'fish' || g.id === 'fly';
+      var bar = pr.max ? '<span class="bar"><i style="width:' + Math.round(100 * pr.n / pr.max) + '%"></i></span><span class="pg">' + (mine && pr.none ? '這支手機還沒有累積紀錄' : esc(pr.label) + (mine ? '<span class="pgs">這支手機的累積紀錄</span>' : '')) + '</span>' : '';
+      var inner = '<img class="ic" src="' + g.icon + '" alt="" style="animation-delay:' + (i * .35) + 's" onerror="this.src=\'../hub/btn/btn_' + g.id + '.png\'">' + (big ? '<span class="tx">' : '') + '<span class="chips">' + chip + '</span><b>' + esc(G0.name) + '</b><span class="tip">' + esc(g.tip) + '</span>' + rule + bar + (big ? '</span>' : '');
       return gc.maint ? '<div class="booth off' + (big ? ' feat' : '') + '" style="animation-delay:' + (i * .06) + 's">' + inner + '</div>' : '<a class="booth' + (big ? ' feat' : '') + '" data-g="' + g.id + '" href="' + gameLink(g) + '" style="animation-delay:' + (i * .06) + 's">' + inner + '</a>';
     };
     var fg = GL.filter(function (g) { return g.id === feat; })[0];
@@ -401,7 +408,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
     var nf = Object.keys(fr).length; o.meet = { n: nf, max: 6, label: '港口朋友 ' + nf + '／6', extra: [] };
     var has = { fish: !!(rd('kiteFishingProg1') || rd('kiteFishingDex2')), fly: !!rd('kiteFlyProgress1'), travel: !!rd('kiteTravel1'), stamp: !!rd('kiteStamp1'), photo: !!rd('kitePhoto1'), meet: !!rd('kiteFriends1') };
     (K.member().plays || []).forEach(function (p) { if (p.game in has) has[p.game] = true; });      // G59 T01：有遊玩／存摺紀錄就不說「尚無紀錄」
-    Object.keys(o).forEach(function (k) { if (!has[k]) { o[k].label = '還沒有紀錄'; o[k].extra = []; } });      // ChatGPT 意見：沒資料不等於沒玩過（可能在別的手機玩）
+    Object.keys(o).forEach(function (k) { if (!has[k]) { o[k].label = '還沒有紀錄'; o[k].extra = []; o[k].none = true; } });      // ChatGPT 意見：沒資料不等於沒玩過（可能在別的手機玩）
     return o;
   }
   R.mygames = function () {
