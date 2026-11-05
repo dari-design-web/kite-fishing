@@ -499,7 +499,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.93',
+  version: '0.94',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -601,7 +601,7 @@ if (EASY2) CONFIG.levels.easy.bossHp = 0.8;
 /* D346（Dari 11/05 18:40：最後的魔王普遍簡單太多）：D341 羽毛加倍後魔王血量 ×1.8、停留時間 ×1.6 */
 const BOSS_HPK = { 1: 1.5, 2: 1.8, 3: 1.4, 4: 1.8, 5: 1.4, 6: 1.4, 7: 1.0, 8: 1.8 }, BOSS_K = { get hp() { return BOSS_HPK[ST().id] || 1.5; }, time: 1.6 };      /* 每關分開調：bot 量（無敵、基本羽毛）約 30～65 秒，第 7 關原本就長不加 */
 const SPD = () => LVF('speed') * (ST().speed || 1), BHP = () => LVF('bossHp') * (ST().bossHp || 1) * BOSS_K.hp, BTIME = () => (PHASED() ? CONFIG.bossFx.time : CONFIG.boss.leaveAfter) * LVF('bossTime') * (ST().bossHp || 1) * BOSS_K.time;      // 速度、大垃圾團血量與停留時間 = 難度倍率 × 關卡倍率
-const ASSET_FILES = { fx_weak_ring: 'fx_weak_ring.png', fx_hit_spark: 'fx_hit_spark.png', fx_boss_warn: 'fx_boss_warn.png', trash: 'trash.png', fish_small: 'fish_small.png', fish_squid: 'fish_squid.png', whaleshark: 'whaleshark.png', shark_top: 'whaleshark_top.png', night_bag: 'night_bag.png', night_temple: 'night_temple.png', jiao_flat: 'jiao_flat.png', jiao_convex: 'jiao_convex.png', lantern: 'lantern.png',
+const ASSET_FILES = { fx_clean_frag: 'fx_clean_frag.png', fx_rage_glow: 'fx_rage_glow.png', fx_weak_ring: 'fx_weak_ring.png', fx_hit_spark: 'fx_hit_spark.png', fx_boss_warn: 'fx_boss_warn.png', trash: 'trash.png', fish_small: 'fish_small.png', fish_squid: 'fish_squid.png', whaleshark: 'whaleshark.png', shark_top: 'whaleshark_top.png', night_bag: 'night_bag.png', night_temple: 'night_temple.png', jiao_flat: 'jiao_flat.png', jiao_convex: 'jiao_convex.png', lantern: 'lantern.png',
   kite_a: 'kite_top_a.png', kite_b: 'kite_top_b.png', kite_fly: 'kite_top_fly.png', feather: 'feather.png', turtle: 'turtle_top.png', fx_wind_route: 'fx_wind_route.png', lamp_garbage_cover: 'lamp_garbage_cover.png', squid_top: 'squid_top.png', dolphin_top: 'dolphin_top.png', squid_king: 'squid_king.png', fx_tentacle_anim: 'fx_tentacle_anim.png', fx_wave_band_anim: 'fx_wave_band_anim.png', fx_vortex_anim: 'fx_vortex_anim.png', fx_hex_wave_anim: 'fx_hex_wave_anim.png', fx_hit_spark: 'fx_hit_spark.png', fx_whaleshark_wave_anim: 'fx_whaleshark_wave_anim.png', fx_sacred_light_anim: 'fx_sacred_light_anim.png', fx_rainbow_mirror_anim: 'fx_rainbow_mirror_anim.png', fx_rail_trail_anim: 'fx_rail_trail_anim.png', fx_tentacle: 'fx_tentacle.png', fx_ink_ring: 'fx_ink_ring.png', fx_ink_splat: 'fx_ink_splat.png', fx_hex_wave: 'fx_hex_wave.png', fx_shell_shield: 'fx_shell_shield.png', fx_wave_band: 'fx_wave_band.png', fx_splash: 'fx_splash.png', fx_rainbow: 'fx_rainbow.png', fx_vortex: 'fx_vortex.png', fx_water_trail: 'fx_water_trail.png', fx_whaleshark_wave: 'fx_whaleshark_wave.png', fx_sacred_light: 'fx_sacred_light.png', fx_rainbow_mirror: 'fx_rainbow_mirror.png', fx_rail_trail: 'fx_rail_trail.png',      // G92 大絕招特效（沒圖時用程式畫的） fx_rock_0: 'fx_rock_0.png', fx_rock_1: 'fx_rock_1.png', fx_rock_2: 'fx_rock_2.png', fx_boss_boom: 'fx_boss_boom.png', dragon_black_head: 'dragon_black_head.png', dragon_black_body: 'dragon_black_body.png', dragon_blue_head: 'dragon_blue_head.png', dragon_blue_body: 'dragon_blue_body.png', ult_squidking: 'ult_squidking.png', ult_dragons: 'ult_dragons.png', ult_squid: 'ult_squid.png', ult_dolphin: 'ult_dolphin.png', ult_turtle: 'ult_turtle.png',      // G88（D122 新圖，沒有圖時用程式畫的）
   can: 'foe_can.png', bag: 'foe_bag.png', butt: 'foe_butt.png', foam: 'foe_foam.png', barrel: 'foe_barrel.png', tire: 'foe_tire.png', oil: 'foe_oil.png', goo: 'foe_goo.png',
   battery: 'foe_battery.png', sprayer: 'foe_sprayer.png', log: 'foe_log.png', net: 'foe_net.png', tangle: 'foe_tangle.png', boss: 'foe_boss.png',
@@ -729,7 +729,7 @@ function buildScript() {
 }
 
 function reset() {
-  seed = CONFIG.seed; cine = 0; slowmo = 0; rushes = []; t = 0; si = 0; fireAcc = 0; gauge = 0; ult = null; cut = null; flash = 0; shake = 0; boss = null; sparks = []; bossWarnT = 0; bossWarned = false; endTimer = 0; firstMove = false; toldUlt = false; toldBarrel = false; toldGate = false; toldRing = false; guide = null; won = false; seenPick = {};
+  seed = CONFIG.seed; cine = 0; slowmo = 0; rushes = []; t = 0; si = 0; fireAcc = 0; gauge = 0; ult = null; cut = null; flash = 0; shake = 0; boss = null; sparks = []; frag = null; bossWarnT = 0; bossWarned = false; endTimer = 0; firstMove = false; toldUlt = false; toldBarrel = false; toldGate = false; toldRing = false; guide = null; won = false; seenPick = {};
   kite = { x: W / 2, y: 520, tx: W / 2, ty: 520, jetT: 0, ringT: 0, slowT: 0, homeT: 0, drumT: 0, drumAcc: 0, hearts: LV().hearts, safe: 0, power: 1, powerT: 0, galeT: 0, shield: false, drag: false, lx: 0, ly: 0 };
   T = stageTypes(); vents = []; clouds = []; boats = []; mascots = []; beatDemo = null; menu = null; escort = null;
   foes = []; shots = []; picks = []; parts = []; floats = []; friends = []; pals = []; rings = []; warns = []; booms = []; script = buildScript();
@@ -1134,7 +1134,7 @@ function update(dt) {
   t += dt; if (daily) dailyTick(dt);
   while (si < script.length && script[si].t <= t) spawn(script[si++]);
   if (!daily && !boss && !bossWarned && t >= CONFIG.boss.at - 1.5 && t < CONFIG.boss.at) { bossWarned = true; bossWarnT = 1.5; say('魔王來了，找空隙！', W / 2, 200, '#FFD0C4', true, '#5A1A12'); beep(110, 0.5, 'sawtooth', 0.04, -30); }      /* D348：GPT 1920 B——魔王出場前 1.5 秒四角紅框＋提示，不加道路時間 */
-  if (bossWarnT > 0) bossWarnT -= real; for (const k of sparks) k.life -= real; if (sparks.length) sparks = sparks.filter((k) => k.life > 0);
+  if (bossWarnT > 0) bossWarnT -= real; for (const k of sparks) k.life -= real; if (sparks.length) sparks = sparks.filter((k) => k.life > 0); if (frag) { frag.life -= real; if (frag.life <= 0) frag = null; }
   if (boss && !toldDot && cine <= 0 && boss.dying === undefined && t > CONFIG.boss.at + 1) { toldDot = true; say('看著小鳶中心的白點，帶牠躲開子彈！', W / 2, Math.max(150, kite.y - 70), '#FFFFFF', false, '#1F3A4D'); }      /* D348：GPT 2020 A 首次提示 */
   // 小鳶移動
   const K = CONFIG.kite; let mx = 0, my = 0;
@@ -2350,7 +2350,7 @@ function bossIntro(f) {      // 登場：畫面震動、名字大字卡；演出
 function bossFinalCheck(real) {      // 最後一擊：血量歸零先慢動作 0.8 秒，再倒下
   const f = boss; if (!f || f.hidden) return;
   if (f.dying !== undefined) { f.dying -= real; f.hp = f.dying > 0 ? 0.001 : 0; return; }
-  if (f.hp <= 0) { f.dying = 0.8; f.hp = 0.001; slowmo = 0.8; flash = Math.max(flash, 0.5); say('最後一擊！', f.x, f.y + 70, '#FFE08A', true); beep(1200, 0.5, 'triangle', 0.08, -600); }
+  if (f.hp <= 0) { fragBurst(f.x, f.y); f.dying = 0.8; f.hp = 0.001; slowmo = 0.8; flash = Math.max(flash, 0.5); say('最後一擊！', f.x, f.y + 70, '#FFE08A', true); beep(1200, 0.5, 'triangle', 0.08, -600); }
 }
 
 /* ---- 分階段：每一階段有自己的目標（血池），做到了才換下一階段；血條顯示總剩餘 ---- */
@@ -2429,7 +2429,7 @@ function splitBlob(f) {      // 大垃圾團第 3 階段：裂成三小團分頭
 function miniCleared(o) {      // 打掉一小團；三團都打掉就過關（最後一團慢動作）
   const f = boss; if (!f) return; const left = foes.filter((m) => m.type === 'minib' && m !== o).length;
   if (left) { say('還剩 ' + left + ' 團！', o.x, o.y - 30, '#FFE08A', true); syncHp(f); return; }
-  f.x = o.x; f.y = o.y; f.hidden = false; f.pools = {}; f.hp = 0.001; f.dying = 0.8; slowmo = 0.8; flash = Math.max(flash, 0.5); say('最後一擊！', o.x, o.y + 40, '#FFE08A', true);
+  f.x = o.x; f.y = o.y; f.hidden = false; f.pools = {}; f.hp = 0.001; f.dying = 0.8; fragBurst(o.x, o.y); slowmo = 0.8; flash = Math.max(flash, 0.5); say('最後一擊！', o.x, o.y + 40, '#FFE08A', true);
 }
 
 /* ---- 每一幀：分階段魔王的行為。回傳 true 表示已處理（第 1 關第 1 階段沿用原本的衝撞與丟垃圾） ---- */
@@ -2610,6 +2610,14 @@ function drawSparks() {      /* D348：命中火花（GPT hit_spark_v1，裁到�
   if (!sparks.length) return; const pic = img.fx_hit_spark, d = W * 0.05;
   for (const k of sparks) { ctx.save(); ctx.globalAlpha = Math.min(1, k.life / 0.05); ctx.translate(k.x, k.y); ctx.rotate(k.rot); if (pic) ctx.drawImage(pic, -d / 2, -d / 2, d, d); else ell(0, 0, d / 3, d / 3, 'rgba(255,246,214,.9)'); ctx.restore(); }
 }
+let frag = null;      /* D350：最後一擊碎片群（GPT clean_fragments_v1，裁到可見範圍；整群從魔王中心放大＋淡出 0.3 秒，最外緣最大 0.35W；純裝飾、不碰撞不計分） */
+function fragBurst(x, y) { frag = { x, y, life: 0.3, rot: Math.random() * 6.28 }; }
+function drawFrag() {
+  if (!frag || !img.fx_clean_frag) return; const pic = img.fx_clean_frag, k = 1 - frag.life / 0.3, e = 1 - (1 - k) * (1 - k), w = W * 0.35 * (calm ? 1 : 0.7 + 0.3 * e), h = w * pic.height / pic.width;
+  ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, 1.6 * (1 - k))); ctx.shadowColor = 'rgba(16,41,61,.85)'; ctx.shadowBlur = 5; ctx.translate(frag.x, frag.y); ctx.rotate(frag.rot + (calm ? 0 : k * 0.3)); ctx.drawImage(pic, -w / 2, -h / 2, w, h); ctx.restore();
+}
+const RAGE_K = 2;      /* D350：GPT 濃度基準 0.28／0.42，PNG 本身已經很薄，實測乘 2 才看得到 */
+function rageGlowY() { return RM() ? 5 : TH() === 'beam' ? 22 : 0; }      /* D350：紅光錨點——第 4 關可見主體 Y55%、第 8 關 Y62.5%（GPT 2220 C／1920），其他關在中心 */
 const WARN_K = 3;      /* GPT 建議 0.15–0.25，實測太淡看不到，四角紅框約 0.6 */
 function drawBossWarn() {      /* D348：魔王出場預告四角紅框（GPT boss_warning_frame_v1，上下半各貼一端，不拉扁），透明度 0.15–0.25 脈動 */
   if (bossWarnT <= 0) return; const pic = img.fx_boss_warn, a = (calm ? 0.2 : 0.2 + 0.05 * Math.sin(clock * 12)) * Math.min(1, bossWarnT / 0.25, (1.5 - bossWarnT) / 0.2 + 0.3);
@@ -3249,10 +3257,10 @@ function draw() {
   for (const p of picks) drawPick(p);
   if (RM()) drawTrainLane();
   drawClearRings();
-  if (boss && boss.rage && boss.dying === undefined && !boss.hidden) { const rr = boss.r || T.boss.r, pz = calm ? 0 : Math.sin(clock * (boss.rage > 1 ? 9 : 6)); ctx.save(); ctx.translate(boss.x, boss.y); glow(rr * 2.4 + pz * 6, boss.rage > 1 ? '255,60,40' : '255,110,70', (boss.rage > 1 ? 0.42 : 0.28) + pz * 0.06); ctx.restore(); }      /* D347：魔王生氣／暴走時身後泛紅光（第二段更紅、脈動更快） */
+  if (boss && boss.rage && boss.dying === undefined && !boss.hidden) { const rr = boss.r || T.boss.r, pz = calm ? 0 : Math.sin(clock * (boss.rage > 1 ? 9 : 6)); ctx.save(); ctx.translate(boss.x, boss.y + rageGlowY()); if (img.fx_rage_glow) { const d = rr * 4.4 + pz * 8; ctx.globalAlpha = Math.max(0, Math.min(1, ((boss.rage > 1 ? 0.42 : 0.28) + pz * 0.06) * RAGE_K)); ctx.drawImage(img.fx_rage_glow, -d / 2, -d / 2, d, d); } else glow(rr * 2.4 + pz * 6, boss.rage > 1 ? '255,60,40' : '255,110,70', (boss.rage > 1 ? 0.42 : 0.28) + pz * 0.06); ctx.restore(); }      /* D347：魔王生氣／暴走時身後泛紅光（第二段更紅、脈動更快）；D350 換成 GPT boss_rage_glow_v1（沒圖時用程式畫的） */
   for (const f of foes) drawFoe(f);
   if (NEWT()) drawNewOver();
-  drawClouds(); drawMinionTells(); drawTaotieZones(); drawVents(); drawMarketUI(); if (PM()) { drawBoats(); drawEscort(); drawAgenorZones(); } if (RM()) { drawSmokeClouds(); for (const f of foes) drawRailFoeState(f); drawTunnelDark(); drawRushes(); drawMascots(); drawJianjiZones(); } drawBossFx(); drawSparks();
+  drawClouds(); drawMinionTells(); drawTaotieZones(); drawVents(); drawMarketUI(); if (PM()) { drawBoats(); drawEscort(); drawAgenorZones(); } if (RM()) { drawSmokeClouds(); for (const f of foes) drawRailFoeState(f); drawTunnelDark(); drawRushes(); drawMascots(); drawJianjiZones(); } drawBossFx(); drawSparks(); drawFrag();
   for (const r of rings) { if (r.clr) continue; ctx.strokeStyle = 'rgba(' + r.color + ',' + Math.max(0, r.life) + ')'; ctx.lineWidth = r.lw || (r.zap ? 3 : 5); ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, 6.2832); ctx.stroke(); if (!r.zap) { ctx.fillStyle = 'rgba(' + r.color + ',' + Math.max(0, r.life) * 0.18 + ')'; ctx.fill(); } }
   for (const w of warns) {      // 側邊橫衝的警示：一條虛線加邊緣的驚嘆號
     const a = 0.5 + 0.5 * Math.sin(clock * 22), band = T.can.r + CONFIG.kite.r; hazard(0, w.y - band, W, band * 2);      // 紅帶的寬度 = 鐵罐半徑 + 小鳶半徑
