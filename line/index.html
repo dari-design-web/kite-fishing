@@ -199,6 +199,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
 .gcard .g{flex:1;min-width:0}.gcard .g b{display:block;font-size:15.5px}
 .gbar{height:8px;border-radius:4px;background:#EFE6D6;overflow:hidden;margin:6px 0 2px}.gbar i{display:block;height:100%;background:linear-gradient(90deg,#2F7F86,#55B5B0)}
 .kv{display:flex;flex-direction:column;gap:2px;font-size:12.5px;color:var(--muted);margin-top:6px}.gcard .kv b{display:inline;color:var(--ink);font-size:12.5px}
+.mgsrc{margin:-4px 2px 12px;font-size:12px;line-height:1.5;color:var(--muted)}
 .stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 12px}
 .stat3 div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center;font-size:12px;color:var(--muted)}.stat3 b{display:block;font-size:20px;color:var(--ink)}
 /* G59 T04：還沒上傳實物照片的贈品標「示意圖」 */
@@ -336,7 +337,7 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
       var rule = multi && !gc.maint ? '<span class="rule"><span class="rl">各關分開計分，</span>每關每日<span class="nw">最多 ' + per + ' 次。</span></span>' : '';
       /* D336（GPT 0930 D）：捕魚／飛行的圖鑑、星星標明是這支手機的累積紀錄，不是今天的成績 */
       var mine = g.id === 'fish' || g.id === 'fly';
-      var bar = pr.max ? '<span class="bar"><i style="width:' + Math.round(100 * pr.n / pr.max) + '%"></i></span><span class="pg">' + (mine && pr.none ? '這支手機還沒有累積紀錄' : esc(pr.label) + (mine ? '<span class="pgs">這支手機的累積紀錄</span>' : '')) + '</span>' : '';
+      var bar = pr.max ? '<span class="bar"><i style="width:' + pct(pr) + '%"></i></span><span class="pg">' + (mine && pr.none ? '這支手機還沒有累積紀錄' : esc(pr.label) + (mine ? '<span class="pgs">這支手機的累積紀錄</span>' : '')) + '</span>' : '';
       var inner = '<img class="ic" src="' + g.icon + '" alt="" style="animation-delay:' + (i * .35) + 's" onerror="this.src=\'../hub/btn/btn_' + g.id + '.png\'">' + (big ? '<span class="tx">' : '') + '<span class="chips">' + chip + '</span><b>' + esc(G0.name) + '</b><span class="tip">' + esc(g.tip) + '</span>' + rule + bar + (big ? '</span>' : '');
       return gc.maint ? '<div class="booth off' + (big ? ' feat' : '') + '" style="animation-delay:' + (i * .06) + 's">' + inner + '</div>' : '<a class="booth' + (big ? ' feat' : '') + '" data-g="' + g.id + '" href="' + gameLink(g) + '" style="animation-delay:' + (i * .06) + 's">' + inner + '</a>';
     };
@@ -396,12 +397,18 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
     return '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px">' + T.map(function (r) { var on = r[1] <= cur; return '<span style="flex:1 0 17%;text-align:center;border-radius:8px;padding:4px 2px;font-size:12px;background:' + (on ? 'var(--teal)' : '#F1ECE2') + ';color:' + (on ? '#fff' : 'inherit') + '"><b>' + r[1] + ' 點</b><br>' + r[0].toLocaleString() + '</span>'; }).join('') + '</div>';
   }
   /* ---------- 各遊戲進度（讀各遊戲自己存在這支手機的紀錄，只讀不改） ---------- */
+  function pct(pr) { return pr.max ? Math.max(0, Math.min(100, Math.round(100 * pr.n / pr.max))) : 0; }      /* D338：條長限 0～100% */
   function progress() {
     var o = {}, fp = rd('kiteFishingProg1') || {}, dex = rd('kiteFishingDex2') || {}, fly = rd('kiteFlyProgress1') || {}, tv = rd('kiteTravel1') || {}, st = rd('kiteStamp1') || {}, ph = rd('kitePhoto1') || {}, fr = rd('kiteFriends1') || {};
-    var nDex = Object.keys(dex).filter(function (k) { return dex[k]; }).length;
-    o.fish = { n: nDex, max: 6, label: '魚類圖鑑 ' + nDex + '／6', extra: [['已玩關卡', Object.keys(fp.played || {}).length + '／3']] };
-    var stars = Object.keys(fly.stars || {}).reduce(function (s, k) { var v = fly.stars[k]; return s + (Array.isArray(v) ? v.filter(Boolean).length : +v || 0); }, 0);
-    o.fly = { n: stars, max: 12, label: '星星 ' + stars + '／12', extra: [['已開到', '第 ' + Math.max(1, fly.unlocked || 1) + ' 關']] };
+    /* D338（GPT 1130 A）：母數照實際設定算，分子用同一套識別（魚種去重、關卡只算現有關卡），不寫死 */
+    var GF = (K.GAMES.fish || {}), fLv = Object.keys(GF.levels || {}), spU = [];
+    Object.keys(GF.sp || {}).forEach(function (l) { (GF.sp[l] || []).forEach(function (k) { if (spU.indexOf(k) < 0) spU.push(k); }); });
+    var nDex = spU.length ? spU.filter(function (k) { return dex[k]; }).length : Object.keys(dex).filter(function (k) { return dex[k]; }).length;
+    var nPl = Object.keys(fp.played || {}).filter(function (k) { return fLv.indexOf(k) >= 0 && fp.played[k]; }).length;
+    o.fish = { n: nDex, max: spU.length, label: '魚類圖鑑 ' + nDex + (spU.length ? '／' + spU.length : ' 種'), extra: [['已玩關卡', nPl + '／' + fLv.length]] };
+    var yLv = Object.keys((K.GAMES.fly || {}).levels || {});
+    var stars = Object.keys(fly.stars || {}).filter(function (k) { return yLv.indexOf(String(k)) >= 0; }).reduce(function (s, k) { var v = fly.stars[k]; return s + Math.min(3, Array.isArray(v) ? v.filter(Boolean).length : +v || 0); }, 0);
+    o.fly = { n: stars, max: yLv.length * 3, label: '星星 ' + stars + '／' + (yLv.length * 3), extra: [['已開到', '第 ' + Math.max(1, fly.unlocked || 1) + ' 關']] };
     var cards = Object.keys(tv.cards || {}).length; o.travel = { n: cards, max: 24, label: '明信片 ' + cards + '／24', extra: [['旅行次數', (tv.trips || 0) + ' 次'], ['紀念品', Object.keys(tv.souvenirs || {}).length + ' 個']] };
     var sp = Object.keys(st.spots || {}).length; o.stamp = { n: sp, max: 6, label: '印章 ' + sp + '／6' + (st.complete ? '・已集滿' : '') + '・朋友 ' + Object.keys(fr).length + '／6', extra: [] };      // D83：港口朋友併進蓋章散步
     o.photo = { n: Math.min(ph.n || 0, 10), max: 10, label: '合照 ' + (ph.n || 0) + ' 張', extra: [] };
@@ -416,7 +423,8 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
     var m = K.member(), c = K.cfg(), P = progress(), plays = m.plays || [], today = K.dayKey();
     var tp = plays.filter(function (p) { return K.dayKey(p.t) === today; }).length, sec = plays.reduce(function (s, p) { return s + (p.sec || 0); }, 0), bank = Object.keys(m.scoreBank || {}).reduce(function (s, k) { return s + (m.scoreBank[k] || 0); }, 0);
     var TIER = c.gamePointMode === 'tier', gt = K.gameToday();
-    var html = '<div class="stat3"><div><b>' + tp + '</b>今天玩了（次）</div><div><b>' + Math.round(sec / 60) + '</b>累計遊玩（分鐘）</div>' + (TIER ? '<div><b>' + gt.pts + '/' + gt.cap + '</b>今天遊戲點</div>' : '<div><b>' + bank.toLocaleString() + '</b>分數存摺（分）</div>') + '</div>';
+    var html = '<div class="stat3"><div><b>' + tp + '</b>今天玩了（次）</div><div><b>' + Math.round(sec / 60) + '</b>最近遊玩（分鐘）</div>' + (TIER ? '<div><b>' + gt.pts + '/' + gt.cap + '</b>今天遊戲點</div>' : '<div><b>' + bank.toLocaleString() + '</b>分數存摺（分）</div>') + '</div>';
+    html += '<p class="note mgsrc">圖鑑、星星等進度保存在這支手機；場次與分數依會員目前保留的最近最多 800 局（全部遊戲合計）顯示。最近遊玩分鐘也依目前保留的最近最多 800 局計算。</p>';      /* D338（GPT 1130 B／C） */
     if (TIER && c.gameClaim === 'tap') html += track(gt).replace('class="trk"', 'class="trk" style="margin:0 0 12px;box-shadow:none;border:1px solid #EDE5D6"');
     else if (TIER) html += '<div class="card"><b>今天累計 ' + gt.total.toLocaleString() + ' 分 → ' + gt.pts + ' 點</b><span class="muted">' + (gt.next ? '・再 ' + gt.next.need.toLocaleString() + ' 分多 1 點' : '・今天已拿滿') + '</span>' + tierTable(gt.total) + '</div>';
     html += GL.map(function (g) {
@@ -424,8 +432,8 @@ body.inliff .lhead,body.inliff .chat,body.inliff .rich,body.inliff .cbar,body.in
       mine.forEach(function (p) { best[p.level] = Math.max(best[p.level] || 0, p.score || 0); });
       var b = (m.scoreBank || {})[g.id] || 0, per = K.perPoint(g.id), n = Math.floor(b / per);
       var kv = (pr.extra || []).map(function (x) { return '<span>' + x[0] + ' <b>' + esc(x[1]) + '</b></span>'; });
-      if (lv.length) { kv.push('<span>總遊玩 <b>' + mine.length + ' 次</b></span>'); lv.forEach(function (l) { kv.push('<span>' + esc(G0.levels[l]) + (l in best ? ' 最高 <b>' + best[l].toLocaleString() + '</b> 分' : ' <b>還沒玩</b>')      /* G59 T16：玩過 0 分也算玩過 */ + '・今天可算分 <b>' + K.triesLeft(g.id, l) + '</b> 次' + (K.triesLeft(g.id, l) ? '' : '（仍可繼續玩）') + '</span>'); }); }
-      return '<div class="card"><div class="gcard"><img src="' + g.icon + '" alt="" onerror="this.src=\'../hub/btn/btn_' + g.id + '.png\'"><div class="g"><b>' + esc(G0.name) + '</b>' + (pr.max ? '<div class="gbar"><i style="width:' + Math.round(100 * pr.n / pr.max) + '%"></i></div><span class="muted">' + esc(pr.label) + '</span>' : '') + '<div class="kv">' + kv.join('') + '</div>' +
+      if (lv.length) { kv.push('<span>紀錄內遊玩 <b>' + mine.length + ' 次</b></span>'); lv.forEach(function (l) { kv.push('<span>' + esc(G0.levels[l]) + (l in best ? ' 會員紀錄內最高 <b>' + best[l].toLocaleString() + '</b> 分' : ' <b>目前會員紀錄中沒有這關分數</b>')      /* G59 T16：玩過 0 分也算玩過 */ + '・今天可算分 <b>' + K.triesLeft(g.id, l) + '</b> 次' + (K.triesLeft(g.id, l) ? '' : '（仍可繼續玩）') + '</span>'); }); }
+      return '<div class="card"><div class="gcard"><img src="' + g.icon + '" alt="" onerror="this.src=\'../hub/btn/btn_' + g.id + '.png\'"><div class="g"><b>' + esc(G0.name) + '</b>' + (pr.max ? '<div class="gbar"><i style="width:' + pct(pr) + '%"></i></div><span class="muted">' + esc(pr.label) + '</span>' : '') + '<div class="kv">' + kv.join('') + '</div>' +
         (lv.length && (!TIER || b > 0) ? '<div class="row" style="margin-top:8px"><span class="muted" style="flex:2">' + (TIER ? '舊存摺（改制前）' : '存摺') + ' ' + b.toLocaleString() + ' 分' + (n ? '・可換 ' + n + ' 點' : '・還差 ' + (per - b % per).toLocaleString() + ' 分') + '</span><button class="btn" data-cv="' + g.id + '"' + (n ? '' : ' disabled') + ' style="min-height:38px;padding:6px 12px">換點</button></div>' : '') +
         '<a class="btn alt full" style="margin-top:8px;min-height:38px" href="' + gameLink(g) + '">去玩</a></div></div></div>';
     }).join('');
