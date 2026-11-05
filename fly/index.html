@@ -498,7 +498,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.86',
+  version: '0.87',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -801,9 +801,12 @@ function hearts(x, y, n) { for (let i = 0; i < n; i++) part('heart', x + rand(-1
 /* ====== 清掉、爆炸、救援 ====== */
 const PICK_NOTE = { jerky: '魚乾：補體力', power: '羽毛：變強', gale: '疾風：加速' };
 function addPick(kind, x, y) { picks.push({ kind, x, y, first: !seenPick[kind] }); seenPick[kind] = true; }      // first：這種道具這一局第一次出現
-function burst(f, d) {
+function clearBurst(f, d) {      /* D343：原本跟星星 burst(x, y, n) 同名，蓋掉了舊的星星爆開（D341 起各處星星變成 NaN），改名 */
   const big = f.type === 'boss' || f.type === 'minib' || d.score >= 2, n = big ? 12 : 7;
-  rings.push({ x: f.x, y: f.y, r: 6, max: f.r * (big ? 2.4 : 1.7), life: 1, color: '255,246,214' });
+  /* D343：GPT 研究②——清除圈分小中大（直徑：小 0.10–0.16W／中 0.18–0.22W／大 0.22–0.28W），亮峰約 0.08 秒、總長 0.3 秒；魔王照舊 */
+  if (f.type === 'boss') rings.push({ x: f.x, y: f.y, r: 6, max: f.r * 2.4, life: 1, color: '255,246,214' });
+  else { const tier = f.fill || d.score <= 1 ? 0 : d.score === 2 && f.type !== 'minib' ? 1 : 2, lo = [0.10, 0.18, 0.22][tier], hi = [0.16, 0.22, 0.28][tier], k = Math.max(0, Math.min(1, (f.r - 8) / 18)), dia = W * (lo + (hi - lo) * k);
+    rings.push({ x: f.x, y: f.y, r: 4, max: dia / 2, life: 1, color: '255,246,214', clr: 0.3, age: 0, lw: tier ? 5 : 4, tier }); }
   for (let i = 0; i < n; i++) { const a = R(0, 6.2832), sp = R(90, big ? 260 : 190); part('star', f.x, f.y, { vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, size: R(2.5, big ? 5 : 4), fade: R(2.2, 3.2), color: i % 3 ? '#FFF3C4' : '#FFE08A' }); }
   const g = big ? 4 : 2; for (let i = 0; i < g; i++) { const dx = kite.x - f.x, dy = kite.y - f.y; part('star', f.x + R(-8, 8), f.y + R(-8, 8), { vx: dx * 1.6 + R(-40, 40), vy: dy * 1.6 + R(-40, 40), size: 3.5, fade: 1.6, color: '#FFD45A' }); }
   if (big) shake = Math.max(shake, 0.14);
@@ -822,7 +825,7 @@ function clearFoe(f, how) {      // how：'' 羽毛或墨汁、'blast' 被炸到
   const i = foes.indexOf(f); if (i < 0) return; foes.splice(i, 1);
   const d = T[f.type];
   if (!f.noCount) { stats.cleared++; stats.byType[f.type] = (stats.byType[f.type] || 0) + 1; } if (!f.fill) stats.score += d.score;
-  if (!calmClear) burst(f, d);      /* D341：清掉時爆開＋金光飛向小鳶 */
+  if (!calmClear) clearBurst(f, d);      /* D341：清掉時爆開＋金光飛向小鳶 */
   if (window.KiteBoard && !f.noCount && how !== 'sweep' && f.type !== 'boss' && !d.friend) KiteBoard.ev('fly_clear');      /* D175：告示板委託（收尾自動清、魔王不算） */
   if (how !== 'sweep') { stats.combo++; stats.comboT = CONFIG.combo.window; stats.bestCombo = Math.max(stats.bestCombo, stats.combo); }
   if (!calmClear) gauge = Math.min(CONFIG.ult.need, gauge + (f.fill ? 0.5 : d.score) + (stats.combo >= CONFIG.combo.bonusFrom ? 1 : 0));      // 鯨鯊清掉的不再幫鯨鯊集氣
@@ -1212,7 +1215,7 @@ function update(dt) {
     if (T[f.type].solid) { if (Math.abs(s.x - f.x) < f.w / 2 + 3 && Math.abs(s.y - f.y) < 14) { s.dead = true; part('drop', s.x, s.y, { size: 2, fade: 5, color: '#D9B48A' }); } continue; }      // 漂流木：羽毛打到就沒了，木頭不受影響
     if (RM() && f.rail && f.noCount && (f.type === 'can' || f.type === 'butt')) continue;      // D112：刺蝟列車是鐵軌危險，不是目標，羽毛直接穿過（不再出現「打了沒反應」）
     if (f.bar) { if (f.hp > 0 && Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { f.hp = 0; part('star', s.x, s.y, { size: 3, fade: 4, color: '#fff' }); } continue; }      // D112：暴走連射的子彈一碰就散，羽毛繼續往前飛（不然子彈會變成魔王的盾）
-    if (Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { s.dead = true; if (f === boss && f.phased) { if (!bossShot(f, s)) s.dead = false; continue; } if (RM() && railBlocks(f)) { clank(s.x, s.y); if (!stats.toldBlock && !newHold()) { stats.toldBlock = true; say(f.type === 'tire' ? '灰盾＝躲殼打不動，等綠圈' : f.type === 'battery' ? '灰盾＝大叫打不動，等綠圈' : '灰盾＝縮成球打不動，等綠圈', f.x, f.y - 34, '#FFFFFF', false, '#1F3A4D'); } continue; } const x2 = f === boss && f.atk === 'devour' && f.mouth >= 1, bk = TH() === 'beam' ? beamK(f, s) : NEWT() && f === boss ? shellK(f, s) : 1; if (bk < 0) continue; f.hp -= (x2 ? 2 : 1) * bk; if (x2 && !stats.toldX2) { stats.toldX2 = true; say('打嘴巴 傷害 ×2', f.x, f.y + 84, '#FFE08A'); } f.hitT = 0.08; if (f.type !== 'boss' && f.type !== 'minib' && f.hp > 0) f.y -= 2.5; part('star', s.x, s.y, { size: 3, fade: 4, color: s.ink ? '#C9B6F2' : '#fff' }); }
+    if (Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { s.dead = true; if (f === boss && f.phased) { if (!bossShot(f, s)) s.dead = false; continue; } if (RM() && railBlocks(f)) { clank(s.x, s.y); if (!stats.toldBlock && !newHold()) { stats.toldBlock = true; say(f.type === 'tire' ? '灰盾＝躲殼打不動，等綠圈' : f.type === 'battery' ? '灰盾＝大叫打不動，等綠圈' : '灰盾＝縮成球打不動，等綠圈', f.x, f.y - 34, '#FFFFFF', false, '#1F3A4D'); } continue; } const x2 = f === boss && f.atk === 'devour' && f.mouth >= 1, bk = TH() === 'beam' ? beamK(f, s) : NEWT() && f === boss ? shellK(f, s) : 1; if (bk < 0) continue; f.hp -= (x2 ? 2 : 1) * bk; if (x2 && !stats.toldX2) { stats.toldX2 = true; say('打嘴巴 傷害 ×2', f.x, f.y + 84, '#FFE08A'); } f.hitT = 0.08; if (f.type !== 'boss' && f.type !== 'minib' && f.hp > 0) f.y -= 2.5; part('star', s.x, s.y, { size: 3, fade: 4, color: s.ink ? '#C9B6F2' : '#fff' }); if (f.hp > 0 && rings.length < 40) rings.push({ x: s.x, y: s.y, r: 2, max: W * 0.025, life: 1, color: s.ink ? '201,182,242' : '255,255,255', clr: 0.12, age: 0, lw: 2 }); }      /* D343：受擊只出小亮點（直徑約 0.05W），跟清掉的大圈分得出來 */
   }
   shots = shots.filter((s) => !s.dead && s.y > -20 && s.x > -20 && s.x < W + 20);
   updateRing(dt); bossFinalCheck(real);
@@ -1266,7 +1269,7 @@ function update(dt) {
     }
     if (u.t > 3.1) { say((PM() ? '彩虹鏡海' : ULTN()) + '清掉 ' + u.count + ' 件！', W / 2, 330, '#FFE08A', true); hearts(W / 2, 350, 6); ult = null; }      // 演出結束才宣布，最後幾件也算進去
   }
-  for (const r of rings) { r.life -= real * (r.zap ? 3.2 : 1.9); r.r = r.max * (1 - Math.max(0, r.life)) + 8; } rings = rings.filter((r) => r.life > 0);
+  for (const r of rings) { if (r.clr) { r.age += real; const p = Math.min(1, r.age / r.clr), pk = 0.08 / r.clr; r.r = r.max * (1 - Math.pow(1 - p, 3)); r.life = p >= 1 ? 0 : p < pk ? 0.6 + 0.4 * p / pk : 1 - (p - pk) / (1 - pk); continue; } r.life -= real * (r.zap ? 3.2 : 1.9); r.r = r.max * (1 - Math.max(0, r.life)) + 8; } rings = rings.filter((r) => r.life > 0);      /* D343：清除圈（clr）先快速撐開、0.08 秒最亮、0.3 秒內淡完 */
   for (const q of parts) { q.x += q.vx * real; q.y += q.vy * real; q.life -= real * q.fade; } parts = parts.filter((q) => q.life > 0);
   for (const f of floats) { f.y -= (f.big ? 14 : 24) * real; f.life -= real * (f.big ? 0.55 : 0.9); } floats = floats.filter((f) => f.life > 0);
   if (flash > 0) flash = Math.max(0, flash - real * 2.2);
@@ -3195,7 +3198,7 @@ function draw() {
   for (const f of foes) drawFoe(f);
   if (NEWT()) drawNewOver();
   drawClouds(); drawMinionTells(); drawTaotieZones(); drawVents(); drawMarketUI(); if (PM()) { drawBoats(); drawEscort(); drawAgenorZones(); } if (RM()) { drawSmokeClouds(); for (const f of foes) drawRailFoeState(f); drawTunnelDark(); drawRushes(); drawMascots(); drawJianjiZones(); } drawBossFx();
-  for (const r of rings) { ctx.strokeStyle = 'rgba(' + r.color + ',' + Math.max(0, r.life) + ')'; ctx.lineWidth = r.zap ? 3 : 5; ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, 6.2832); ctx.stroke(); if (!r.zap) { ctx.fillStyle = 'rgba(' + r.color + ',' + Math.max(0, r.life) * 0.18 + ')'; ctx.fill(); } }
+  for (const r of rings) { ctx.strokeStyle = 'rgba(' + r.color + ',' + Math.max(0, r.life) + ')'; ctx.lineWidth = r.lw || (r.zap ? 3 : 5); ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, 6.2832); ctx.stroke(); if (!r.zap) { ctx.fillStyle = 'rgba(' + r.color + ',' + Math.max(0, r.life) * 0.18 + ')'; ctx.fill(); } }
   for (const w of warns) {      // 側邊橫衝的警示：一條虛線加邊緣的驚嘆號
     const a = 0.5 + 0.5 * Math.sin(clock * 22), band = T.can.r + CONFIG.kite.r; hazard(0, w.y - band, W, band * 2);      // 紅帶的寬度 = 鐵罐半徑 + 小鳶半徑
     ctx.strokeStyle = 'rgba(232,103,74,' + (0.5 + 0.4 * a) + ')'; ctx.lineWidth = 2; ctx.setLineDash([8, 8]); ctx.beginPath(); ctx.moveTo(0, w.y); ctx.lineTo(W, w.y); ctx.stroke(); ctx.setLineDash([]);
