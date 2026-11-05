@@ -31,6 +31,7 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
 .hud .mid{display:flex;justify-content:center;gap:6px;margin-top:6px}
 .hud .mid span{font-size:12px;background:rgba(10,34,54,.55);border-radius:999px;padding:2px 10px}
 .hud .mid .cb{color:#FFE45C}
+.hud .misrow{display:flex;justify-content:flex-start;margin-top:6px}.hud .misrow span{font-size:12px;background:rgba(10,34,54,.55);border-radius:999px;padding:2px 10px;white-space:nowrap;font-variant-numeric:tabular-nums}.hud .misrow span[hidden]{display:none}      /* D357：本局任務自己一行（靠左，不碰右邊暫停鈕），寫出任務內容＋進度（🎯 連吃 20 個 12/20），不跟公尺／速度擠同一行；最長的閃避任務在這行省掉「安全」兩字，320 寬也不碰暫停鈕 */
 .hud .mid{flex-wrap:wrap;row-gap:3px}.hud .mid span{white-space:nowrap}@media (max-width:374px){.hud .mid{gap:4px}.hud .mid span{font-size:12px;padding:2px 7px}}      /* D256／D257：窄版公尺／速度／連吃／任務不再折成兩行；GPT 1530 A② 字級 12px */
 .fever{position:absolute;right:26px;top:126px;overflow:visible;width:14px;height:120px;border-radius:8px;background:rgba(10,34,54,.55);border:2px solid rgba(255,255,255,.6);overflow:hidden;pointer-events:none}
 .fever i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#FFE45C,#FF8A3C)}
@@ -130,7 +131,7 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
   <div class="feverfx" id="feverfx"></div>
   <div class="flash" id="flash"></div>
   <div class="helper" id="helper"><img src="assets/kite_dive_v1.webp" alt=""></div>
-  <div class="hud" id="hud" hidden><div class="row"><span class="sc"><small>分數</small><span id="sc">0</span></span><span class="hp" id="hp">💙💙💙</span></div><div class="mid"><span id="dist">0 公尺</span><span id="spd">速度 1</span><span class="cb" id="cb" hidden></span><span id="misH" hidden></span></div></div>
+  <div class="hud" id="hud" hidden><div class="row"><span class="sc"><small>分數</small><span id="sc">0</span></span><span class="hp" id="hp">💙💙💙</span></div><div class="mid"><span id="dist">0 公尺</span><span id="spd">速度 1</span><span class="cb" id="cb" hidden></span></div><div class="misrow"><span id="misH" hidden></span></div></div>
   <div class="fever" id="fever" hidden><i id="feverI"></i><b><img src="assets/item_frenzy_flame.webp" alt=""></b></div>
   <div class="pw" id="pw"></div>
   <div class="lvl" id="lvl" hidden aria-hidden="true"><span>高</span><span class="on">中</span><span>低</span></div>
@@ -283,7 +284,7 @@ function reset() { bookNew = []; objs.splice(0).forEach(kill); lastHeal = 0; v =
 const speedLv = () => Math.min(Math.floor(playT / CFG.vEvery) + 1, Math.floor((CFG.vMax - CFG.v0) / CFG.vStep) + 1);
 const mult = () => Math.min(5, (combo >= 50 ? 4 : combo >= 25 ? 3 : combo >= 10 ? 2 : 1) * (P.dash > 0 ? 2 : 1) * (P.fever > 0 ? 3 : 1));
 function hud() { $('sc').textContent = score.toLocaleString(); $('dist').textContent = Math.floor(dist) + ' 公尺'; $('spd').textContent = '速度 ' + speedLv(); $('hp').textContent = '💙'.repeat(Math.max(0, hearts)) + '🤍'.repeat(Math.max(0, CFG.hearts - hearts)); const m = mult(); $('cb').hidden = combo < 3 && m < 2; $('cb').textContent = (combo >= 3 ? '連吃 ' + combo : '') + (m > 1 ? '・×' + m : '');
-  $('misH').hidden = false; $('misH').textContent = misDone ? '🎯 任務完成' : '🎯 ' + Math.floor(misV) + '/' + mis.n; $('feverI').style.height = (P.fever > 0 ? P.fever / CFG.fever * 100 : feverE / CFG.feverNeed * 100) + '%'; $('fever').classList.toggle('on', P.fever > 0); $('feverfx').classList.toggle('on', P.fever > 0);
+  $('misH').hidden = false; $('misH').textContent = '🎯 ' + mis.txt.replace(/^安全/, '') + ' ' + (misDone ? '✅' : Math.floor(misV) + '/' + mis.n); $('feverI').style.height = (P.fever > 0 ? P.fever / CFG.fever * 100 : feverE / CFG.feverNeed * 100) + '%'; $('fever').classList.toggle('on', P.fever > 0); $('feverfx').classList.toggle('on', P.fever > 0);
   $('pw').innerHTML = ['shield', 'magnet', 'dash'].filter((k) => P[k] > 0).map((k) => '<span><img src="assets/' + PW[k].img + '.webp" alt="">' + PW[k].name + '<b><em style="width:' + Math.round(P[k] / CFG[k] * 100) + '%"></em></b></span>').join('') + (P.fever > 0 ? '<span><img src="assets/item_frenzy_flame.webp" alt="">鯨鯊狂歡<b><em style="width:' + Math.round(P.fever / CFG.fever * 100) + '%"></em></b></span>' : ''); }
 function pop(txt, wx, wy, wz, cls) { const p = new THREE.Vector3(wx, wy, wz).project(cam), el = document.createElement('span'); el.className = 'pop' + (cls ? ' ' + cls : ''); el.textContent = txt; el.style.left = clamp((p.x + 1) / 2 * 100, 8, 92) + '%'; el.style.top = clamp((1 - p.y) / 2 * 100, 10, 90) + '%'; stage.appendChild(el); setTimeout(() => el.remove(), 800); }
 function tip(txt, info, sec) { const e = $('tip'); e.textContent = txt; e.className = 'tip' + (info ? ' info' : ''); e.hidden = false; tipT = sec || 1.5; }

@@ -426,11 +426,11 @@ function makeStack() {
     const yTop = Y0 - g.blocks.length * BH + g.cam, tol = g.blocks.length <= ST.easyN ? ST.perfectEasy : ST.perfect;
     if (Math.abs(m.x - top.x) < tol) {
       g.combo++; g.perfects++; g.bestCombo = Math.max(g.bestCombo, g.combo); let add = g.combo >= ST.comboFrom ? ST.comboGrow : 0; if (m.gold) add += ST.goldGrow;
-      const nw = Math.min(base.w, top.w + add); g.blocks.push({ x: clamp(top.x - (nw - top.w) / 2, 0, W - nw), w: nw, c: m.c, gold: m.gold, sq: 0.3 });
+      const nw = Math.min(base.w, top.w + add); g.blocks.push({ x: clamp(top.x - (nw - top.w) / 2, 0, W - nw), w: nw, c: m.c, gold: m.gold, sq: 0.3, glow: 0.4 });      /* D355：完美放下的貨櫃邊框亮金光 0.4 秒 */
       const pts = ST.layerPts + ST.perfectPts + g.combo * ST.comboPts + (m.gold ? ST.goldBonus : 0) + (m.rush ? ST.rushBonus : 0); g.score += pts; g.flash = 0.22;
       pop((m.gold ? '金貨櫃切齊！' : '完美 ×' + g.combo + (add > 0 ? '　變寬！' : '')) + ' +' + pts, W / 2, yTop - 98, C.gold, true);      /* D227：浮字移到下一個貨櫃和小鳶頭上，不再蓋住剛飛進來的小鳶 */
       burst(W / 2, yTop + BH, m.gold ? 28 : 12, C.gold); burst(top.x + top.w / 2, yTop + BH, 6, '#FFFFFF', 'star'); ring(top.x + top.w / 2, yTop + BH / 2, top.w / 2, '#FFF4C2');
-      beep(523 + Math.min(g.combo, 8) * 60, 0.13, 'triangle', 0.07, 90); buzz(15);
+      { const SC = [0, 2, 4, 5, 7, 9, 11], st = Math.min(g.combo - 1, 14), semi = SC[st % 7] + 12 * Math.floor(st / 7); beep(523.25 * Math.pow(2, semi / 12), 0.16, 'triangle', 0.07); }      /* D355：完美音照 Do Re Mi 一次升一階（連續完美往上、斷掉從 Do 開始，最高兩個八度），跟著音效開關 */ buzz(15);
       if (g.combo === ST.focusAt) { g.focus = ST.focusN; tipSay('連 ' + ST.focusAt + ' 個完美！專注模式：接下來變慢', 1.8, '專注模式：變慢囉'); }
       else if (m.gold) tipSay('金貨櫃！貨櫃變寬了', 1.5); else if (g.combo === 3) tipSay('連三個完美！', 1.5);
     } else {
@@ -447,7 +447,7 @@ function makeStack() {
   g.down = () => g.tap(); g.move = () => {}; g.up = () => {};
   g.update = (dt) => {
     g.t += dt; if (g.lmT > 0) g.lmT -= dt; if (g.sayT > 0) g.sayT -= dt; if (g.say2T > 0) g.say2T -= dt; if (g.shake > 0) g.shake -= dt; if (g.flash > 0) g.flash -= dt;
-    for (const b of g.blocks) if (b.sq) b.sq = Math.max(0, b.sq - dt * 1.5);
+    for (const b of g.blocks) { if (b.sq) b.sq = Math.max(0, b.sq - dt * 1.5); if (b.glow > 0) { b.glow -= dt; if (b.glow <= 0) delete b.glow; } }
     if (g.mv) {
       const k = g.mv.wind ? 1 + 0.55 * Math.sin(g.t * 3.2 + g.mv.ph) : 1;
       g.mv.x += g.dir * g.speed * k * dt;
@@ -492,7 +492,9 @@ function makeStack() {
     // 高度尺
     ctx.fillStyle = 'rgba(16,41,61,.35)'; ctx.fillRect(4, Y0 - (hgt + 6) * BH, 3, (hgt + 6) * BH);
     for (let i = 5; i < hgt + 6; i += 5) { const yy = Y0 - i * BH + BH; ctx.fillStyle = 'rgba(16,41,61,.55)'; ctx.fillRect(4, yy, 10, 2); text(String(i), 22, yy, 10, C.paper, 'center', 700); }
-    g.blocks.forEach((b, i) => { const sq = b.sq || 0; ctx.save(); ctx.translate(b.x + b.w / 2, Y0 - i * BH + BH); ctx.scale(1 + sq * 0.15, 1 - sq * 0.25); crate(-b.w / 2, -BH, b.w, b.c, b.gold); ctx.restore(); });
+    g.blocks.forEach((b, i) => { const sq = b.sq || 0; ctx.save(); ctx.translate(b.x + b.w / 2, Y0 - i * BH + BH); ctx.scale(1 + sq * 0.15, 1 - sq * 0.25); crate(-b.w / 2, -BH, b.w, b.c, b.gold);
+      if (b.glow > 0) { const a = clamp(b.glow / 0.4, 0, 1); ctx.save(); ctx.globalAlpha = RM ? 0.9 : a; ctx.shadowColor = '#FFD23A'; ctx.shadowBlur = 14; rrect(-b.w / 2 - 2, -BH - 2, b.w + 4, BH + 4, 6, null, '#FFD23A', 4); ctx.shadowBlur = 0; rrect(-b.w / 2 - 1, -BH - 1, b.w + 2, BH + 2, 5, null, '#FFF4C2', 1.5); ctx.restore(); }      /* D355：完美金邊光，0.4 秒淡掉 */
+      ctx.restore(); });
     for (const c of g.cut) { ctx.save(); ctx.translate(c.x + c.w / 2, c.y + BH / 2); ctx.rotate(c.rot || 0); crate(-c.w / 2, -BH / 2, c.w, c.c, c.gold); ctx.restore(); }
     if (g.mv) { const tp = g.blocks[g.blocks.length - 1], yy = Y0 - g.blocks.length * BH, tol = g.blocks.length <= ST.easyN ? ST.perfectEasy : ST.perfect; ctx.fillStyle = 'rgba(255,214,107,.26)'; ctx.fillRect(tp.x - tol, yy - 70, tol * 2, 70 + BH); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 5]); ctx.beginPath(); ctx.moveTo(tp.x, yy - 70); ctx.lineTo(tp.x, yy + BH); ctx.moveTo(tp.x + tp.w, yy - 70); ctx.lineTo(tp.x + tp.w, yy + BH); ctx.stroke(); ctx.setLineDash([]); }
     if (g.mv) {
