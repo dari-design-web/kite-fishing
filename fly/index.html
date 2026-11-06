@@ -499,7 +499,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '0.99',
+  version: '1.00',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -803,7 +803,8 @@ function spawn(e) {
   if (e.ring && !toldRing) { toldRing = true; f.ringHint = true; }      // 先記著，等整圈進畫面才提示
   if ((e.type === 'net' || e.type === 'tangle') && !foes.some((o) => o.hero)) f.hero = true;      /* D344：GPT 1620 C——同一畫面最多一隻「美術放大主角」（漁網、塑膠袋團），只放大圖，碰撞、血量、分數不變 */
 }
-function banner(text) { const b = $('banner'); b.textContent = text; b.hidden = false; clearTimeout(banner.t); banner.t = setTimeout(() => { b.hidden = true; }, 2400); }
+function banner(text) { const b = $('banner'); b.textContent = text; b.hidden = false; clearTimeout(banner.t); banner.t = setTimeout(() => { b.hidden = true; if (banner.pend) { const q = banner.pend; banner.pend = null; banner(q); } }, 2400); }
+function bannerTip(text) { if ($('banner').hidden) banner(text); else banner.pend = text; }      /* D368（GPT 1658 C）：教學提示等血條下的訊息欄空了才出，一次一則，不蓋掉打壞／換段訊息 */
 function say(text, x, y, color, big, stroke) { const half = text.length * (big ? 12.5 : 8) + 6; x = Math.max(half, Math.min(W - half, x)); for (let n = 0; n < 4; n++) { const hit = floats.find((f) => f.life > 0.15 && Math.abs(f.y - y) < 24 && Math.abs(f.x - x) < half + f.text.length * (f.big ? 12.5 : 8) + 6); if (!hit) break; y = hit.y - 26 < 90 ? hit.y + 26 : hit.y - 26; }      /* D224：兩句浮字同時出現時往上錯開一行，不疊在一起 */
   floats.push({ text, x: Math.max(half, Math.min(W - half, x)), y, life: 1, color: color || '#fff', big: !!big, stroke: stroke || '' }); }
 function part(kind, x, y, o) { parts.push(Object.assign({ kind, x, y, vx: 0, vy: 0, life: 1, fade: 1.8, size: 3, rot: rand(0, 6.28) }, o)); }
@@ -1867,8 +1868,8 @@ function drawFood(kind, k) { const S = FOOD_SPR[kind]; if (!S || !img[S[0]]) ret
 /* ====== D367：魔王可打壞零件（GPT 0110 九張圖）。第 2 關饕餮：左燈籠手→停「百燈伏魔陣」、右燈籠手→停「百燈交映」；第 3 關阿根納：纜索卷→停「全港大絞殺」、漂木擋板→停「最後撞擊」。
    打零件也照常扣魔王的血（不會拉長魔王戰）；打壞後那一招不再抽到，正在出的照常收尾。座標＝GPT 錨點換算成魔王圖內位置（饕餮 128×117、阿根納 132×132），D＝零件圖邊長；c＝可打中心，r＝可打半徑（都會再乘 bossVis） ====== */
 const BOSS_PARTS = {
-  market: [{ id: 'lampL', im: 'tt_lampL', ox: -74.1, oy: -3.3, D: 46, cx: -51.1, cy: 19.7, r: 16, stop: 'lamps', name: '左燈籠手', atk: '百燈伏魔陣' },
-    { id: 'lampR', im: 'tt_lampR', ox: 27.6, oy: -2.0, D: 46, cx: 50.6, cy: 21.1, r: 16, stop: 'corridor', name: '右燈籠手', atk: '百燈交映' }],
+  market: [{ id: 'lampL', im: 'tt_lampL', ox: -74.1, oy: -3.3, D: 46, cx: -51.1, cy: 19.7, r: 16, stop: 'lamps', name: '左燈籠手', atk: '百燈伏魔陣', sc: 1.25, au: 0.72, av: 0.25 },
+    { id: 'lampR', im: 'tt_lampR', ox: 27.6, oy: -2.0, D: 46, cx: 50.6, cy: 21.1, r: 16, stop: 'corridor', name: '右燈籠手', atk: '百燈交映', sc: 1.25, au: 0.29, av: 0.22 }],      /* D368（GPT 1658 A）：燈籠手顯示 0.36W→0.45W（×1.25），以 GPT 錨點 sprite_anchor_uv 為中心放大，連接點不動；可打範圍 r 不變 */
   pier: [{ id: 'cable', im: 'ag_cable', ox: -55.4, oy: -35.6, D: 45, cx: -33.0, cy: -13.2, r: 16, stop: 'cables', name: '纜索卷', atk: '全港大絞殺' },
     { id: 'shield', im: 'ag_shield', ox: 27.5, oy: -16.2, D: 47.5, cx: 51.2, cy: 7.6, r: 16, stop: 'ram', name: '漂木擋板', atk: '最後撞擊' }] };
 function initParts(f) {
@@ -1881,7 +1882,7 @@ function partShot(f, s) {      /* 回傳 true：這根羽毛已處理（打中�
   if (!partLive(f)) return false; const v = bossVis(), fr = CONFIG.feather.r;
   for (const q of f.parts) { if (q.broken) continue; const x = f.x + q.cx * v, y = f.y + q.cy * v, rr = q.r * v + fr;
     if (Math.hypot(s.x - x, s.y - y) < rr) { s.dead = true; q.hp--; q.hitT = 0.08; f.hp -= 1; f.hitT = 0.08; hitAt = [s.x, s.y]; hitFx(f, 1); part('star', s.x, s.y, { size: 3, fade: 4, color: '#FFE08A' });
-      if (!stats.toldPart) { stats.toldPart = true; say('打壞零件，牠就少一招！', x, y + 46, '#FFE08A'); }
+      if (!stats.toldPart) { stats.toldPart = true; bannerTip('打壞零件，少一招！'); }
       if (q.hp <= 0) partBreak(f, q, x, y); return true; }
     if (Math.abs(s.x - x) < rr && s.y > y && Math.hypot(s.x - f.x, s.y - f.y) < f.r + fr + 30) return true;      // 正對零件：穿過身體繼續往上飛
   }
@@ -1894,7 +1895,7 @@ function partBreak(f, q, x, y) {
 }
 function drawBossParts(f) {      /* 在魔王圖同一個座標系裡畫（已經乘過 bossVis） */
   if (!f.parts) return;
-  for (const q of f.parts) { const k = q.broken ? q.im + '_b' : q.im, im = img[k]; if (!im) continue; ctx.save(); if (q.hitT > 0) { q.hitT -= 1 / 60; if (CANF) ctx.filter = 'brightness(2.0)'; } if (q.broken) ctx.globalAlpha = 0.9; else if (!calm) ctx.translate(0, Math.sin(clock * 3 + q.cx) * 1.2); ctx.drawImage(im, q.ox, q.oy, q.D, q.D); ctx.restore(); }
+  for (const q of f.parts) { const k = q.broken ? q.im + '_b' : q.im, im = img[k]; if (!im) continue; ctx.save(); if (q.hitT > 0) { q.hitT -= 1 / 60; if (CANF) ctx.filter = 'brightness(2.0)'; } if (q.broken) ctx.globalAlpha = 0.9; else if (!calm) ctx.translate(0, Math.sin(clock * 3 + q.cx) * 1.2); if (q.sc) { const d = q.D * q.sc, ax = q.ox + q.au * q.D, ay = q.oy + q.av * q.D; ctx.drawImage(im, ax - q.au * d, ay - q.av * d, d, d); } else ctx.drawImage(im, q.ox, q.oy, q.D, q.D); ctx.restore(); }
   if (img.part_burst) for (const e of f.partFx) { const a = (clock - e.at) / 0.45; if (a < 0 || a > 1) continue; const d = e.D * (0.8 + 0.5 * a); ctx.save(); ctx.globalAlpha = 1 - a; ctx.drawImage(img.part_burst, e.x - d / 2, e.y - d / 2, d, d); ctx.restore(); }
 }
 function drawTaotie(f) {
