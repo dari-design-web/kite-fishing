@@ -393,7 +393,7 @@ function buildStackBG() {      // 東岸貨櫃碼頭（傍晚）：海、碼頭�
   return c;
 }
 function makeStack() {
-  const base = { x: 80, w: 200 }, g = { blocks: [{ x: base.x, w: base.w, c: 0 }], mv: null, speed: 150, dir: 1, combo: 0, bestCombo: 0, perfects: 0, score: 0, done: false, cut: [], cam: 0, say: '', sayT: 0, ships: 0, shake: 0, t: 0, ship: null, flash: 0, focus: 0, saves: ST.saves, drop: null };
+  const base = { x: 80, w: 200 }, g = { blocks: [{ x: base.x, w: base.w, c: 0 }], mv: null, speed: 150, dir: 1, combo: 0, bestCombo: 0, perfects: 0, score: 0, done: false, cut: [], cam: 0, say: '', sayT: 0, ships: 0, shake: 0, t: 0, ship: null, flash: 0, focus: 0, saves: ST.saves, drop: null, splash: [] };
   /* D253：疊貨櫃 11～20 層實玩——第 15 層看到基隆嶼、第 20 層船出港那一下，如果剛好接著起風／趕船，事件句會馬上蓋掉地標句和出港句。改成：地標／出港句先講 1 秒，事件句排在後面接著講 */
   /* D254（GPT 1220 A②）：地標／出港句和事件句同時出現時分成兩個泡泡並排——地標／出港句照 D253 只講 1 秒，事件句在事件觸發時馬上出現、照原本秒數；新事件直接換掉事件泡泡，不排隊 */
   const tipSay = (t, T, sh) => { if (g.lmT > 0) { g.say2 = sh || t; g.say2T = T; g.say2x = null; } else { g.say = t; g.sayT = T; } };      /* D260：地標／出港句講的那 1 秒內，連三／專注／金貨櫃這些完美提示改放旁邊的泡泡，不把「大郵輪開過來了！」蓋掉 */
@@ -456,7 +456,10 @@ function makeStack() {
     }
     if (g.ship) { g.ship.t += dt; g.ship.x += 60 * dt; if (g.ship.x > W + 160) g.ship = null; }
     for (const c of g.cut) { c.vy += 900 * dt; c.y += c.vy * dt; c.rot = (c.rot || 0) + (c.vr || 0) * dt; }
-    g.cut = g.cut.filter((c) => c.y + g.cam < H + 80);
+    { const hitY = Math.min(545 - g.cam * 0.45, H - 6 - g.cam);      /* D359（大研究③，GPT 0200 水花圖）：切下的貨櫃落到海面（碼頭圖水面約 545，底圖以 0.55 倍退；海面捲出畫面就在畫面底邊）濺水花，寬的或整個沒放到用大水花 */
+      for (const c of g.cut) if (!c.sp && c.y + BH / 2 >= hitY) { c.sp = 1; const big = c.w >= 70; g.splash.push({ x: clamp(c.x + c.w / 2, 40, W - 40), y: hitY, big, t: 0 }); beep(big ? 150 : 220, big ? 0.22 : 0.14, 'sine', 0.05, -90); if (!ready(big ? 'fx_splash_l' : 'fx_splash_s')) burst(c.x + c.w / 2, hitY + g.cam, big ? 14 : 8, '#9FDCEB', 'drop'); }
+      for (const p of g.splash) p.t += dt; g.splash = g.splash.filter((p) => p.t < 0.65); }
+    g.cut = g.cut.filter((c) => !c.sp && c.y + g.cam < H + 80);
     const wantCam = Math.max(0, (g.blocks.length - 8) * BH); g.cam += (wantCam - g.cam) * Math.min(1, 4 * dt);
   };
   function drawShip(x, y, n) {
@@ -496,6 +499,8 @@ function makeStack() {
       if (b.glow > 0) { const a = clamp(b.glow / 0.4, 0, 1); ctx.save(); ctx.globalAlpha = RM ? 0.9 : a; ctx.shadowColor = '#FFD23A'; ctx.shadowBlur = 14; rrect(-b.w / 2 - 2, -BH - 2, b.w + 4, BH + 4, 6, null, '#FFD23A', 4); ctx.shadowBlur = 0; rrect(-b.w / 2 - 1, -BH - 1, b.w + 2, BH + 2, 5, null, '#FFF4C2', 1.5); ctx.restore(); }      /* D355：完美金邊光，0.4 秒淡掉 */
       ctx.restore(); });
     for (const c of g.cut) { ctx.save(); ctx.translate(c.x + c.w / 2, c.y + BH / 2); ctx.rotate(c.rot || 0); crate(-c.w / 2, -BH / 2, c.w, c.c, c.gold); ctx.restore(); }
+    for (const p of g.splash) { const im = ready(p.big ? 'fx_splash_l' : 'fx_splash_s'); if (!im) continue; const w = p.big ? 112 : 72, h = w * im.naturalHeight / im.naturalWidth, e = RM ? 1 : 1 - Math.pow(1 - Math.min(1, p.t / 0.14), 3), sx = 0.7 + 0.3 * e, sy = 0.35 + 0.65 * e;      /* D359：水花從水面往上冒 0.14 秒，停一下再 0.35 秒淡掉 */
+      ctx.save(); ctx.globalAlpha = p.t < 0.3 ? 1 : clamp(1 - (p.t - 0.3) / 0.35, 0, 1); ctx.translate(p.x, p.y); ctx.scale(sx, sy); ctx.drawImage(im, -w / 2, -h * 0.86, w, h); ctx.restore(); }
     if (g.mv) { const tp = g.blocks[g.blocks.length - 1], yy = Y0 - g.blocks.length * BH, tol = g.blocks.length <= ST.easyN ? ST.perfectEasy : ST.perfect; ctx.fillStyle = 'rgba(255,214,107,.26)'; ctx.fillRect(tp.x - tol, yy - 70, tol * 2, 70 + BH); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 5]); ctx.beginPath(); ctx.moveTo(tp.x, yy - 70); ctx.lineTo(tp.x, yy + BH); ctx.moveTo(tp.x + tp.w, yy - 70); ctx.lineTo(tp.x + tp.w, yy + BH); ctx.stroke(); ctx.setLineDash([]); }
     if (g.mv) {
       const y = Y0 - g.blocks.length * BH, mx = g.mv.x + g.mv.w / 2, fa = g.mv.fog ? clamp(Math.abs(mx - W / 2) / (W * 0.24), 0.06, 1) : 1;
@@ -580,7 +585,7 @@ let mode = 'merge', G = null, state = 'ready', down = false, last = performance.
 function newGame() { if (DS) gR = KiteDaily.rng(DS.td.seed); floats = []; parts = []; rings = []; G = { merge: makeMerge, stack: makeStack }[mode](); }
 function setMode(m) {
   mode = m; document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.m === m))); document.getElementById('how').innerHTML = HOW[m]; state = 'ready'; newGame();
-  const A = m === 'merge' ? ['bg_merge', 'kite_hold', 'kite_hold_fly', 'fx_merge'].concat(SEAF.map((_, i) => 'sea_' + i)) : ['bg_stack_base', 'bg_stack_sky', 'ship', 'kite_carry', 'kite_carry_fly', 'box_gold', 'far_mtn', 'cloud_0', 'cloud_1', 'cloud_2', 'gull', 'wind_0', 'wind_1', 'wind_2', 'fog_bank'].concat(BOXC.map((_, i) => 'box_' + i));
+  const A = m === 'merge' ? ['bg_merge', 'kite_hold', 'kite_hold_fly', 'fx_merge'].concat(SEAF.map((_, i) => 'sea_' + i)) : ['bg_stack_base', 'bg_stack_sky', 'ship', 'kite_carry', 'kite_carry_fly', 'box_gold', 'far_mtn', 'cloud_0', 'cloud_1', 'cloud_2', 'gull', 'wind_0', 'wind_1', 'wind_2', 'fog_bank', 'fx_splash_l', 'fx_splash_s'].concat(BOXC.map((_, i) => 'box_' + i));
   A.forEach((k) => { if (!IMG[k]) want(k, '../assets/' + m + '/' + k + (k.indexOf('bg_') === 0 ? '.jpg' : '.png')); });
   if (m === 'stack') LM.forEach((L) => { if (!IMG[L.key]) want(L.key, '../assets/stack/' + L.key + '.webp'); });      /* D185 */
 }
