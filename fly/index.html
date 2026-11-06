@@ -499,7 +499,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '1.01',
+  version: '1.02',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -633,10 +633,12 @@ const calm = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce
 const img = {};
 for (const k in STAGE_ART) ASSET_FILES[k] = 'stages/' + STAGE_ART[k];
 for (const k of ['tt_lampL', 'tt_lampL_b', 'tt_lampR', 'tt_lampR_b', 'ag_cable', 'ag_cable_b', 'ag_shield', 'ag_shield_b', 'part_burst']) ASSET_FILES[k] = 'parts/' + k + '.png';      /* D367：GPT 0110 魔王零件 9 張（256 縮 160） */
+for (const k of ['fw_radial', 'fw_fan', 'fw_star']) ASSET_FILES[k] = 'fest/' + k + '.png'; for (const k of ['txt_pretty', 'txt_done', 'txt_clean']) ASSET_FILES[k] = 'fest/' + k + '.webp';      /* D370：GPT 1830 最後一擊慶典素材（煙火白色、程式上色；大字） */
 for (const k in ASSET_FILES) { const im = new Image(); im.onload = () => { img[k] = im; }; im.src = 'assets/' + ASSET_FILES[k]; }
 
 let stageNo = 1, progress = { unlocked: 1, stars: {}, best: {} };
 let mode = 'map', control = 'relative', level = 'normal', t = 0, last = 0, clock = 0, soundOn = (() => { try { return localStorage.getItem('kiteBgm') !== '0'; } catch (e) { return true; } })(), ac = null, seed = 1;
+let fests = [], festTxt = null, festAcc = 0, festLeft = 0;      /* D370 慶典 */
 let vents = [], clouds = [], kite, foes, shots, picks, parts, floats, friends, pals, rings, warns, script, si, stats, fireAcc, gauge, ult, flash, shake, boss, endTimer, firstMove, toldUlt, toldBarrel, toldGate, toldRing, guide, won, seenPick;
 const answers = {}, keys = {};
 const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
@@ -730,6 +732,7 @@ function buildScript() {
 }
 
 function reset() {
+  fests = []; festTxt = null; festAcc = 0;
   seed = CONFIG.seed; cine = 0; slowmo = 0; rushes = []; t = 0; si = 0; fireAcc = 0; gauge = 0; ult = null; cut = null; flash = 0; shake = 0; boss = null; sparks = []; frag = null; bossWarnT = 0; bossWarned = false; endTimer = 0; firstMove = false; toldUlt = false; toldBarrel = false; toldGate = false; toldRing = false; guide = null; won = false; seenPick = {};
   kite = { x: W / 2, y: 520, tx: W / 2, ty: 520, jetT: 0, ringT: 0, slowT: 0, homeT: 0, drumT: 0, drumAcc: 0, hearts: LV().hearts, safe: 0, power: 1, powerT: 0, galeT: 0, shield: false, drag: false, lx: 0, ly: 0 };
   T = stageTypes(); vents = []; clouds = []; boats = []; mascots = []; beatDemo = null; menu = null; escort = null;
@@ -887,7 +890,7 @@ function clearFoe(f, how) {      // how：'' 羽毛或墨汁、'blast' 被炸到
   if (f.type === 'minib') miniCleared(f);
   if (f.type === 'boss') {      // 清掉大垃圾團：畫面上的垃圾與還在倒數的側邊橫衝一起清掉
     bossBoom(f.x, f.y); boss = null; stats.bossCleared = true; warns = []; for (const o of foes.slice()) clearFoe(o, 'sweep');      // sweep：過關收尾，不算鯨鯊、不算連清
-    if (kite.hearts > 0) { won = true; banner(ST().clean); flash = 0.7; shake = 0.4; jingle([523, 659, 784, 1047, 1319], 100); parade(); endTimer = 3.4; }      // 過關：之後的收尾不再受傷，結果鎖定。體力在同一刻已經歸零則照體力歸零結算
+    if (kite.hearts > 0) { won = true; banner(ST().clean); flash = 0.7; shake = 0.4; jingle([523, 659, 784, 1047, 1319], 100); parade(); endTimer = 3.4; festStart(f.x, f.y); }      // 過關：之後的收尾不再受傷，結果鎖定。體力在同一刻已經歸零則照體力歸零結算
   }
 }
 function explode(x, y, d) {      // 油桶爆炸：炸到半徑內的垃圾（可以連鎖），離太近也會傷到小鳶；炸到大垃圾團扣比較多
@@ -1155,6 +1158,7 @@ function drawNewBossBits(f) {      // G84 魔王圖還沒交：在原本的大�
 }
 function update(dt) {
   const real = dt; if (ult && ult.t < 0.5) dt *= 0.25;
+  if (fests.length || festTxt) festTick(real);
   if (cine > 0) cine -= real; if (slowmo > 0) { slowmo -= real; dt *= 0.3; }      // 演出字卡；最後一擊的慢動作      // 鯨鯊登場的前半秒是慢動作
   t += dt; if (daily) dailyTick(dt);
   while (si < script.length && script[si].t <= t) spawn(script[si++]);
@@ -3118,6 +3122,25 @@ function drawRock(x, y, sz, seed, a, u) {
 
 /* ---- D125：魔王倒下時碰碰碰連環爆炸＋震動 ---- */
 let booms = [];
+/* D370（主動待辦①，GPT 1830 素材）：打倒魔王的慶典——煙火在畫面上方陸續開花（白圖用程式上色）、大字「清潔港口！」（市場關「漂亮！」）彈出；只是畫面，不改判定、時間、分數 */
+const frand = (a, b) => a + Math.random() * (b - a);      /* 慶典只是畫面，用 Math.random 不動到關卡亂數 */
+const FEST_COL = ['#FFC21A', '#FF5C93', '#FF8A1F', '#B05CFF', '#FFE14D', '#FF6B4A'], festTint = {};
+function festImg(k, col) { const key = k + col; if (festTint[key]) return festTint[key]; const src = img[k]; if (!src) return null; const c = document.createElement('canvas'); c.width = src.width; c.height = src.height; const g = c.getContext('2d'); g.drawImage(src, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height); return festTint[key] = c; }
+function festStart(x, y) { festLeft = calm ? 3 : 9; festAcc = 0.15; festBurst(x, Math.max(120, Math.min(H * 0.45, y)), 1.25); festTxt = { t: 0, k: NM() ? 'txt_pretty' : 'txt_clean' }; }
+function festBurst(x, y, sc) { const kinds = ['fw_radial', 'fw_fan', 'fw_star']; fests.push({ x, y, t: 0, life: 1.3, k: kinds[(Math.random() * 3) | 0], col: FEST_COL[(Math.random() * FEST_COL.length) | 0], s: (sc || frand(0.75, 1.15)) * Math.min(W, 420) * 0.55, rot: frand(-0.3, 0.3) }); if (!calm) beep(frand(500, 900), 0.12, 'triangle', 0.035, 600); }
+function festTick(dt) {
+  for (const f of fests) f.t += dt; fests = fests.filter(f => f.t < f.life);
+  if (festLeft > 0) { festAcc -= dt; if (festAcc <= 0) { festLeft--; festAcc = frand(0.22, 0.38); festBurst(frand(W * 0.15, W * 0.85), frand(H * 0.12, H * 0.42)); } }
+  if (festTxt) { festTxt.t += dt; if (festTxt.t > 3.2) festTxt = null; }
+}
+function drawFest() {
+  ctx.save();
+  for (const f of fests) { const im = festImg(f.k, f.col); if (!im) continue; const k = f.t / f.life, e = 1 - Math.pow(1 - Math.min(1, k * 2.2), 3), sz = f.s * (0.35 + 0.65 * e); ctx.globalAlpha = k < 0.6 ? 1 : Math.max(0, 1 - (k - 0.6) / 0.4); ctx.save(); ctx.translate(f.x, f.y + k * 18); ctx.rotate(f.rot); ctx.drawImage(im, -sz / 2, -sz / 2, sz, sz); ctx.restore(); }
+  ctx.globalCompositeOperation = 'source-over';
+  const FT = festTxt, im = FT && img[FT.k];
+  if (im && !(cine > 0)) { const a = FT.t, pop = a < 0.18 ? a / 0.18 * 1.18 : a < 0.32 ? 1.18 - (a - 0.18) / 0.14 * 0.18 : 1, w = Math.min(W * 0.86, 420) * pop, h = w / 2; ctx.globalAlpha = a > 2.7 ? Math.max(0, 1 - (a - 2.7) / 0.5) : 1; ctx.translate(W / 2, H * 0.46 - (a > 0.32 ? Math.min(10, (a - 0.32) * 6) : 0)); ctx.rotate(-0.04); ctx.drawImage(im, -w / 2, -h / 2, w, h); }
+  ctx.restore();
+}
 function bossBoom(x, y) { booms = []; for (let i = 0; i < 7; i++) booms.push({ t: -i * 0.2, x: x + (i === 6 ? 0 : rand(-60, 60)), y: y + (i === 6 ? 0 : rand(-46, 46)), big: i === 6, done: false }); }
 function updateBooms(dt) {
   for (const b of booms) { b.t += dt; if (b.t >= 0 && !b.done) { b.done = true; shake = Math.max(shake, b.big ? 0.9 : 0.45); flash = Math.max(flash, b.big ? 0.95 : 0.35); rings.push({ x: b.x, y: b.y, r: 10, max: b.big ? 320 : 120, life: 1, color: '255,200,120' }); burst(b.x, b.y, b.big ? 46 : 18, b.big ? '#FFE08A' : '#FFB84D', b.big ? 300 : 170); beep(b.big ? 45 : rand(70, 110), b.big ? 0.7 : 0.35, 'square', b.big ? 0.12 : 0.09, -20); if (!calm) say(b.big ? '碰碰碰！' : '碰！', b.x, b.y - 24, b.big ? '#FFE08A' : '#FFD0A0', true); try { if (navigator.vibrate) navigator.vibrate(b.big ? [80, 40, 160] : 45); } catch (e) {} } }
@@ -3357,6 +3380,7 @@ function draw() {
   for (const p of pals) drawPal(p);
   drawRing(); if (PM()) drawPierFriendFx(); drawKite(); drawNetOnKite(); drawParts(); if (booms.length) drawBooms();
   ctx.restore();
+  if (fests.length || festTxt) drawFest();
   if (flash > 0) { ctx.fillStyle = 'rgba(255,248,220,' + flash * (calm ? 0.2 : 0.5) + ')'; ctx.fillRect(0, 0, W, H); }
   ctx.textAlign = 'center'; ctx.lineJoin = 'round';
   for (const f of floats) { const FF = "px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif"; let fs = f.big ? 24 : 15; ctx.font = "700 " + fs + FF; const tw = ctx.measureText(f.text).width; if (tw > W - 16) { fs = Math.floor(fs * (W - 16) / tw); ctx.font = "700 " + fs + FF; f.x = Math.max(W / 2 - (W - 16) / 2 + ctx.measureText(f.text).width / 2, Math.min(W / 2 + (W - 16) / 2 - ctx.measureText(f.text).width / 2, f.x)); }      /* D242：太長的浮字縮小到畫面寬，不被切掉（「先直後橫…鋼索」原本最後一字出界） */
