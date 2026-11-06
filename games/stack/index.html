@@ -495,12 +495,12 @@ function makeStack() {
     // 高度尺
     ctx.fillStyle = 'rgba(16,41,61,.35)'; ctx.fillRect(4, Y0 - (hgt + 6) * BH, 3, (hgt + 6) * BH);
     for (let i = 5; i < hgt + 6; i += 5) { const yy = Y0 - i * BH + BH; ctx.fillStyle = 'rgba(16,41,61,.55)'; ctx.fillRect(4, yy, 10, 2); text(String(i), 22, yy, 10, C.paper, 'center', 700); }
+    for (const p of g.splash) { const im = ready(p.big ? 'fx_splash_l' : 'fx_splash_s'); if (!im) continue; const w = p.big ? 112 : 72, h = w * im.naturalHeight / im.naturalWidth, e = RM ? 1 : 1 - Math.pow(1 - Math.min(1, p.t / 0.14), 3), sx = 0.7 + 0.3 * e, sy = 0.35 + 0.65 * e;      /* D359：水花從水面往上冒 0.14 秒，停一下再 0.35 秒淡掉 */
+      ctx.save(); ctx.globalAlpha = p.t < 0.3 ? 1 : clamp(1 - (p.t - 0.3) / 0.35, 0, 1); ctx.translate(p.x, p.y); ctx.scale(sx, sy); ctx.drawImage(im, -w / 2, -h * 0.86, w, h); ctx.restore(); }      /* D360（GPT 0830 A）：水花改畫在已堆好的貨櫃後面，底層貨櫃輪廓不被蓋住；大小、時間不變 */
     g.blocks.forEach((b, i) => { const sq = b.sq || 0; ctx.save(); ctx.translate(b.x + b.w / 2, Y0 - i * BH + BH); ctx.scale(1 + sq * 0.15, 1 - sq * 0.25); crate(-b.w / 2, -BH, b.w, b.c, b.gold);
       if (b.glow > 0) { const a = clamp(b.glow / 0.4, 0, 1); ctx.save(); ctx.globalAlpha = RM ? 0.9 : a; ctx.shadowColor = '#FFD23A'; ctx.shadowBlur = 14; rrect(-b.w / 2 - 2, -BH - 2, b.w + 4, BH + 4, 6, null, '#FFD23A', 4); ctx.shadowBlur = 0; rrect(-b.w / 2 - 1, -BH - 1, b.w + 2, BH + 2, 5, null, '#FFF4C2', 1.5); ctx.restore(); }      /* D355：完美金邊光，0.4 秒淡掉 */
       ctx.restore(); });
     for (const c of g.cut) { ctx.save(); ctx.translate(c.x + c.w / 2, c.y + BH / 2); ctx.rotate(c.rot || 0); crate(-c.w / 2, -BH / 2, c.w, c.c, c.gold); ctx.restore(); }
-    for (const p of g.splash) { const im = ready(p.big ? 'fx_splash_l' : 'fx_splash_s'); if (!im) continue; const w = p.big ? 112 : 72, h = w * im.naturalHeight / im.naturalWidth, e = RM ? 1 : 1 - Math.pow(1 - Math.min(1, p.t / 0.14), 3), sx = 0.7 + 0.3 * e, sy = 0.35 + 0.65 * e;      /* D359：水花從水面往上冒 0.14 秒，停一下再 0.35 秒淡掉 */
-      ctx.save(); ctx.globalAlpha = p.t < 0.3 ? 1 : clamp(1 - (p.t - 0.3) / 0.35, 0, 1); ctx.translate(p.x, p.y); ctx.scale(sx, sy); ctx.drawImage(im, -w / 2, -h * 0.86, w, h); ctx.restore(); }
     if (g.mv) { const tp = g.blocks[g.blocks.length - 1], yy = Y0 - g.blocks.length * BH, tol = g.blocks.length <= ST.easyN ? ST.perfectEasy : ST.perfect; ctx.fillStyle = 'rgba(255,214,107,.26)'; ctx.fillRect(tp.x - tol, yy - 70, tol * 2, 70 + BH); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 5]); ctx.beginPath(); ctx.moveTo(tp.x, yy - 70); ctx.lineTo(tp.x, yy + BH); ctx.moveTo(tp.x + tp.w, yy - 70); ctx.lineTo(tp.x + tp.w, yy + BH); ctx.stroke(); ctx.setLineDash([]); }
     if (g.mv) {
       const y = Y0 - g.blocks.length * BH, mx = g.mv.x + g.mv.w / 2, fa = g.mv.fog ? clamp(Math.abs(mx - W / 2) / (W * 0.24), 0.06, 1) : 1;
