@@ -81,6 +81,7 @@ function festLoad() { for (const k of ['fw_radial', 'fw_fan', 'fw_star']) if (!I
 function festImg(k, col) { const key = k + col; if (festTint[key]) return festTint[key]; const src = ready(k); if (!src) return null; const c = document.createElement('canvas'); c.width = src.naturalWidth; c.height = src.naturalHeight; const x = c.getContext('2d'); x.drawImage(src, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = col; x.fillRect(0, 0, c.width, c.height); return festTint[key] = c; }
 function festBurst(x, y, sc) { const kinds = ['fw_radial', 'fw_fan', 'fw_star']; fests.push({ x, y, t: 0, life: 1.3, k: kinds[(Math.random() * 3) | 0], col: FEST_COL[(Math.random() * FEST_COL.length) | 0], s: (sc || 0.75 + Math.random() * 0.4) * W * 0.5, rot: Math.random() * 0.6 - 0.3 }); }
 function festStart(x, y, r, card) { festLoad(); festLeft = RM ? 2 : 6; festAcc = 0.18; festBurst(clamp(x, 80, W - 80), 130, 1.2); const ty = clamp(y - (r || 0) - 30, 336, 356); festTxt = { t: 0, y: ty, k: card && ty < 356 ? 0.50 : 0.55 }; }      /* D373（GPT 2100）：高位且新發現卡同時顯示時，「完成！」再縮到 50%，不再往上移 */      /* D372（GPT 1955 A）：「完成！」寬 62%→55%、中心 382→356（鯨鯊頭頂高時再往上讓，最高 336，不壓新發現卡），讓出鯨鯊頭頂 */
+function festPF() { const t = festTxt ? festTxt.t : 9; return t < 0.2 ? 1 - 0.85 * t / 0.2 : t < 1.5 ? 0.15 : t < 1.8 ? 0.15 + 0.85 * (t - 1.5) / 0.3 : 1; }      /* D375（GPT 2248 A）：慶典前 1.5 秒把瞄準預覽層（虛線、落點影子、金圈）淡到 15%，結束後 0.3 秒恢復；正在掉的海鮮本體不動 */
 function festTick(dt) {
   for (const f of fests) f.t += dt; fests = fests.filter((f) => f.t < f.life);
   if (festLeft > 0) { festAcc -= dt; if (festAcc <= 0) { festLeft--; festAcc = 0.25 + Math.random() * 0.15; festBurst(W * 0.15 + Math.random() * W * 0.7, 80 + Math.random() * 110); } }
@@ -324,9 +325,9 @@ function makeMerge() {
       let gy = BOX.floor - f.r, hit = null; for (const b of g.balls) { const dx = Math.abs(b.x - f.x), rr = b.r + f.r - 1; if (dx < rr && b.y > f.y) { const yy = b.y - Math.sqrt(rr * rr - dx * dx); if (yy < gy) { gy = yy; hit = b; } } }
       /* D226（合成港實玩）：小鳶還抓著時，落點正好碰到同一種海鮮 → 虛線變金色、落點影子變亮、兩隻都套金圈（瞄準就知道會合成）；減少動態不閃 */
       const aim = f.held && hit && hit.lv === f.lv ? hit : null, ap = aim ? (RM ? 1 : 0.75 + 0.25 * Math.sin(tt * 8)) : 0;
-      ctx.strokeStyle = aim ? 'rgba(255,210,58,.95)' : 'rgba(255,255,255,.7)'; ctx.lineWidth = aim ? 3 : 2; ctx.setLineDash([3, 6]); ctx.beginPath(); ctx.moveTo(f.x, f.y + f.r); ctx.lineTo(f.x, gy); ctx.stroke(); ctx.setLineDash([]);
-      ctx.globalAlpha = aim ? 0.6 : 0.3; drawSea(f.lv, f.x, gy, f.r, 0); ctx.globalAlpha = 1;
-      if (aim) { ctx.globalAlpha = ap; ctx.strokeStyle = '#FFD23A'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(f.x, gy, f.r + 3, 0, 6.283); ctx.stroke(); ctx.beginPath(); ctx.arc(aim.x, aim.y, aim.r + 3, 0, 6.283); ctx.stroke(); ctx.globalAlpha = 1; }
+      const pf = festPF(); ctx.globalAlpha = pf; ctx.strokeStyle = aim ? 'rgba(255,210,58,.95)' : 'rgba(255,255,255,.7)'; ctx.lineWidth = aim ? 3 : 2; ctx.setLineDash([3, 6]); ctx.beginPath(); ctx.moveTo(f.x, f.y + f.r); ctx.lineTo(f.x, gy); ctx.stroke(); ctx.setLineDash([]);
+      ctx.globalAlpha = (aim ? 0.6 : 0.3) * pf; drawSea(f.lv, f.x, gy, f.r, 0); ctx.globalAlpha = 1;
+      if (aim) { ctx.globalAlpha = ap * pf; ctx.strokeStyle = '#FFD23A'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(f.x, gy, f.r + 3, 0, 6.283); ctx.stroke(); ctx.beginPath(); ctx.arc(aim.x, aim.y, aim.r + 3, 0, 6.283); ctx.stroke(); ctx.globalAlpha = 1; }
       g.aim = !!aim;
       drawSea(f.lv, f.x, f.y, f.r, 0);
     }
@@ -720,7 +721,7 @@ const AQ = (() => {
   return { add, save, ui, open, data: d };
 })();
 window.__aq = AQ;
-window.__mini = { get G() { return G; }, get state() { return state; }, setMode, seaFace, finish, IMG, SEAF, get fest() { return { n: fests.length, txt: !!festTxt, y: festTxt && festTxt.y, k: festTxt && festTxt.k }; }, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; }, get hudChip() { return hudChip; } };      /* D263：測試掛勾加 pop／floats；D306 加 finish */      /* D254：測試掛勾，固定亂數 */
+window.__mini = { get G() { return G; }, get state() { return state; }, setMode, seaFace, finish, IMG, SEAF, get fest() { return { pf: festPF(), n: fests.length, txt: !!festTxt, y: festTxt && festTxt.y, k: festTxt && festTxt.k }; }, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; }, get hudChip() { return hudChip; } };      /* D263：測試掛勾加 pop／floats；D306 加 finish */      /* D254：測試掛勾，固定亂數 */
 })();
 </script>
 <script>(function () { var b = document.getElementById('backBtn'); b.addEventListener('click', function (e) { if (window.__mini && window.__mini.state === 'play' && !confirm('這局還在進行，確定要離開嗎？（分數不會記錄）')) e.preventDefault(); }); /* QA：遊戲中按返回先確認 */ /* D161：一律回小鳶樂園（遊戲大廳），不再回舊版測試首頁 */ })();</script>
