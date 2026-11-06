@@ -73,6 +73,26 @@ function saveBest(k, v) { if (v > (best[k] || 0)) { best[k] = v; store.set('kite
 const IMG = {};
 function want(key, src) { const im = new Image(); im.onload = () => { IMG[key] = im; }; im.src = src; }
 function ready(k) { return IMG[k] && IMG[k].naturalWidth > 0 ? IMG[k] : null; }
+/* D371（主動待辦①：最後一擊慶典——合成港）：這局第一次合出鯨鯊、或兩隻鯨鯊游回大海時，3 秒內煙火 7 發在上方天空（GPT 1830 白圖、程式上色）＋大字「完成！」在新發現卡下方彈出；
+   只是畫面，不改分數、判定、掉落；減少動態只 3 發、大字不彈跳。素材共用 fly/assets/fest/ */
+const FEST_COL = ['#FFC21A', '#FF5C93', '#FF8A1F', '#B05CFF', '#FFE14D', '#4CC9F0'], festTint = {};
+let fests = [], festTxt = null, festAcc = 0, festLeft = 0;
+function festLoad() { for (const k of ['fw_radial', 'fw_fan', 'fw_star']) if (!IMG[k]) want(k, '../../fly/assets/fest/' + k + '.png'); if (!IMG.txt_done) want('txt_done', '../../fly/assets/fest/txt_done.webp'); }
+function festImg(k, col) { const key = k + col; if (festTint[key]) return festTint[key]; const src = ready(k); if (!src) return null; const c = document.createElement('canvas'); c.width = src.naturalWidth; c.height = src.naturalHeight; const x = c.getContext('2d'); x.drawImage(src, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = col; x.fillRect(0, 0, c.width, c.height); return festTint[key] = c; }
+function festBurst(x, y, sc) { const kinds = ['fw_radial', 'fw_fan', 'fw_star']; fests.push({ x, y, t: 0, life: 1.3, k: kinds[(Math.random() * 3) | 0], col: FEST_COL[(Math.random() * FEST_COL.length) | 0], s: (sc || 0.75 + Math.random() * 0.4) * W * 0.5, rot: Math.random() * 0.6 - 0.3 }); }
+function festStart(x, y) { festLoad(); festLeft = RM ? 2 : 6; festAcc = 0.18; festBurst(clamp(x, 80, W - 80), 130, 1.2); festTxt = { t: 0 }; }
+function festTick(dt) {
+  for (const f of fests) f.t += dt; fests = fests.filter((f) => f.t < f.life);
+  if (festLeft > 0) { festAcc -= dt; if (festAcc <= 0) { festLeft--; festAcc = 0.25 + Math.random() * 0.15; festBurst(W * 0.15 + Math.random() * W * 0.7, 80 + Math.random() * 110); } }
+  if (festTxt) { festTxt.t += dt; if (festTxt.t > 3) festTxt = null; }
+}
+function drawFest() {
+  ctx.save();
+  for (const f of fests) { const im = festImg(f.k, f.col); if (!im) continue; const k = f.t / f.life, e = 1 - Math.pow(1 - Math.min(1, k * 2.2), 3), sz = f.s * (0.35 + 0.65 * e); ctx.globalAlpha = k < 0.6 ? 1 : Math.max(0, 1 - (k - 0.6) / 0.4); ctx.save(); ctx.translate(f.x, f.y + k * 18); ctx.rotate(f.rot); ctx.drawImage(im, -sz / 2, -sz / 2, sz, sz); ctx.restore(); }
+  const T = festTxt, im = T && ready('txt_done');
+  if (im) { const a = T.t, pop = RM ? 1 : a < 0.18 ? a / 0.18 * 1.18 : a < 0.32 ? 1.18 - (a - 0.18) / 0.14 * 0.18 : 1, w = W * 0.62 * pop, h = w / 2; ctx.globalAlpha = a > 2.5 ? Math.max(0, 1 - (a - 2.5) / 0.5) : 1; ctx.translate(W / 2, 382); ctx.rotate(-0.04); ctx.drawImage(im, -w / 2, -h / 2, w, h); }
+  ctx.restore();
+}
 
 /* ---------- 音效（短的合成音，不用音檔）與震動 ---------- */
 let snd = store.get('kiteMiniSnd1', true), AC = null;
@@ -272,11 +292,11 @@ function makeMerge() {
     g.chain = g.chainT > 0 ? g.chain + 1 : 1; g.chainT = 1.3; g.bestChain = Math.max(g.bestChain, g.chain); const mul = g.chain >= 2 ? Math.min(5, g.chain) : 1; if (window.KiteBoard) KiteBoard.ev('merge', { chain: g.chain });      // QA：連鎖倍數最多 ×5，亂丟快丟不會比用心放分數高
     burst(x, y, 8 + lv * 2, SEAF[Math.min(9, lv)][2]); burst(x, y, 4 + lv, '#FFFFFF', 'star'); ring(x, y, SEAF[Math.min(9, lv)][1], '#FFFFFF');
     g.mergesAll++; beep(440 + lv * 70, 0.12, 'triangle', 0.07, 120); buzz(lv >= 6 ? 30 : 12);
-    if (lv > 9) { g.score += 200 * mul; pop('兩隻鯨鯊游回大海 +' + 200 * mul, W / 2, 230, C.gold, true); g.say = '哇——鯨鯊回家了！'; g.sayT = 2; jingle([523, 659, 784, 1047, 1319], 90); }
+    if (lv > 9) { festStart(x, y); g.score += 200 * mul; pop('兩隻鯨鯊游回大海 +' + 200 * mul, W / 2, 230, C.gold, true); g.say = '哇——鯨鯊回家了！'; g.sayT = 2; jingle([523, 659, 784, 1047, 1319], 90); }
     else {
       const pts = SEAF[lv][3] * mul; g.score += pts; pop((mul > 1 ? '連鎖×' + mul + ' ' : '') + '+' + pts, x, y - 20, mul > 1 || lv >= 5 ? C.gold : C.paper, mul > 1 || lv >= 5);
       g.balls.push({ lv, x, y, vx: 0, vy: -80, r: SEAF[lv][1], age: 0.5, rot: 0, sq: -0.2 });
-      if (lv > g.top) { g.top = lv; if (lv >= 4) { g.newT = 1; g.say = ['', '', '', '', '章魚出現了！', '海龜來了！', '鬼頭刀好帥！', '是海豚耶！', '翻車魚！快到了！', '鯨鯊！！我們合出鯨鯊了！'][lv]; g.sayT = 2; } }
+      if (lv > g.top) { g.top = lv; if (lv === 9) festStart(x, y); if (lv >= 4) { g.newT = 1; g.say = ['', '', '', '', '章魚出現了！', '海龜來了！', '鬼頭刀好帥！', '是海豚耶！', '翻車魚！快到了！', '鯨鯊！！我們合出鯨鯊了！'][lv]; g.sayT = 2; } }
       g.discover(lv);
     }
     if (mul === 3 && !(g.newT > 0)) { g.say = '連鎖三次！'; g.sayT = 1.4; }      /* D262：新海鮮那句（鬼頭刀好帥！／鯨鯊！！…）講的 1 秒內不被「連鎖三次！」蓋掉，右上角連鎖 ×3 照樣顯示 */
@@ -582,10 +602,11 @@ function drawEnd(e) {
 /* ---------- 主迴圈 ---------- */
 
 let mode = 'merge', G = null, state = 'ready', down = false, last = performance.now(), clock = 0, endInfo = null;
-function newGame() { if (DS) gR = KiteDaily.rng(DS.td.seed); floats = []; parts = []; rings = []; G = { merge: makeMerge, stack: makeStack }[mode](); }
+function newGame() { if (DS) gR = KiteDaily.rng(DS.td.seed); floats = []; parts = []; rings = []; fests = []; festTxt = null; festLeft = 0; G = { merge: makeMerge, stack: makeStack }[mode](); }
 function setMode(m) {
   mode = m; document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.m === m))); document.getElementById('how').innerHTML = HOW[m]; state = 'ready'; newGame();
   const A = m === 'merge' ? ['bg_merge', 'kite_hold', 'kite_hold_fly', 'fx_merge'].concat(SEAF.map((_, i) => 'sea_' + i)) : ['bg_stack_base', 'bg_stack_sky', 'ship', 'kite_carry', 'kite_carry_fly', 'box_gold', 'far_mtn', 'cloud_0', 'cloud_1', 'cloud_2', 'gull', 'wind_0', 'wind_1', 'wind_2', 'fog_bank', 'fx_splash_l', 'fx_splash_s'].concat(BOXC.map((_, i) => 'box_' + i));
+  if (m === 'merge') festLoad();
   A.forEach((k) => { if (!IMG[k]) want(k, '../assets/' + m + '/' + k + (k.indexOf('bg_') === 0 ? '.jpg' : '.png')); });
   if (m === 'stack') LM.forEach((L) => { if (!IMG[L.key]) want(L.key, '../assets/stack/' + L.key + '.webp'); });      /* D185 */
 }
@@ -624,6 +645,7 @@ function frame(now) {
   const dt = Math.min(0.033, (now - last) / 1000); last = now; clock += dt;
   if (state === 'play') { G.update(dt); if (G.done) finish(); }
   G.draw(clock);
+  if (fests.length || festTxt) { festTick(dt); if (state === 'play') drawFest(); }
   drawRings(dt); drawParts(dt); drawFloats(dt);
   if (state === 'ready') drawTitle(clock);
   if (state === 'end') { endInfo.t += dt; drawEnd(endInfo); }
@@ -639,7 +661,7 @@ function toot() { const now = performance.now(); if (now - hornT < 1100) return;
   if (snd && navigator.vibrate) try { navigator.vibrate([90, 140, 110]); } catch (e) {} }
 let tab = 'stack';      // D119：放進遊戲大廳的單一遊戲版（不計分・隨時玩）
 setMode(HOW[tab] ? tab : 'merge'); requestAnimationFrame(frame); dailyTag();
-window.__mini = { get G() { return G; }, get state() { return state; }, setMode, finish, IMG, SEAF, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; } };      /* D263：測試掛勾加 pop／floats；D307 加 finish */      /* D254：測試掛勾，固定亂數 */
+window.__mini = { get G() { return G; }, get state() { return state; }, setMode, finish, IMG, SEAF, get fest() { return { n: fests.length, txt: !!festTxt }; }, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; } };      /* D263：測試掛勾加 pop／floats；D307 加 finish */      /* D254：測試掛勾，固定亂數 */
 })();
 </script>
 <script>(function () { var b = document.getElementById('backBtn'); b.addEventListener('click', function (e) { if (window.__mini && window.__mini.state === 'play' && !confirm('這局還在進行，確定要離開嗎？（分數不會記錄）')) e.preventDefault(); }); /* QA：遊戲中按返回先確認 */ /* D161：一律回小鳶樂園（遊戲大廳），不再回舊版測試首頁 */ })();</script>
