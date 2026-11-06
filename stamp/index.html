@@ -210,16 +210,27 @@ summary{font-weight:700;font-size:14px;cursor:pointer}
 @keyframes fall{to{transform:translate(var(--dx),110vh) rotate(var(--r))}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 /* D361（GPT 0200 六站全景＋0951 短覆）：護照上方 3:1 全景橫幅，隨頁捲動；蓋到的那站亮出來、沒蓋的蓋一層霧＋站號；六站集滿換金框版。按原圖 x 邊界 0/387/762/1082/1432/1800/2172 分段，不等寬 */
-.pano{position:relative;width:100%;aspect-ratio:3/1;border-radius:12px;overflow:hidden;background:linear-gradient(#CFE6F5,#EEF6FB 70%);box-shadow:0 4px 12px rgba(62,43,29,.12)}
+.pano{position:relative;width:100%;aspect-ratio:3/1;border-radius:12px;overflow:hidden;background:transparent;box-shadow:0 4px 12px rgba(62,43,29,.12)}
 .pano img{position:absolute;inset:0;width:100%;height:100%;display:block}
-.pano .fog{position:absolute;top:0;bottom:0;background:rgba(246,240,229,.72);-webkit-backdrop-filter:grayscale(1);backdrop-filter:grayscale(1);display:flex;align-items:center;justify-content:center;border-left:1px dashed rgba(138,117,101,.35);transition:opacity .6s}
+.pano .fog{position:absolute;top:0;bottom:0;background:rgba(246,240,229,.60);-webkit-backdrop-filter:grayscale(1);backdrop-filter:grayscale(1);display:flex;align-items:center;justify-content:center;border-left:1px dashed rgba(138,117,101,.35);transition:opacity .6s}
 .pano .fog:first-of-type{border-left:0}
-.pano .fog b{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.9);color:#8A7565;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(62,43,29,.2)}
+.pano .fog b{width:26px;height:26px;box-sizing:border-box;border-radius:50%;background:#fff;border:1px solid #BDB3A8;color:#4A4038;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(62,43,29,.2)}
 .pano .shine{position:absolute;top:0;bottom:0;pointer-events:none;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.75) 50%,transparent 70%) no-repeat;background-size:250% 100%;animation:panoShine 1.1s ease-out 1 both}
 @keyframes panoShine{from{background-position:120% 0}to{background-position:-60% 0}}
 .pano .pc{position:absolute;right:6px;bottom:5px;padding:1px 8px;border-radius:999px;background:rgba(255,255,255,.88);color:#5A3A24;font-size:12px;font-weight:700}
 .pano.all .pc{background:linear-gradient(90deg,#E8A33A,#C9473A);color:#fff}
-.sheet .panoBig{width:100%;aspect-ratio:3/1;display:block;margin:4px 0 10px;border-radius:8px;background:linear-gradient(#CFE6F5,#EEF6FB 70%)}
+.sheet .panoBig{width:100%;aspect-ratio:3/1;display:block;margin:4px 0 10px;border-radius:8px;background:transparent}
+/* D363：現場版明信片（GPT 0200 明信片框 v2＋全景該站那段；右下圓圈蓋上這站的章） */
+.pcOn{position:relative;width:100%;max-width:360px;aspect-ratio:3/2;margin:6px auto 2px;transform:rotate(-2deg);filter:drop-shadow(0 6px 12px rgba(0,0,0,.22))}
+.pcOn>img{width:100%;height:100%;display:block}
+.pcOn .st{position:absolute;left:82.7%;top:74.1%;width:13%;aspect-ratio:1}
+.pcOn.fly{animation:pcIn .6s .35s cubic-bezier(.3,1.4,.6,1) both}
+.pcOn.fly .st .stampv{animation:pslam .45s 1s cubic-bezier(.3,1.6,.6,1) both}
+/* D364（GPT 1252②）：結果卡拿掉上方大章，明信片＋圈內章當唯一主視覺；章升級時圈內章也落一次 */
+.pcOn.slam .st .stampv{animation:pslam .45s .2s cubic-bezier(.3,1.6,.6,1) both}
+@keyframes pcIn{from{opacity:0;transform:translateY(24px) rotate(4deg) scale(.9)}to{opacity:1;transform:rotate(-2deg)}}
+@media (prefers-reduced-motion:reduce){.pcOn.fly,.pcOn.fly .st .stampv,.pcOn.slam .st .stampv{animation:none}}
+.pcCap{margin:2px 0 6px;font-size:13px;color:#7A6A55;text-align:center}
 /* v0.18（C-127）：護照下面多一條「館內的港口朋友」，連到港口朋友頁 */
 .nextTip{margin:2px 0 0;padding:8px 12px;border-radius:12px;background:#EAF5FA;border:2px dashed #3F8FB8;font-size:14px;color:#1D4E66;text-align:center}.nextTip b{color:#1D6A88}
 .palLink{display:flex;align-items:center;gap:10px;margin:10px 0 0;padding:10px 12px;min-height:48px;border-radius:16px;background:#FFF6E0;border:2px dashed #E3A33A;color:#5B3F25;text-decoration:none;font-weight:700;font-size:14px}
@@ -475,7 +486,7 @@ const SND_ICON = (() => {
 /* BGM-END */
 </script>
 <script>
-const CFG = { version: '2.4', showRec: false, key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
+const CFG = { version: '2.7', showRec: false, key: 'kiteStamp1', rare: { gold: 0.1, rainbow: 0.02 }, nightFrom: 18, nightTo: 22 };      // v0.12：夜間 18:00–22:00（Dari 10/13 16:58，22:00 後閉店）；稀有機率仍是建議
 const FRAMES = [[53.3333, 40.4444], [25.0463, 46.1481], [18.9352, 75.4815], [44.4907, 86.7407], [75.9722, 77.4815], [80.5093, 56.037]], FRAME_R = 10.37;      // v0.8：G-50 港區小地圖六圈中心（%）；章容器 224px＝寬 20.74%（ChatGPT 地圖位置 JSON）
 const ROUTE = [[1, 2, [[[462.8, 559.4], [449.0, 561.0], [429.0, 568.0], [410.0, 578.0], [378.3, 588.2]]]], [2, 3, [[[330.7, 717.1], [339.0, 730.0], [337.8, 734.0]], [[294.0, 784.0], [285.0, 790.0], [301.0, 820.0], [313.0, 859.0], [313.0, 902.0], [299.0, 934.0], [287.3, 944.5]]]], [3, 4, [[[290.9, 1089.4], [315.0, 1109.0], [339.0, 1130.0], [360.0, 1145.0], [372.6, 1147.7]]]], [4, 5, [[[590.5, 1181.6], [615.0, 1184.0], [638.0, 1178.0], [662.0, 1171.0], [688.0, 1157.0], [709.0, 1138.0], [736.5, 1115.3]]]], [5, 6, [[[750.1, 963.3], [721.0, 929.0], [730.0, 903.0], [740.0, 879.0], [752.0, 857.0], [786.2, 827.8]]]], [6, 1, [[[797.0, 674.6], [784.0, 660.0], [760.0, 636.0], [742.0, 613.0], [718.0, 591.0], [700.0, 579.0], [686.0, 575.3]]]]];      // 每段 [起站, 終站, 可見路段（原圖像素）]；稱號帶的斷口不補線
 /* 6 個蓋章點（實際位置待 Dari 現勘）。color：每站主色（工作單 18）；title：蓋到就拿到的稱號（建議）；riddle：還沒去時的提示 */
@@ -712,8 +723,9 @@ function showStory(s, fresh, newTitles, extra, v) {
   /* D86（Dari 10/16）：同一次解鎖好幾個稱號時（例如蓋完第 6 章會一起拿到隱藏稱號），只放大第一個，其他收成一行，不再一張一張疊 */
   const isHid = (t) => COMBOS.some((c) => c.title === t) || t === SECRET.title;
   const got = newTitles.length ? '<div class="gotT"><div>🏅 <span>拿到稱號<br><b>' + newTitles[0] + '</b></span>' + (isHid(newTitles[0]) ? '<i>隱藏稱號</i>' : '') + '</div></div>' + (newTitles.length > 1 ? '<p class="again" style="margin-top:6px">還一起拿到 ' + (newTitles.length - 1) + ' 個稱號：<b>' + newTitles.slice(1).map((t) => t + (isHid(t) ? '（隱藏）' : '')).join('、') + '</b>（在護照「我的稱號」看）</p>' : '') : '';
-  $('sheet').innerHTML = '<div class="big">' + stampV(s, v) + '</div><h3>' + (fresh ? (extra ? '章升級了！' : '蓋到「' + s.name + '」章了！') : s.name + '章・' + s.title) + '</h3>' + (v ? '<p class="again vname">這是「' + VAR_NAME[v] + '」章</p>' : '') + (extra ? '<p class="again">' + extra + '</p>' : '') + got +
-    '<div class="say"><img src="../travel/assets/' + (fresh ? 'kite_happy' : 'kite_home') + '.png" alt=""><p>' + (fresh && s.say ? s.say : s.lines.join('<br>')) + '</p></div>' +      // v1.3（G-61⑤）：剛蓋完只說一句，完整台詞留在重看
+  $('sheet').innerHTML = '<h3>' + (fresh ? (extra ? '章升級了！' : '蓋到「' + s.name + '」章了！') : s.name + '章・' + s.title) + '</h3>' + (v ? '<p class="again vname">這是「' + VAR_NAME[v] + '」章</p>' : '') + (extra ? '<p class="again">' + extra + '</p>' : '') + got +
+    '<div class="say"><img src="../travel/assets/' + (fresh ? 'kite_happy' : 'kite_home') + '.png" alt=""><p>' + (fresh && s.say ? s.say : s.lines.join('<br>')) + '</p></div>' +
+    '<div class="pcOn' + (fresh && !extra && !REDUCE ? ' fly' : '') + (extra && !REDUCE ? ' slam' : '') + '"><img src="assets/pc_onsite_' + s.id + '.webp" alt="' + s.name + '站現場版明信片"><span class="st">' + stampV(s, v) + '</span></div><p class="pcCap">' + (fresh && !extra ? '📮 拿到「' + s.name + '」現場版明信片！只有走到這裡蓋章才拿得到' : '📮 「' + s.name + '」現場版明信片') + '</p>' +      /* D363 */      // v1.3（G-61⑤）：剛蓋完只說一句，完整台詞留在重看
     (s.rec && CFG.showRec ? '<div class="rec">' + s.rec + '</div>' : '') +
     (fresh && OBS[s.id] ? '<div class="obs' + ((P.found || {})[s.id] ? ' done' : '') + '" id="obs"><b>👀 一起找找看</b><p>' + ((P.found || {})[s.id] ? '一起找到了！' : OBS[s.id]) + '</p>' + ((P.found || {})[s.id] ? '' : '<div class="row"><button class="yes" type="button" id="obsYes">找到了！</button><button class="no" type="button" id="obsNo">略過</button></div>') + '</div>' : '') +
     '<p class="again">' + (n() < 6 ? '還差 ' + (6 - n()) + ' 個章' : '6 個都蓋好了！') + '</p>' + (fresh && nextSpot() ? '<div class="nextTip">🧭 下一站猜猜看：<b>' + nextSpot().riddle + '</b></div>' : '') + '<div class="ft"><button class="btn" type="button" id="ovOk">看護照</button></div>';      // v0.20（C-141）：蓋完章馬上給下一站的謎語，不用回護照找
@@ -745,7 +757,17 @@ function checkDone(last, newTitles) {
 function loadImg(src) { return new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; }); }
 function tinted(img, fill, size) { const c = document.createElement('canvas'); c.width = c.height = size; const g = c.getContext('2d'); g.drawImage(img, 0, 0, size, size); g.globalCompositeOperation = 'source-in'; g.fillStyle = fill(g, size); g.fillRect(0, 0, size, size); return c; }
 async function sharePassport() {
-  const W = 1080, H = 1350, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d');
+  const W = 1080, PH = 360, H = 1350, cv = document.createElement('canvas'); cv.width = W; cv.height = H + PH; let g = cv.getContext('2d');
+  /* D362：存圖頂部加同寬 3:1 全景（GPT 1052 C），下面護照整張往下移、不縮不截 */
+  g.fillStyle = '#F6F0E5'; g.fillRect(0, 0, W, PH + H);
+  { const all = n() === 6, pi = await loadImg('assets/' + (all ? 'pano_gold' : 'pano_six') + '.webp'), X = [0, 387, 762, 1082, 1432, 1800, 2172];
+    if (pi) { g.drawImage(pi, 0, 0, W, PH);
+      if (!all) SPOTS.forEach((sp, i) => { if (P.spots[sp.id]) return; const x0 = X[i] / 2172 * W, x1 = X[i + 1] / 2172 * W, sx = X[i] / 2172 * pi.naturalWidth, sw = (X[i + 1] - X[i]) / 2172 * pi.naturalWidth;
+        g.save(); g.beginPath(); g.rect(x0, 0, x1 - x0, PH); g.clip(); if ('filter' in g) { g.filter = 'grayscale(1)'; g.drawImage(pi, sx, 0, sw, pi.naturalHeight, x0, 0, x1 - x0, PH); g.filter = 'none'; }
+        g.fillStyle = 'rgba(246,240,229,.60)'; g.fillRect(x0, 0, x1 - x0, PH); g.restore();
+        const cx = (x0 + x1) / 2, cy = PH / 2; g.beginPath(); g.arc(cx, cy, 34, 0, 6.2832); g.fillStyle = '#fff'; g.fill(); g.lineWidth = 2; g.strokeStyle = '#BDB3A8'; g.stroke();
+        g.fillStyle = '#4A4038'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '700 36px sans-serif'; g.fillText(String(sp.id), cx, cy + 1); g.textBaseline = 'alphabetic'; }); } }
+  g.translate(0, PH);
   const bg = await loadImg('assets/passport_map.jpg'); if (bg) g.drawImage(bg, 0, 0, W, H); else { g.fillStyle = '#F4EFE6'; g.fillRect(0, 0, W, H); }
   g.fillStyle = '#5A3A24'; g.textAlign = 'center'; g.font = '700 58px ' + getComputedStyle(document.body).fontFamily; g.fillText('港灣探險護照', W / 2, 92);
   g.font = '700 40px ' + getComputedStyle(document.body).fontFamily; g.fillStyle = '#C9473A'; g.fillText(P.cur ? '稱號：' + P.cur : n() + ' / 6', W / 2, 146);
