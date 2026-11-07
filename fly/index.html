@@ -505,7 +505,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '1.05',
+  version: '1.06',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -874,7 +874,7 @@ function fillUp(dt) {
 function teamHit(f) {      /* D382：同一隊每隻都被羽毛／爆炸／鯨鯊打掉（沒有漏掉、沒有撞到小鳶）才亮一次 PERFECT */
   const tm = f.team; tm.hit++; if (tm.hit !== tm.n || tm.done) return; tm.done = true; stats.perfect = (stats.perfect || 0) + 1;
   const py = Math.max(170, Math.min(H - 170, f.y));      /* 不壓在上方分數列、下方鯨鯊圈 */
-  say('PERFECT', f.x, py - 34, '#FFE08A', true, '#1F3A4D'); burst(f.x, py, 14, '#FFE08A', 150); rings.push({ x: f.x, y: py, r: 8, max: 64, life: 1, color: '255,224,138' }); jingle([784, 988, 1175], 70);
+  say('整隊清光！', f.x, py - 34, '#FFE08A', true, '#1F3A4D'); burst(f.x, py, 14, '#FFE08A', 150); rings.push({ x: f.x, y: py, r: 8, max: 64, life: 1, color: '255,224,138' }); jingle([784, 988, 1175], 70);
 }
 function clearFoe(f, how) {      // how：'' 羽毛或墨汁、'blast' 被炸到、'ult' 鯨鯊、'sweep' 過關收尾
   const calmClear = how === 'ult' || how === 'sweep';      // 這兩種不分裂、不爆炸、不掉道具
@@ -3655,7 +3655,7 @@ function finish() { if (daily) return dailyFinish(); BGM.stop(); { $('ask').hidd
   $('resTitle').textContent = stats.boatSunk ? '小船沉了' : !ok ? '小鳶累了' : stats.bossCleared ? '過關' : '時間到'; $('rank').textContent = won ? rankOf(pct) : '還沒過關';      /* QA：沒過關不顯示最高稱號（原本輸了也寫「基隆鳶王」） */ $('cleanPct').textContent = scoreFinal();
   const rows = $('rows'); rows.textContent = ''; const XR = /^(淨化的妖怪|清掉的垃圾與污染|最多連清|爆米香一次最多炸掉|油桶一次最多炸掉|擲筊祈福|呼叫)/;      /* D174：次要數字收進「更多紀錄」 */
   const add = (a, b) => { const l = document.createElement('span'); l.textContent = a; const r = document.createElement('span'); r.textContent = b; if (XR.test(a)) { l.className = r.className = 'xr'; } if (String(b).length > 16) { r.style.gridColumn = '1 / -1'; r.style.textAlign = 'left'; r.style.fontWeight = '600'; } rows.append(l, r); };
-  const nm = NM(); add('乾淨程度', pct + '%'); add(nm ? '淨化的妖怪' : '清掉的垃圾與污染', stats.cleared + ' / ' + stats.spawned); add('最多連清', stats.bestCombo + (nm ? ' 隻' : ' 件')); if (stats.bestBlast || stats.chain) add(nm ? '爆米香一次最多炸掉' : '油桶一次最多炸掉', stats.bestBlast + (nm ? ' 隻' : ' 件') + (stats.chain ? '　★' + CONFIG.chain.title : '')); if (stats.trapped) add('救出朋友', stats.rescued + ' / ' + stats.trapped);
+  const nm = NM(); add('乾淨程度', pct + '%'); add(nm ? '淨化的妖怪' : '清掉的垃圾與污染', stats.cleared + ' / ' + stats.spawned); add('最多連清', stats.bestCombo + (nm ? ' 隻' : ' 件')); if (stats.perfect) add('整隊清光', stats.perfect + ' 次'); /* D383：GPT 1449 B／A 只讀本局 stats.perfect，0 次不顯示，分數評星不變 */ if (stats.bestBlast || stats.chain) add(nm ? '爆米香一次最多炸掉' : '油桶一次最多炸掉', stats.bestBlast + (nm ? ' 隻' : ' 件') + (stats.chain ? '　★' + CONFIG.chain.title : '')); if (stats.trapped) add('救出朋友', stats.rescued + ' / ' + stats.trapped);
   { const fo = nm || PM() || RM() || NEWT(); add(T.boss.name.split('・').pop(), stats.bossCleared ? (fo ? '打倒了' : '清掉了') : (fo ? '沒打倒' : '沒清完')); } add('剩下體力', Math.max(0, kite.hearts) + ' / ' + LV().hearts + '（被打到 ' + stats.hits + ' 次）'); add(nm ? '擲筊祈福' : '呼叫' + ULTN(), stats.ultUsed + ' 次，' + (nm ? '淨化 ' + stats.ultCleared + ' 隻' : '清掉 ' + stats.ultCleared + ' 件'));      // 結算：怪物魔王寫打倒、只留短名不折行；油桶 0 件不顯示
   const sv = starsOf(), id = stageNo, old = progress.stars[id] || [false, false, false]; progress.stars[id] = old.map((v, k) => v || sv[k]);
   const best = progress.best[id]; const sc = scoreFinal(); if (!best || sc > (best.score || 0)) progress.best[id] = { pct, combo: stats.bestCombo, score: sc };
