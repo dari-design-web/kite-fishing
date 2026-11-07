@@ -452,7 +452,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
     var d = bagData(), it = function (src, ok, cap, badge, k) { return '<div><div class="it' + (ok ? '' : ' no') + '">' + nw(k, ok) + '<img src="' + src + '" alt="">' + (badge ? '<em>' + badge + '</em>' : '') + '</div><div class="cap">' + (ok ? cap : '？？？') + '</div></div>'; };
     var h = '<div class="sheet" role="dialog" aria-label="小鳶背包"><div class="top"><img src="../travel/assets/kite_pack.png" alt=""><div class="line">' + bagLine(d) + '</div><button class="x" type="button" aria-label="關閉">✕</button></div>';
     h += '<h3>港灣章<small>' + d.nSpot + ' / 7</small></h3><div class="row">' + d.spots.map(function (x) { return it('../stamp/assets/stamp_c_' + x[0][1] + '.png', x[1], x[0][2], '', 'spot' + x[0][0]); }).join('') + '</div>';
-    h += '<h3>港口小卡<small>' + (d.daily.days || 0) + ' 張</small></h3><div class="tags"><span class="tag' + (d.daily.days ? '' : ' no') + '">來看小鳶 ' + (d.daily.days || 0) + ' 天</span><span class="tag' + (d.daily.streak > 1 ? '' : ' no') + '">連續 ' + (d.daily.streak || 0) + ' 天</span></div>';
+    h += '<h3>港口小卡<small>' + (d.daily.days || 0) + ' 張</small></h3><div class="tags"><span class="tag' + (d.daily.days ? '' : ' no') + '">來看小鳶 ' + (d.daily.days || 0) + ' 天</span></div>';
     h += '<h3>港口朋友<small>' + d.nPal + ' / 6</small></h3><div class="row">' + d.pals.map(function (x) { return it(x[0][2], x[1], x[0][1], '', 'pal' + x[0][0]).replace('<div class="it', '<div data-pal="' + x[0][0] + '" class="it'); }).join('') + '</div>' + (d.nPal < 6 ? '<p class="empty">在館內找大大的充氣朋友，掃旁邊的 QR 就能見面・點朋友看線索（測試：首頁「測試選項」）</p>' : '');
     h += '<h3>漁獲圖鑑<small>' + d.nFish + ' / 6</small></h3><div class="row">' + d.fish.map(function (x) { return it('../assets/' + x[0][2] + '_v2.png', x[1], x[0][1], '', 'fish' + x[0][0]); }).join('') + '</div>';
     h += '<h3>明信片<small>' + d.nCard + ' / 24</small></h3><div class="list">' + d.locs.map(function (x) { return '<div class="li"><b>' + x[0][1] + nw('card' + x[0][0] + x[1], x[1] > 0) + '</b><span class="bar"><i style="width:' + Math.round(x[1] / 3 * 100) + '%"></i></span><span>' + x[1] + ' / 3</span></div>'; }).join('') + '</div>';
@@ -479,7 +479,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
   document.getElementById('bagBtn').onclick = openBag;
   bagDot();
 
-  /* v51（C-115，工作單 21 ②回訪理由）：每天第一次打開，小鳶帶一張「港口小卡」（港口小知識或小鳶的一句話）＋連續來訪天數。只存在這支手機（kiteDaily1）；小卡內容是建議 */
+  /* v51（C-115，工作單 21 ②回訪理由）：每天第一次打開，小鳶帶一張「港口小卡」（港口小知識或小鳶的一句話）＋來訪天數。只存在這支手機（kiteDaily1）；小卡內容是建議 */
   var CARDS = [
     ['港口小知識', '基隆常常下雨，所以大家叫它「雨港」。下雨天記得帶傘喔！'],
     ['港口小知識', '我是黑鳶，基隆港是台灣很容易看到黑鳶的地方。抬頭找找看，天上可能有我的朋友！'],
@@ -504,11 +504,12 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
     try { localStorage.setItem('kiteDaily1', JSON.stringify(dd)); } catch (e) {}
     if (!show) return dd;
     var c = CARDS[(dd.days - 1) % CARDS.length], ov = document.createElement('div'); ov.className = 'intro daily';
-    var wk = ''; for (var i = 1; i <= 7; i++) wk += '<i class="' + (i <= ((dd.streak - 1) % 7) + 1 ? 'on' : '') + '">' + i + '</i>';
+    /* D388（研究⑦樂園累計天數核對）：原本「連續 N 天」斷一天就回到 1（紅線：連續天數歸零）。改成只算累計來過幾天，七格跟著累計天數走、不會因為沒來而清空；kiteDaily1.streak 照舊記著但不顯示 */
+    var wk = ''; for (var i = 1; i <= 7; i++) wk += '<i class="' + (i <= ((dd.days - 1) % 7) + 1 ? 'on' : '') + '">' + i + '</i>';
     ov.innerHTML = '<div class="box"><img src="../travel/assets/kite_hello.png" alt=""><p>' + (now.getHours() < 11 ? '早安' : now.getHours() < 17 ? '午安' : '晚上好') + '！我今天帶了一張小卡給你～</p>' +
       '<div class="card"><small>' + c[0] + '・第 ' + dd.days + ' 張</small><p>' + c[1] + '</p></div>' +
-      '<div class="streak">' + (dd.streak > 1 ? '連續 <b>' + dd.streak + '</b> 天來看我了！' : '明天也來看我，小卡會不一樣喔！') + '</div><div class="week">' + wk + '</div>' +
-      (dd.streak > 0 && dd.streak % 7 === 0 ? '<div class="streak">連續 7 天！你是小鳶的好朋友 💛</div>' : '') +
+      '<div class="streak">' + (dd.days > 1 ? '這是你來看我的第 <b>' + dd.days + '</b> 天！' : '明天也來看我，小卡會不一樣喔！') + '</div><div class="week">' + wk + '</div>' +
+      (dd.days % 7 === 0 ? '<div class="streak">謝謝你常來看我 💛</div>' : '') +
       '<div class="row"><button class="go" type="button">收進背包</button></div></div>';
     document.body.appendChild(ov);
     ov.querySelector('.go').onclick = function () { ov.remove(); bagDot(); };
