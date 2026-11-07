@@ -292,10 +292,10 @@ function hud() { $('sc').textContent = score.toLocaleString(); $('dist').textCon
   $('pw').innerHTML = ['shield', 'magnet', 'dash'].filter((k) => P[k] > 0).map((k) => '<span><img src="assets/' + PW[k].img + '.webp" alt="">' + PW[k].name + '<b><em style="width:' + Math.round(P[k] / CFG[k] * 100) + '%"></em></b></span>').join('') + (P.fever > 0 ? '<span><img src="assets/item_frenzy_flame.webp" alt="">鯨鯊狂歡<b><em style="width:' + Math.round(P.fever / CFG.fever * 100) + '%"></em></b></span>' : ''); }
 /* D377（主動待辦①快游，GPT 0845 選 A：只飛分數）：拿到分數時，一顆金色小光點從那裡直線約 0.5 秒飛到左上分數框上緣，到達時 GPT 單星亮一次 16→24px；
    0.1 秒內的合成一顆、旁邊寫 ×N（N＝這批顆數，不是倍率）；分數在拿到當下就入帳，飛的只是畫面；減少動態時不飛 */
-const HF = { dur: 500, merge: 100, max: 8 }; let hfList = [];
+const HF = { dur: 500, merge: 100, merge10: 300, max: 8 };      /* D378（GPT 0947 選 B）：連吃 10 以上，每 0.3 秒最多出一顆 ×N 光點（只是畫面節流，分數照舊） */ let hfList = [];
 function hfSend(wx, wy, wz) {
   if (RM || state !== 'play') return; const now = performance.now(); hfList = hfList.filter((f) => f.el.isConnected); const lastF = hfList[hfList.length - 1];
-  if (lastF && (now - lastF.t0 < HF.merge || hfList.length >= HF.max)) { lastF.n++; lastF.el.innerHTML = '<b>×' + lastF.n + '</b>'; return; }
+  if (lastF && (now - lastF.t0 < (combo >= 10 ? HF.merge10 : HF.merge) || hfList.length >= HF.max)) { lastF.n++; lastF.el.innerHTML = '<b>×' + lastF.n + '</b>'; return; }
   const sr = stage.getBoundingClientRect(), tr = $('sc').parentNode.getBoundingClientRect(); if (!sr.width || !tr.width) return;
   const p = new THREE.Vector3(wx, wy, wz).project(cam), x0 = clamp((p.x + 1) / 2, 0.08, 0.92) * sr.width, y0 = clamp((1 - p.y) / 2, 0.1, 0.9) * sr.height, x1 = tr.left + tr.width / 2 - sr.left, y1 = tr.top + 2 - sr.top;
   const el = document.createElement('span'); el.className = 'hf'; stage.appendChild(el); const f = { el, t0: now, n: 1, x1, y1 }; hfList.push(f);
@@ -455,6 +455,6 @@ function resume() { if (state !== 'pause') return; $('pauseCard').hidden = true;
 $('pauseBtn').onclick = pause; $('resumeBtn').onclick = resume;
 goBtn.onclick = start;
 if (window.KiteLB) KiteLB.button($('lbSlot'), () => Object.assign({ cat: 'swim' }, (KiteLB.CATS.filter((c) => c[0] === 'swim')[0] || [])[2] || {}));
-window.__swim = { hf: () => hfList.filter((f) => f.el.isConnected).map((f) => f.n), hfSend: (x, y, z) => hfSend(x, y, z),      /* D377 測試掛勾 */ get wake() { return WAKE.filter((w) => w.visible).length; }, ob: (n, l) => obstacle(n, l), get state() { return state; }, get score() { return score; }, get dist() { return dist; }, set dist(x) { dist = x; }, get hearts() { return hearts; }, set hearts(x) { hearts = x; }, get lane() { return lane; }, get pos() { return pos; }, get theme() { return theme && theme.id; }, regen() { deco.splice(0).forEach((o) => drop(o)); for (let z = 6; z > -130; z -= 2.6) decoAt(z); }, get speed() { return speedLv(); }, set playT(x) { playT = x; }, P, objs, start, end, move, L, setZone };
+window.__swim = { hf: () => hfList.filter((f) => f.el.isConnected).map((f) => f.n), hfSend: (x, y, z) => hfSend(x, y, z), set combo(x) { combo = x; },      /* D378 測試掛勾 */      /* D377 測試掛勾 */ get wake() { return WAKE.filter((w) => w.visible).length; }, ob: (n, l) => obstacle(n, l), get state() { return state; }, get score() { return score; }, get dist() { return dist; }, set dist(x) { dist = x; }, get hearts() { return hearts; }, set hearts(x) { hearts = x; }, get lane() { return lane; }, get pos() { return pos; }, get theme() { return theme && theme.id; }, regen() { deco.splice(0).forEach((o) => drop(o)); for (let z = 6; z > -130; z -= 2.6) decoAt(z); }, get speed() { return speedLv(); }, set playT(x) { playT = x; }, P, objs, start, end, move, L, setZone };
 </script>
 </body></html>

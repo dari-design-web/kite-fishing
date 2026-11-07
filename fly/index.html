@@ -95,6 +95,11 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 @keyframes starpop{0%{transform:scale(.2) rotate(-40deg);transform-origin:50% 55%}100%{transform:none;transform-origin:50% 55%}}
 @media (prefers-reduced-motion:reduce){.bigstars .on path{animation:none}}
 .card.result .rows{font-size:13px;gap:2px 12px;padding:6px 0}
+/* D378（主動待辦②抓拍，GPT 0947 選 B）：結算卡放一張這局最後一刻的遊戲畫面縮圖＋GPT 雙星貼紙；只預覽，不存檔、不開相機 */
+.snap{display:flex;align-items:center;justify-content:center;gap:10px;margin:0 0 -2px}
+.snap .ph{position:relative;width:112px;height:66px;border:2.5px solid var(--ink);border-radius:8px;background:#17324A center/cover no-repeat;box-shadow:0 2px 0 rgba(16,41,61,.35);transform:rotate(-3deg)}
+.snap .ph img{position:absolute;right:-14px;top:-14px;width:34px;height:34px;transform:rotate(12deg)}
+.snap small{font-size:11px;line-height:1.35;color:#8C7E6A;text-align:left}
 @media (prefers-reduced-motion:reduce){.kg.pop,.banner{animation:none}}
 .ult{position:absolute;right:8px;bottom:calc(12px + env(safe-area-inset-bottom,0px));width:80px;height:90px;padding:0;border:0;background:none;display:block;-webkit-tap-highlight-color:transparent}
 .ult .ring{position:absolute;left:3px;top:0;width:74px;height:74px;border-radius:50%;border:2.5px solid var(--ink);background:conic-gradient(var(--gold) var(--fill,0%),#17324A 0);box-shadow:0 3px 0 rgba(16,41,61,.4)}
@@ -274,6 +279,7 @@ body:not(.qa) #ask, body:not(.qa) #copyBtn{display:none!important}
       <div class="bigstars" id="bigStars"></div>
       <div class="total"><span id="cleanPct">0</span> <small>分</small></div>
       <button type="button" class="cheer" id="cheerBtn" hidden><span class="kf" aria-hidden="true"></span><span>點我，飛高高！</span></button>      <!-- D197：過關小慶祝 -->
+      <div class="snap" id="snap" hidden><span class="ph" id="snapPh"><img src="assets/fest/twin_stars.png" alt=""></span><small>這局的一刻<br>（只在這裡看，不會存起來）</small></div>      <!-- D378：結算縮圖預覽 -->
       <div class="far" id="farBar" hidden></div>      <!-- D196：沒過關時看這局飛到哪裡（和這關最遠紀錄） -->
       <div class="rows" id="rows"></div>
       <p class="tipNote" id="tipNote" hidden></p>
@@ -499,7 +505,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '1.03',
+  version: '1.04',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -3470,7 +3476,7 @@ function dailyOpen() {
 }
 function dailySub() { const tt = $('stageTitle'), d = tt.querySelector('.dmd'); if (!d) return; tt.classList.remove('dwrap'); const a = tt.firstChild; if (d.offsetTop > a.offsetTop + 4) tt.classList.add('dwrap'); }      /* D270：GPT 1130 A② 日期放不下換到第二行時，改成 14px 副標（同一行放得下就不動） */
 function dailyFinish() {
-  BGM.stop(); if (window.KiteBoard) KiteBoard.ev('run_end', { game: 'fly' }); dailyFade = null;
+  $('snap').hidden = true; BGM.stop(); if (window.KiteBoard) KiteBoard.ev('run_end', { game: 'fly' }); dailyFade = null;
   mode = 'result'; $('hud').hidden = true; $('banner').hidden = true; $('hint').hidden = true; $('ultBtn').hidden = true;
   const sc = scoreFinal(), day = daily.route.date, old = dailyBestGet(day), best = old === undefined ? sc : Math.max(old, sc); if (old === undefined || sc > old) dailyBestSet(day, sc);
   jingle([523, 659, 784], 120);
@@ -3630,7 +3636,12 @@ function mapRail(mt) {      // 河豚自行車載豆腐君、象鼻君、山野�
   ['tofu', 'ele', 'forest'].forEach((m, i) => { const hop = stop ? Math.abs(Math.sin(mt * 7 + i * 1.2)) * 8 : Math.abs(Math.sin(mt * 10 + i * 1.9)) * 3; g.save(); g.translate(-30 - i * 20, 20 - hop); if (back) g.scale(-1, 1); drawMascot(m, 0.5); g.restore(); });      // 吉祥物跟在車後面走      // 騎車時一顛一顛，停下來就跳一跳
   g.restore();
 }
+/* D378：把遊戲畫布裁成 16:9 小圖（以小鳶的高度為中心），放進結算卡；只放在畫面上，不存檔、不下載 */
+let snapURL = '';
+function snapTake() { snapURL = ''; try { const sw = cv.width, sh = cv.height; if (!sw || !sh) return; const ch = Math.min(sh, Math.round(sw * 9 / 16)), cy = Math.max(0, Math.min(sh - ch, Math.round(kite.y / H * sh - ch / 2))); const t = document.createElement('canvas'); t.width = 224; t.height = 126; t.getContext('2d').drawImage(cv, 0, cy, sw, ch, 0, 0, 224, 126); snapURL = t.toDataURL('image/jpeg', 0.8); } catch (e) { snapURL = ''; }
+  $('snap').hidden = !snapURL; $('snapPh').style.backgroundImage = snapURL ? 'url(' + snapURL + ')' : ''; }
 function finish() { if (daily) return dailyFinish(); BGM.stop(); { $('ask').hidden = false; $('rank').hidden = false; const mr = $('moreRows'); if (mr) mr.hidden = false; } if (window.KiteBoard) KiteBoard.ev('run_end', { game: 'fly' });
+  snapTake();      /* D378：先抓這一刻的遊戲畫面 */
   mode = 'result'; $('hud').hidden = true; $('banner').hidden = true; $('hint').hidden = true; $('ultBtn').hidden = true;
   const ok = kite.hearts > 0, pct = cleanPct(); jingle(ok ? [523, 659, 784] : [392, 330, 262], 120);
   $('resTitle').textContent = stats.boatSunk ? '小船沉了' : !ok ? '小鳶累了' : stats.bossCleared ? '過關' : '時間到'; $('rank').textContent = won ? rankOf(pct) : '還沒過關';      /* QA：沒過關不顯示最高稱號（原本輸了也寫「基隆鳶王」） */ $('cleanPct').textContent = scoreFinal();
