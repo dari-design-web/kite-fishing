@@ -383,8 +383,10 @@ function update(dt) {
   if (Math.floor(t * 8) !== Math.floor((t - dt) * 8)) hud();
 }
 const helper = $('helper');
+const GLOW_C = new THREE.Color('#8fe9ff'), seaT = new THREE.Color(); let seaGlow = 0;
+const glowK = () => Math.min(0.42, (combo >= 50 ? 0.32 : combo >= 25 ? 0.22 : combo >= 10 ? 0.12 : 0) + (P.fever > 0 ? 0.12 : 0));
 function pose(dt) {
-  seaC.lerp(tgtC.sea, 1 - Math.exp(-dt * 1.2)); sandM.color.lerp(tgtC.sand, 1 - Math.exp(-dt * 1.2)); S.fog.near = lerp(S.fog.near, tgtC.fog[0], 1 - Math.exp(-dt)); S.fog.far = lerp(S.fog.far, tgtC.fog[1], 1 - Math.exp(-dt)); stage.style.background = '#' + seaC.getHexString();
+  seaGlow = lerp(seaGlow, state === 'play' ? glowK() : 0, 1 - Math.exp(-dt * (glowK() >= seaGlow ? 2.5 : 1.2))); seaT.copy(tgtC.sea).lerp(GLOW_C, seaGlow); seaC.lerp(seaT, 1 - Math.exp(-dt * 2));      /* D379（GPT 1051 B）：快游海面染亮：連吃 10／25／50 與狂熱時海色往亮青藍靠，被撞斷連吃約 1 秒淡回原色 */ sandM.color.lerp(tgtC.sand, 1 - Math.exp(-dt * 1.2)); S.fog.near = lerp(S.fog.near, tgtC.fog[0], 1 - Math.exp(-dt)); S.fog.far = lerp(S.fog.far, tgtC.fog[1], 1 - Math.exp(-dt)); stage.style.background = '#' + seaC.getHexString();
   bgs.forEach((b, k) => { b.userData.m.forEach((m) => (m.opacity = lerp(m.opacity, k === zone % 4 ? 1 : 0, 1 - Math.exp(-dt * 1.5)))); b.visible = b.userData.m[0].opacity > 0.01; });
   cM.opacity = lerp(cM.opacity, theme.id === 'deep' ? 0.06 : 0.32, 1 - Math.exp(-dt));
   const k = clamp((v - CFG.v0) / (CFG.vMax - CFG.v0), 0, 1);
@@ -455,6 +457,6 @@ function resume() { if (state !== 'pause') return; $('pauseCard').hidden = true;
 $('pauseBtn').onclick = pause; $('resumeBtn').onclick = resume;
 goBtn.onclick = start;
 if (window.KiteLB) KiteLB.button($('lbSlot'), () => Object.assign({ cat: 'swim' }, (KiteLB.CATS.filter((c) => c[0] === 'swim')[0] || [])[2] || {}));
-window.__swim = { hf: () => hfList.filter((f) => f.el.isConnected).map((f) => f.n), hfSend: (x, y, z) => hfSend(x, y, z), set combo(x) { combo = x; },      /* D378 測試掛勾 */      /* D377 測試掛勾 */ get wake() { return WAKE.filter((w) => w.visible).length; }, ob: (n, l) => obstacle(n, l), get state() { return state; }, get score() { return score; }, get dist() { return dist; }, set dist(x) { dist = x; }, get hearts() { return hearts; }, set hearts(x) { hearts = x; }, get lane() { return lane; }, get pos() { return pos; }, get theme() { return theme && theme.id; }, regen() { deco.splice(0).forEach((o) => drop(o)); for (let z = 6; z > -130; z -= 2.6) decoAt(z); }, get speed() { return speedLv(); }, set playT(x) { playT = x; }, P, objs, start, end, move, L, setZone };
+window.__swim = { get glow() { return seaGlow; }, get sea() { return '#' + seaC.getHexString(); }, hf: () => hfList.filter((f) => f.el.isConnected).map((f) => f.n), hfSend: (x, y, z) => hfSend(x, y, z), set combo(x) { combo = x; },      /* D378 測試掛勾 */      /* D377 測試掛勾 */ get wake() { return WAKE.filter((w) => w.visible).length; }, ob: (n, l) => obstacle(n, l), get state() { return state; }, get score() { return score; }, get dist() { return dist; }, set dist(x) { dist = x; }, get hearts() { return hearts; }, set hearts(x) { hearts = x; }, get lane() { return lane; }, get pos() { return pos; }, get theme() { return theme && theme.id; }, regen() { deco.splice(0).forEach((o) => drop(o)); for (let z = 6; z > -130; z -= 2.6) decoAt(z); }, get speed() { return speedLv(); }, set playT(x) { playT = x; }, P, objs, start, end, move, L, setZone };
 </script>
 </body></html>
