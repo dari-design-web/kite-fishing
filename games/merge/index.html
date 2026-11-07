@@ -571,13 +571,17 @@ function drawTitle(tt) {
     startBtnR = btn('點一下開始', 456);
   }
 }
+/* D381（GPT 1251：合成港／疊貨櫃結算加這局最後一刻的遊戲畫面縮圖＋每局雙星貼紙）：結算前抓畫布上最後一格，裁 16:9（合成港偏下看魚艙、疊貨櫃以塔頂為中心）；只畫在結算卡上，不存檔、不下載、不開相機、不改計分 */
+function snapTake() { try { const sw = cv.width, sh = cv.height; if (!sw || !sh) return null; const ch = Math.min(sh, Math.round(sw * 9 / 16)), cy = Math.max(0, Math.min(sh - ch, Math.round(sh * (mode === 'merge' ? 0.8 : 0.55) - ch / 2))); const t = document.createElement('canvas'); t.width = 224; t.height = 126; t.getContext('2d').drawImage(cv, 0, cy, sw, ch, 0, 0, 224, 126); return t; } catch (e) { return null; } }
+function snapDraw(c) { if (!IMG.twin) want('twin', '../../fly/assets/fest/twin_stars.png'); ctx.save(); ctx.translate(84, 170); ctx.rotate(-0.05); rrect(-42, -25, 84, 50, 8, 'rgba(0,0,0,.22)'); rrect(-42, -27, 84, 50, 8, C.ink); ctx.save(); rrect(-39, -24, 78, 44, 6, '#0A2236'); ctx.clip(); ctx.drawImage(c, -39, -24, 78, 44); ctx.restore(); const st = ready('twin'); if (st) { ctx.rotate(0.26); ctx.drawImage(st, 26, -42, 28, 28); } ctx.restore(); text('這局的一刻', 84, 208, 10, '#6A7F8E', 'center', 700, false); }
 function drawEnd(e) {
   const k = clamp(e.t * 4, 0, 1); ctx.fillStyle = 'rgba(14,34,50,' + 0.55 * k + ')'; ctx.fillRect(0, 0, W, H);
   ctx.save(); ctx.translate(0, (1 - k) * 30); ctx.globalAlpha = k;
   panel(96, 400);
   if (e.nb) { rrect(W / 2 - 64, 82, 128, 30, 15, C.warn, C.ink, 2.5); text('新紀錄！', W / 2, 97, 15, C.paper, 'center', 900, false); }
   text(e.title, W / 2, 134, 16, '#3A5568', 'center', 700, false);
-  text(String(e.s), W / 2, 178, 46, C.ink, 'center', 900, false); text('分', W / 2 + ctx.measureText(String(e.s)).width / 2 + 30, 186, 15, C.ink, 'center', 700, false);
+  const sx = e.snap ? W / 2 + 34 : W / 2; if (e.snap) snapDraw(e.snap);      /* D381：有縮圖時分數往右讓 34，縮圖放左邊 */
+  text(String(e.s), sx, 178, 46, C.ink, 'center', 900, false); text('分', sx + ctx.measureText(String(e.s)).width / 2 + 30, 186, 15, C.ink, 'center', 700, false);
   e.rows.forEach((r, i) => { const y = 232 + i * 34; rrect(50, y - 14, W - 100, 28, 10, '#F3EAD8'); text(r[0], 64, y, 13, '#3A5568', 'left', 700, false); text(r[1], W - 64, y, 14, C.ink, 'right', 900, false);
     if (i === 0 && e.icon != null) { ctx.font = FONT(14, 900); drawSea(e.icon, W - 64 - ctx.measureText(r[1]).width - 16, y, 11, 0); } });
   if (e.found && e.found.length) text('新發現 ' + e.found.length + ' 種海鮮！', W / 2, 232 + e.rows.length * 34 + 4, 13, C.warn, 'center', 900, false);
@@ -642,7 +646,7 @@ function finish() {
   let rk = null, dr = DS ? KiteDaily.finish(DS, s) : null; let tl = ''; try { if (!DS && window.KiteCore && KiteCore.reportPlay && s > 0) { const rep = () => KiteCore.reportPlay({ game: mode, level: 'all', score: s, lbAll: true }); rk = KiteCore.rankAround ? KiteCore.rankAround(mode, 'all', rep) : { res: rep() }; tl = KiteCore.tierLine ? KiteCore.tierLine(rk.res) : ''; } } catch (e) {}      // D141：前 3 局算進今日積分、可換點      // D123：進排行榜；D133：記下名次
   if (mode === 'merge') endInfo = { s, nb, t: 0, title: G.over > 1.6 ? '堆過紅線了' : '魚艙塞滿了', rows: [['最大合到', SEAF[G.top][0]], ['撐到', '第 ' + G.lv + ' 關'], ['合成次數', G.mergesAll + ' 次'], ['最長連鎖', '×' + Math.max(1, G.bestChain)]], icon: G.top, found: G.newFound, replay: G.show == null ? null : G.show };
   else { const h = G.blocks.length - 1; if (!DS && h > (best.stackH || 0)) { best.stackH = h; store.set('kiteMiniBest1', best); } endInfo = { s, nb, t: 0, title: '貨櫃掉下去了', rows: [['疊了', h + ' 層'], ['裝滿貨船', G.ships + ' 艘'], ['完美', G.perfects + ' 次'], ['最長完美連擊', '×' + G.bestCombo]] }; }
-  endInfo.db = DS ? KiteDaily.dayBest(DS, s) : null;
+  endInfo.snap = snapTake(); endInfo.db = DS ? KiteDaily.dayBest(DS, s) : null;      /* D381：畫布此刻還是最後一格（finish 在 update 後、draw 前） */
   endInfo.rank = DS ? (DS.official ? '' : '練習不計榜') : rk && KiteCore.rankText ? KiteCore.rankText(rk) : '';
   if (DS) { const h = document.getElementById('dres'), ab = document.getElementById('aqBar'); (ab || document.querySelector('.stage')).after(h); h.classList.remove('kdFold'); h.innerHTML = '<button type="button" class="dx" aria-expanded="true">收起 ▾</button>' + KiteDaily.resultHtml(DS, dr, s, { mainOfficial: mode === 'merge' }); KiteDaily.wire(h, s); kdLock(); h.hidden = false; kdHint(h);
     const dx = h.querySelector('.dx'); dx.onclick = () => { const f = h.classList.toggle('kdFold'); dx.textContent = f ? '📅 今日挑戰結果 ▴' : '收起 ▾'; dx.setAttribute('aria-expanded', f ? 'false' : 'true'); }; }      /* D265：收起改成摺成一條、點了再打開 */      // QA：今日挑戰結果改成下方面板，不再把遊戲畫面擠小
