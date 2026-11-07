@@ -509,7 +509,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
     ov.innerHTML = '<div class="box"><img src="../travel/assets/kite_hello.png" alt=""><p>' + (now.getHours() < 11 ? '早安' : now.getHours() < 17 ? '午安' : '晚上好') + '！我今天帶了一張小卡給你～</p>' +
       '<div class="card"><small>' + c[0] + '・第 ' + dd.days + ' 張</small><p>' + c[1] + '</p></div>' +
       '<div class="streak">' + (dd.days > 1 ? '這是你來看我的第 <b>' + dd.days + '</b> 天！' : '明天也來看我，小卡會不一樣喔！') + '</div><div class="week">' + wk + '</div>' +
-      (dd.days % 7 === 0 ? '<div class="streak">又來滿 7 天了，謝謝你常來看我 💛</div>' : '') +
+      (dd.days % 7 === 0 ? '<div class="streak">謝謝你常來看我 💛</div>' : '') +
       '<div class="row"><button class="go" type="button">收進背包</button></div></div>';
     document.body.appendChild(ov);
     ov.querySelector('.go').onclick = function () { ov.remove(); bagDot(); };
