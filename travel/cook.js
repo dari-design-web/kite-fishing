@@ -33,6 +33,7 @@
     '.ck .fly{position:fixed;z-index:70;width:34px;height:34px;pointer-events:none;transition:transform .35s ease-in,opacity .35s;display:flex;align-items:center;justify-content:center;font-size:26px}.ck .fly img{width:100%}' +
     '.ck.dual .top b{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}body:has(.ck) #hmAct,body:has(.ck) .roomwrap .chip,body:has(.ck) #hmFarm,body:has(.ck) #sayBox{visibility:hidden}' +
     '.ck .hz.toss .pot{animation:ckTs .35s}@keyframes ckTs{30%{transform:translateX(-50%) translateY(-8px) rotate(-6deg)}70%{transform:translateX(-50%) rotate(4deg)}}' +
+    '.ck .kh{position:absolute;top:47%;width:52px;transform:translateX(-50%);pointer-events:none;animation:ckKh .45s cubic-bezier(.3,1.6,.5,1) both;z-index:2}.ck .kh img{width:100%;display:block;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}.ck .kh.fan img{animation:ckKf .5s ease-in-out infinite alternate;transform-origin:50% 90%}.ck .kh i{position:absolute;left:50%;top:100%;transform:translateX(-50%);white-space:nowrap;font:800 11px/1 sans-serif;font-style:normal;color:#5B4A3A;background:#FFF4D6;border:2px solid #F4BB42;border-radius:10px;padding:3px 6px}.ck .kh.bye{animation:ckKb .4s ease-in both}@keyframes ckKh{from{transform:translateX(-50%) translateY(14px) scale(.3);opacity:0}}@keyframes ckKf{from{transform:rotate(-8deg)}to{transform:rotate(8deg)}}@keyframes ckKb{to{transform:translateX(-50%) translateY(10px) scale(.6);opacity:0}}@media (prefers-reduced-motion:reduce){.ck .kh,.ck .kh.fan img,.ck .kh.bye{animation:none}}.ck .done{z-index:5}' +
     '.ck.ckEnd .tip,.ck.ckEnd .tray{visibility:hidden}.ck .done{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(30,20,10,.6);color:#fff;text-align:center;gap:6px}.ck .done .stars{font-size:44px;letter-spacing:4px}.ck .done b{font-size:20px}';
   document.head.appendChild(css);
 
@@ -137,7 +138,7 @@
         board.st = 'pot'; p.n++; fly($('ckBoard'), PID[g], pic(board.it, true)); board = null; chop = 0; boardState(); var lb0 = $('ckBL'); if (lb0) lb0.textContent = '砧板'; order(); tray(); maybeCook(g); return;
       }
       if (p.st === 'ready' || p.st === 'burn') {
-        if (p.st === 'burn') { burnt = true; burntG[g] = true; }
+        if (p.st === 'burn') { burnt = true; burntG[g] = true; p.helped = true; }
         var wasBurn = p.st === 'burn';
         p.st = 'served'; list.forEach(function (x) { if (x.st === 'pot' && x.g === g) x.st = 'done'; }); fly($(PID[g]), 'ckBox', '🥘'); var sv = wasBurn ? MARK[g] + '有點焦焦的…沒關係，還是很香！' : MARK[g] + '起鍋！剛剛好～'; tip(sv); order(); potState(g); boxState(); if (!check()) setTimeout(function () { var tt = $('ckTip'); if (!ended && tt && tt.textContent === sv) nextTip(); }, 1200); return;      /* D316：GPT 2230 A③——起鍋 1.2 秒後依現況接下一步，不回放舊句；D317 B：焦鍋句帶實際爐號（①有點焦焦的…） */
       }
@@ -156,6 +157,7 @@
     function potState(g) {
       var p = pots[g], id = PID[g], s = $(id === 'ckPot' ? 'ckPS' : 'ckPot2S'), b = $(id === 'ckPot' ? 'ckPB' : 'ckPot2B'), bw = $(id === 'ckPot' ? 'ckPBw' : 'ckPot2Bw'), im = $(id + 'Img'), nm = MARK[g] + potName(g);
       bw.className = 'bar' + (p.st === 'ready' ? ' ok' : p.st === 'burn' ? ' burn' : '');
+      kh(g, p);
       if (p.st === 'idle') { s.textContent = p.need ? (G > 1 ? MARK[g] : nm + ' ') + p.n + '/' + p.need : nm; b.style.width = p.need ? p.n / p.need * 100 + '%' : '0'; im.innerHTML = p.n ? '<img src="' + A + 'pot_cooking.webp" alt="" style="filter:grayscale(.6)">' : ''; }
       else if (p.st === 'cooking') { s.textContent = MARK[g] + '煮煮煮…'; im.innerHTML = '<img src="' + A + 'pot_cooking.webp" alt=""><span class="steam">♨️</span>'; }
       else if (p.st === 'ready') { s.textContent = MARK[g] + (G > 1 ? '好了' : '好了！快起鍋'); im.innerHTML = '<img src="' + A + 'pot_ready.webp" alt=""><span class="steam">✨</span>'; }
@@ -163,6 +165,13 @@
       /* D317：GPT 2330 A①——雙爐鍋旁只寫爐號＋狀態（①0/1、②好了、②焦了），完整指令留提示列；單爐不變 */
       else { s.textContent = MARK[g] + '起鍋了'; b.style.width = '100%'; im.innerHTML = ''; }
       hl();
+    }
+    /* D387：研究⑥做菜失敗小鳶接手——鍋子焦了，小鳶跳到那個爐子前面的櫃子上幫忙搧（雙爐只寫爐號）；焦鍋起鍋後換開心臉說「還是很香！」1.1 秒再淡出。只外觀：焦的結果、星星、秒數都不變 */
+    function kh(g, p) {
+      var id = 'ckKh' + g, k = $(id), hr = HIT[g ? 'stove2' : 'stove'], cx = (hr[0] + hr[2]) / 2 * 100 + '%';
+      if (p.st === 'burn') { if (k && k.classList.contains('fan')) return; if (k) k.remove(); k = el('span', 'kh fan', '<img src="assets/kite_wave.png" alt=""><i>' + (G > 1 ? MARK[g] + '搧搧！' : '我幫你搧搧！') + '</i>'); k.id = id; k.style.left = cx; w.querySelector('.desk').appendChild(k); return; }
+      if (p.st === 'served' && p.helped) { p.helped = false; if (k) k.remove(); k = el('span', 'kh', '<img src="assets/kite_happy.png" alt=""><i>' + (G > 1 ? MARK[g] + '好香！' : '還是很香！') + '</i>'); k.id = id; k.style.left = cx; w.querySelector('.desk').appendChild(k); setTimeout(function () { if (k.parentNode) { k.classList.add('bye'); setTimeout(function () { if (k.parentNode) k.remove(); }, 400); } }, 1100); return; }
+      if (k && p.st !== 'served') k.remove();
     }
     function boxState() {
       var tot = needRice.reduce(function (a, b) { return a + b; }, 0), got = riceIn.reduce(function (a, b) { return a + b; }, 0);
