@@ -505,7 +505,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '1.06',
+  version: '1.07',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -3386,6 +3386,16 @@ function hazard(x, y, w, h) {      // 紅區：紅底加斜紋，疊在藍色海
   const o = calm ? 0 : (clock * 40) % 26; for (let d = -h - 26 + o; d < w + 26; d += 26) { ctx.moveTo(x + d, y + h); ctx.lineTo(x + d + h, y); } ctx.stroke();
   ctx.restore();
 }
+function drawBulTrails() {      /* D384：GPT 1550 A——敵彈（魔王子彈、連射、噴彈）身後一條漸淡的短尾光，只是外觀：彈頭判定、速度、數量、分數都不變 */
+  for (const f of foes) {
+    if (!f.aimed || f.hp <= 0 || f.hidden) continue;
+    const vx = f.vx || 0, vy = f.vy || 0, v = Math.hypot(vx, vy); if (v < 30) continue;
+    const len = Math.min(calm ? 24 : 48, v * 0.2), ux = vx / v, uy = vy / v, w = f.r * 1.0, tx = f.x - ux * len, ty = f.y - uy * len;
+    const c = f.gold ? '255,220,110' : NM() ? '255,214,140' : RM() ? '150,150,160' : PM() ? '120,200,255' : '255,150,110';
+    const g = ctx.createLinearGradient(f.x, f.y, tx, ty); g.addColorStop(0, 'rgba(' + c + ',.7)'); g.addColorStop(1, 'rgba(' + c + ',0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(f.x - uy * w, f.y + ux * w); ctx.lineTo(tx, ty); ctx.lineTo(f.x + uy * w, f.y - ux * w); ctx.closePath(); ctx.fill();
+  }
+}
 function drawClearRings() {      /* D344：GPT 1620 A——清除圈畫在怪、敵彈、警示、小鳶下面；大圈內填 .03、外環峰值 .55，中圈 .08／.8，小圈照舊 */
   for (const r of rings) { if (!r.clr) continue; const L = Math.max(0, r.life), sa = [1, 0.8, 0.55][r.tier || 0], fa = [0.18, 0.08, 0.03][r.tier || 0]; ctx.strokeStyle = 'rgba(' + r.color + ',' + L * sa + ')'; ctx.lineWidth = r.lw || 5; ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, 6.2832); ctx.stroke(); ctx.fillStyle = 'rgba(' + r.color + ',' + L * fa + ')'; ctx.fill(); }
 }
@@ -3402,6 +3412,7 @@ function draw() {
   if (RM()) drawTrainLane();
   drawClearRings();
   if (boss && boss.rage && boss.dying === undefined && !boss.hidden) { const rr = boss.r || T.boss.r, pz = calm ? 0 : Math.sin(clock * (boss.rage > 1 ? 9 : 6)); ctx.save(); ctx.translate(boss.x, boss.y + rageGlowY() * bossVis()); if (img.fx_rage_glow) { const d = rr * 4.4 * bossVis() + pz * 8; ctx.globalAlpha = Math.max(0, Math.min(1, ((boss.rage > 1 ? 0.42 : 0.28) + pz * 0.06) * RAGE_K)); ctx.drawImage(img.fx_rage_glow, -d / 2, -d / 2, d, d); } else glow(rr * 2.4 + pz * 6, boss.rage > 1 ? '255,60,40' : '255,110,70', (boss.rage > 1 ? 0.42 : 0.28) + pz * 0.06); ctx.restore(); }      /* D347：魔王生氣／暴走時身後泛紅光（第二段更紅、脈動更快）；D350 換成 GPT boss_rage_glow_v1（沒圖時用程式畫的） */
+  drawBulTrails();
   for (const f of foes) drawFoe(f);
   if (NEWT()) drawNewOver();
   drawClouds(); drawMinionTells(); drawTaotieZones(); drawVents(); drawMarketUI(); if (PM()) { drawBoats(); drawEscort(); drawAgenorZones(); } if (RM()) { drawSmokeClouds(); for (const f of foes) drawRailFoeState(f); drawTunnelDark(); drawRushes(); drawMascots(); drawJianjiZones(); } drawBossFx(); drawSparks(); drawFrag();
