@@ -499,7 +499,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '1.02',
+  version: '1.03',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -633,12 +633,12 @@ const calm = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce
 const img = {};
 for (const k in STAGE_ART) ASSET_FILES[k] = 'stages/' + STAGE_ART[k];
 for (const k of ['tt_lampL', 'tt_lampL_b', 'tt_lampR', 'tt_lampR_b', 'ag_cable', 'ag_cable_b', 'ag_shield', 'ag_shield_b', 'part_burst']) ASSET_FILES[k] = 'parts/' + k + '.png';      /* D367：GPT 0110 魔王零件 9 張（256 縮 160） */
-for (const k of ['fw_radial', 'fw_fan', 'fw_star']) ASSET_FILES[k] = 'fest/' + k + '.png'; for (const k of ['txt_pretty', 'txt_done', 'txt_clean']) ASSET_FILES[k] = 'fest/' + k + '.webp';      /* D370：GPT 1830 最後一擊慶典素材（煙火白色、程式上色；大字） */
+for (const k of ['fw_radial', 'fw_fan', 'fw_star']) ASSET_FILES[k] = 'fest/' + k + '.png'; ASSET_FILES.hud_star = 'fest/hud_star.png'; for (const k of ['txt_pretty', 'txt_done', 'txt_clean']) ASSET_FILES[k] = 'fest/' + k + '.webp';      /* D370：GPT 1830 最後一擊慶典素材（煙火白色、程式上色；大字） */
 for (const k in ASSET_FILES) { const im = new Image(); im.onload = () => { img[k] = im; }; im.src = 'assets/' + ASSET_FILES[k]; }
 
 let stageNo = 1, progress = { unlocked: 1, stars: {}, best: {} };
 let mode = 'map', control = 'relative', level = 'normal', t = 0, last = 0, clock = 0, soundOn = (() => { try { return localStorage.getItem('kiteBgm') !== '0'; } catch (e) { return true; } })(), ac = null, seed = 1;
-let fests = [], festTxt = null, festAcc = 0, festLeft = 0;      /* D370 慶典 */
+let fests = [], festTxt = null, festAcc = 0, festLeft = 0, hudFly = [], hudPops = [];      /* D370 慶典 */
 let vents = [], clouds = [], kite, foes, shots, picks, parts, floats, friends, pals, rings, warns, script, si, stats, fireAcc, gauge, ult, flash, shake, boss, endTimer, firstMove, toldUlt, toldBarrel, toldGate, toldRing, guide, won, seenPick;
 const answers = {}, keys = {};
 const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
@@ -732,7 +732,7 @@ function buildScript() {
 }
 
 function reset() {
-  fests = []; festTxt = null; festAcc = 0;
+  fests = []; festTxt = null; festAcc = 0; hudFly = []; hudPops = [];
   seed = CONFIG.seed; cine = 0; slowmo = 0; rushes = []; t = 0; si = 0; fireAcc = 0; gauge = 0; ult = null; cut = null; flash = 0; shake = 0; boss = null; sparks = []; frag = null; bossWarnT = 0; bossWarned = false; endTimer = 0; firstMove = false; toldUlt = false; toldBarrel = false; toldGate = false; toldRing = false; guide = null; won = false; seenPick = {};
   kite = { x: W / 2, y: 520, tx: W / 2, ty: 520, jetT: 0, ringT: 0, slowT: 0, homeT: 0, drumT: 0, drumAcc: 0, hearts: LV().hearts, safe: 0, power: 1, powerT: 0, galeT: 0, shield: false, drag: false, lx: 0, ly: 0 };
   T = stageTypes(); vents = []; clouds = []; boats = []; mascots = []; beatDemo = null; menu = null; escort = null;
@@ -871,6 +871,7 @@ function clearFoe(f, how) {      // how：'' 羽毛或墨汁、'blast' 被炸到
   if (!calmClear) clearBurst(f, d);      /* D341：清掉時爆開＋金光飛向小鳶 */
   if (window.KiteBoard && !f.noCount && how !== 'sweep' && f.type !== 'boss' && !d.friend) KiteBoard.ev('fly_clear');      /* D175：告示板委託（收尾自動清、魔王不算） */
   if (how !== 'sweep') { stats.combo++; stats.comboT = CONFIG.combo.window; stats.bestCombo = Math.max(stats.bestCombo, stats.combo); }
+  if (!calmClear && gauge < CONFIG.ult.need) hudSend(f.x, f.y);      /* D376：集氣小光點飛進右下角的鯨鯊圈（只是畫面，集氣照舊當下入帳） */
   if (!calmClear) gauge = Math.min(CONFIG.ult.need, gauge + (f.fill ? 0.5 : d.score) + (stats.combo >= CONFIG.combo.bonusFrom ? 1 : 0));      // 鯨鯊清掉的不再幫鯨鯊集氣
   if (stats.combo >= 5 && stats.combo % 5 === 0) say('連清 ' + stats.combo + '！', f.x, f.y - 26, '#BFF0D0');
   burst(f.x, f.y, f.type === 'boss' ? 36 : 6, how === 'ult' ? '#FFE08A' : '#BFF0D0'); if (!NEWT()) bubbles(f.x, f.y, 3);      // D123：第 5～8 關不冒泡泡
@@ -1159,6 +1160,7 @@ function drawNewBossBits(f) {      // G84 魔王圖還沒交：在原本的大�
 function update(dt) {
   const real = dt; if (ult && ult.t < 0.5) dt *= 0.25;
   if (fests.length || festTxt) festTick(real);
+  if (hudFly.length || hudPops.length) hudTick(real);
   if (cine > 0) cine -= real; if (slowmo > 0) { slowmo -= real; dt *= 0.3; }      // 演出字卡；最後一擊的慢動作      // 鯨鯊登場的前半秒是慢動作
   t += dt; if (daily) dailyTick(dt);
   while (si < script.length && script[si].t <= t) spawn(script[si++]);
@@ -3128,6 +3130,32 @@ const FEST_COL = ['#FFC21A', '#FF5C93', '#FF8A1F', '#B05CFF', '#FFE14D', '#FF6B4
 function festImg(k, col) { const key = k + col; if (festTint[key]) return festTint[key]; const src = img[k]; if (!src) return null; const c = document.createElement('canvas'); c.width = src.width; c.height = src.height; const g = c.getContext('2d'); g.drawImage(src, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height); return festTint[key] = c; }
 function festStart(x, y) { festLeft = calm ? 3 : 9; festAcc = 0.15; festBurst(x, Math.max(120, Math.min(H * 0.45, y)), 1.25); festTxt = { t: 0, k: NM() ? 'txt_pretty' : 'txt_clean' }; }
 function festBurst(x, y, sc) { const kinds = ['fw_radial', 'fw_fan', 'fw_star']; fests.push({ x, y, t: 0, life: 1.3, k: kinds[(Math.random() * 3) | 0], col: FEST_COL[(Math.random() * FEST_COL.length) | 0], s: (sc || frand(0.75, 1.15)) * Math.min(W, 420) * 0.55, rot: frand(-0.3, 0.3) }); if (!calm) beep(frand(500, 900), 0.12, 'triangle', 0.035, 600); }
+/* D376（主動待辦①，GPT 2348 選 A＋B）：清掉垃圾時，一顆金色小光點直線約 0.5 秒飛進右下角的集氣圈，到達時 GPT 單星（sticker_11）亮一次 16→24px；
+   0.1 秒內清掉的合成一顆、旁邊寫 ×N（N＝這批顆數，不是倍率）；集氣在清掉當下就入帳，飛的只是畫面；減少動態時不飛；用 Math.random 不動關卡亂數 */
+const HUD_FLY = { dur: 0.5, merge: 0.1, max: 8 };
+function hudTarget() { const ub = $('ultBtn'); if (!ub || ub.hidden) return null; const b = cv.getBoundingClientRect(), r = ub.getBoundingClientRect(); if (!b.width || !r.width) return null; return [(r.left + 40 - b.left) / b.width * W, (r.top + 3 - b.top) / b.height * H]; }      /* 集氣圈頂端：圈是蓋在畫布上的按鈕，光點停在圈的上緣才看得到 */
+function hudSend(x, y) {
+  if (calm || mode !== 'play') return; const last = hudFly[hudFly.length - 1];
+  if (last && last.t < HUD_FLY.merge) { last.n++; return; }
+  if (hudFly.length >= HUD_FLY.max) { last.n++; return; }
+  hudFly.push({ x0: x, y0: y, t: 0, n: 1, wob: frand(-0.5, 0.5) });
+}
+function hudTick(dt) {
+  for (const f of hudFly) f.t += dt; for (const p of hudPops) p.t += dt;
+  const done = hudFly.filter(f => f.t >= HUD_FLY.dur); if (done.length) { const tg = hudTarget(); if (tg) for (const f of done) hudPops.push({ x: tg[0], y: tg[1], t: 0, n: f.n }); hudFly = hudFly.filter(f => f.t < HUD_FLY.dur); }
+  hudPops = hudPops.filter(p => p.t < 0.32);
+}
+function drawHudFly() {
+  const tg = hudTarget(); if (!tg) { hudFly = []; hudPops = []; return; }
+  ctx.save(); ctx.textAlign = 'left'; ctx.lineJoin = 'round';
+  for (const f of hudFly) { const k = Math.min(1, f.t / HUD_FLY.dur), e = k * k * (3 - 2 * k), x = f.x0 + (tg[0] - f.x0) * e, y = f.y0 + (tg[1] - f.y0) * e, r = 4.5 + Math.min(3, f.n - 1) * 0.8;
+    ctx.globalAlpha = Math.min(1, f.t / 0.06); const g = ctx.createRadialGradient(x, y, 0, x, y, r * 2.6); g.addColorStop(0, 'rgba(255,236,150,.95)'); g.addColorStop(1, 'rgba(255,200,70,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 2.6, 0, 6.2832); ctx.fill();
+    ctx.fillStyle = '#FFE08A'; ctx.strokeStyle = '#7A4E12'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.fill(); ctx.stroke();
+    if (f.n > 1) { ctx.font = "700 13px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif"; ctx.lineWidth = 3.5; ctx.strokeStyle = '#10293D'; const tx = '×' + f.n; ctx.strokeText(tx, x + r + 3, y + 4); ctx.fillStyle = '#FFF8EA'; ctx.fillText(tx, x + r + 3, y + 4); } }
+  for (const p of hudPops) { const k = p.t / 0.32, sz = 16 + 8 * Math.min(1, k / 0.45); ctx.globalAlpha = k < 0.45 ? 1 : Math.max(0, 1 - (k - 0.45) / 0.55); ctx.save(); ctx.translate(p.x, p.y - 4); ctx.rotate(k * 0.6);
+    if (img.hud_star) ctx.drawImage(img.hud_star, -sz / 2, -sz / 2, sz, sz); else twinkle(0, 0, sz / 2, ctx.globalAlpha); ctx.restore(); }
+  ctx.restore();
+}
 function festTick(dt) {
   for (const f of fests) f.t += dt; fests = fests.filter(f => f.t < f.life);
   if (festLeft > 0) { festAcc -= dt; if (festAcc <= 0) { festLeft--; festAcc = frand(0.22, 0.38); festBurst(frand(W * 0.15, W * 0.85), frand(H * 0.12, H * 0.42)); } }
@@ -3381,6 +3409,7 @@ function draw() {
   drawRing(); if (PM()) drawPierFriendFx(); drawKite(); drawNetOnKite(); drawParts(); if (booms.length) drawBooms();
   ctx.restore();
   if (fests.length || festTxt) drawFest();
+  if (hudFly.length || hudPops.length) drawHudFly();
   if (flash > 0) { ctx.fillStyle = 'rgba(255,248,220,' + flash * (calm ? 0.2 : 0.5) + ')'; ctx.fillRect(0, 0, W, H); }
   ctx.textAlign = 'center'; ctx.lineJoin = 'round';
   for (const f of floats) { const FF = "px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif"; let fs = f.big ? 24 : 15; ctx.font = "700 " + fs + FF; const tw = ctx.measureText(f.text).width; if (tw > W - 16) { fs = Math.floor(fs * (W - 16) / tw); ctx.font = "700 " + fs + FF; f.x = Math.max(W / 2 - (W - 16) / 2 + ctx.measureText(f.text).width / 2, Math.min(W / 2 + (W - 16) / 2 - ctx.measureText(f.text).width / 2, f.x)); }      /* D242：太長的浮字縮小到畫面寬，不被切掉（「先直後橫…鋼索」原本最後一字出界） */
@@ -3683,7 +3712,7 @@ $('copyBtn').onclick = () => {
   const fallback = () => { log.value = text; log.hidden = false; log.focus(); log.select(); $('copyBtn').textContent = '請長按上方文字複製'; };
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
 };
-window.__flyGame = { CONFIG, daily: { route: () => dailyRoute(), state: () => daily, open: () => dailyOpen(), skip: (sec) => { if (daily) daily.rt += sec; } }, live: () => ({ foes, kite, stats, T, floats }), hz: () => ({ vents: vents.map((v) => ({ y: v.y, w: v.w, fromLeft: v.fromLeft, t: v.t, warn: v.warn, on: v.on })), boats: boats.map((b) => ({ x: b.x, y: b.y, t: b.t, warn: b.warn })) }), state: () => ({ mode, t, control, level, kite, gauge, foes: foes.map((f) => ({ type: f.type, x: f.x, y: f.y, r: f.r, hp: f.hp, vx: f.vx, w: f.w || 0, cross: !!f.cross, tired: !!f.tired, aimed: !!f.aimed })), warns: warns.map((w) => ({ y: w.y, t: w.t })), slam: boss && boss.slam ? { s: boss.slam, x: boss.slamX } : null, picks: picks.map((p) => ({ kind: p.kind, x: p.x, y: p.y })), pals: pals.length, stats, boss: !!boss, ult: ult ? ult.t : -1 }), fillGauge: () => { gauge = CONFIG.ult.need; }, record, skipTo: (sec) => { t = sec; while (si < script.length && script[si].t < sec) si++; }, hurtOff: () => { kite.safe = 1e9; }, testLose: (by, n, cl) => { if (by) stats.hitBy[by] = n || 3; if (cl) stats.cleared = cl; kite.hearts = 0; finish(); }, setStage: (n) => { stageNo = n; }, progress: () => progress, stage: () => stageNo, test: { parts: () => (boss && boss.parts ? { parts: boss.parts.map((q) => ({ id: q.id, hp: q.hp, broken: q.broken, x: boss.x + q.cx * bossVis(), y: boss.y + q.cy * bossVis() })), stop: boss.stopAtk, hp: boss.hp } : null), breakPart: (i) => { const q = boss && boss.parts && boss.parts[i]; if (q && !q.broken) partBreak(boss, q, boss.x + q.cx * bossVis(), boss.y + q.cy * bossVis()); }, fx351: (k) => { if (!boss) return null; if (k === 'rage') boss.rage = 2; if (k === 'frag') { fragBurst(boss.x, boss.y); frag.life = 0.12; } return { vis: bossVis(), wp: weakPoints(boss), r: boss.r, x: boss.x, y: boss.y }; }, sparks: () => sparks.length, toldDot: () => toldDot, pick: (kind, x, y) => { addPick(kind, x, y); }, rush: (n) => { addRush(n || 4); }, railX: () => RAIL_X(), hzN: () => hzRects.length, resetSeen: () => { for (const k in seenPick) delete seenPick[k]; }, buff: () => { kite.power = 3; kite.powerT = CONFIG.feather.powerTime * 0.7; kite.galeT = CONFIG.feather.galeTime * 0.5; kite.shield = true; }, spawn: (type, x, y) => { const f = mk(type, x, y); f.vy = CONFIG.scroll; return true; }, hearts: (n) => { kite.hearts = n; kite.safe = 0; drawHearts(); }, warn: (sec) => { warns.push({ y: kite.y, fromLeft: true, n: 3, t: sec }); }, friends: () => friends.map((c) => ({ kind: c.kind, x: Math.round(c.x), y: Math.round(c.y) })), won: () => won, logs: () => foes.filter((f) => f.type === 'log').map((f) => ({ x: Math.round(f.x), y: Math.round(f.y), w: Math.round(f.w) })) }, bossAtk: (a) => { if (boss) { boss.atk = a; boss.atkT = 0; boss.vol = 0; boss.rocks = []; boss.cables = []; boss.wave = 0; boss.stars = []; boss.beams = []; boss.lanes = []; boss.starAcc = 0; if (a === 'ram') { boss.ramX = kite.x; boss.ramT = 0; boss.ramS = 'warn'; } if (a === 'corridor') { boss.gx = W / 2; boss.rows = 0; } if (a === 'cross') { boss.cx = kite.x; boss.cy = kite.y; } } }, pierFriend: (id) => { pierGift(id, kite.x, kite.y); }, jiao: (r) => { jiaoForce = r; }, vents: () => vents.length, friend: (id, x, y) => { const f = mk('tangle', x, y); f.friend = id; f.vy = 30; }, floats: () => floats.map((f) => f.text), banner: () => $('banner').textContent, clouds: () => clouds.length, ring: () => kite.ringT, testWin: (sq, tu) => { stats.rescuedBy.squid = sq; stats.rescuedBy.turtle = tu; stats.rescued = sq + tu; stats.trapped = Math.max(stats.trapped, sq + tu); if (boss) { if (boss.phased) { for (const k in boss.pools) boss.pools[k] = 0; foes = foes.filter((o) => o.type !== 'minib'); boss.hidden = false; boss.phase = 3; cine = 0; } boss.hp = 0; } }, bossPhase: (n) => { const f = boss; if (!f || !f.phased) return; cine = 0; if (RM()) { if (n >= 2) { f.pools.armL = f.pools.armR = 0; f.phase = 2; } if (n >= 3) { f.pools.head = 0; f.phase = 3; } } else { if (n >= 2) { f.pools.shell = 0; f.layers = 0; f.phase = 2; } if (n >= 3) { f.pools.core = 0; splitBlob(f); cine = 0; } } syncHp(f); }, bossInfo: () => (boss ? { phase: boss.phase, hp: boss.hp, pools: boss.pools, hidden: !!boss.hidden, dying: boss.dying, cine } : null), setControl: (c) => { control = c; } };
+window.__flyGame = { CONFIG, hud: () => ({ fly: hudFly.map((f) => ({ n: f.n, t: +f.t.toFixed(2) })), pops: hudPops.length, tg: hudTarget(), gauge }), clearN: (k) => { const L = foes.filter((f) => f.type !== 'boss').slice(0, k); for (const f of L) clearFoe(f, ''); return L.length; },      /* D376 測試掛勾 */ daily: { route: () => dailyRoute(), state: () => daily, open: () => dailyOpen(), skip: (sec) => { if (daily) daily.rt += sec; } }, live: () => ({ foes, kite, stats, T, floats }), hz: () => ({ vents: vents.map((v) => ({ y: v.y, w: v.w, fromLeft: v.fromLeft, t: v.t, warn: v.warn, on: v.on })), boats: boats.map((b) => ({ x: b.x, y: b.y, t: b.t, warn: b.warn })) }), state: () => ({ mode, t, control, level, kite, gauge, foes: foes.map((f) => ({ type: f.type, x: f.x, y: f.y, r: f.r, hp: f.hp, vx: f.vx, w: f.w || 0, cross: !!f.cross, tired: !!f.tired, aimed: !!f.aimed })), warns: warns.map((w) => ({ y: w.y, t: w.t })), slam: boss && boss.slam ? { s: boss.slam, x: boss.slamX } : null, picks: picks.map((p) => ({ kind: p.kind, x: p.x, y: p.y })), pals: pals.length, stats, boss: !!boss, ult: ult ? ult.t : -1 }), fillGauge: () => { gauge = CONFIG.ult.need; }, record, skipTo: (sec) => { t = sec; while (si < script.length && script[si].t < sec) si++; }, hurtOff: () => { kite.safe = 1e9; }, testLose: (by, n, cl) => { if (by) stats.hitBy[by] = n || 3; if (cl) stats.cleared = cl; kite.hearts = 0; finish(); }, setStage: (n) => { stageNo = n; }, progress: () => progress, stage: () => stageNo, test: { parts: () => (boss && boss.parts ? { parts: boss.parts.map((q) => ({ id: q.id, hp: q.hp, broken: q.broken, x: boss.x + q.cx * bossVis(), y: boss.y + q.cy * bossVis() })), stop: boss.stopAtk, hp: boss.hp } : null), breakPart: (i) => { const q = boss && boss.parts && boss.parts[i]; if (q && !q.broken) partBreak(boss, q, boss.x + q.cx * bossVis(), boss.y + q.cy * bossVis()); }, fx351: (k) => { if (!boss) return null; if (k === 'rage') boss.rage = 2; if (k === 'frag') { fragBurst(boss.x, boss.y); frag.life = 0.12; } return { vis: bossVis(), wp: weakPoints(boss), r: boss.r, x: boss.x, y: boss.y }; }, sparks: () => sparks.length, toldDot: () => toldDot, pick: (kind, x, y) => { addPick(kind, x, y); }, rush: (n) => { addRush(n || 4); }, railX: () => RAIL_X(), hzN: () => hzRects.length, resetSeen: () => { for (const k in seenPick) delete seenPick[k]; }, buff: () => { kite.power = 3; kite.powerT = CONFIG.feather.powerTime * 0.7; kite.galeT = CONFIG.feather.galeTime * 0.5; kite.shield = true; }, spawn: (type, x, y) => { const f = mk(type, x, y); f.vy = CONFIG.scroll; return true; }, hearts: (n) => { kite.hearts = n; kite.safe = 0; drawHearts(); }, warn: (sec) => { warns.push({ y: kite.y, fromLeft: true, n: 3, t: sec }); }, friends: () => friends.map((c) => ({ kind: c.kind, x: Math.round(c.x), y: Math.round(c.y) })), won: () => won, logs: () => foes.filter((f) => f.type === 'log').map((f) => ({ x: Math.round(f.x), y: Math.round(f.y), w: Math.round(f.w) })) }, bossAtk: (a) => { if (boss) { boss.atk = a; boss.atkT = 0; boss.vol = 0; boss.rocks = []; boss.cables = []; boss.wave = 0; boss.stars = []; boss.beams = []; boss.lanes = []; boss.starAcc = 0; if (a === 'ram') { boss.ramX = kite.x; boss.ramT = 0; boss.ramS = 'warn'; } if (a === 'corridor') { boss.gx = W / 2; boss.rows = 0; } if (a === 'cross') { boss.cx = kite.x; boss.cy = kite.y; } } }, pierFriend: (id) => { pierGift(id, kite.x, kite.y); }, jiao: (r) => { jiaoForce = r; }, vents: () => vents.length, friend: (id, x, y) => { const f = mk('tangle', x, y); f.friend = id; f.vy = 30; }, floats: () => floats.map((f) => f.text), banner: () => $('banner').textContent, clouds: () => clouds.length, ring: () => kite.ringT, testWin: (sq, tu) => { stats.rescuedBy.squid = sq; stats.rescuedBy.turtle = tu; stats.rescued = sq + tu; stats.trapped = Math.max(stats.trapped, sq + tu); if (boss) { if (boss.phased) { for (const k in boss.pools) boss.pools[k] = 0; foes = foes.filter((o) => o.type !== 'minib'); boss.hidden = false; boss.phase = 3; cine = 0; } boss.hp = 0; } }, bossPhase: (n) => { const f = boss; if (!f || !f.phased) return; cine = 0; if (RM()) { if (n >= 2) { f.pools.armL = f.pools.armR = 0; f.phase = 2; } if (n >= 3) { f.pools.head = 0; f.phase = 3; } } else { if (n >= 2) { f.pools.shell = 0; f.layers = 0; f.phase = 2; } if (n >= 3) { f.pools.core = 0; splitBlob(f); cine = 0; } } syncHp(f); }, bossInfo: () => (boss ? { phase: boss.phase, hp: boss.hp, pools: boss.pools, hidden: !!boss.hidden, dying: boss.dying, cine } : null), setControl: (c) => { control = c; } };
 /* C-81／C-82（Dari 10/13 01:03）：音樂開關、暫停鈕改圖示；選單畫面也有音樂，每個場景不同曲子 */
 const MENU_TRACK = () => 'fly_map', PLAY_TRACK = () => 'fly_' + stageNo;
 function drawSnd() { const h = SND_ICON[soundOn ? 'on' : 'off']; for (const b of [$('soundBtn'), $('menuSnd')]) { if (!b) continue; b.innerHTML = h; b.setAttribute('aria-pressed', String(!soundOn)); b.setAttribute('aria-label', soundOn ? '音樂開著，點一下關掉' : '音樂關著，點一下打開'); } }
