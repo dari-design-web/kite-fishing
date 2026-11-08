@@ -28,7 +28,7 @@
     '.ck .knife{position:absolute;right:4%;top:-30%;font-size:26px;pointer-events:none;transform-origin:80% 80%}.ck .knife img{width:30px;display:block}.ck .hz.chop .knife{transform:rotate(-30deg) translateY(10px)}' +
     '.ck .pot{position:absolute;left:50%;bottom:6%;width:150%;transform:translateX(-50%);pointer-events:none}.ck .pot img{width:100%;display:block}.ck .steam{position:absolute;left:50%;top:-20%;font-size:20px;animation:ckS 1.2s infinite;opacity:.85}@keyframes ckS{to{transform:translateY(-18px);opacity:0}}' +
     '.ck .bar{position:absolute;left:10%;right:10%;top:-12px;height:7px;border-radius:4px;background:rgba(0,0,0,.25);overflow:hidden;pointer-events:none}.ck .bar i{display:block;height:100%;width:0;background:#E39A1F}.ck .bar.ok i{background:#3E9B4F}.ck .bar.burn i{background:#C0392B}' +
-    '.ck .boxin{position:absolute;inset:8% 6%;display:flex;align-items:center;justify-content:space-around;pointer-events:none}.ck .boxin span{font-size:20px}.ck .boxin img{width:30%;}' +
+    '.ck .boxin{position:absolute;inset:8% 6%;display:flex;align-items:center;justify-content:space-around;pointer-events:none}.ck .boxin span{font-size:20px;white-space:nowrap}.ck.dual .boxin span{font-size:15px}.ck .boxin img{width:30%;}' +
     '.ck .row{display:flex;gap:8px;padding:6px 12px calc(10px + env(safe-area-inset-bottom,0px));background:#6B4A2E}.ck .row .btn{flex:1}.ck .row .btn.ghost{color:#FFF4D6}.ck .row .btn.ghost:disabled{color:#D8CCB8;opacity:1}' +
     '.ck .fly{position:fixed;z-index:70;width:34px;height:34px;pointer-events:none;transition:transform .35s ease-in,opacity .35s;display:flex;align-items:center;justify-content:center;font-size:26px}.ck .fly img{width:100%}' +
     '.ck.dual .top b{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}body:has(.ck) #hmAct,body:has(.ck) .roomwrap .chip,body:has(.ck) #hmFarm,body:has(.ck) #sayBox,body:has(.ck) #home .hud{visibility:hidden}' +
@@ -106,18 +106,20 @@
       var g, x, i;
       for (g = 0; g < G; g++) if (pots[g].st === 'ready' || pots[g].st === 'burn') { tip(readyTip(g)); return; }
       if (board) { if (board.st === 'cut') tip(MARK[board.g] + board.it.name + '切好了，點' + potName(board.g) + '放進鍋'); else stepTip(); return; }
-      x = list.find(function (y) { return y.st === 'rice'; }); if (x) { tip('點飯鍋，把' + (MARK[x.g] ? MARK[x.g] + '的' : '') + '飯裝進' + (r.kind === 'bento' ? '便當盒' : '盤子')); return; }
+      x = list.find(function (y) { return y.st === 'rice'; }); if (x) { tip(riceTip(x.g)); return; }
       for (i = 0; i < list.length; i++) { x = list[i]; if (x.st === 'basket' && (x.it.type !== 'cook' || pots[x.g].st === 'idle')) { tip(MARK[x.g] + basketTip(x)); return; } }
       for (g = 0; g < G; g++) if (pots[g].st === 'cooking') { tip(MARK[g] + '還在煮，點點' + (G > 1 ? potName(g) : '鍋子') + '翻炒～'); return; }
     }
     function basketTip(x) { var nm = x.it.name; if (x.it.type === 'chop') return '從籃子拿' + nm + '，放到砧板' + steps(x.it)[0].v; if (x.it.type === 'cook') return '從籃子拿' + nm + '，放進' + potName(x.g); return '先拿' + nm + '，再點飯鍋裝飯'; }
     function riceNext(g) { if (board) return ''; var y = list.find(function (z) { return z.g === g && z.st === 'basket' && z.it.type !== 'rice' && (z.it.type !== 'cook' || pots[g].st === 'idle'); }); return y ? '接著' + basketTip(y) : ''; }      /* D393：飯裝好、鍋子還沒開火時，順手說下一步（原本只寫「飯裝好了！」就停住） */
+    /* D406：實玩港邊雙爐——裝飯提示原本少了①②、雞腿便當也說「裝進盤子」→ 雙爐帶訂單號、照那張訂單是便當或盤子；單爐原句不變 */
+    function riceTip(g) { var k = (R[g] && R[g].kind) || r.kind; return '點飯鍋，把' + (MARK[g] ? MARK[g] + '的' : '') + '飯裝進' + (k === 'bento' ? '便當盒' : '盤子'); }
     function potName(g) { return G > 1 ? (g ? '右爐' : '左爐') : '爐子'; }
     function take(i, btn) {
       var x = list[i];
       if (x.it.type === 'chop') { if (board) return; board = x; board.si = 0; chop = 0; x.st = 'board'; fly(btn, 'ckBoard', pic(x.it)); stepTip(); boardState(); }
       else if (x.it.type === 'cook') { if (pots[x.g].st !== 'idle') return; x.st = 'pot'; pots[x.g].n++; fly(btn, PID[x.g], pic(x.it)); tip(MARK[x.g] + x.it.name + '下' + potName(x.g) + '了！'); maybeCook(x.g); }
-      else { x.st = 'rice'; tip('點飯鍋，把飯裝進' + (r.kind === 'bento' ? '便當盒' : '盤子')); }
+      else { x.st = 'rice'; tip(riceTip(x.g)); }
       order(); tray(); boxState();
     }
     function boardState() { var kn = $('ckKn'), c0 = cur(); if (kn) kn.innerHTML = board && c0 && c0.v === '撒鹽' && board.st !== 'cut' ? '<img src="' + A + 'salt_shaker.webp" alt="鹽罐">' : '🔪';      /* D190：撒鹽時刀子換成 GPT 鹽罐 */
