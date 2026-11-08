@@ -19,7 +19,7 @@ body{background:#0E2232;color:var(--paper);font-family:var(--round);display:flex
 .stage{position:relative;flex:1;min-height:0;width:100%;max-width:420px;display:flex;justify-content:center}
 canvas{height:100%;max-width:100%;aspect-ratio:360/600;border-radius:18px;touch-action:none;display:block;background:#7FC4D6;box-shadow:0 6px 0 rgba(0,0,0,.25)}
 .how{width:100%;max-width:420px;font-size:13px;line-height:1.5;color:#CFE3EC;text-align:center;min-height:2.6em;margin:0;text-wrap:balance}
-.how b{color:var(--dusk)}
+.how b{color:var(--dusk)}.how .hl{display:inline-block}
 .how .ptMore{border:0;background:none;color:#CFE3EC;font:800 12.5px/1.3 var(--round);padding:4px 10px;min-height:28px;cursor:pointer}.how .ptLong{display:block;max-width:340px;margin:0 auto;font-size:12px;line-height:1.45;color:#CFE3EC}.how .ptLong[hidden]{display:none}
 .dres{position:static;flex:0 0 auto;width:100%;max-width:420px;box-sizing:border-box;padding:8px 12px calc(10px + env(safe-area-inset-bottom));background:#0E2A3D;border-radius:18px;box-shadow:0 4px 14px rgba(0,0,0,.3)}.dres.kdFold .kd-res{display:none}body.kdEnd{overflow-y:auto}body.kdEnd #how{display:none}#kdDown{display:block;margin:0 auto;border:0;background:none;color:#FFE45C;font:800 13px/20px inherit;font-family:inherit;padding:2px 14px;min-height:24px;cursor:pointer}#kdDown[hidden]{display:none}      /* D308（GPT 1430 B②）：疊貨櫃結算提示「往下看今日挑戰結果 ▾」，字級同合成港，間距照本款原樣 */      /* D305：今日挑戰結算時，面板已寫正式／練習與剩幾次，下面黃條不再重複 */      /* D265（GPT 2330 B③）：今日挑戰面板放在變身／水族館按鈕下面，跟頁面一起捲，不再浮蓋結算 */.dres[hidden]{display:none}.dres .dx{display:block;margin:0 auto 4px;border:0;background:none;color:#CFE3EC;font:inherit;font-size:13px;font-weight:800;min-height:32px}.dres .kd-res{margin:0}
 .top{display:flex;align-items:center;gap:10px;width:100%;max-width:420px;font-weight:900;font-size:17px}
@@ -63,7 +63,7 @@ function dailyTag(extra) { if (!DS) return; const h = document.getElementById('h
 const RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const HOW = {
   merge: '<b>左右滑</b>移動小鳶，<b>放手</b>海鮮就掉下去。一樣的碰在一起會<b>合成</b>，一路合到<b>鯨鯊</b>！堆過紅線就結束。',
-  stack: '<b>點一下</b>放下貨櫃，對齊下面那個。連續<b>完美</b>貨櫃會變寬，<b>金貨櫃</b>大加分！'
+  stack: '<span class="hl"><b>點一下</b>放下貨櫃，對齊下面那個。</span><span class="hl">連續<b>完美</b>貨櫃會變寬，<b>金貨櫃</b>大加分！</span>'
 };
 const store = { get(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
 let best = store.get('kiteMiniBest1', {}) || {};
