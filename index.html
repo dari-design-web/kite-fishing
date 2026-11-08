@@ -130,6 +130,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .card.result .rows{font-size:13px;gap:2px 12px;padding:6px 0}
 .card.result .rows:not(.open){grid-template-columns:auto 1fr}
 .card.result .moreRows{scroll-margin-bottom:76px}
+.segK{display:inline-block}.rows span.segK{font-weight:inherit;text-align:inherit}      /* D394：結算左欄名稱照「・」整段換行 */
 .card.result .rows .ptLines{white-space:pre-line;line-height:1.45}      /* D284（GPT 2130 B①）：點數怎麼算一段一行 */
 #luckyLine{display:flex;flex-wrap:wrap;justify-content:center;column-gap:.5em}.dexline .dxHead{display:flex;flex-wrap:wrap;column-gap:.6em}.lkSeg,.dxSeg{max-width:100%}      /* D284（GPT 2130 A①／C②）：幸運魚、圖鑑提示照語意整組換行 */
 @media (max-width:360px){.card.result .rows.open span.xr{grid-column:1 / -1}.card.result .rows.open span.xr:nth-child(even){text-align:right;margin-top:-2px;padding-bottom:2px}}      /* D282（GPT 2030 A①）：窄版展開「更多紀錄」每列名稱在上、數值在下靠右，收起與 390 照舊 */
@@ -463,7 +464,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.63',
+  version: '0.64',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -1434,7 +1435,7 @@ function finish() { BGM.stop(); if (window.KiteBoard) KiteBoard.ev('run_end', { 
       if (k < 1) requestAnimationFrame(step); else { el.style.transition = 'transform .18s'; el.style.display = 'inline-block'; el.style.transform = 'scale(1.18)'; setTimeout(() => { el.style.transform = ''; }, 180); } };
     requestAnimationFrame(step); }
   const acc = stats.dives ? Math.round(stats.hits / stats.dives * 100) : 0, rows = $('rows'); rows.textContent = '';
-  let xr = false; const add = (a, b, isNew) => { const l = document.createElement('span'); l.textContent = a; if (xr) l.classList.add('xr'); if (isNew) { const n = document.createElement('span'); n.className = 'new'; n.textContent = '新圖鑑'; l.appendChild(n); } const r = document.createElement('span'); r.textContent = b; if (xr) r.classList.add('xr'); if (String(b).length > 16) { r.style.gridColumn = '1 / -1'; r.style.textAlign = 'left'; r.style.fontWeight = '600'; }      /* QA：長的說明（官方 LINE 點數）自己一整行，不把左邊擠成直排 */ rows.append(l, r); };
+  let xr = false; const add = (a, b, isNew) => { const l = document.createElement('span'); if (String(a).includes('・')) String(a).split('・').forEach((t, i, A) => { const g = document.createElement('span'); g.className = 'segK'; g.textContent = t + (i < A.length - 1 ? '・' : ''); l.appendChild(g); }); else l.textContent = a; if (xr) l.classList.add('xr'); if (isNew) { const n = document.createElement('span'); n.className = 'new'; n.textContent = '新圖鑑'; l.appendChild(n); } const r = document.createElement('span'); r.textContent = b; if (xr) r.classList.add('xr'); if (String(b).length > 16) { r.style.gridColumn = '1 / -1'; r.style.textAlign = 'left'; r.style.fontWeight = '600'; } else r.style.whiteSpace = 'nowrap'; /* D394：短數值不在字中間斷行（SE 上原本「每條／60 分」「分數／×1.5」拆兩行），讓左邊名稱照「・」換行 */      /* QA：長的說明（官方 LINE 點數）自己一整行，不把左邊擠成直排 */ rows.append(l, r); };
   const VB = LVL().verb || '抓', UN = (k) => (k === 'squid' || k === 'lobster' ? ' 隻' : ' 條');
   for (const k of SP()) if (stats.counts[k]) add(CONFIG.fish[k].name, (VB === '抓' ? '' : VB + ' ') + stats.counts[k] + UN(k) + '・每' + UN(k).trim() + ' ' + PTS(CONFIG.fish[k].kg) + ' 分');      /* D194：手機上不再斷成兩行；D233（GPT 0925 A②）：列表不再重複「新圖鑑」紅字，只留下方圖鑑卡的新魚標示 */
   if (!stats.hits) add('這局沒有' + VB + '到魚', '0 條');
