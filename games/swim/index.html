@@ -46,6 +46,7 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
 .tip[hidden]{display:none}
 .lvl{position:absolute;left:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:4px;pointer-events:none}
 .lvl span{font-size:12px;font-weight:900;width:30px;text-align:center;border-radius:8px;padding:3px 0;background:rgba(10,34,54,.45);color:rgba(255,255,255,.55)}
+.lvl span:not(.on){background:rgba(10,34,54,.72);color:rgba(255,255,255,.88);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35)}      /* D395：沒選到的「中／低」在珊瑚上看不清楚，底色加深、字變亮、加細白邊；只外觀，不改換層 */
 .lvl span.on{background:#FFE45C;color:var(--ink);box-shadow:0 2px 0 rgba(0,0,0,.25)}
 .lvl[hidden]{display:none}
 .pause{position:absolute;right:10px;top:82px;height:36px;padding:0 12px;border-radius:999px;border:2px solid #fff;background:rgba(10,34,54,.7);color:#fff;font:inherit;font-size:14px;font-weight:900;display:flex;align-items:center;gap:6px}
