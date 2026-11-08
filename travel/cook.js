@@ -97,6 +97,7 @@
       for (g = 0; g < G; g++) if (pots[g].st === 'cooking') { tip(MARK[g] + '還在煮，點點' + (G > 1 ? potName(g) : '鍋子') + '翻炒～'); return; }
     }
     function basketTip(x) { var nm = x.it.name; if (x.it.type === 'chop') return '從籃子拿' + nm + '，放到砧板' + steps(x.it)[0].v; if (x.it.type === 'cook') return '從籃子拿' + nm + '，放進' + potName(x.g); return '先拿' + nm + '，再點飯鍋裝飯'; }
+    function riceNext(g) { if (board) return ''; var y = list.find(function (z) { return z.g === g && z.st === 'basket' && z.it.type !== 'rice' && (z.it.type !== 'cook' || pots[g].st === 'idle'); }); return y ? '接著' + basketTip(y) : ''; }      /* D393：飯裝好、鍋子還沒開火時，順手說下一步（原本只寫「飯裝好了！」就停住） */
     function potName(g) { return G > 1 ? (g ? '右爐' : '左爐') : '爐子'; }
     function take(i, btn) {
       var x = list[i];
@@ -151,7 +152,7 @@
     tap($('ckRice'), function () {
       var x = list.find(function (y) { return y.st === 'rice'; }) || list.find(function (y) { return y.st === 'basket' && y.it.type === 'rice'; });
       if (!x) { tip(needRice.some(function (n) { return n; }) ? '飯已經裝好了' : '這道不用裝飯'); return; }
-      x.st = 'done'; riceIn[x.g]++; fly($('ckRice'), 'ckBox', '🍚'); var pg = pots[x.g]; tip(riceIn[x.g] >= needRice[x.g] ? (pg.st === 'ready' || pg.st === 'burn' ? readyTip(x.g) : (MARK[x.g] ? MARK[x.g] + '的' : '') + '飯裝好了！' + (pg.st === 'cooking' ? '回鍋子翻炒～' : '')) : '再裝一份' + (MARK[x.g] ? MARK[x.g] + '的' : '') + '飯');      /* D274：單張訂單沒有①②，不再出現「的飯裝好了」「先把的食材」 */ order(); tray(); boxState(); check();
+      x.st = 'done'; riceIn[x.g]++; fly($('ckRice'), 'ckBox', '🍚'); var pg = pots[x.g]; tip(riceIn[x.g] >= needRice[x.g] ? (pg.st === 'ready' || pg.st === 'burn' ? readyTip(x.g) : (MARK[x.g] ? MARK[x.g] + '的' : '') + '飯裝好了！' + (pg.st === 'cooking' ? '回鍋子翻炒～' : riceNext(x.g))) : '再裝一份' + (MARK[x.g] ? MARK[x.g] + '的' : '') + '飯');      /* D274：單張訂單沒有①②，不再出現「的飯裝好了」「先把的食材」 */ order(); tray(); boxState(); check();
     });
     tap($('ckBox'), function () { if (!check()) tip(riceIn.some(function (n, g) { return n < needRice[g]; }) ? '還要裝飯（點飯鍋）' : '還要等鍋子裡的菜'); });
     function potState(g) {
