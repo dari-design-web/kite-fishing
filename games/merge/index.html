@@ -62,7 +62,7 @@ function kdLock() { const st = document.querySelector('.stage'); if (st && !docu
 function dailyTag(extra) { if (!DS) return; const h = document.getElementById('how'); h.innerHTML = '<span class="kd-banner">' + (DS.official ? '📅 今日挑戰・正式（今天還有 ' + KiteDaily.left() + ' 次）' : '📅 今日挑戰・練習（不計榜）') + '</span><br>' + DS.td.vary + (extra || ''); }
 const RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const HOW = {
-  merge: '<b>左右滑</b>移動小鳶，<b>放手</b>海鮮就掉下去。一樣的碰在一起會<b>合成</b>，一路合到<b>鯨鯊</b>！堆過紅線就結束。',
+  merge: '<span class="hl"><b>左右滑</b>選位置，<b>放手</b>海鮮就掉下去。</span><span class="hl">一樣的海鮮碰在一起<b>合成</b>變大，堆過紅線就結束。</span>',      /* D403（GPT 1947 Q2=C）：兩句各自成行，SE 不再把「碰在／一起」拆開；第一句保留現行操作（放手才落下） */
   stack: '<span class="hl"><b>點一下</b>放下貨櫃，對齊下面那個。</span><span class="hl">連續<b>完美</b>貨櫃會變寬，<b>金貨櫃</b>大加分！</span>'
 };
 const store = { get(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
