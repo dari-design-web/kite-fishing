@@ -915,7 +915,7 @@ function cardHTML(l, i, opts) {
 }
 /* v0.24（C-126）：信的最後提到現場的港口朋友（讀首頁／港口朋友頁存的 kiteFriends1，只讀不改） */
 const PAL_WORDS = { 1: ['探頭小鳶', '還在牆後面偷看港口，說等你回來一起數船'], 2: ['打盹小鳶', '又睡著了，夢話是你的名字'], 3: ['剛到港口的小鳶', '說牠背包裡也有一張要寄給你'], 4: ['鯨鯊', '游過來問你什麼時候再去'], 5: ['海龜', '說港口的垃圾變少了，謝謝你'], 6: ['小卷', '晚上發光的時候想起你'] };
-function palLine(nL) { let fr = {}; try { fr = JSON.parse(localStorage.getItem('kiteFriends1') || '{}') || {}; } catch (e) {} const ids = Object.keys(fr).filter((k) => PAL_WORDS[k]); if (!ids.length) return (nL || 1) % 3 === 1 ? '聽說東三東四館內住了好多大大的港口朋友，下次一起去找牠們！' : '';      /* D392：還沒認識港口朋友時，這句只在第 1、4、7…封信出現（原本每封約一半，連看好幾封都同一句） */ const w = PAL_WORDS[ids[Math.floor(Math.random() * ids.length)]]; return '回家路上經過東三東四，' + w[0] + w[1] + '！'; }
+function palLine(nL) { let fr = {}; try { fr = JSON.parse(localStorage.getItem('kiteFriends1') || '{}') || {}; } catch (e) {} const ids = Object.keys(fr).filter((k) => PAL_WORDS[k]); if (!ids.length) return (nL || 1) % 5 === 1 ? '聽說東三東四館內住了好多大大的港口朋友，下次一起去找牠們！' : '';      /* D392：還沒認識港口朋友時，這句只在第 1、6、11…封信出現（GPT 選 B 每 5 封一次）（原本每封約一半，連看好幾封都同一句） */ const w = PAL_WORDS[ids[Math.floor(Math.random() * ids.length)]]; return '回家路上經過東三東四，' + w[0] + w[1] + '！'; }
 function openLetter() {
   if (S.state !== 'back' || !S.trip) return;
   const tr = S.trip, l = LOCS.find((x) => x.id === tr.dest);
