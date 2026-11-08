@@ -345,7 +345,7 @@ header .back,.letter .skip{min-height:44px;min-width:44px;display:inline-flex;al
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.79',
+  version: '0.80',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 0,      // D80：遠行便當改用點數換，不再每 3 趟送 1 份（0＝關閉）
@@ -915,7 +915,7 @@ function cardHTML(l, i, opts) {
 }
 /* v0.24（C-126）：信的最後提到現場的港口朋友（讀首頁／港口朋友頁存的 kiteFriends1，只讀不改） */
 const PAL_WORDS = { 1: ['探頭小鳶', '還在牆後面偷看港口，說等你回來一起數船'], 2: ['打盹小鳶', '又睡著了，夢話是你的名字'], 3: ['剛到港口的小鳶', '說牠背包裡也有一張要寄給你'], 4: ['鯨鯊', '游過來問你什麼時候再去'], 5: ['海龜', '說港口的垃圾變少了，謝謝你'], 6: ['小卷', '晚上發光的時候想起你'] };
-function palLine() { let fr = {}; try { fr = JSON.parse(localStorage.getItem('kiteFriends1') || '{}') || {}; } catch (e) {} const ids = Object.keys(fr).filter((k) => PAL_WORDS[k]); if (!ids.length) return Math.random() < 0.5 ? '聽說東三東四館內住了好多大大的港口朋友，下次一起去找牠們！' : ''; const w = PAL_WORDS[ids[Math.floor(Math.random() * ids.length)]]; return '回家路上經過東三東四，' + w[0] + w[1] + '！'; }
+function palLine(nL) { let fr = {}; try { fr = JSON.parse(localStorage.getItem('kiteFriends1') || '{}') || {}; } catch (e) {} const ids = Object.keys(fr).filter((k) => PAL_WORDS[k]); if (!ids.length) return (nL || 1) % 5 === 1 ? '聽說東三東四館內住了好多大大的港口朋友，下次一起去找牠們！' : '';      /* D392：還沒認識港口朋友時，這句只在第 1、6、11…封信出現（GPT 選 B 每 5 封一次）（原本每封約一半，連看好幾封都同一句） */ const w = PAL_WORDS[ids[Math.floor(Math.random() * ids.length)]]; return '回家路上經過東三東四，' + w[0] + w[1] + '！'; }
 function openLetter() {
   if (S.state !== 'back' || !S.trip) return;
   const tr = S.trip, l = LOCS.find((x) => x.id === tr.dest);
@@ -929,7 +929,7 @@ function openLetter() {
   if (tr.gift && tr.gift.pts) queue.push({ gpts: tr.gift.pts }); if (tr.gift && tr.gift.coupon) queue.push({ gcp: tr.gift.coupon });
   /* v0.30（C-177）：信的最後多一句「這是小鳶寄給你的第 N 封信」，第 5、10、20、30 封加一句特別的話（只記封數 S.letters；文字是建議） */
   const nL = (S.letters || 0) + 1, LM = { 5: '已經第 5 封了，謝謝你一直幫我準備便當！', 10: '第 10 封！你的收藏冊越來越厚了～', 20: '第 20 封！我們一起去過好多地方喔！', 30: '第 30 封！你是小鳶最好的旅伴！' };
-  const extras = ['💌 這是小鳶寄給你的第 ' + nL + ' 封信' + (LM[nL] ? '——' + LM[nL] : '')]; if (tr.stamps) extras.push('重複的明信片換成 ' + tr.stamps + ' 枚小鳶郵票'); if (tr.souvenir) extras.push('還帶回了紀念品：' + l.souvenir); if (tr.friend) extras.push('在' + l.name + '遇到了 ' + tr.friend + '！'); const pl = palLine(); if (pl) extras.push(pl);
+  const extras = ['💌 這是小鳶寄給你的第 ' + nL + ' 封信' + (LM[nL] ? '——' + LM[nL] : '')]; if (tr.stamps) extras.push('重複的明信片換成 ' + tr.stamps + ' 枚小鳶郵票'); if (tr.souvenir) extras.push('還帶回了紀念品：' + l.souvenir); if (tr.friend) extras.push('在' + l.name + '遇到了 ' + tr.friend + '！'); const pl = palLine(nL); if (pl) extras.push(pl);
   const story = window.HOME && HOME.story ? HOME.story(tr) : null; let sp = 0;      /* D192：N3 回家小故事卡 */
   if (window.HOME) { const hx = HOME.letterExtra(tr, !!story); if (hx) extras.push(hx); }      // D162：配菜料理小記
   const finish = () => { S.letters = nL; const news = commitTrip(); L.remove(); if (S.titles && Object.keys(S.titles).length) {} go('home'); toast(news.length ? '收進收藏冊了！' : '小鳶回來了'); };
@@ -1234,8 +1234,8 @@ function travelBgmSync() { if (travelBgmOn) BGM.play('travel_' + ({ ranch: 'scho
   document.addEventListener('pointerdown', () => { if (travelBgmOn) travelBgmSync(); }, { passive: true });
 })();
 </script>
-<script src="cook.js?v=0.79"></script>
-<script src="home.js?v=0.79"></script>
+<script src="cook.js?v=0.80"></script>
+<script src="home.js?v=0.80"></script>
 <script src="../shared/back_line.js?v=2"></script>
 <script>/* D104：旅行排行榜（明信片收藏數） */ if (window.KiteLB) { KiteLB.button(document.getElementById('lbSlot'), { title: '小鳶旅行收藏排行', travel: true }); setTimeout(function () { try { pushTravelStat(); } catch (e) {} }, 1500); }</script>
 </body>
