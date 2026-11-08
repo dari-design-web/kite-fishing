@@ -519,11 +519,12 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
     dd.streak = dd.last === ymd(y) ? dd.streak + 1 : 1; dd.days = (dd.days || 0) + 1; dd.last = today;
     try { localStorage.setItem('kiteDaily1', JSON.stringify(dd)); } catch (e) {}
     if (!show) return dd;
+    /* D400（GPT 11/08 D399 Q1=B）：第 29 天起內容循環，標題保留分類、加「再看一次」，累計序號照算不歸零 */
     var c = CARDS[(dd.days - 1) % CARDS.length], ov = document.createElement('div'); ov.className = 'intro daily';
     /* D388（研究⑦樂園累計天數核對）：原本「連續 N 天」斷一天就回到 1（紅線：連續天數歸零）。改成只算累計來過幾天，七格跟著累計天數走、不會因為沒來而清空；kiteDaily1.streak 照舊記著但不顯示 */
     var wk = ''; for (var i = 1; i <= 7; i++) wk += '<i class="' + (i <= ((dd.days - 1) % 7) + 1 ? 'on' : '') + '">' + i + '</i>';
     ov.innerHTML = '<div class="box"><img src="../travel/assets/kite_hello.png" alt=""><p>' + (now.getHours() < 11 ? '早安' : now.getHours() < 17 ? '午安' : '晚上好') + '！我今天帶了一張小卡給你～</p>' +
-      '<div class="card"><small>' + c[0] + '・第 ' + dd.days + ' 張</small><p>' + c[1] + '</p></div>' +
+      '<div class="card"><small>' + c[0] + (dd.days > CARDS.length ? '・再看一次' : '') + '・第 ' + dd.days + ' 張</small><p>' + c[1] + '</p></div>' +
       '<div class="streak">' + (dd.days > 1 ? '這是你來看我的第 <b>' + dd.days + '</b> 天！' : '明天也來看我，小卡會不一樣喔！') + '</div><div class="week">' + wk + '</div>' +
       (dd.days % 7 === 0 ? '<div class="streak">謝謝你常來看我 💛</div>' : '') +
       '<div class="row"><button class="go" type="button">收進背包</button></div></div>';
