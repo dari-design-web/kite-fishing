@@ -34,7 +34,7 @@
     '.ck.dual .top b{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}body:has(.ck) #hmAct,body:has(.ck) .roomwrap .chip,body:has(.ck) #hmFarm,body:has(.ck) #sayBox,body:has(.ck) #home .hud{visibility:hidden}' +
     '.ck .hz.toss .pot{animation:ckTs .35s}@keyframes ckTs{30%{transform:translateX(-50%) translateY(-8px) rotate(-6deg)}70%{transform:translateX(-50%) rotate(4deg)}}' +
     '.ck .kh{position:absolute;top:47%;width:52px;transform:translateX(-50%);pointer-events:none;animation:ckKh .45s cubic-bezier(.3,1.6,.5,1) both;z-index:2}.ck .kh img{width:100%;display:block;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}.ck .kh.fan img{animation:ckKf .5s ease-in-out infinite alternate;transform-origin:50% 90%}.ck .kh i{position:absolute;left:50%;top:100%;transform:translateX(-50%);white-space:nowrap;font:800 11px/1 sans-serif;font-style:normal;color:#5B4A3A;background:#FFF4D6;border:2px solid #F4BB42;border-radius:10px;padding:3px 6px}.ck .kh.bye{animation:ckKb .4s ease-in both}@keyframes ckKh{from{transform:translateX(-50%) translateY(14px) scale(.3);opacity:0}}@keyframes ckKf{from{transform:rotate(-8deg)}to{transform:rotate(8deg)}}@keyframes ckKb{to{transform:translateX(-50%) translateY(10px) scale(.6);opacity:0}}@media (prefers-reduced-motion:reduce){.ck .kh,.ck .kh.fan img,.ck .kh.bye{animation:none}}.ck .done{z-index:5}' +
-    '.ck.ckEnd .tip,.ck.ckEnd .tray{visibility:hidden}.ck .done{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(30,20,10,.6);color:#fff;text-align:center;gap:6px}.ck .done .stars{font-size:44px;letter-spacing:4px}.ck .done b{font-size:20px}';
+    '.ck.ckEnd .tip,.ck.ckEnd .tray{visibility:hidden}.ck .hz .lb{transition:opacity .2s}.ck.ckEnd .hz .lb{opacity:.15}.ck .done{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(30,20,10,.6);color:#fff;text-align:center;gap:6px}.ck .done .stars{font-size:44px;letter-spacing:4px}.ck .done b{font-size:20px}';
   document.head.appendChild(css);
 
   /* recipe：{ name, need:{k:n}, kind:'bento'|'dish', items:{k:{name,e,type,img,cut}} }；type：chop 要切、cook 直接下鍋、rice 裝飯 */
@@ -69,6 +69,20 @@
       '<button class="hz" id="ckBox" style="' + pct(HIT.box) + '" aria-label="' + (r.kind === 'bento' ? '便當盒' : '盤子') + '"><span class="boxin" id="ckBoxIn"></span><span class="lb" id="ckBS">' + (G > 1 ? '出餐' : r.kind === 'bento' ? '便當盒' : '盤子') + '</span></button>' +
       '</div><div class="row"><button class="btn ghost" id="ckHelp">請小鳶幫忙做好</button></div>';
     document.body.appendChild(w);
+    /* D405（GPT 2151 Q1=B、Q2=B）：①做菜時小鳶原本站在提示列／籃子列後面，只露出腳 → 用原本的小鳶圖往上移（太高就等比縮小），站在訂單和提示列中間露臉；關掉做菜就還原。
+       ②完成卡顯示期間，底下工作檯的文字標籤（藤籃、砧板、爐子／起鍋了、飯鍋、便當盒）淡到 15%，不再跟「N 秒・完美！」疊字；關卡片或開新局恢復（標籤跟著做菜畫面一起重建）。只外觀，計時、星星、玩法不變 */
+    function peek() {
+      var bd = document.getElementById('bird'), tp = $('ckTip'), od = $('ckO');
+      if (!bd) return;
+      if (!w.isConnected) { bd.style.translate = ''; bd.style.scale = ''; return; }
+      if (!tp || w.classList.contains('ckEnd')) return;
+      bd.style.translate = ''; bd.style.scale = '';
+      var r = bd.getBoundingClientRect(), lo = tp.getBoundingClientRect().top - 4, hi = od.getBoundingClientRect().bottom + 4;
+      if (!r.height || lo - hi < 30) return;
+      var s = Math.min(1, (lo - hi) / r.height), dy = lo - (r.top + r.height * (0.92 + 0.08 * s));
+      if (dy >= 0) return;
+      bd.style.translate = '0 ' + Math.round(dy) + 'px'; if (s < 1) bd.style.scale = s.toFixed(3);
+    }
     function tip(t) { if (danceT) { clearTimeout(danceT); danceT = 0; } $('ckTip').textContent = t; }
     var danceT = 0;      /* D210（GPT 1820 B）：每鍋第一次翻炒先說「鍋裡跳舞囉！」0.8 秒，再換回原本的翻炒提示；其他提示一出現就收 */
     function order() { $('ckO').innerHTML = list.map(function (x) { return '<span class="' + (x.st === 'done' ? 'ok' : '') + '">' + MARK[x.g] + x.it.e + x.it.name + '</span>'; }).join(''); }
@@ -194,14 +208,15 @@
         var sec = Math.round((Date.now() - t0) / 1000), stars = Math.max(1, 3 - (burnt ? 1 : 0) - (sec > LIM ? 1 : 0) - (pots.some(function (p) { return p.need && (p.stir || 0) < 2; }) ? 1 : 0));
         var tk0 = $('ckT'); if (tk0) tk0.textContent = sec + ' 秒';      /* D404：實玩時頂列停在 7 秒、完成卡寫 8 秒 → 結束時頂列改成跟完成卡同一個秒數（只外觀，星星不變） */
         var d = el('div', 'done', '<div style="font-size:64px">' + (G > 1 ? '🧾' : r.kind === 'bento' ? '🍱' : '🍽️') + '</div><b>' + (G > 1 ? '兩張訂單都完成！' : r.name + '完成！') + '</b><div class="stars">' + '⭐'.repeat(stars) + '<span style="opacity:.3">' + '⭐'.repeat(3 - stars) + '</span></div><p>' + sec + ' 秒' + (burnt ? '・' + MARK.filter(function (m, i) { return i < G && burntG[i]; }).join('、') + '有一點焦' : '') + (stars >= 3 ? '・完美！' : '') + '</p>');
-        w.appendChild(d); w.classList.add('ckEnd'); setTimeout(function () { w.remove(); onDone(stars); }, 1600);      /* D275：GPT 1530 B①——完成卡期間收起提示列與籃子列；D318：GPT 0830 A③——完成卡小字帶實際焦鍋爐號（①有一點焦／①、②有一點焦），單爐沿原 */
+        w.appendChild(d); w.classList.add('ckEnd'); setTimeout(function () { w.remove(); peek(); onDone(stars); }, 1600);      /* D275：GPT 1530 B①——完成卡期間收起提示列與籃子列；D318：GPT 0830 A③——完成卡小字帶實際焦鍋爐號（①有一點焦／①、②有一點焦），單爐沿原 */
         return true;
       }
       return false;
     }
-    tap($('ckHelp'), function () { if (ended) return; ended = true; clearInterval(tickT); w.remove(); onDone(0); });
+    tap($('ckHelp'), function () { if (ended) return; ended = true; clearInterval(tickT); w.remove(); peek(); onDone(0); });
     tickT = setInterval(function () {
       var sec = Math.floor((Date.now() - t0) / 1000), tk = $('ckT'); if (!tk) { clearInterval(tickT); return; }
+      peek();
       tk.textContent = sec + ' 秒'; tk.classList.toggle('hurry', sec > LIM - 10);
       pots.forEach(function (p, g) {
         if (p.st !== 'cooking' && p.st !== 'ready' && p.st !== 'burn') return;
@@ -211,7 +226,7 @@
         else if (p.st !== 'burn') { p.st = 'burn'; potState(g); tip(readyTip(g)); }      /* D316：GPT 2230——焦了也立即提醒一次（雙爐帶爐號），不改焦掉結果 */
       });
     }, 100);
-    order(); tray(); boardState(); pots.forEach(function (p, g) { potState(g); }); boxState();
+    order(); tray(); boardState(); pots.forEach(function (p, g) { potState(g); }); boxState(); peek();
     tip(G > 1 ? '兩張訂單一起做：①用左爐、②用右爐，自己決定先做哪個' : firstTip());
     function firstTip() {      /* D275：GPT 1530 A①——開場句照第一個要處理的食材與實際動作寫，不再一律「砧板切」 */
       var x = list.filter(function (y) { return y.st === 'basket'; })[0]; if (!x) return '從上面的籃子拿食材';
