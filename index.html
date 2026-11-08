@@ -464,7 +464,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.64',
+  version: '0.65',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -770,7 +770,7 @@ function drawCovers(front) {      // D123：基隆嶼海底：後面畫沙紋、
       for (let i = 0; i < 4; i++) { const cx = -c.rx * 0.6 + i * c.rx * 0.4, cy = -c.ry * 0.75 + (i % 2) * 8; ctx.strokeStyle = i % 2 ? '#F28C7A' : '#F2B35A'; ctx.lineWidth = 3; for (let b = -1; b <= 1; b++) { ctx.beginPath(); ctx.moveTo(cx, cy + 6); ctx.lineTo(cx + b * 6 + Math.sin(clock * 2 + i) * 1.5, cy - 8); ctx.stroke(); } }
       ell(c.rx * 0.3, c.ry * 0.2, 6, 5, '#C25A8A', 'rgba(16,41,61,.7)'); }
     ctx.restore(); }
-  const k = LVL().covers.find((q) => q.knock); if (k && !stats.knocks && t > 6 && t < 30) { ctx.globalAlpha = 0.65 + 0.35 * Math.sin(clock * 5); ctx.font = "700 14px 'Noto Sans TC',system-ui,sans-serif"; ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = '#10293D'; ctx.strokeText('點沉船敲一下！', k.x, k.y - k.ry - 34); ctx.fillStyle = '#FFE08A'; ctx.fillText('點沉船敲一下！', k.x, k.y - k.ry - 34); ctx.globalAlpha = 1; }
+  const k = LVL().covers.find((q) => q.knock); if (k && !stats.knocks && t > 6 && t < 30) { const hy = k.y - k.ry - 34, ov = floats.some((f) => Math.abs(f.y - hy) < 26 && Math.abs(f.x - k.x) < (f.hw != null ? f.hw : 60) + 56); stats.hintA = Math.max(0, Math.min(1, (stats.hintA == null ? 1 : stats.hintA) + (ov ? -6 : 3) * (1 / 60))); /* D396：提示同高度有浮字（如「鋸尾鯛 +100」）時先淡出讓位，浮字飄走再淡回來 */ ctx.globalAlpha = (0.65 + 0.35 * Math.sin(clock * 5)) * stats.hintA; ctx.font = "700 14px 'Noto Sans TC',system-ui,sans-serif"; ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = '#10293D'; ctx.strokeText('點沉船敲一下！', k.x, k.y - k.ry - 34); ctx.fillStyle = '#FFE08A'; ctx.fillText('點沉船敲一下！', k.x, k.y - k.ry - 34); ctx.globalAlpha = 1; }
 }
 
 /* ====== D119：第 2～4 關的特殊規則 ====== */
