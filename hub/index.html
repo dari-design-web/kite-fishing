@@ -134,7 +134,8 @@ a{color:inherit}
 .bag .empty{font-size:12.5px;color:var(--muted);margin:0}
 .bag .bottom{margin-top:14px;font-size:11.5px;color:var(--muted);text-align:center}
 /* v51（C-115）：每天第一次打開的小卡 */
-.daily .box{gap:8px}
+.daily .box{gap:8px}.daily .box>p{min-height:0}
+/* D398：每日小卡招呼語只有一行，不用 52px 高度，去掉和小卡之間的空白 */
 .daily .card{width:100%;border-radius:16px;background:linear-gradient(160deg,#FFF6DF,#FFE6B8);padding:12px 14px;text-align:left;box-shadow:inset 0 0 0 2px #F3D08A}
 .daily .card small{display:block;font-size:12px;font-weight:700;color:#A86B12}
 .daily .card p{margin:2px 0 0;min-height:0;font-size:15px;text-align:left}
@@ -494,7 +495,22 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
     ['小鳶想說', '今天的風好舒服，我在港口上面飛了三圈才下來找你！'],
     ['小鳶想說', '昨天我夢到鯨鯊載我去兜風，醒來發現是枕頭……'],
     ['小鳶想說', '你知道嗎？我最喜歡的聲音是大船進港的「嗚——」。'],
-    ['小鳶想說', '如果你今天有點累，就來港口吹吹風吧，我陪你。']
+    ['小鳶想說', '如果你今天有點累，就來港口吹吹風吧，我陪你。'],
+    /* D399：GPT 11/08 新增 14 張（第 15～28 天），28 天不重複 */
+    ['港口小知識', '螃蟹長大時，會脫去舊殼。'],
+    ['港口小知識', '海星用身體下面的一隻隻小腳移動。'],
+    ['港口小知識', '章魚手臂上的吸盤，能幫牠抓住東西。'],
+    ['港口小知識', '珊瑚也是動物喔！'],
+    ['港口小知識', '退潮後，有些岩石凹處會留下小小的海水池。'],
+    ['港口小知識', '海豚用肺呼吸，要浮到水面換氣喔。'],
+    ['港口小知識', '寄居蟹會找空海螺殼當住家，保護軟軟的肚子。'],
+    ['港口小知識', '燈塔的光能幫船隻認方向喔！'],
+    ['港口小知識', '海草是住在海裡的開花植物，和海藻不一樣喔。'],
+    ['港口小知識', '許多水母像小傘，傘一縮一放，就能在水裡游動。'],
+    ['小鳶想說', '嗨！看到你，我就想把翅膀張得大大的！'],
+    ['小鳶想說', '這張小卡送給你，和我一起笑一下吧！'],
+    ['小鳶想說', '今天想說的話，可以慢慢說，我在聽喔。'],
+    ['小鳶想說', '我把一句小小的謝謝，放進這張卡裡！']
   ];
   function ymd(d) { return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
   function dailyCheck(show) {
@@ -503,11 +519,12 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
     dd.streak = dd.last === ymd(y) ? dd.streak + 1 : 1; dd.days = (dd.days || 0) + 1; dd.last = today;
     try { localStorage.setItem('kiteDaily1', JSON.stringify(dd)); } catch (e) {}
     if (!show) return dd;
+    /* D400（GPT 11/08 D399 Q1=B）：第 29 天起內容循環，標題保留分類、加「再看一次」，累計序號照算不歸零 */
     var c = CARDS[(dd.days - 1) % CARDS.length], ov = document.createElement('div'); ov.className = 'intro daily';
     /* D388（研究⑦樂園累計天數核對）：原本「連續 N 天」斷一天就回到 1（紅線：連續天數歸零）。改成只算累計來過幾天，七格跟著累計天數走、不會因為沒來而清空；kiteDaily1.streak 照舊記著但不顯示 */
     var wk = ''; for (var i = 1; i <= 7; i++) wk += '<i class="' + (i <= ((dd.days - 1) % 7) + 1 ? 'on' : '') + '">' + i + '</i>';
     ov.innerHTML = '<div class="box"><img src="../travel/assets/kite_hello.png" alt=""><p>' + (now.getHours() < 11 ? '早安' : now.getHours() < 17 ? '午安' : '晚上好') + '！我今天帶了一張小卡給你～</p>' +
-      '<div class="card"><small>' + c[0] + '・第 ' + dd.days + ' 張</small><p>' + c[1] + '</p></div>' +
+      '<div class="card"><small>' + c[0] + (dd.days > CARDS.length ? '・再看一次' : '') + '・第 ' + dd.days + ' 張</small><p>' + c[1] + '</p></div>' +
       '<div class="streak">' + (dd.days > 1 ? '這是你來看我的第 <b>' + dd.days + '</b> 天！' : '明天也來看我，小卡會不一樣喔！') + '</div><div class="week">' + wk + '</div>' +
       (dd.days % 7 === 0 ? '<div class="streak">謝謝你常來看我 💛</div>' : '') +
       '<div class="row"><button class="go" type="button">收進背包</button></div></div>';
