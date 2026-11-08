@@ -338,7 +338,7 @@ function makeMerge() {
     /* D303（GPT 0930 B②）：結算後重播變身時不畫「下一個」整框（含兩個預覽），背景跟結算一樣只剩遮暗的局面；資料與 130／160 換側規則不變 */
     /* D304（GPT 1030 A②）：結算卡（不只重播）也不畫「下一個」整框，卡片上緣外不再露出約 12px；只藏顯示，資料與換側規則不變 */
     if (state !== 'end') {
-    const nbL = kx > W - 130 ? true : kx < W - 160 ? false : !!g.nbL, nbX = nbL ? 10 : W - 74, nbY = nbL ? 64 : 84, nbC = nbX + 31; g.nbL = nbL; pill(nbX, nbY, 62, 58, 'rgba(16,41,61,.62)'); rrect(nbX, nbY, 62, 58, 14, null, 'rgba(255,255,255,.35)', 1.5);      /* D356：預覽框只放下一顆（拿掉再下一顆的淡小圖），框高 72→58 */
+    const nbL = kx > W - 130 ? true : kx < W - 160 ? false : !!g.nbL, nbX = nbL ? 10 : W - 74, nbY = nbL ? 64 : 84, nbC = nbX + 31; g.nbL = nbL; rrect(nbX, nbY, 62, 58, 14, 'rgba(16,41,61,.62)', 'rgba(255,255,255,.35)', 1.5);      /* D391（合成港實玩）：底色原本用 pill 畫成近乎圓形、外框卻是圓角方框，「下一顆」字頂出深色底、壓在亮天空上不好讀 → 底色改成跟外框同一個圓角方框；位置大小與換側規則不變 */      /* D356：預覽框只放下一顆（拿掉再下一顆的淡小圖），框高 72→58 */
     const wk = g.wantT > 0 ? g.wantT / 0.6 : 0; text(wk ? '我也要！' : '下一顆', nbC, nbY + 12, 11, wk ? '#FFE6A6' : '#CFE3EC', 'center', 700, false);
     drawSea(g.q[0], nbC, nbY + 36, Math.min(15, SEAF[g.q[0]][1]), wk && !RM ? 0.09 * Math.sin(Math.PI * (1 - wk)) : 0);
     }
