@@ -590,7 +590,7 @@ function drawEnd(e) {
   if (e.nb) { rrect(W / 2 - 64, 82, 128, 30, 15, C.warn, C.ink, 2.5); text('新紀錄！', W / 2, 97, 15, C.paper, 'center', 900, false); }
   text(e.title, W / 2, 134, 16, '#3A5568', 'center', 700, false);
   const sx = e.snap ? W / 2 + 34 : W / 2; if (e.snap) snapDraw(e.snap);      /* D381：有縮圖時分數往右讓 34，縮圖放左邊 */
-  text(String(e.s), sx, 178, 46, C.ink, 'center', 900, false); text('分', sx + ctx.measureText(String(e.s)).width / 2 + 30, 186, 15, C.ink, 'center', 700, false);
+  text(String(e.s), sx, 178, 46, C.ink, 'center', 900, false); text('分', sx + ctx.measureText(String(e.s)).width / 2 + 14, 186, 15, C.ink, 'center', 700, false);
   hornR = null;
   e.rows.forEach((r, i) => { const y = 232 + i * 34;
     if (e.horn === i) { const on = performance.now() - hornT < 1100, wob = on ? Math.sin((performance.now() - hornT) / 40) * 1.5 : 0; hornR = { x: 50, y: y - 14 + (1 - k) * 30, w: W - 100, h: 28 };      /* D200（GPT 0925 B）：汽笛收進卡內「裝滿貨船」那一行，整行可點 */
