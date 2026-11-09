@@ -507,7 +507,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '1.12',
+  version: '1.13',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -642,6 +642,7 @@ const img = {};
 for (const k in STAGE_ART) ASSET_FILES[k] = 'stages/' + STAGE_ART[k];
 for (const k of ['tt_lampL', 'tt_lampL_b', 'tt_lampR', 'tt_lampR_b', 'ag_cable', 'ag_cable_b', 'ag_shield', 'ag_shield_b', 'part_burst']) ASSET_FILES[k] = 'parts/' + k + '.png';      /* D367：GPT 0110 魔王零件 9 張（256 縮 160） */
 for (const k of ['fw_radial', 'fw_fan', 'fw_star']) ASSET_FILES[k] = 'fest/' + k + '.png'; ASSET_FILES.hud_star = 'fest/hud_star.png'; for (const k of ['txt_pretty', 'txt_done', 'txt_clean']) ASSET_FILES[k] = 'fest/' + k + '.webp';      /* D370：GPT 1830 最後一擊慶典素材（煙火白色、程式上色；大字） */
+for (const k of ['wind_col', 'wind_tip', 'sign_dodge', 'sign_clear', 'debris']) ASSET_FILES['fk_' + k] = 'fork/' + k + '.webp';      /* D423：GPT D421 風道分流五張 */
 for (const k in ASSET_FILES) { const im = new Image(); im.onload = () => { img[k] = im; }; im.src = 'assets/' + ASSET_FILES[k]; }
 
 let stageNo = 1, progress = { unlocked: 1, stars: {}, best: {} };
@@ -807,7 +808,7 @@ function spawn(e) {
   if (e.type === 'side' && RM()) { addRush(e.n + 2); return; }      // 第 4 關：側邊橫衝改成鐵軌上的刺蝟列車
   if (e.type === 'side') { warns.push({ y: Math.max(150, Math.min(590, kite.y)), fromLeft: e.fromLeft, n: e.n, t: LV().warn }); beep(880, 0.08, 'square', 0.04); return; }
   if (e.type === 'chaser') { const f = mk('chaser', e.x, H + 24); f.vy = 0; say(NM() ? '後面有小燈籠追來，持續移動' : RM() ? '後面有煤渣團追來，持續移動' : '後面有污水泡，持續移動', e.x, H - 60, '#FFD0C4'); return; }
-  const d = T[e.type], f = mk(e.type, e.x, e.y !== undefined ? e.y : -d.r - 10, { give: e.give || '' });
+  const d = T[e.type], f = mk(e.type, e.x, e.y !== undefined ? e.y : -d.r - 10, { give: e.give || '' }); if (e.deb) f.deb = true;
   if (e.head) f.head = true;
   if (e.mascot) { f.mascot = e.mascot; if (!stats.toldBound && !newHold()) { stats.toldBound = true; banner(MASCOT_NAME[e.mascot] + '被綁住了！打斷它'); } }
   if (RM() && (e.type === 'can' || e.type === 'butt')) { f.x = f.x0 = RAIL_X() + R(-4, 4); f.vx = 0; f.rail = true; f.vy *= 1.25; }      // 鐵軌刺蝟只沿著鐵軌滾
@@ -1297,6 +1298,7 @@ function update(dt) {
     const dT = T[f.type], touch = dT.solid ? Math.hypot(Math.max(Math.abs(kite.x - f.x) - f.w / 2, 0), Math.max(Math.abs(kite.y - f.y) - 11, 0)) < K.r : Math.hypot(f.x - kite.x, f.y - kite.y) < f.r + K.r;
     const out = f.cross ? (f.vx > 0 ? f.x > W + 40 : f.x < -40) : (f.y > H + f.r + 10 || f.x < -60 || f.x > W + 60 || (f.aimed && f.y < -30));
     if (kite.hearts > 0 && f.hp > 0 && touch && f.fill) { f.hp = 0; clearFoe(f, ''); continue; }
+    if (kite.hearts > 0 && f.hp > 0 && touch && f.type === 'log' && daily && daily.fork) forkTouch();      /* D423：閃避路看「有沒有碰到」，不是看有沒有扣血 */
     if (kite.hearts > 0 && f.hp > 0 && touch) {
       if (kite.safe <= 0 && !ult) { const d = dT; hurt(d.name); if (d.blast) { f.hp = 0; clearFoe(f, ''); } else if (f.type !== 'boss' && f.type !== 'minib' && !d.rescue && !d.solid && f.type !== 'oil' && f.type !== 'tire' && f.type !== 'sprayer') { foes.splice(foes.indexOf(f), 1); if (!f.noCount) stats.leaked++; } }
     } else if (out || f.gone) {
@@ -3002,6 +3004,7 @@ function drawFoe(f) {
   if (f.elite) { const pu = Math.sin(clock * 6 + f.ph) * 0.1; glow(f.r * 1.9, '255,214,90', 0.55 + pu); if (img.elite_crown) ctx.drawImage(img.elite_crown, -11, -f.r * 1.45 - 16 + Math.sin(clock * 5) * 1.5, 22, 22); ctx.scale(1.35, 1.35); }
   if (f.jit > 0) { f.jit -= 1 / 60; ctx.translate(Math.random() * 5 - 2.5, Math.random() * 4 - 2); }
   const r = f.r, ty = f.type, big = FOE_BIG(ty); if (big) ctx.scale(FOE_VIS, FOE_VIS); if (ty === 'boss') { const bv = bossVis(); ctx.scale(bv, bv); }      /* D351 */      // 素材圖用固定尺寸，整個放大 1.35
+  if (f.deb && img.fk_debris) { const z = f.r * 2.5 * (f.hp < T[ty].hp ? 0.9 : 1); ctx.rotate(Math.sin(clock * 1.6 + f.ph) * 0.12); if (f.hp < T[ty].hp) ctx.globalAlpha *= 0.82; ctx.drawImage(img.fk_debris, -z / 2, -z / 2, z, z); if (f.hp < T[ty].hp) { ctx.strokeStyle = 'rgba(60,40,20,.8)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-z * 0.2, -z * 0.25); ctx.lineTo(z * 0.02, -z * 0.02); ctx.lineTo(-z * 0.08, z * 0.22); ctx.stroke(); } ctx.restore(); return; }      /* D423：風道清障路的可破漂浮障礙（GPT 圖），打一下出現裂痕 */
   if (drawFoeSprite(f)) { ctx.restore(); return; }
   if (big) ctx.scale(1 / 1.18, 1 / 1.18);      // 程式畫的佔位圖用 r（已放大 1.18），扣回來
   if (ty === 'bottle') { ctx.rotate(f.rot + Math.sin(clock * 1.5 + f.ph) * 0.2); if (!sprite('trash', 30, 30)) { ctx.fillStyle = '#C9D6C4'; ctx.fillRect(-6, -10, 12, 22); ctx.strokeStyle = PAL.line; ctx.strokeRect(-6, -10, 12, 22); ctx.fillStyle = '#E8674A'; ctx.fillRect(-4, -15, 8, 5); } }
@@ -3518,7 +3521,7 @@ function dailyFinish() {
 }
 /* D421：風道分流（試玩）——GPT D420 F2。風道從上方伸下來把海面分成左右兩條路：閃避路（漂流木左右交錯、補給少）、清障路（一路垃圾、補給多）。
    風道尖端碰到小鳶那一刻就決定走哪邊，合流前不能跨過去；合流後用帶出來的羽毛強化打後段。三次分岔約 64 秒，單人、不計點數與星星，只記這支手機最佳 */
-const FORK = { len: 64, vy: 112, half: 16, wall: 980, key: 'kiteForkBest1' };
+const FORK = { len: 64, vy: 112, half: 16, wall: 980, key: 'kiteForkBest1', nice: 300 };
 function buildForkScript() {
   const E = [], add = (time, type, x, o) => E.push(Object.assign({ t: time, type, x }, o));
   const col = (time, type, x, n, gap) => { for (let i = 0; i < n; i++) add(time + i * gap, type, x); };
@@ -3529,10 +3532,10 @@ function buildForkScript() {
     add(A, 'fork', 0, { k, safeLeft });
     [44, 120, 44, 120, 44, 120].forEach((x, i) => add(A + 0.7 + i * 1.25, 'log', m(x), { w: 84 }));      /* 閃避路：漂流木左右交錯，看縫隙穿過去 */
     add(A + 2.0, 'bottle', m(82)); add(A + 5.6, 'bottle', m(82)); add(A + 3.3, 'fpick', m(82), { kind: 'jerky' }); if (hard) add(A + 7.2, 'can', m(60));
-    col(A + 0.5, 'bottle', m(222), 4, 0.35); col(A + 1.1, 'can', m(334), 3, 0.4); add(A + 2.1, 'foam', m(278)); add(A + 2.6, 'fpick', m(300), { kind: 'power' });      /* 清障路：一路垃圾，補給多 */
+    col(A + 0.5, 'bottle', m(222), 4, 0.35); col(A + 1.1, 'can', m(334), 3, 0.4); add(A + 2.1, 'foam', m(278), { deb: true }); add(A + 2.6, 'fpick', m(300), { kind: 'power' });      /* 清障路：一路垃圾，補給多 */
     add(A + 3.2, 'net', m(278), { give: 'power' }); row(A + 4.6, 'bottle', [m(222), m(278), m(334)]); add(A + 5.6, 'tire', m(300), { give: 'jerky' });
-    add(A + 6.4, hard ? 'barrel' : 'foam', m(250)); add(A + 7.0, 'fpick', m(240), { kind: 'gale' }); row(A + 7.8, 'can', [m(222), m(334)]);
-    if (hard) { col(A + 3.8, 'can', m(222), 3, 0.3); add(A + 6.9, 'foam', m(334)); }
+    add(A + 6.4, hard ? 'barrel' : 'foam', m(250), hard ? {} : { deb: true }); add(A + 7.0, 'fpick', m(240), { kind: 'gale' }); row(A + 7.8, 'can', [m(222), m(334)]);
+    if (hard) { col(A + 3.8, 'can', m(222), 3, 0.3); add(A + 6.9, 'foam', m(334), { deb: true }); }
   };
   add(1.2, 'bottle', 120, { slow: 0.75 }); add(2.2, 'bottle', 240, { slow: 0.75 });
   lane(0, 4, true, false);
@@ -3549,16 +3552,25 @@ function forkAdd(e) {
   banner(e.k === 0 ? '前面風道分岔！選一邊飛進去，合流前不能換' : '風道又要分岔了，看清楚兩邊再選'); beep(520, 0.16, 'triangle', 0.05, 260);
 }
 function forkBegin() {
-  daily.rt = 0; daily.done = false; daily.walls = []; daily.picks = []; daily.holdT = 0; dailyFade = null; stageNo = 1; T = stageTypes();
+  daily.rt = 0; daily.done = false; daily.walls = []; daily.picks = []; daily.nice = 0; daily.niceBonus = 0; daily.holdT = 0; dailyFade = null; stageNo = 1; T = stageTypes();
   script = buildForkScript(); si = 0; t = 0; $('ultTag').textContent = ULTN(); ultIcon();
 }
 function forkTick(dt) {
   daily.rt += dt;
   for (const w of daily.walls) {
     w.yb += FORK.vy * dt;
+    if (w.side && !w.paid && w.yb - FORK.wall >= kite.y) forkMerge(w);      /* D423 */
     if (!w.side && w.yb >= kite.y - 4) { w.side = kite.x < w.cx ? 'L' : 'R'; const ln = forkLane(w, w.side); daily.picks[w.k] = ln; say(ln === 'safe' ? '閃避路：看縫隙穿過去' : '清障路：一路打過去', w.side === 'L' ? 90 : W - 90, kite.y - 70, '#FFFFFF', false, '#1F3A4D'); beep(ln === 'safe' ? 700 : 880, 0.12, 'triangle', 0.05, 200); }
   }
   daily.walls = daily.walls.filter((w) => w.yb - FORK.wall < H + 30);
+}
+function forkTouch() { for (const w of daily.walls) if (w.side && !w.paid) w.touch = true; }
+/* D423：GPT D421 Q2——閃避路整段完全沒碰到漂流木，到合流點給一次「漂亮穿越」+FORK.nice 分（只算這局試玩） */
+function forkMerge(w) {
+  w.paid = true; if (daily.picks[w.k] !== 'safe') return;
+  if (w.touch) { say('合流！下次試著一根都不碰', W / 2, kite.y - 70, '#FFFFFF', false, '#1F3A4D'); return; }
+  daily.nice = (daily.nice || 0) + 1; daily.niceBonus = (daily.niceBonus || 0) + FORK.nice;
+  say('漂亮穿越！+' + FORK.nice, W / 2, kite.y - 74, '#BFF0D0', false, '#1F3A4D'); jingle([659, 784, 1047], 90); burst(kite.x, kite.y - 10, 14, '#BFF0D0');
 }
 function forkClamp() {
   const r = CONFIG.kite.r, h = FORK.half;
@@ -3574,19 +3586,30 @@ function drawForks() {
   for (const w of daily.walls) {
     const yt = w.yb - FORK.wall, y0 = Math.max(-20, yt), y1 = Math.min(H + 20, w.yb); if (y1 < -20) continue;
     ctx.save();
-    const g = ctx.createLinearGradient(w.cx - h, 0, w.cx + h, 0); g.addColorStop(0, 'rgba(160,226,238,.55)'); g.addColorStop(0.5, 'rgba(244,253,255,.95)'); g.addColorStop(1, 'rgba(160,226,238,.55)');
-    ctx.fillStyle = g; ctx.strokeStyle = '#1F5A6E'; ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.moveTo(w.cx - h, y0 + (yt > -20 ? h : 0)); ctx.lineTo(w.cx - h, w.yb - 18); ctx.lineTo(w.cx, w.yb + 6); ctx.lineTo(w.cx + h, w.yb - 18); ctx.lineTo(w.cx + h, y0 + (yt > -20 ? h : 0));
-    if (yt > -20) ctx.arc(w.cx, yt + h, h, 0, Math.PI, true); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.strokeStyle = 'rgba(31,90,110,.45)'; ctx.lineWidth = 2; const sp = calm ? 0 : clock * 260;
-    for (let y = y0 - ((y0 + sp) % 46) + 46; y < w.yb - 24; y += 46) { ctx.beginPath(); ctx.moveTo(w.cx - 5, y); ctx.quadraticCurveTo(w.cx + 6, y + 9, w.cx - 3, y + 20); ctx.stroke(); }
+    if (img.fk_wind_col && img.fk_wind_tip) {      /* D423：換上 GPT 風柱圖——中段上下重複、往下流動，下端接朝下尖端，上端用翻過來的尖端收口 */
+      const sc = 0.56, cw = 120 * sc, th = 512 * sc, tw = 120 * sc, tp = 160 * sc, tipY = w.yb - 150 * sc, bot = tipY + 7, top = yt + tp * 0.55;
+      ctx.save(); ctx.beginPath(); ctx.rect(w.cx - cw / 2, Math.max(-20, top), cw, Math.max(0, bot - Math.max(-20, top))); ctx.clip();
+      const off = calm ? 0 : (clock * 150) % th; for (let y = top - th + off; y < bot; y += th) if (y + th > -20 && y < H + 20) ctx.drawImage(img.fk_wind_col, w.cx - cw / 2, y, cw, th);
+      ctx.restore();
+      ctx.drawImage(img.fk_wind_tip, w.cx - tw / 2, tipY, tw, tp);
+      if (yt + tp > -20) { ctx.save(); ctx.translate(w.cx, yt + tp * 0.55 + 8); ctx.scale(1, -1); ctx.drawImage(img.fk_wind_tip, -tw / 2, 0, tw, tp * 0.6); ctx.restore(); }
+    } else {
+      const g = ctx.createLinearGradient(w.cx - h, 0, w.cx + h, 0); g.addColorStop(0, 'rgba(160,226,238,.55)'); g.addColorStop(0.5, 'rgba(244,253,255,.95)'); g.addColorStop(1, 'rgba(160,226,238,.55)');
+      ctx.fillStyle = g; ctx.strokeStyle = '#1F5A6E'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(w.cx - h, y0 + (yt > -20 ? h : 0)); ctx.lineTo(w.cx - h, w.yb - 18); ctx.lineTo(w.cx, w.yb + 6); ctx.lineTo(w.cx + h, w.yb - 18); ctx.lineTo(w.cx + h, y0 + (yt > -20 ? h : 0));
+      if (yt > -20) ctx.arc(w.cx, yt + h, h, 0, Math.PI, true); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(31,90,110,.45)'; ctx.lineWidth = 2; const sp = calm ? 0 : clock * 260;
+      for (let y = y0 - ((y0 + sp) % 46) + 46; y < w.yb - 24; y += 46) { ctx.beginPath(); ctx.moveTo(w.cx - 5, y); ctx.quadraticCurveTo(w.cx + 6, y + 9, w.cx - 3, y + 20); ctx.stroke(); }
+    }
     ctx.textAlign = 'center';
     if (yt > -20 && yt < H) { ctx.setLineDash([7, 7]); ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(12, yt + 4); ctx.lineTo(w.cx - h - 6, yt + 4); ctx.moveTo(w.cx + h + 6, yt + 4); ctx.lineTo(W - 12, yt + 4); ctx.stroke(); ctx.setLineDash([]);
       ctx.font = '700 14px ' + FF; ctx.lineWidth = 4; ctx.strokeStyle = '#1F3A4D'; ctx.fillStyle = '#BFF0D0'; for (const x of [W / 4, W * 3 / 4]) { ctx.strokeText('▲ 合流', x, yt - 4); ctx.fillText('▲ 合流', x, yt - 4); } }
     if (!w.side) {      /* 還沒進風道：兩條路的牌子跟著風道尖端往下，先看清楚 */
       const y = Math.max(90, Math.min(kite.y - 90, w.yb + 34));
-      for (const side of ['L', 'R']) { const ln = forkLane(w, side), x = side === 'L' ? (w.cx - h) / 2 : W - (w.cx - h) / 2; rrect(x - 66, y - 22, 132, 44, 10, ln === 'safe' ? 'rgba(20,70,60,.88)' : 'rgba(110,60,20,.88)', '#FFF4E2', 2);
-        ctx.font = '700 15px ' + FF; ctx.fillStyle = '#FFFFFF'; ctx.fillText(ln === 'safe' ? '🍃 閃避路' : '🪶 清障路', x, y - 3); ctx.font = '600 12px ' + FF; ctx.fillStyle = ln === 'safe' ? '#BFF0D0' : '#FFD98A'; ctx.fillText(ln === 'safe' ? '躲漂流木・補給少' : '打垃圾・補給多', x, y + 14); }
+      for (const side of ['L', 'R']) { const ln = forkLane(w, side), x = side === 'L' ? (w.cx - h) / 2 : W - (w.cx - h) / 2; const si = ln === 'safe' ? img.fk_sign_dodge : img.fk_sign_clear, sub = ln === 'safe' ? '一根不碰 +' + FORK.nice : '打垃圾・補給多';
+        if (si) { const sw = 148, sh = sw * 90 / 260, sx = x - sw / 2, sy = y - sh / 2 - 6; ctx.drawImage(si, sx, sy, sw, sh); ctx.font = '800 15px ' + FF; ctx.fillStyle = ln === 'safe' ? '#2F5A2A' : '#7A4210'; ctx.fillText(ln === 'safe' ? '閃避路' : '清障路', sx + 155 * sw / 260, sy + 49 * sw / 260); ctx.font = '700 12px ' + FF; ctx.lineWidth = 3.5; ctx.strokeStyle = '#1F3A4D'; ctx.fillStyle = ln === 'safe' ? '#BFF0D0' : '#FFD98A'; ctx.strokeText(sub, x, sy + sh + 13); ctx.fillText(sub, x, sy + sh + 13); }      /* D423：GPT 無字路牌，字寫在牌子安全區 */
+        else { rrect(x - 66, y - 22, 132, 44, 10, ln === 'safe' ? 'rgba(20,70,60,.88)' : 'rgba(110,60,20,.88)', '#FFF4E2', 2);
+        ctx.font = '700 15px ' + FF; ctx.fillStyle = '#FFFFFF'; ctx.fillText(ln === 'safe' ? '🍃 閃避路' : '🪶 清障路', x, y - 3); ctx.font = '600 12px ' + FF; ctx.fillStyle = ln === 'safe' ? '#BFF0D0' : '#FFD98A'; ctx.fillText(sub, x, y + 14); } }
     } else if (yt < kite.y && w.yb > kite.y) {      /* 進了風道：在風道上標還要幾秒合流 */
       const s = Math.max(0, Math.ceil((kite.y - yt) / FORK.vy)), y = Math.max(80, kite.y - 64);
       ell(w.cx, y, 21, 21, '#FFF4E2', '#1F5A6E'); ctx.fillStyle = '#1F5A6E'; ctx.font = '700 11px ' + FF; ctx.fillText('合流', w.cx, y - 4); ctx.font = '700 15px ' + FF; ctx.fillText(s + '秒', w.cx, y + 12);
@@ -3597,7 +3620,7 @@ function drawForks() {
 function forkOpen() {
   daily = { fork: true, rt: 0, walls: [], picks: [], done: false, holdT: 0 }; stageNo = 1;
   $('stageTitle').innerHTML = '<span style="white-space:nowrap">🌬 風道分流</span><span style="white-space:nowrap">（試玩）</span>';
-  $('stageIntro').textContent = '前面的風道會把海面分成兩條路：🍃 閃避路躲漂流木、補給少；🪶 清障路一路打垃圾、補給多。飛進去就不能換邊，合流後用帶出來的羽毛打穿後段。三次分岔、約 64 秒，不計點數與星星。';
+  $('stageIntro').textContent = '前面的風道會把海面分成兩條路：🍃 閃避路躲漂流木，一根都沒碰到就「漂亮穿越」+300；🪶 清障路一路打垃圾、補給多。飛進去就不能換邊，合流後用帶出來的羽毛打穿後段。三次分岔、約 64 秒，不計點數與星星。';
   $('startPanel').classList.add('daily'); reset(); mode = 'start'; show('startPanel');
 }
 function forkBestGet() { try { const v = +localStorage.getItem(FORK.key); return v > 0 ? v : undefined; } catch (e) { return undefined; } }
@@ -3611,7 +3634,8 @@ function forkFinish() {
   const add = (a, b, wide) => { const l = document.createElement('span'); l.textContent = a; const v = document.createElement('span'); v.textContent = b; if (wide) { v.style.gridColumn = '1 / -1'; v.style.textAlign = 'left'; v.style.fontWeight = '600'; } rows.append(l, v); };
   const nm = { safe: '🍃閃避', clear: '🪶清障' }, ch = [0, 1, 2].map((k) => (daily.picks[k] ? nm[daily.picks[k]] : '—'));
   add('走過的路', '', true); rows.lastChild.textContent = ch.join(' → ');
-  add('拿到補給', '羽毛 ' + stats.powerUps + '・魚乾 ' + stats.jerky + '・疾風 ' + stats.gales);
+  add('拿到補給', '🪶' + stats.powerUps + '・🐟' + stats.jerky + '・💨' + stats.gales);      /* D423：SE 不再拆成兩行 */
+  if (daily.picks.includes('safe')) add('漂亮穿越', (daily.nice || 0) + ' 次' + (daily.nice ? '（+' + daily.niceBonus + ' 分）' : ''));
   add('清掉', stats.cleared + ' 個'); add('被打到', stats.hits + ' 次');
   add('這支手機最佳', Math.max(sc, old || 0) + ' 分' + (old !== undefined && sc > old ? '　新紀錄！' : ''));
   for (const id of ['moreRows', 'farBar', 'cheerBtn', 'unlockNote', 'ask']) { const e = $(id); if (e) e.hidden = true; }
@@ -3635,7 +3659,7 @@ function resume() { if (mode !== 'pause') return; mode = 'play'; if (soundOn) BG
 /* v0.22（D44）：結果改用「分數」。暫用配分，之後依便當與點數規則再調（D43、D44 參數最後決定） */
 const SCORE = { cleared: 10, rescued: 50, boss: 300, heart: 50 };
 function scoreNow() { return stats.cleared * SCORE.cleared + (stats.rescued || 0) * SCORE.rescued + (stats.bossCleared ? SCORE.boss : 0); }
-function scoreFinal() { return scoreNow() + Math.max(0, kite.hearts) * SCORE.heart; }
+function scoreFinal() { return scoreNow() + Math.max(0, kite.hearts) * SCORE.heart + (daily && daily.fork ? daily.niceBonus || 0 : 0); }
 function cleanPct() { return stats.spawned ? Math.round(stats.cleared / stats.spawned * 100) : 0; }
 function rankOf(v) { let name = CONFIG.ranks[0][1]; for (const r of CONFIG.ranks) if (v >= r[0]) name = r[1]; return name; }
 function record() {
