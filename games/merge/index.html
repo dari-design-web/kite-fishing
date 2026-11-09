@@ -233,7 +233,7 @@ let ferryMode = false;
 function makeMerge() {
   const g = { balls: [], fall: null, q: [], score: 0, done: false, over: 0, say: '', sayT: 0, top: 0, t: 0, lv: 1, merges: 0, mergesAll: 0, need: MF.needBase + MF.needStep, chain: 0, chainT: 0, bestChain: 0, tx: W / 2, wait: 0.5, banner: '', bannerT: 0, tap: null, found: null, newFound: [] };
   g.ferry = ferryMode && !DS;
-  if (g.ferry) { g.drops = FY.drops; g.trip = 0; g.prog = 0; g.flog = []; g.orders = FY.trips[0]; g.outT = 0; g.clearT = 0; g.flyers = []; g.fEnd = ''; g.dockT = 99; g.dockLv = 0; g.dockN = 0; if (!IMG.dock_empty) { want('dock_empty', '../assets/merge/dock_empty.webp'); want('dock_arrived', '../assets/merge/dock_arrived.webp'); } }
+  if (g.ferry) { g.drops = FY.drops; g.trip = 0; g.prog = 0; g.flog = []; g.orders = FY.trips[0]; g.outT = 0; g.clearT = 0; g.flyers = []; g.fEnd = ''; g.dockT = 99; g.dockLv = 0; g.dockN = 0; if (!IMG.dock_empty) { want('dock_empty', '../assets/merge/dock_empty.webp'); want('dock_arrived', '../assets/merge/dock_arrived.webp'); want('dock_arrived_crab', '../assets/merge/dock_arrived_crab.webp'); want('dock_arrived_octopus', '../assets/merge/dock_arrived_octopus.webp'); } }
   g.fHave = (o) => g.balls.filter((b) => b.lv === o.lv && !b.dead && b.age > 0.4).length;
   g.fReady = () => !!(g.ferry && g.orders && !g.done && g.orders.some((o) => g.fHave(o) >= o.n));
   g.deliver = (i) => {
@@ -401,7 +401,7 @@ function drawDock(g, D, tt) {
   else if (t < 2.6) { const u = (t - 1.25) / 1.35; bx = u * u * 210; al = 1 - Math.max(0, u - 0.6) / 0.4; ride = true; }
   else if (t < 3.5 && !fin) { const u = 1 - (t - 2.6) / 0.9; bx = u * u * 150; al = 1 - u * 0.6; }
   else if (fin) al = 0;
-  if (ride && ia && SEAF[g.dockLv] && SEAF[g.dockLv][0] === '河豚') img = ia;      /* 送的是河豚：用 GPT「接到夥伴」那張 */
+  if (ride && SEAF[g.dockLv]) { const nm = SEAF[g.dockLv][0], alt = nm === '河豚' ? ia : nm === '螃蟹' ? ready('dock_arrived_crab') : nm === '章魚' ? ready('dock_arrived_octopus') : null; if (alt) img = alt; }      /* 送的是河豚／螃蟹／章魚：用 GPT「接到夥伴」那張（D426 補上螃蟹、章魚） */
   if (al > 0) {
     ctx.save(); ctx.globalAlpha = clamp(al, 0, 1); ctx.beginPath(); ctx.rect(D.x + cut * D.s - 2, D.y - 20, W, D.h + 30); ctx.clip();
     const ox = D.x + cut * D.s + bx, oy = D.y + bob;

@@ -648,6 +648,187 @@ function drawLvEnd(e) {
 }
 function lvTap(p, kbd) { if (state === 'lvend' && (!lvEnd || lvEnd.t < 0.6)) return; if (kbd) { if (lvR.kbd) lvR.kbd(); return; } const r = lvR.find((q) => inR(q, p, 6)); if (r) r.f(); }
 
+/* ================= D425 貨櫃方塊（試玩，GPT 2240 Q2 推薦） =================
+   8×8 裝船區、四組共 12 塊固定方向的貨櫃形狀（不旋轉）；同組三塊可自選先後，三塊都用完才換下一組。
+   排滿一整行或一整列就裝船移走（同一步多條一起清，交叉格只清一次、行列各算一條）。12 塊內累計清 3 條＝完成（GPT 建議九塊；bot 實測九塊太難，改四組 12 塊、偏大塊：貪心玩法 9 成過、隨便放約 6 成）；
+   12 塊用完還不到、或手上剩的形狀都放不下就結束。沒有倒數，可同題重來。
+   每日一題：台北日期＋題組版本 BKVER 決定形狀；每組題目先用解題器找到一組可達成的擺法才出題（找不到就換下一個種子），
+   所以每天的題目都保證有解（解法存在 BK.sol，測試用）。「換一題練習」用隨機種子，同樣先驗證有解。
+   本機只存今天最少用幾塊完成（kiteBlk1），不算點數、不進排行榜、不算告示板委託、不接卡冊。圖先用程式畫＋現有貨櫃圖的鐵皮，等 GPT 底板與單格圖。 */
+const BKVER = 1, BKN = 8, BKGOAL = 3, BKNG = 4, BKP = BKNG * 3, BKKEY = 'kiteBlk1';
+const BKS = [      /* [形狀格子 [列,行]..., 權重] 固定方向；偏大塊（bot 實測：九塊清三條太難，貪心玩法只有 1 成過關） */
+  [[[0, 0], [0, 1]], 2], [[[0, 0], [1, 0]], 2], [[[0, 0], [0, 1], [0, 2]], 4], [[[0, 0], [1, 0], [2, 0]], 4],
+  [[[0, 0], [0, 1], [0, 2], [0, 3]], 6], [[[0, 0], [1, 0], [2, 0], [3, 0]], 6], [[[0, 0], [0, 1], [1, 0], [1, 1]], 6],
+  [[[0, 0], [1, 0], [1, 1]], 2], [[[0, 1], [1, 0], [1, 1]], 2], [[[0, 0], [0, 1], [1, 0]], 2], [[[0, 0], [0, 1], [1, 1]], 2],
+  [[[0, 0], [1, 0], [2, 0], [2, 1]], 3], [[[0, 1], [1, 1], [2, 1], [2, 0]], 3], [[[0, 0], [0, 1], [0, 2], [1, 0]], 3], [[[0, 0], [0, 1], [0, 2], [1, 2]], 3],
+  [[[0, 0], [0, 1], [0, 2], [1, 1]], 2], [[[0, 1], [1, 0], [1, 1], [1, 2]], 2],
+  [[[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]], 5], [[[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]], 5],
+  [[[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]], 3], [[[0, 0], [0, 1], [1, 0], [1, 1], [2, 0], [2, 1]], 3]
+];
+const bkW = BKS.reduce((a, s) => a + s[1], 0);
+function bkRng(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const bkToday = () => new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+const bkSize = (s) => ({ h: 1 + Math.max(...s.map((q) => q[0])), w: 1 + Math.max(...s.map((q) => q[1])) });
+const bkFits = (gr, s, r, c) => s.every((q) => { const y = r + q[0], x = c + q[1]; return y >= 0 && x >= 0 && y < BKN && x < BKN && !gr[y * BKN + x]; });
+function bkPlace(gr, s, r, c) {      /* 放下並清掉滿的行列；回傳 {g 新盤面, rows, cols, n 條數} */
+  const g = gr.slice(); s.forEach((q) => { g[(r + q[0]) * BKN + c + q[1]] = 1; });
+  const rows = [], cols = [];
+  for (let i = 0; i < BKN; i++) { let fr = 1, fc = 1; for (let j = 0; j < BKN; j++) { if (!g[i * BKN + j]) fr = 0; if (!g[j * BKN + i]) fc = 0; } if (fr) rows.push(i); if (fc) cols.push(i); }
+  rows.forEach((i) => { for (let j = 0; j < BKN; j++) g[i * BKN + j] = 0; }); cols.forEach((i) => { for (let j = 0; j < BKN; j++) g[j * BKN + i] = 0; });
+  return { g, rows, cols, n: rows.length + cols.length };
+}
+const bkAny = (gr, s) => { for (let r = 0; r < BKN; r++) for (let c = 0; c < BKN; c++) if (bkFits(gr, s, r, c)) return true; return false; };
+/* 解題器：深度優先，先試會清線、靠邊靠格子的位置；節點上限內找到就回傳擺法 */
+function bkSolve(sets) {
+  let nodes = 0; const path = [];
+  function score(gr, s, r, c) { const p = bkPlace(gr, s, r, c); let adj = 0; s.forEach((q) => { const y = r + q[0], x = c + q[1]; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach((d) => { const yy = y + d[0], xx = x + d[1]; if (yy < 0 || xx < 0 || yy >= BKN || xx >= BKN || gr[yy * BKN + xx]) adj++; }); }); return { p, k: p.n * 100 + adj }; }
+  function go(gr, gi, left, lines) {
+    if (lines >= BKGOAL) return true; if (gi >= BKNG) return false; if (!left.length) return go(gr, gi + 1, [0, 1, 2], lines); if (++nodes > 6000) return false;
+    for (const pi of left) { const s = sets[gi][pi], opts = [];
+      for (let r = 0; r < BKN; r++) for (let c = 0; c < BKN; c++) if (bkFits(gr, s, r, c)) { const o = score(gr, s, r, c); o.r = r; o.c = c; opts.push(o); }
+      opts.sort((a, b) => b.k - a.k);
+      for (const o of opts.slice(0, 5)) { path.push([gi, pi, o.r, o.c]); if (go(o.p.g, gi, left.filter((x) => x !== pi), lines + o.p.n)) return true; path.pop(); } }
+    return false;
+  }
+  return go(new Array(BKN * BKN).fill(0), 0, [0, 1, 2], 0) ? path.slice() : null;
+}
+function bkMake(seed) {      /* 種子 → 三組形狀；先驗證有解（而且不是 3 塊內就清完的太簡單題），不行就換下一個種子 */
+  for (let k = 0; k < 60; k++) { const R = bkRng(seed + k * 7919), pick1 = () => { let x = R() * bkW; for (const s of BKS) { x -= s[1]; if (x < 0) return s[0]; } return BKS[0][0]; };
+    const sets = [0, 1, 2, 3].map(() => [pick1(), pick1(), pick1()]), sol = bkSolve(sets);
+    if (sol && sol.length >= 4) return { sets, sol, seed: seed + k * 7919 }; }
+  return { sets: [[BKS[17][0], BKS[17][0], BKS[6][0]], [BKS[6][0], BKS[6][0], BKS[4][0]], [BKS[4][0], BKS[4][0], BKS[2][0]], [BKS[2][0], BKS[0][0], BKS[1][0]]], sol: null, seed };
+}
+const bkHash = (s) => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+let BK = null, bkR = [], blkBtnR = null, bkDaily = null;
+const BKG = { x: 32, y: 128, cs: 37 }, BKT = { y: 446, h: 116 };
+const BKCOL = [0, 1, 2, 3, 4, 5];
+function bkHow() { document.getElementById('how').innerHTML = '<span class="hl"><b>貨櫃方塊（試玩）</b>把下面的貨櫃<b>拖進</b>裝船區，</span><span class="hl">排滿一整行或一整列就<b>裝船</b>！' + BKP + ' 塊內裝滿 <b>3 條</b>過關。</span>'; }
+function bkStart(practice) {
+  const day = bkToday(), seed = practice ? (Math.random() * 1e9) | 0 : bkHash(day + '#' + BKVER), P = practice === 'same' && BK ? BK.P : practice ? bkMake(seed) : (bkDaily && bkDaily.day === day ? bkDaily.P : (bkDaily = { day, P: bkMake(seed) }).P);
+  BK = { P, practice: !!practice, day, grid: new Array(BKN * BKN).fill(0), col: new Array(BKN * BKN).fill(0), gi: 0, used: [0, 0, 0], n: 0, lines: 0, drag: null, sel: -1, fx: [], flash: [], shipT: 0, shipGo: 0, t: 0, end: null, say: '先想想看：哪一塊先放？', sayT: 3 };
+  state = 'blk'; bkHow(); for (let i = 0; i < 6; i++) if (!IMG['box_' + i]) want('box_' + i, '../assets/stack/box_' + i + '.png'); if (!IMG.ship) want('ship', '../assets/stack/ship.png'); festLoad(); beep(660, 0.08);
+}
+function bkBack() { BK = null; setMode('stack'); dailyTag(); beep(520, 0.06); }
+const bkCur = () => BK.P.sets[BK.gi];
+function bkTrayBox(i) { return { x: 10 + i * 116, y: BKT.y, w: 108, h: BKT.h }; }
+function bkCell(x, y, cs, ci, a) {      /* 一格貨櫃：用現有貨櫃圖中段的波浪鐵皮，四邊深框；還沒載入就程式畫 */
+  const im = ready('box_' + ci); ctx.save(); if (a != null) ctx.globalAlpha = a;
+  rrect(x + 1, y + 2, cs - 2, cs - 2, 4, 'rgba(0,0,0,.25)');
+  ctx.save(); rrect(x + 1, y + 1, cs - 2, cs - 2, 4); ctx.clip();
+  if (im) ctx.drawImage(im, 180, 6, 84, 84, x + 1, y + 1, cs - 2, cs - 2);
+  else { const base = BOXC[ci]; ctx.fillStyle = base; ctx.fillRect(x, y, cs, cs); ctx.strokeStyle = 'rgba(0,0,0,.22)'; ctx.lineWidth = 1.2; for (let xx = x + 5; xx < x + cs - 3; xx += 5) { ctx.beginPath(); ctx.moveTo(xx, y + 4); ctx.lineTo(xx, y + cs - 4); ctx.stroke(); } }
+  ctx.fillStyle = 'rgba(255,255,255,.22)'; ctx.fillRect(x + 1, y + 1, cs - 2, Math.max(2, cs * 0.12));
+  ctx.restore(); rrect(x + 1, y + 1, cs - 2, cs - 2, 4, null, C.ink, cs > 30 ? 2 : 1.5);
+  if (cs > 24) { ctx.fillStyle = 'rgba(16,41,61,.5)'; for (const cx of [x + 3, x + cs - 7]) for (const cy of [y + 3, y + cs - 7]) ctx.fillRect(cx, cy, 4, 4); }
+  ctx.restore();
+}
+function bkShape(s, x, y, cs, ci, a) { s.forEach((q) => bkCell(x + q[1] * cs, y + q[0] * cs, cs, ci, a)); }
+function bkGhost() {      /* 拖著的形狀：左上角對到哪一格（手指上方 70，避免手指擋住） */
+  const d = BK.drag; if (!d || !d.moved) return null; const s = bkCur()[d.i], z = bkSize(s), x = d.x - z.w * BKG.cs / 2, y = d.y - 70 - z.h * BKG.cs / 2;
+  const c = Math.round((x - BKG.x) / BKG.cs), r = Math.round((y - BKG.y) / BKG.cs); return { r, c, ok: bkFits(BK.grid, s, r, c), x, y };
+}
+function bkDrop(i, r, c) {
+  const s = bkCur()[i]; if (!bkFits(BK.grid, s, r, c)) return false; const ci = BKCOL[(BK.gi * 3 + i) % 6];
+  const p = bkPlace(BK.grid, s, r, c); s.forEach((q) => { BK.col[(r + q[0]) * BKN + c + q[1]] = ci; });
+  BK.used[i] = 1; BK.n++; beep(520, 0.06, 'square', 0.04); buzz(12);
+  if (p.n) {      /* 清線：那幾格的貨櫃一格一格飛上右上的貨船，船身亮一下 */
+    const cells = new Set(); p.rows.forEach((y) => { for (let x = 0; x < BKN; x++) cells.add(y * BKN + x); }); p.cols.forEach((x) => { for (let y = 0; y < BKN; y++) cells.add(y * BKN + x); });
+    let k = 0; cells.forEach((id) => { const y = Math.floor(id / BKN), x = id % BKN; BK.fx.push({ x0: BKG.x + x * BKG.cs, y0: BKG.y + y * BKG.cs, ci: BK.col[id], t: -k * 0.025 }); BK.col[id] = 0; k++; });
+    p.rows.forEach((y) => BK.flash.push({ r: y, c: -1, t: 0 })); p.cols.forEach((x) => BK.flash.push({ r: -1, c: x, t: 0 }));
+    BK.lines += p.n; const cx = BKG.x + (c + bkSize(s).w / 2) * BKG.cs, cy = BKG.y + (r + bkSize(s).h / 2) * BKG.cs;
+    burst(cx, cy, 14 + p.n * 6, C.gold, 'star'); pop(p.n > 1 ? p.n + ' 條一起裝船！' : '裝船！', cx, cy - 10, C.gold, true);
+    jingle(p.n > 1 ? [659, 784, 988, 1319] : [659, 880, 1047], 80); buzz(30);
+    BK.say = BK.lines >= BKGOAL ? '裝滿了！開船囉～' : ['好耶！再 ' + (BKGOAL - BK.lines) + ' 條就開船', '漂亮，排得剛剛好！'][BK.lines % 2]; BK.sayT = 2.4;
+  }
+  BK.grid = p.g;
+  if (BK.lines >= BKGOAL) { BK.shipGo = 0.01; festBurst(W * 0.3, 140, 0.9); festBurst(W * 0.72, 120, 0.9); bkFinish(true, 1.9); return true; }
+  if (BK.used.every((u) => u)) { if (BK.gi < BKNG - 1) { BK.gi++; BK.used = [0, 0, 0]; BK.say = '第 ' + (BK.gi + 1) + ' 組貨櫃來了！'; BK.sayT = 2; beep(784, 0.08); } else { bkFinish(false, 0.9, BKP + ' 塊都用完了'); return true; } }
+  const cur = bkCur(), stuck = cur.every((s2, j) => BK.used[j] || !bkAny(BK.grid, s2)); if (stuck) bkFinish(false, 0.9, '剩下的放不進去了');
+  return true;
+}
+function bkFinish(win, delay, why) {
+  const rec = store.get(BKKEY, {}) || {}; let nb = false;
+  if (win && !BK.practice) { if (rec.d !== BK.day) { rec.d = BK.day; rec.best = 0; } if (!rec.best || BK.n < rec.best) { rec.best = BK.n; nb = true; } store.set(BKKEY, rec); }
+  BK.end = { win, why: why || '', delay, t: -delay, nb, best: !BK.practice && rec.d === BK.day ? rec.best : 0 };
+}
+function bkUpdate(dt) {
+  if (!BK) return; BK.t += dt; BK.sayT -= dt; if (BK.shipGo) BK.shipGo += dt;
+  BK.fx.forEach((f) => { f.t += dt; }); BK.fx = BK.fx.filter((f) => f.t < 0.75);
+  BK.flash.forEach((f) => { f.t += dt; }); BK.flash = BK.flash.filter((f) => f.t < 0.4);
+  if (BK.fx.some((f) => f.t > 0.7 && !f.hit)) { BK.fx.forEach((f) => { if (f.t > 0.7) f.hit = 1; }); BK.shipT = 0.3; }
+  if (BK.shipT > 0) BK.shipT -= dt;
+  if (BK.end) { BK.end.t += dt; if (BK.end.t > 0 && state === 'blk') { state = 'blkend'; jingle(BK.end.win ? [523, 659, 784, 1047] : [440, 523], 110); } }
+}
+function bkDraw(tt) {
+  const bg = ready('bg_stack_base'); if (bg) ctx.drawImage(bg, 0, 0, W, H); else { ctx.fillStyle = '#7FC4D6'; ctx.fillRect(0, 0, W, H); }
+  ctx.fillStyle = 'rgba(14,34,50,.28)'; ctx.fillRect(0, 0, W, H);
+  /* 上方：貨船（右）＋已裝船進度三格（左） */
+  const sh = ready('ship'), go = BK.shipGo, sx = 186 + (go ? go * go * 160 : 0) + Math.sin(tt * 1.4) * 1.5, sy = 66 + (BK.shipT > 0 ? -2 : 0);
+  if (sh) { ctx.save(); ctx.globalAlpha = clamp(1 - Math.max(0, go - 1.2), 0, 1); ctx.drawImage(sh, sx, sy, 170, 52); ctx.restore(); }
+  else rrect(sx + 10, sy + 20, 150, 26, 8, '#C9503C', C.ink, 2);
+  const loadN = Math.min(BKGOAL, BK.lines);
+  for (let i = 0; i < loadN; i++) bkCell(sx + 46 + i * 26, sy + 6, 24, BKCOL[i % 6]);
+  pill(10, 10, 168, 32); text('已裝船 ' + Math.min(BK.lines, BKGOAL) + ' / ' + BKGOAL + ' 條', 94, 26, 15, C.paper, 'center', 900);
+  pill(186, 10, 164, 32); text((BK.practice ? '練習題・' : '今日一題・') + '第 ' + (BK.gi + 1) + ' 組　剩 ' + (9 - BK.n) + ' 塊', 268, 26, 12.5, C.paper, 'center', 800);
+  for (let i = 0; i < BKGOAL; i++) { const on = i < BK.lines; rrect(14 + i * 30, 56, 24, 24, 6, on ? C.gold : 'rgba(255,248,234,.35)', C.ink, 2); if (on) text('✓', 26 + i * 30, 68, 15, C.ink, 'center', 900, false); }
+  if (BK.sayT > 0 && !(BK.drag && BK.drag.moved)) { ctx.globalAlpha = clamp(BK.sayT * 2, 0, 1); bubble(BK.say, 98, 100); ctx.globalAlpha = 1; }
+  /* 裝船區甲板 */
+  const bx = BKG.x, by = BKG.y, cs = BKG.cs, bw = cs * BKN;
+  rrect(bx - 10, by - 8, bw + 20, bw + 18, 14, 'rgba(0,0,0,.3)'); rrect(bx - 10, by - 10, bw + 20, bw + 20, 14, '#5E6F7A', C.ink, 3);
+  rrect(bx - 3, by - 3, bw + 6, bw + 6, 8, '#3E4F5B');
+  for (let r = 0; r < BKN; r++) for (let c = 0; c < BKN; c++) { const x = bx + c * cs, y = by + r * cs; rrect(x + 2, y + 2, cs - 4, cs - 4, 4, (r + c) % 2 ? '#4A5C68' : '#475864'); ctx.strokeStyle = 'rgba(255,214,107,.18)'; ctx.lineWidth = 1; ctx.strokeRect(x + 5.5, y + 5.5, cs - 11, cs - 11); }
+  const gh = state === 'blk' ? bkGhost() : null;
+  if (gh && gh.ok) {      /* 落點預覽：會補滿的行列先亮起來 */
+    const s = bkCur()[BK.drag.i], p = bkPlace(BK.grid, s, gh.r, gh.c);
+    ctx.fillStyle = 'rgba(255,214,107,' + (0.22 + 0.12 * Math.sin(tt * 8)) + ')'; p.rows.forEach((y) => ctx.fillRect(bx, by + y * cs, bw, cs)); p.cols.forEach((x) => ctx.fillRect(bx + x * cs, by, cs, bw));
+  }
+  for (let i = 0; i < BKN * BKN; i++) if (BK.grid[i]) bkCell(bx + (i % BKN) * cs, by + Math.floor(i / BKN) * cs, cs, BK.col[i]);
+  if (gh && gh.ok) { const s = bkCur()[BK.drag.i]; s.forEach((q) => { const x = bx + (gh.c + q[1]) * cs, y = by + (gh.r + q[0]) * cs; rrect(x + 3, y + 3, cs - 6, cs - 6, 5, 'rgba(79,191,136,.45)', '#BFF3D8', 2); }); }
+  BK.flash.forEach((f) => { ctx.fillStyle = 'rgba(255,255,255,' + (0.7 * (1 - f.t / 0.4)) + ')'; if (f.r >= 0) ctx.fillRect(bx, by + f.r * cs, bw, cs); else ctx.fillRect(bx + f.c * cs, by, cs, bw); });
+  /* 托盤：三塊（用過的變成虛線空位） */
+  const cur = bkCur();
+  for (let i = 0; i < 3; i++) { const b = bkTrayBox(i), dragging = BK.drag && BK.drag.i === i && BK.drag.moved, s = cur[i], z = bkSize(s), tc = Math.min(24, 96 / Math.max(z.w, z.h, 3)), fit = !BK.used[i] && bkAny(BK.grid, s);
+    rrect(b.x, b.y, b.w, b.h, 14, BK.sel === i ? 'rgba(255,214,107,.35)' : 'rgba(255,248,234,.16)', BK.sel === i ? C.gold : 'rgba(255,248,234,.35)', 2);
+    if (BK.used[i] || dragging) continue;
+    bkShape(s, b.x + (b.w - z.w * tc) / 2, b.y + (b.h - z.h * tc) / 2, tc, BKCOL[(BK.gi * 3 + i) % 6], fit ? 1 : 0.35); }
+  for (let g = 0; g < BKNG; g++) ell(W / 2 - 24 + g * 16, BKT.y + BKT.h + 14, 4.5, 4.5, g < BK.gi ? '#8FA3B0' : g === BK.gi ? C.gold : 'rgba(255,248,234,.35)');
+  /* 飛上船的貨櫃 */
+  BK.fx.forEach((f) => { if (f.t < 0) return; const u = clamp(f.t / 0.7, 0, 1), e = u * u * (3 - 2 * u), tx = sx + 70, ty = sy + 14, x = lerp(f.x0, tx, e), y = lerp(f.y0, ty, e) - Math.sin(u * Math.PI) * 60, s = lerp(cs, 14, e); bkCell(x, y, s, f.ci, 1 - u * 0.3); });
+  /* 拖著的那塊＋小鳶抓著 */
+  if (BK.drag && BK.drag.moved && state === 'blk') { const s = cur[BK.drag.i], z = bkSize(s), x = gh ? gh.x : 0, y = gh ? gh.y : 0;
+    bkShape(s, x, y, cs, BKCOL[(BK.gi * 3 + BK.drag.i) % 6], 0.92); drawKiteCarry(x + z.w * cs / 2, y + 4, 0.6, tt * 9, 'kite_carry'); }
+}
+function bkDrawEnd(tt) {
+  const e = BK.end, k = clamp(e.t * 4, 0, 1); ctx.fillStyle = 'rgba(14,34,50,' + 0.55 * k + ')'; ctx.fillRect(0, 0, W, H); bkR = [];
+  ctx.save(); ctx.translate(0, (1 - k) * 30); ctx.globalAlpha = k; panel(110, 400);
+  text(BK.practice ? '貨櫃方塊・練習題' : '貨櫃方塊・今日一題', W / 2, 140, 13, '#6A7F8E', 'center', 700, false);
+  if (e.win) { text('裝滿開船！', W / 2, 172, 28, C.leaf, 'center', 900, false); drawKiteCarry(W / 2, 222, 0.8, tt * 9, 'kite_carry'); bkCell(W / 2 - 13, 222, 26, 0); }
+  else { text(e.why || '差一點點！', W / 2, 172, 22, '#E0884A', 'center', 900, false); drawKiteCarry(W / 2, 236, 0.8, tt * 9, 'kite_carry'); }
+  const rows = [['裝船', Math.min(BK.lines, 9) + ' / ' + BKGOAL + ' 條'], ['用了', BK.n + ' 塊']];
+  if (!BK.practice) rows.push(['今天最少', e.best ? e.best + ' 塊完成' : '還沒完成']);
+  rows.forEach((r, i) => { const y = 270 + i * 30; rrect(50, y - 13, W - 100, 26, 10, '#F3EAD8'); text(r[0], 66, y, 13, '#3A5568', 'left', 700, false); text(r[1], W - 66, y, 14, C.ink, 'right', 900, false); });
+  if (e.nb && e.win) text('今天的新紀錄！', W / 2, 270 + rows.length * 30 + 2, 14, '#2F7F86', 'center', 900, false);
+  else if (!e.win) text('先放哪一塊、放哪裡，留好空間再試一次！', W / 2, 270 + rows.length * 30 + 2, 12.5, '#6A7F8E', 'center', 700, false);
+  const a = btn(BK.practice ? '同一題再玩' : '再玩今日一題', 384); a.f = () => bkStart(BK.practice ? 'same' : false); bkR.push(a); bkR.kbd = a.f;
+  const b = sbtn('換一題練習', 52, 446, 122), c = sbtn('回標題', W - 174, 446, 122); b.f = () => bkStart(true); c.f = bkBack; bkR.push(b, c);
+  ctx.restore(); ctx.globalAlpha = 1;
+}
+function bkDown(p, kbd) {
+  if (state === 'blkend') { if (BK.end.t < 0.6) return; if (kbd) { if (bkR.kbd) bkR.kbd(); return; } const r = bkR.find((q) => inR(q, p, 6)); if (r) r.f(); return; }
+  if (BK.end) return;
+  for (let i = 0; i < 3; i++) if (!BK.used[i] && inR(bkTrayBox(i), p, 4)) { BK.drag = { i, x: p.x, y: p.y, x0: p.x, y0: p.y, moved: false }; return; }
+  if (BK.sel >= 0 && p.y > BKG.y - 10 && p.y < BKG.y + BKG.cs * BKN + 10) {      /* 點選再點格子：形狀中心放在點的那格 */
+    const s = bkCur()[BK.sel], z = bkSize(s), c = clamp(Math.floor((p.x - BKG.x) / BKG.cs) - Math.floor((z.w - 1) / 2), 0, BKN - z.w), r = clamp(Math.floor((p.y - BKG.y) / BKG.cs) - Math.floor((z.h - 1) / 2), 0, BKN - z.h), i = BK.sel;      /* 點在邊邊也會往內收，不會因為形狀超出去而放不下 */
+    if (bkDrop(i, r, c)) BK.sel = -1; else { beep(220, 0.08, 'sine', 0.04); BK.say = '這裡放不下喔'; BK.sayT = 1.4; } }
+}
+function bkMove(p) { const d = BK && BK.drag; if (!d) return; d.x = p.x; d.y = p.y; if (!d.moved && Math.hypot(p.x - d.x0, p.y - d.y0) > 8) { d.moved = true; BK.sel = -1; } }
+function bkUp() {
+  const d = BK && BK.drag; if (!d) return; BK.drag = null;
+  if (!d.moved) { BK.sel = BK.sel === d.i ? -1 : d.i; beep(600, 0.05); return; }
+  d.moved = true; BK.drag = d; const gh = bkGhost(); BK.drag = null;
+  if (gh && gh.ok) bkDrop(d.i, gh.r, gh.c); else beep(220, 0.08, 'sine', 0.04);      /* 放不下就退回托盤，不消耗 */
+}
+function hbtn(label, x, y, w, col) { rrect(x, y + 4, w, 46, 23, 'rgba(0,0,0,.25)'); rrect(x, y, w, 46, 23, col, C.ink, 3); text(label, x + w / 2, y + 23, 14.5, C.paper, 'center', 900); return { x, y, w, h: 46 }; }
 /* ---------- 開場、結束畫面 ---------- */
 let startBtnR = null, endBtnR = null;
 function drawTitle(tt) {
@@ -677,8 +858,8 @@ function drawTitle(tt) {
     const tips = ['點一下：放下貨櫃', '切齊下面那個＝完美，連續完美會變寬', '金貨櫃加分又補寬、每 10 層裝滿一艘船'];
     tips.forEach((s, i) => { ell(58, 368 + i * 24, 4, 4, C.dusk); text(s, 70, 368 + i * 24, 13, C.ink, 'left', 700, false); });
     const bt = best.stack ? '最佳 ' + best.stack + ' 分' + (best.stackH ? '・最高 ' + best.stackH + ' 層' : '') : '第一次玩，看看能疊幾層！';
-    if (DS) { lvBtnR = null; text(bt, W / 2, 446, 13, '#6A7F8E', 'center', 700, false); startBtnR = btn('點一下開始', 456); }
-    else { text(bt, W / 2, 434, 13, '#6A7F8E', 'center', 700, false); startBtnR = btn('無盡模式', 446); lvBtnR = btn('關卡模式（試玩）', 502, '#3F7FBF'); }
+    if (DS) { lvBtnR = null; blkBtnR = null; text(bt, W / 2, 446, 13, '#6A7F8E', 'center', 700, false); startBtnR = btn('點一下開始', 456); }
+    else { text(bt, W / 2, 434, 13, '#6A7F8E', 'center', 700, false); startBtnR = btn('無盡模式', 446); lvBtnR = hbtn('關卡（試玩）', 34, 502, 140, '#3F7FBF'); blkBtnR = hbtn('貨櫃方塊（試玩）', 186, 502, 140, '#D9773F'); rrect(298, 492, 34, 20, 10, C.gold, C.ink, 2); text('新', 315, 502, 11, C.ink, 'center', 900, false); }      /* D425：多一顆「貨櫃方塊（試玩）」，和關卡模式並排 */
   }
 }
 /* D381（GPT 1251：合成港／疊貨櫃結算加這局最後一刻的遊戲畫面縮圖＋每局雙星貼紙）：結算前抓畫布上最後一格，裁 16:9（合成港偏下看魚艙、疊貨櫃以塔頂為中心）；只畫在結算卡上，不存檔、不下載、不開相機、不改計分 */
@@ -721,14 +902,16 @@ function pos(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX -
 cv.addEventListener('pointerdown', (e) => {
   e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (er) {} const p = pos(e);
   if (state === 'lvsel' || state === 'lvend') { lvTap(p, e.kbd); return; }
+  if (state === 'blk' || state === 'blkend') { bkDown(p, e.kbd); return; }      /* D425 貨櫃方塊 */
+  if (state === 'ready' && mode === 'stack' && !e.kbd && inR(blkBtnR, p, 6)) { bkStart(false); return; }
   if (state === 'ready' && mode === 'stack' && !e.kbd && inR(lvBtnR, p, 8)) { lvSel(); return; }
   if (state === 'ready') { state = 'play'; dailyBegin(); if (window.KiteBoard) KiteBoard.start(mode); beep(660, 0.08); if (mode === 'merge') { down = true; G.down(p.x, p.y); G.tap = null; } return; }
   if (state === 'end' && endInfo && endInfo.t > 0.8 && hornR && p.x > hornR.x && p.x < hornR.x + hornR.w && p.y > hornR.y - 4 && p.y < hornR.y + hornR.h + 4) { toot(); return; }
   if (state === 'end') { const r = endBtnR, onBtn = e.kbd || (r && p.x > r.x - 14 && p.x < r.x + r.w + 14 && p.y > r.y - 14 && p.y < r.y + r.h + 14); if (endInfo && endInfo.t > 0.8 && onBtn) { newGame();      /* 玩家角度：結算畫面只有按「再玩一次」才重開，避免疊貨櫃連點時一下就跳過成績 */ state = 'play'; dailyBegin(); beep(660, 0.08); if (mode === 'merge') { down = true; G.down(p.x, p.y); G.tap = null; } } return; }
   down = true; G.down(p.x, p.y);
 });
-cv.addEventListener('pointermove', (e) => { if (state !== 'play') return; const p = pos(e); if (down || mode === 'merge') G.move(p.x, p.y); });
-const upH = () => { if (!down) return; down = false; if (state === 'play') G.up(); };
+cv.addEventListener('pointermove', (e) => { if (state === 'blk') { bkMove(pos(e)); return; } if (state !== 'play') return; const p = pos(e); if (down || mode === 'merge') G.move(p.x, p.y); });
+const upH = () => { if (state === 'blk') { bkUp(); return; } if (!down) return; down = false; if (state === 'play') G.up(); };
 cv.addEventListener('pointerup', upH); cv.addEventListener('pointercancel', upH);
 document.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { if (state !== 'play') { const ev = new PointerEvent('pointerdown', { clientX: 0, clientY: 0 }); ev.kbd = true; cv.dispatchEvent(ev); upH(); } else if (mode === 'stack') G.tap(); else if (G.fall) G.release(); e.preventDefault(); } if (mode === 'merge' && state === 'play' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { G.tx = clamp(G.tx + (e.key === 'ArrowLeft' ? -30 : 30), 0, W); } });
 function finish() {
@@ -752,12 +935,13 @@ function finish() {
 function frame(now) {
   const dt = Math.min(0.033, (now - last) / 1000); last = now; clock += dt;
   if (state === 'play') { G.update(dt); if (G.done) { if (LV) lvFinish(); else finish(); } } else if (state === 'lvend') G.update(dt);
-  G.draw(clock);
-  if (fests.length || festTxt) { festTick(dt); if (state === 'play') drawFest(); }
+  if (state === 'blk' || state === 'blkend') { bkUpdate(dt); bkDraw(clock); } else G.draw(clock);
+  if (fests.length || festTxt) { festTick(dt); if (state === 'play' || state === 'blk' || state === 'blkend') drawFest(); }
   drawRings(dt); drawParts(dt); drawFloats(dt);
   if (state === 'ready') drawTitle(clock);
   if (state === 'lvsel') drawLvSel(clock);
   if (state === 'lvend') { lvEnd.t += dt; drawLvEnd(lvEnd); }
+  if (state === 'blkend') bkDrawEnd(clock);
   if (state === 'end') { endInfo.t += dt; drawEnd(endInfo); }
   requestAnimationFrame(frame);
 }
@@ -771,7 +955,7 @@ function toot() { const now = performance.now(); if (now - hornT < 1100) return;
   if (snd && navigator.vibrate) try { navigator.vibrate([90, 140, 110]); } catch (e) {} }
 let tab = 'stack';      // D119：放進遊戲大廳的單一遊戲版（不計分・隨時玩）
 setMode(HOW[tab] ? tab : 'merge'); requestAnimationFrame(frame); dailyTag();
-window.__mini = { get G() { return G; }, get state() { return state; }, setMode, finish, IMG, SEAF, get fest() { return { pf: festPF(), n: fests.length, txt: !!festTxt }; }, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; }, lv: { start: lvStart, sel: lvSel, back: lvBack, LVG, get save() { return lvSave; }, get end() { return lvEnd; }, get cur() { return LV; } } };      /* 關卡模式測試掛勾 */      /* D263：測試掛勾加 pop／floats；D307 加 finish */      /* D254：測試掛勾，固定亂數 */
+window.__mini = { get G() { return G; }, get state() { return state; }, setMode, finish, IMG, SEAF, get fest() { return { pf: festPF(), n: fests.length, txt: !!festTxt }; }, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; }, lv: { start: lvStart, sel: lvSel, back: lvBack, LVG, get save() { return lvSave; }, get end() { return lvEnd; }, get cur() { return LV; } }, bk: { start: bkStart, back: bkBack, drop: bkDrop, make: bkMake, solve: bkSolve, get BK() { return BK; } } };      /* 關卡模式測試掛勾 */      /* D263：測試掛勾加 pop／floats；D307 加 finish */      /* D254：測試掛勾，固定亂數 */
 })();
 </script>
 <script>(function () { var b = document.getElementById('backBtn'); b.addEventListener('click', function (e) { if (window.__mini && window.__mini.state === 'play' && !confirm('這局還在進行，確定要離開嗎？（分數不會記錄）')) e.preventDefault(); }); /* QA：遊戲中按返回先確認 */ /* D161：一律回小鳶樂園（遊戲大廳），不再回舊版測試首頁 */ })();</script>
