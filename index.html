@@ -214,7 +214,7 @@ body:not(.qa) #ask, body:not(.qa) #copyBtn{display:none!important}
       <div class="dexline" id="dexLine"></div>
       <div class="chips" aria-label="怎麼玩">      <!-- D174：玩法改成四張小卡，長說明收進「更多說明」 -->
         <div id="howRule"><i><img src="shared/assets/icons/a02.webp" alt=""></i><b>越深越高分</b><span>小卷成群、白帶魚扭著游</span></div>
-        <div><i><img src="shared/assets/icons/a01.webp" alt=""></i><b>點魚</b><span>小鳶俯衝去抓</span></div>
+        <div><i><img src="shared/assets/icons/a01.webp" alt=""></i><b>點魚</b><span>小鳶抓魚</span></div>
         <div><i><img class="big" src="shared/assets/icons/a03.webp" alt=""></i><b>連抓加分</b><span><em class="ph">連3條起，</em><em class="ph">每條+20</em></span></div>
         <div><i><img src="shared/assets/icons/a04.webp" alt=""></i><b>鯨鯊加倍</b><span><em class="ph">能量滿，</em><em class="ph">按右下</em></span></div>
       </div>
@@ -466,7 +466,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.67',
+  version: '0.68',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
