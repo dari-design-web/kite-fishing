@@ -170,6 +170,17 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #routePanel .rtCard .rtTag{font-size:11px;white-space:nowrap;font-weight:800;padding:1px 7px;border-radius:999px;background:#2F6F9A;color:#fff}
 #routePanel .rtCard .rtTag.hi{background:#C9473A}
 #routePanel .rtCard small{font-size:11.5px;line-height:1.35;color:#5A4A3A}
+#routePanel .rtCard{padding:0 0 9px;overflow:hidden}#routePanel .rtCard .rtArt{position:relative;width:100%;aspect-ratio:4/3;background:#9FD3DE center/cover no-repeat;border-bottom:2px solid var(--ink)}
+#routePanel .rtCard .rtArt .rtFish{position:absolute;left:4px;right:4px;bottom:3px;height:30px;padding:2px 4px;border-radius:999px;background:rgba(255,249,238,.86)}
+#routePanel .rtCard .rtArt .rtFish img{max-height:24px}
+#routePanel .rtCard b,#routePanel .rtCard small{padding:0 6px}
+#rtPost{position:absolute;left:50%;top:26%;width:min(78vw,300px);transform:translate(-50%,0) rotate(-3deg);padding:8px 8px 10px;background:#FFF9EE;border:2px solid var(--ink);border-radius:10px;box-shadow:0 8px 20px rgba(8,20,32,.4);pointer-events:none;z-index:30;text-align:center;opacity:0}
+#rtPost img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:6px}#rtPost b{display:block;margin-top:6px;font-family:var(--display);font-size:17px;color:var(--ink)}
+#rtPost.go{animation:rtPost 1.9s ease-out forwards}
+@keyframes rtPost{0%{opacity:0;transform:translate(-50%,30px) rotate(-8deg) scale(.7)}14%{opacity:1;transform:translate(-50%,0) rotate(-3deg) scale(1.04)}22%{transform:translate(-50%,0) rotate(-3deg) scale(1)}72%{opacity:1;transform:translate(-50%,0) rotate(-3deg) scale(1)}100%{opacity:0;transform:translate(-50%,-90px) rotate(4deg) scale(.45)}}
+.crPosts{display:flex;gap:6px;justify-content:center;margin:2px 0 8px}.crPosts figure{margin:0;flex:1;max-width:96px;padding:3px 3px 4px;background:#FFF9EE;border:1.5px solid var(--ink);border-radius:6px;box-shadow:0 2px 0 rgba(64,43,32,.3)}
+.crPosts figure:nth-child(1){transform:rotate(-3deg)}.crPosts figure:nth-child(3){transform:rotate(3deg)}
+.crPosts img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:3px}.crPosts figcaption{font-size:10.5px;line-height:1.25;margin-top:2px;color:#5A4A3A;font-weight:700}
 #routePanel .rtNote{margin:0;font-size:12px;color:#6A5A48}
 .fmap .fcruise{position:absolute;left:4%;width:44%;top:15.4%;min-height:9.4%;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:6px 10px;border-radius:12px;border:2px solid #9FD8E8;background:rgba(16,61,81,.88);color:var(--paper);text-align:left;font-size:12px;line-height:1.35;box-shadow:0 3px 0 rgba(8,20,32,.45);cursor:pointer;font-family:inherit}
 .fmap .fcruise b{font-family:var(--display);font-size:15px}.fmap .fcruise span{color:#BFE6F0}
@@ -493,7 +504,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.69',
+  version: '0.70',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -621,14 +632,14 @@ const SES = () => CONFIG.sessions[todIdx] || CONFIG.sessions[0];      // D118：
 /* D418（GPT D417 方向「港灣巡航」）：可切換的捕魚模式（試玩）。一局 60 秒分港邊、礁岩、外海三段，每段開始從兩張魚群預告選一條航線；魚都是現有的魚。分數照原公式，先不送點數存摺（等 Dari）；結算回顧這趟遇見／抓到的魚，鯨鯊陪小鳶游回港口 */
 const CRUISE = { segLen: 20, segs: [
   { name: '港邊', bg: 'keelung', routes: [
-    { name: '燈光小魚群', tag: '魚多・好抓', desc: '小卷、鯖魚成群游，最好連抓', every: 0.62, speedMul: 0.95, w: { saba: 3, squid: 1.6, huashen: 3, trash: 0.6 } },
-    { name: '白帶魚深水道', tag: '分數高・游得快', hi: true, desc: '白帶魚、黃雞魚多，赤鯮也會來', every: 0.85, speedMul: 1.05, w: { grunt: 3, hairtail: 2.4, zhenshen: 2, bream: 1.2, trash: 0.9 }, rare: { type: 'bream', at: 9 } } ] },
+    { name: '燈光小魚群', art: 'cruise/c01.webp', tag: '魚多・好抓', desc: '小卷、鯖魚成群游，最好連抓', every: 0.62, speedMul: 0.95, w: { saba: 3, squid: 1.6, huashen: 3, trash: 0.6 } },
+    { name: '白帶魚深水道', art: 'cruise/c02.webp', tag: '分數高・游得快', hi: true, desc: '白帶魚、黃雞魚多，赤鯮也會來', every: 0.85, speedMul: 1.05, w: { grunt: 3, hairtail: 2.4, zhenshen: 2, bream: 1.2, trash: 0.9 }, rare: { type: 'bream', at: 9 } } ] },
   { name: '礁岩', bg: 's3', routes: [
-    { name: '豆娘魚礁群', tag: '魚多・好抓', desc: '豆娘魚、豆仔魚一群一群', every: 0.62, speedMul: 0.95, w: { doubang: 3, suodi: 3, douzai: 2, trash: 0.6 } },
-    { name: '鸚哥魚礁道', tag: '分數高・游得快', hi: true, desc: '鸚哥魚、鋸尾鯛、嘉鱲常出沒', every: 0.85, speedMul: 1.05, w: { yingge: 2.6, juwei: 3, xiangyu: 1.8, jialie: 2, trash: 0.9 }, rare: { type: 'lobster', at: 8 } } ] },
+    { name: '豆娘魚礁群', art: 'cruise/c03.webp', tag: '魚多・好抓', desc: '豆娘魚、豆仔魚一群一群', every: 0.62, speedMul: 0.95, w: { doubang: 3, suodi: 3, douzai: 2, trash: 0.6 } },
+    { name: '鸚哥魚礁道', art: 'cruise/c04.webp', tag: '分數高・游得快', hi: true, desc: '鸚哥魚、鋸尾鯛、嘉鱲常出沒', every: 0.85, speedMul: 1.05, w: { yingge: 2.6, juwei: 3, xiangyu: 1.8, jialie: 2, trash: 0.9 }, rare: { type: 'lobster', at: 8 } } ] },
   { name: '外海', bg: 's4', routes: [
-    { name: '鰺魚洄游群', tag: '魚多・好抓', desc: '真鰺、雙帶鰺結隊游過，紅魽也在', every: 0.6, speedMul: 1, w: { zhenshen: 3, shuangdai: 2.4, baimao: 2.6, trash: 0.6 }, rare: { type: 'amber', at: 10 } },
-    { name: '大物外海', tag: '有大物・要眼明手快', hi: true, desc: '正鰹、鬼頭刀，還有雨傘旗魚', every: 0.8, speedMul: 1.1, w: { zhengjian: 3, shuangdai: 2, mahi: 0.5, trash: 0.8 }, rare: { type: 'sailfish', at: 7 } } ] } ] };
+    { name: '鰺魚洄游群', art: 'cruise/c05.webp', tag: '魚多・好抓', desc: '真鰺、雙帶鰺結隊游過，紅魽也在', every: 0.6, speedMul: 1, w: { zhenshen: 3, shuangdai: 2.4, baimao: 2.6, trash: 0.6 }, rare: { type: 'amber', at: 10 } },
+    { name: '大物外海', art: 'cruise/c06.webp', tag: '有大物・要眼明手快', hi: true, desc: '正鰹、鬼頭刀，還有雨傘旗魚', every: 0.8, speedMul: 1.1, w: { zhengjian: 3, shuangdai: 2, mahi: 0.5, trash: 0.8 }, rare: { type: 'sailfish', at: 7 } } ] } ] };
 const CRUISE_ST = { id: 'cruise', name: '港灣巡航', full: '港灣巡航（試玩）', trial: true, note: '一局走過港邊、礁岩、外海三段。每段開始前，從兩張魚群預告選一條航線，遇見不一樣的魚。', how: ['選航線', '每段開始選一條，魚群不一樣'], tip: '選好航線了，點魚抓魚！',
   sp: (() => { const o = []; for (const g of CRUISE.segs) for (const r of g.routes) { for (const k in r.w) if (k !== 'trash' && !o.includes(k)) o.push(k); if (r.rare && !o.includes(r.rare.type)) o.push(r.rare.type); } return o; })() };
 let cr = null, segFade = 0, segPrevKey = null;      /* 巡航這一局的狀態：seg 第幾段、pick 每段選哪條、seen／got 每段遇見／抓到 */
@@ -643,11 +654,12 @@ function openRoute(i) {
   const box = $('rtCards'); box.textContent = '';
   g.routes.forEach((r, j) => {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'rtCard';
-    const fs = document.createElement('div'); fs.className = 'rtFish';
+    const art = document.createElement('div'); art.className = 'rtArt'; if (r.art) art.style.backgroundImage = 'url(assets/' + r.art + ')';      /* D419：GPT 畫的六張航線預告圖 */
+    const fs = document.createElement('div'); fs.className = 'rtFish'; art.appendChild(fs);
     const top = Object.keys(r.w).filter((k) => k !== 'trash').sort((a, c) => r.w[c] - r.w[a]).slice(0, r.rare ? 2 : 3); if (r.rare) top.push(r.rare.type);
     for (const k of top) { const im0 = img[CONFIG.fish[k].sprite]; if (im0 && im0.src) { const ie = document.createElement('img'); ie.src = im0.src; ie.alt = ''; fs.appendChild(ie); } }
     const nm = document.createElement('b'); nm.textContent = r.name; const tg = document.createElement('span'); tg.className = 'rtTag' + (r.hi ? ' hi' : ''); tg.textContent = r.tag; const ds = document.createElement('small'); ds.textContent = r.desc;
-    b.append(fs, nm, tg, ds); b.setAttribute('aria-label', g.name + '：' + r.name + '，' + r.tag); b.onclick = () => pickRoute(j); box.appendChild(b);
+    b.append(art, nm, tg, ds); b.setAttribute('aria-label', g.name + '：' + r.name + '，' + r.tag); b.onclick = () => pickRoute(j); box.appendChild(b);
   });
   show('routePanel');
 }
@@ -657,6 +669,8 @@ function pickRoute(j) {
   cr.seg = i; cr.pick[i] = j; cr.rareDone[i] = false; mode = 'play'; show(null); $('hint').hidden = false; ultUI();
   const r = CRUISE.segs[i].routes[j]; say((i ? '航向' : '出發！') + CRUISE.segs[i].name + '・' + r.name, W / 2, 300, '#BFE6F0', true); floats[floats.length - 1].hold = 1;
   if (i > 0) { for (let k = 0; k < 3; k++) bubbles(rand(40, W - 40), rand(300, 560), 6); }
+  if (r.art) { let pc = $('rtPost'); if (!pc) { pc = document.createElement('div'); pc.id = 'rtPost'; pc.setAttribute('aria-hidden', 'true'); const pi = document.createElement('img'); pi.alt = ''; const pb = document.createElement('b'); pc.append(pi, pb); $('routePanel').parentNode.appendChild(pc); }
+    pc.querySelector('img').src = 'assets/' + r.art; pc.querySelector('b').textContent = CRUISE.segs[i].name + '・' + r.name; pc.classList.remove('go'); void pc.offsetWidth; pc.classList.add('go'); }      /* D419：選好航線，那張預告圖變成明信片飛進畫面再收走 */
   spawnAcc = r.every * 0.8; jingle([523, 659, 784], 80);
 }
 const SP = () => LVL().sp, LK = () => luckyOf(lvl), RULE = () => LVL().rule || '';      // D119：這一關的魚、幸運魚、特殊規則
@@ -1529,6 +1543,7 @@ function finish() { BGM.stop(); if (window.KiteBoard) KiteBoard.ev('run_end', { 
   if (!stats.hits) add('這局沒有' + VB + '到魚', '0 條');
   if (stats.jumps) add('空中抓到飛魚', stats.jumps + ' 次');
   /* v0.25（C-169）：結算多一行「今日幸運魚」——抓到幾條、分數乘幾倍；這局沒抓到就提醒下一局找找看（文字是建議） */
+  if (cr) { const st = document.createElement('div'); st.className = 'crPosts'; CRUISE.segs.forEach((g, i) => { const r = g.routes[cr.pick[i] || 0]; if (!r.art) return; const f = document.createElement('figure'), im2 = document.createElement('img'), fc = document.createElement('figcaption'); im2.src = 'assets/' + r.art; im2.alt = ''; fc.textContent = r.name; f.append(im2, fc); st.appendChild(f); }); const old2 = rows.parentNode.querySelector('.crPosts'); if (old2) old2.remove(); rows.parentNode.insertBefore(st, rows); } else { const old2 = rows.parentNode.querySelector('.crPosts'); if (old2) old2.remove(); }      /* D419：結算排出這趟三張航線明信片 */
   if (cr) CRUISE.segs.forEach((g, i) => { const r = g.routes[cr.pick[i] || 0], sn = Object.keys(cr.seen[i]).filter((k) => k !== 'trash'), gt = Object.keys(cr.got[i]); add('🧭 ' + g.name + '・' + r.name, '遇見 ' + sn.length + ' 種・抓到 ' + gt.length + ' 種'); });      /* D418：巡航回顧，三段各走哪條、遇見／抓到幾種 */
   { const LU = LK(), ln = CONFIG.fish[LU].name, lc = stats.counts[LU] || 0; add('🍀 幸運魚・' + ln, lc ? lc + UN(LU) + '・分數 ×' + LUCKY_MUL : '這次沒' + VB + '到'); }
   const sid = lvl, old = prog.best[sid]; prog.played[sid] = (prog.played[sid] || 0) + 1; if (old === undefined || kg > old) prog.best[sid] = +kg.toFixed(1); saveProg();
