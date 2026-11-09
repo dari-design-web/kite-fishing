@@ -464,7 +464,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.65',
+  version: '0.66',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -1544,11 +1544,11 @@ function toggleSound() { soundOn = !soundOn; SND_ICON.save(soundOn); drawSnd(); 
 (() => {
   const m = document.createElement('button'); m.id = 'menuSnd'; m.type = 'button'; m.className = 'icon menusnd'; m.onclick = (e) => { e.stopPropagation(); toggleSound(); };
   (document.getElementById('stage') || document.body).appendChild(m);
-  const st = document.createElement('style'); st.textContent = '.icon{display:inline-flex;align-items:center;justify-content:center;color:var(--ink)}.menusnd{position:absolute;z-index:50;bottom:calc(12px + env(safe-area-inset-bottom,0px));right:12px;box-shadow:0 2px 6px rgba(0,0,0,.25)}';
+  const st = document.createElement('style'); st.textContent = '.icon{display:inline-flex;align-items:center;justify-content:center;color:var(--ink)}.menusnd{position:absolute;z-index:50;bottom:calc(12px + env(safe-area-inset-bottom,0px));right:12px;box-shadow:0 2px 6px rgba(0,0,0,.25)}.menusnd.top{bottom:auto;top:calc(12px + env(safe-area-inset-top,0px))}';
   document.head.appendChild(st);
   drawSnd(); drawPause();
   let lastMode = '';
-  setInterval(() => { m.hidden = mode === 'play' || mode === 'pause' || mode === 'result';      /* QA：結算時音樂鈕不蓋住按鈕 */ if (mode !== lastMode) { lastMode = mode; drawPause(); if (soundOn && BGM.on) bgmNow(); } }, 200);
+  setInterval(() => { m.hidden = mode === 'play' || mode === 'pause' || mode === 'result'; m.classList.toggle('top', !$('startPanel').hidden); /* D407：開始卡的「開始」鈕黏在底部，音樂鈕移到右上角，不再蓋住開始鈕 */      /* QA：結算時音樂鈕不蓋住按鈕 */ if (mode !== lastMode) { lastMode = mode; drawPause(); if (soundOn && BGM.on) bgmNow(); } }, 200);
   document.addEventListener('pointerdown', () => { if (soundOn) bgmNow(); }, { passive: true });      // 瀏覽器規定要先點畫面才能出聲
 })();
 /* v0.23（C-153）：真的晚上（7 點到早上 6 點）打開，而且夜釣場已經開放，就先幫玩家選好夜釣場，開始畫面多一行晚上的提示 */
