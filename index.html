@@ -179,6 +179,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #rtPost.go{animation:rtPost 1.9s ease-out forwards}
 @keyframes rtPost{0%{opacity:0;transform:translate(-50%,30px) rotate(-8deg) scale(.7)}14%{opacity:1;transform:translate(-50%,0) rotate(-3deg) scale(1.04)}22%{transform:translate(-50%,0) rotate(-3deg) scale(1)}72%{opacity:1;transform:translate(-50%,0) rotate(-3deg) scale(1)}100%{opacity:0;transform:translate(-50%,-90px) rotate(4deg) scale(.45)}}
 .crPosts{display:flex;gap:6px;justify-content:center;margin:2px 0 8px}.crPosts figure{margin:0;flex:1;max-width:96px;padding:3px 3px 4px;background:#FFF9EE;border:1.5px solid var(--ink);border-radius:6px;box-shadow:0 2px 0 rgba(64,43,32,.3)}
+.crPosts figure{position:relative}.crPm{position:absolute;right:-4px;top:-4px;width:40%;transform:rotate(-14deg);opacity:0;animation:crPm .32s cubic-bezier(.3,1.6,.5,1) forwards;pointer-events:none}@keyframes crPm{0%{opacity:0;transform:rotate(-14deg) scale(1.9)}100%{opacity:.92;transform:rotate(-14deg) scale(1)}}@media (prefers-reduced-motion:reduce){.crPm{animation:none;opacity:.92}}
 .crPosts figure:nth-child(1){transform:rotate(-3deg)}.crPosts figure:nth-child(3){transform:rotate(3deg)}
 .crPosts img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:3px}.crPosts figcaption{font-size:10.5px;line-height:1.25;margin-top:2px;color:#5A4A3A;font-weight:700}
 #routePanel .rtNote{margin:0;font-size:12px;color:#6A5A48}
@@ -504,7 +505,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.70',
+  version: '0.71',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -1543,7 +1544,7 @@ function finish() { BGM.stop(); if (window.KiteBoard) KiteBoard.ev('run_end', { 
   if (!stats.hits) add('這局沒有' + VB + '到魚', '0 條');
   if (stats.jumps) add('空中抓到飛魚', stats.jumps + ' 次');
   /* v0.25（C-169）：結算多一行「今日幸運魚」——抓到幾條、分數乘幾倍；這局沒抓到就提醒下一局找找看（文字是建議） */
-  if (cr) { const st = document.createElement('div'); st.className = 'crPosts'; CRUISE.segs.forEach((g, i) => { const r = g.routes[cr.pick[i] || 0]; if (!r.art) return; const f = document.createElement('figure'), im2 = document.createElement('img'), fc = document.createElement('figcaption'); im2.src = 'assets/' + r.art; im2.alt = ''; fc.textContent = r.name; f.append(im2, fc); st.appendChild(f); }); const old2 = rows.parentNode.querySelector('.crPosts'); if (old2) old2.remove(); rows.parentNode.insertBefore(st, rows); } else { const old2 = rows.parentNode.querySelector('.crPosts'); if (old2) old2.remove(); }      /* D419：結算排出這趟三張航線明信片 */
+  if (cr) { const st = document.createElement('div'); st.className = 'crPosts'; CRUISE.segs.forEach((g, i) => { const r = g.routes[cr.pick[i] || 0]; if (!r.art) return; const f = document.createElement('figure'), im2 = document.createElement('img'), fc = document.createElement('figcaption'); im2.src = 'assets/' + r.art; im2.alt = ''; fc.textContent = r.name; const pm = document.createElement('img'); pm.className = 'crPm'; pm.alt = ''; pm.src = 'assets/cruise/pm' + (i + 1) + '.webp'; pm.style.animationDelay = (0.5 + i * 0.35) + 's'; f.append(im2, fc, pm); st.appendChild(f); });      /* D421：GPT 三段郵戳（港邊／礁岩／外海）依序蓋上 */ const old2 = rows.parentNode.querySelector('.crPosts'); if (old2) old2.remove(); rows.parentNode.insertBefore(st, rows); } else { const old2 = rows.parentNode.querySelector('.crPosts'); if (old2) old2.remove(); }      /* D419：結算排出這趟三張航線明信片 */
   if (cr) CRUISE.segs.forEach((g, i) => { const r = g.routes[cr.pick[i] || 0], sn = Object.keys(cr.seen[i]).filter((k) => k !== 'trash'), gt = Object.keys(cr.got[i]); add('🧭 ' + g.name + '・' + r.name, '遇見 ' + sn.length + ' 種・抓到 ' + gt.length + ' 種'); });      /* D418：巡航回顧，三段各走哪條、遇見／抓到幾種 */
   { const LU = LK(), ln = CONFIG.fish[LU].name, lc = stats.counts[LU] || 0; add('🍀 幸運魚・' + ln, lc ? lc + UN(LU) + '・分數 ×' + LUCKY_MUL : '這次沒' + VB + '到'); }
   const sid = lvl, old = prog.best[sid]; prog.played[sid] = (prog.played[sid] || 0) + 1; if (old === undefined || kg > old) prog.best[sid] = +kg.toFixed(1); saveProg();
