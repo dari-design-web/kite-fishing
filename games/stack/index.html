@@ -63,8 +63,8 @@ function dailyTag(extra) { if (!DS) return; const h = document.getElementById('h
 const RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const HOW = {
   merge: '<span class="hl"><b>左右滑</b>選位置，<b>放手</b>海鮮就掉下去。</span><span class="hl">一樣的海鮮碰在一起<b>合成</b>變大，堆過紅線就結束。</span>',      /* D403（GPT 1947 Q2=C）：兩句各自成行，與合成港同步 */
-  stack: '<span class="hl"><b>點一下</b>放下貨櫃，對齊下面那個。</span><span class="hl">連續<b>完美</b>貨櫃會變寬，<b>金貨櫃</b>大加分！</span>'
-};
+  stack: '<span class="hl"><b>點一下</b>放下貨櫃，對齊下面那個。</span><span class="hl">連續<b>完美</b>貨櫃會變寬，<b>金貨櫃</b>大加分！</span><span class="hl">11～20 層<b>單程吊運</b>：只經過一次，錯過會回送。</span>'
+};      /* D434：說明加單程吊運一句 */
 const store = { get(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
 let best = store.get('kiteMiniBest1', {}) || {};
 function saveBest(k, v) { if (v > (best[k] || 0)) { best[k] = v; store.set('kiteMiniBest1', best); return true; } return false; }
@@ -360,6 +360,10 @@ const BOXC = ['#D6604A', '#3F7FBF', '#4FA36A', '#E8A33A', '#8A6AC0', '#2F9BA6'];
 const ST = { perfect: 9, perfectEasy: 16, easyN: 8, spd0: 150, spdUp: 4, spdMax: 330, layerPts: 5, perfectPts: 10, comboPts: 3, comboFrom: 2, comboGrow: 8,
   goldEvery: 5, goldBonus: 30, goldGrow: 24, goldGrowOk: 10, shipEvery: 10, shipBonus: 50, evFrom: 12, evChance: 0.4, rushN: 5, rushK: 1.3, rushBonus: 15,
   focusAt: 5, focusN: 3, focusK: 0.55, saves: 1 };
+/* D434（GPT 1220 Q3＋1320 Q2 A「單櫃回送」）：無盡模式以滿船為段落，第 1～10 層照常來回、第 11～20 層「單程吊運」、21～30 又來回……輪流。
+   單程：貨櫃從一側進來、只經過塔頂一次（不在牆邊折返）；整櫃完全經過塔頂還沒點，就「回送」——同一櫃沿原軌道到邊界再折回、恢復來回，直到點下去。
+   錯過不算落櫃：不扣分、不加分、不動連擊、不用補救、不結束；有效點按照原本落櫃流程。單程段不出「折返」事件。關卡模式不套用。 */
+const owSeg = (n) => Math.floor((n - 1) / ST.shipEvery) % 2 === 1;
 const BH = 30, Y0 = 500;
 /* D185：疊出地標（GPT 1345 三張遠景圖）——疊到第 15 層看到基隆嶼、25 層港口燈塔、35 層大郵輪。
    疊越高看越遠：畫在畫面最下面的一條遠海上，只是背景，不擋貨櫃、不改分數。foot＝圖在 540 高畫布裡的主體下緣。 */
@@ -425,8 +429,26 @@ function buildStackBG() {      // 東岸貨櫃碼頭（傍晚）：海、碼頭�
 }
 /* D416 關卡模式（實驗，可切換）：makeStack(L) 有 L（關卡資料）時是關卡局——疊滿 L.n 個就開船過關、掉進海裡超過 L.lives 次才失敗、
    中間某一個是「金蛋貨櫃」，切齊就撿到金蛋；沒有 L 時就是原本的無盡模式，一行都不變 */
+function owArrow(m, y, tt) {      /* D434：單程第一趟——貨櫃前方的吊鉤箭頭（GPT 1320 朝右圖，往左就翻轉）；回送中改成反方向的小「回送」牌 */
+  const right = m.back ? g0dir() < 0 : g0dir() > 0, im = ready('oneway_arrow'), s = 34, bob = RM ? 0 : Math.sin(tt * 7) * 3;
+  const ax = right ? m.x + m.w + 6 + bob : m.x - 6 - s - bob, ay = y + BH / 2 - s / 2;
+  if (m.back) { ctx.font = FONT(12, 900); const w = ctx.measureText('回送').width + 14, bx = m.x + m.w / 2 - w / 2; rrect(bx, y + BH / 2 - 10, w, 20, 10, 'rgba(16,41,61,.8)'); text('回送', bx + w / 2, y + BH / 2, 12, '#FFE9A8', 'center', 900, false); return; }
+  ctx.save(); if (!right) { ctx.translate(ax + s, 0); ctx.scale(-1, 1); ctx.translate(-ax, 0); }
+  if (im) ctx.drawImage(im, ax, ay, s, s); else poly([ax, ay + 12, ax + 20, ay + 12, ax + 20, ay + 4, ax + s, ay + s / 2, ax + 20, ay + s - 4, ax + 20, ay + s - 12, ax, ay + s - 12], '#E8743A', C.ink, 2);
+  ctx.restore();
+}
+function g0dir() { return G ? G.dir : 1; }
+function owBanner(b) {      /* D434：段落切換橫幅（畫在已疊好的塔上 y408，不擋正在吊的貨櫃和浮字）——GPT 1320 吊車看板底圖（360×96 → 300×80），字由程式寫在中央安全區；下面一行小字說明 */
+  const a = b.t < 0.25 ? b.t / 0.25 : b.t > 2.0 ? clamp((2.4 - b.t) / 0.4, 0, 1) : 1, y = 408 - (RM ? 0 : (1 - Math.min(1, b.t / 0.25)) * 24), bw = 300, bh = 80, im = ready('oneway_banner');
+  ctx.save(); ctx.globalAlpha = a;
+  if (im) ctx.drawImage(im, W / 2 - bw / 2, y - bh / 2, bw, bh); else rrect(W / 2 - bw / 2 + 10, y - 22, bw - 20, 44, 8, '#F8E2BE', C.ink, 3);
+  text(b.on ? '單程吊運' : '回到來回吊運', W / 2, y + 6, 21, C.ink, 'center', 900, false);
+  const sub = b.on ? '貨櫃只經過一次，錯過會回送' : '貨櫃又會來回擺動了'; ctx.font = FONT(13, 800); const sw = ctx.measureText(sub).width + 22;
+  pill(W / 2 - sw / 2, y + bh / 2 + 2, sw, 26); text(sub, W / 2, y + bh / 2 + 15, 13, '#FFE9A8', 'center', 800, false);
+  ctx.restore();
+}
 function makeStack(L) {
-  const base = L ? { x: (W - L.w) / 2, w: L.w } : { x: 80, w: 200 }, g = { blocks: [{ x: base.x, w: base.w, c: 0 }], mv: null, speed: 150, dir: 1, combo: 0, bestCombo: 0, perfects: 0, score: 0, done: false, cut: [], cam: 0, say: '', sayT: 0, ships: 0, shake: 0, t: 0, ship: null, flash: 0, focus: 0, saves: L ? L.lives : ST.saves, drop: null, splash: [], L, misses: 0, eggAt: L ? Math.floor(rnd(2, L.n)) : -1, egg: 0 };
+  const base = L ? { x: (W - L.w) / 2, w: L.w } : { x: 80, w: 200 }, g = { blocks: [{ x: base.x, w: base.w, c: 0 }], mv: null, speed: 150, dir: 1, combo: 0, bestCombo: 0, perfects: 0, score: 0, done: false, cut: [], cam: 0, say: '', sayT: 0, ships: 0, shake: 0, t: 0, ship: null, flash: 0, focus: 0, saves: L ? L.lives : ST.saves, drop: null, splash: [], L, owOn: false, owBan: null, owBacks: 0, misses: 0, eggAt: L ? Math.floor(rnd(2, L.n)) : -1, egg: 0 };
   g.tol = () => L ? L.tol : g.blocks.length <= ST.easyN ? ST.perfectEasy : ST.perfect;
   /* D253：疊貨櫃 11～20 層實玩——第 15 層看到基隆嶼、第 20 層船出港那一下，如果剛好接著起風／趕船，事件句會馬上蓋掉地標句和出港句。改成：地標／出港句先講 1 秒，事件句排在後面接著講 */
   /* D254（GPT 1220 A②）：地標／出港句和事件句同時出現時分成兩個泡泡並排——地標／出港句照 D253 只講 1 秒，事件句在事件觸發時馬上出現、照原本秒數；新事件直接換掉事件泡泡，不排隊 */
@@ -437,11 +459,12 @@ function makeStack(L) {
     let ev = null;
     if (g.rush > 0) { g.rush--; ev = 'rush'; }
     else if (L ? L.ev && n >= 3 && g.focus <= 0 && gR() < 0.3 : n >= ST.evFrom && g.focus <= 0 && gR() < ST.evChance) {
-      ev = L ? gpick(L.ev) : gpick([['wind', 12], ['rush', 16], ['fog', 22], ['rev', 28]].filter((e) => n >= e[1]).map((e) => e[0]));
+      ev = L ? gpick(L.ev) : gpick([['wind', 12], ['rush', 16], ['fog', 22], ['rev', 28]].filter((e) => n >= e[1] && !(e[0] === 'rev' && owSeg(n))).map((e) => e[0]));      /* D434：單程段不抽折返 */
       if (ev === 'rush') { g.rush = ST.rushN - 1; evSay('趕船！接下來 ' + ST.rushN + ' 個變快，完美多 ' + ST.rushBonus + ' 分', 1.8); }
     }
     const eg = n === g.eggAt && !g.egg;      /* 關卡模式：金蛋貨櫃（gold 2＝金色貨櫃上畫一顆金蛋）；沒放到再抓一個時金蛋也再來一次 */
-    g.mv = { x: fromL ? -top.w * 0.5 : W - top.w * 0.5,      /* D173：貨櫃一出場就有一半在畫面裡 */ w: top.w, c: n % BOXC.length, gold: eg ? 2 : n % ST.goldEvery === 0, egg: eg, wind: ev === 'wind', fog: ev === 'fog', rev: ev === 'rev', rush: ev === 'rush', flipAt: grnd(W * 0.3, W * 0.7), ph: rnd(0, 6.28) };
+    g.mv = { x: fromL ? -top.w * 0.5 : W - top.w * 0.5,      /* D173：貨櫃一出場就有一半在畫面裡 */ w: top.w, c: n % BOXC.length, gold: eg ? 2 : n % ST.goldEvery === 0, egg: eg, wind: ev === 'wind', fog: ev === 'fog', rev: ev === 'rev', rush: ev === 'rush', flipAt: grnd(W * 0.3, W * 0.7), ph: rnd(0, 6.28), ow: !L && owSeg(n), back: false };
+    if (!L && g.mv.ow !== g.owOn) { g.owOn = g.mv.ow; g.owBan = { on: g.owOn, t: 0 }; if (g.owOn) jingle([523, 440], 110); }      /* D434：段落切換（下一櫃生成時才換，不在移動中途換規則）→ 吊車看板橫幅 2.4 秒 */
     g.dir = fromL ? 1 : -1; g.speed = Math.min(ST.spdMax, L ? L.spd + n * 3 : ST.spd0 + n * ST.spdUp) * (g.focus > 0 ? ST.focusK : 1) * (g.mv.rush ? ST.rushK : 1);
     if (g.focus > 0) g.focus--;
     if (g.mv.egg) evSay('金蛋貨櫃來了！切齊就能撿到金蛋', 1.8);
@@ -488,13 +511,14 @@ function makeStack(L) {
   g.down = () => g.tap(); g.move = () => {}; g.up = () => {};
   g.update = (dt) => {
     if (g.winT > 0) { g.winT -= dt; if (g.winT <= 0) g.done = true; } if (g.failT > 0) { g.failT -= dt; if (g.failT <= 0) g.done = true; }
-    g.t += dt; if (g.lmT > 0) g.lmT -= dt; if (g.sayT > 0) g.sayT -= dt; if (g.say2T > 0) g.say2T -= dt; if (g.shake > 0) g.shake -= dt; if (g.flash > 0) g.flash -= dt;
+    g.t += dt; if (g.owBan) { g.owBan.t += dt; if (g.owBan.t > 2.4) g.owBan = null; } if (g.lmT > 0) g.lmT -= dt; if (g.sayT > 0) g.sayT -= dt; if (g.say2T > 0) g.say2T -= dt; if (g.shake > 0) g.shake -= dt; if (g.flash > 0) g.flash -= dt;
     for (const b of g.blocks) { if (b.sq) b.sq = Math.max(0, b.sq - dt * 1.5); if (b.glow > 0) { b.glow -= dt; if (b.glow <= 0) delete b.glow; } }
     if (g.mv) {
       const k = g.mv.wind ? 1 + 0.55 * Math.sin(g.t * 3.2 + g.mv.ph) : 1;
       g.mv.x += g.dir * g.speed * k * dt;
       if (g.mv.rev && !g.mv.flipped) { const c = g.mv.x + g.mv.w / 2; if ((g.dir > 0 && c > g.mv.flipAt) || (g.dir < 0 && c < g.mv.flipAt)) { g.mv.flipped = true; g.dir = -g.dir; } }
-      if (g.mv.x > W - g.mv.w * 0.6 && g.dir > 0) g.dir = -1; if (g.mv.x < -g.mv.w * 0.4 && g.dir < 0) g.dir = 1;      /* D173：往回彈時至少 6 成在畫面裡（原本 8 成躲在外面） */
+      if (g.mv.ow && !g.mv.back) { const tp = g.blocks[g.blocks.length - 1]; if (g.dir > 0 ? g.mv.x > tp.x + tp.w - 8 : g.mv.x + g.mv.w < tp.x + 8) { g.mv.back = true; g.owBacks++; pop('回送中，還可以放！', W / 2, Y0 - g.blocks.length * BH + g.cam - 98, '#FFE9A8', true); beep(392, 0.12, 'triangle', 0.05, 40); } }      /* D434：整櫃完全經過塔頂（剩不到 8 點重疊＝放了也算沒放到）還沒點 → 回送；回送不算落櫃 */
+      if (!g.mv.ow || g.mv.back) { if (g.mv.x > W - g.mv.w * 0.6 && g.dir > 0) g.dir = -1; if (g.mv.x < -g.mv.w * 0.4 && g.dir < 0) g.dir = 1; }      /* D434：單程第一趟不在牆邊折返 */      /* D173：往回彈時至少 6 成在畫面裡（原本 8 成躲在外面） */
     }
     if (g.ship) { g.ship.t += dt; g.ship.x += (g.ship.v || 60) * dt; if (g.ship.x > W + 160) g.ship = null; }
     for (const c of g.cut) { c.vy += 900 * dt; c.y += c.vy * dt; c.rot = (c.rot || 0) + (c.vr || 0) * dt; }
@@ -549,6 +573,7 @@ function makeStack(L) {
       ctx.globalAlpha = fa; ctx.fillStyle = 'rgba(16,41,61,.18)'; ctx.fillRect(g.mv.x + 3, Y0 - (g.blocks.length - 1) * BH - 2, g.mv.w - 6, 3);
       if (g.mv.egg) { ctx.save(); ctx.shadowColor = '#FFE45C'; ctx.shadowBlur = RM ? 10 : 10 + 8 * Math.sin(tt * 8); rrect(g.mv.x - 3, y - 3, g.mv.w + 6, BH + 4, 7, 'rgba(255,228,92,.55)'); ctx.restore(); }      /* 金蛋貨櫃一閃一閃 */
       crate(g.mv.x, y, g.mv.w, g.mv.c, g.mv.gold); drawKiteCarry(mx, y + 2, 0.8, tt * (g.mv.wind || g.mv.rush ? 16 : 9), 'kite_carry'); ctx.globalAlpha = 1;
+      if (g.mv.ow) owArrow(g.mv, y, tt);
       if (g.mv.fog) { const fi = ready('fog_bank');      // D124：霧改成柔邊的霧團（有 G90 的 fog_bank 圖就用圖）
         if (fi) { const fw = W * 0.86, fh = fw * fi.naturalHeight / fi.naturalWidth; for (let i = 0; i < 2; i++) { ctx.globalAlpha = 0.92; ctx.drawImage(fi, W / 2 - fw / 2 + Math.sin(tt * 0.6 + i * 2) * 14, y - fh / 2 + (i - 0.5) * 18, fw, fh); } ctx.globalAlpha = 1; }
         else for (let i = 0; i < 9; i++) { const fx = W / 2 + (i - 4) * 26 + Math.sin(tt * 0.7 + i) * 10, fy = y + 8 + Math.sin(i * 1.7) * 18, fr = 46 + (i % 3) * 12, gr = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr); gr.addColorStop(0, 'rgba(246,248,250,.62)'); gr.addColorStop(0.55, 'rgba(240,244,248,.38)'); gr.addColorStop(1, 'rgba(240,244,248,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(fx, fy, fr, 0, 6.283); ctx.fill(); } }
@@ -564,9 +589,10 @@ function makeStack(L) {
       else { bubble(g.say, x0 + wa / 2, 98); g.say2x = x0 + wa + 8 + wb / 2; g.say2w = e2; bubble(e2, g.say2x, 98); }
     } else if (g.sayT > 0) bubble(g.say, W / 2, 98);
     else if (g.say2T > 0) bubble(g.say2x ? g.say2w : g.say2, g.say2x || W / 2, 98);      /* 地標句收起後，事件泡泡留在原位，不跳 */
+    if (g.owBan) owBanner(g.owBan);
     const n = g.blocks.length - 1, left = ST.shipEvery - (n % ST.shipEvery);
     if (L) { hud(g.score, g.win ? '過關！開船囉' : g.combo > 1 ? '完美連擊 ×' + g.combo : '再 ' + (L.n - n) + ' 個貨櫃就開船', '第 ' + L.no + ' 關・' + Math.min(n, L.n) + '/' + L.n + (g.saves ? '・♥' + g.saves : '')); pill(134, 10, 36, 32); drawEgg(152, 26, 10, g.egg); return; }      /* 關卡模式 HUD：右上進度與剩幾次、分數旁邊是這關的金蛋 */
-    hud(g.score, g.focus > 0 ? '專注模式中' : g.mv && g.mv.rush ? '趕船中・完美 +' + ST.rushBonus : g.combo > 1 ? '完美連擊 ×' + g.combo : '再 ' + left + ' 層裝滿一艘船', n + ' 層・船 ' + g.ships + (g.saves ? '・♥補救 1' : ''));
+    hud(g.score, g.focus > 0 ? '專注模式中' : g.mv && g.mv.rush ? '趕船中・完美 +' + ST.rushBonus : g.combo > 1 ? '完美連擊 ×' + g.combo : (g.owOn ? '單程吊運・再 ' : '再 ') + left + ' 層裝滿一艘船', n + ' 層・船 ' + g.ships + (g.saves ? '・♥補救 1' : ''));
   };
   return g;
 }
@@ -1010,7 +1036,7 @@ let mode = 'merge', G = null, state = 'ready', down = false, last = performance.
 function newGame() { if (DS) gR = KiteDaily.rng(DS.td.seed); floats = []; parts = []; rings = []; fests = []; festTxt = null; festLeft = 0; G = mode === 'stack' ? makeStack(LV ? LV.d : null) : makeMerge(); }
 function setMode(m) {
   mode = m; document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.m === m))); document.getElementById('how').innerHTML = HOW[m]; state = 'ready'; newGame();
-  const A = m === 'merge' ? ['bg_merge', 'kite_hold', 'kite_hold_fly', 'fx_merge'].concat(SEAF.map((_, i) => 'sea_' + i)) : ['bg_stack_base', 'bg_stack_sky', 'ship', 'kite_carry', 'kite_carry_fly', 'box_gold', 'far_mtn', 'cloud_0', 'cloud_1', 'cloud_2', 'gull', 'wind_0', 'wind_1', 'wind_2', 'fog_bank', 'fx_splash_l', 'fx_splash_s'].concat(BOXC.map((_, i) => 'box_' + i));
+  const A = m === 'merge' ? ['bg_merge', 'kite_hold', 'kite_hold_fly', 'fx_merge'].concat(SEAF.map((_, i) => 'sea_' + i)) : ['bg_stack_base', 'bg_stack_sky', 'ship', 'kite_carry', 'kite_carry_fly', 'box_gold', 'far_mtn', 'cloud_0', 'cloud_1', 'cloud_2', 'gull', 'wind_0', 'wind_1', 'wind_2', 'fog_bank', 'fx_splash_l', 'fx_splash_s', 'oneway_banner', 'oneway_arrow'].concat(BOXC.map((_, i) => 'box_' + i));
   if (m === 'merge') festLoad();
   A.forEach((k) => { if (!IMG[k]) want(k, '../assets/' + m + '/' + k + (k.indexOf('bg_') === 0 ? '.jpg' : '.png')); });
   if (m === 'stack') LM.forEach((L) => { if (!IMG[L.key]) want(L.key, '../assets/stack/' + L.key + '.webp'); });      /* D185 */
