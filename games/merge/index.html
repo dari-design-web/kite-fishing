@@ -229,10 +229,22 @@ const MF = { spd0: 60, spdUp: 36, spdMax: 380, steer: 900, fast: 1000, grav: 180
    湊齊其中一張才可按「接船」，一次送走那張單指定的海鮮（騰出空間，但不能再拿去合更大），同趟另一張關閉。航次進度到 FY.goal 算達成。
    不掉關、不加速；不算點數、不進排行榜、不算告示板；水族館與圖鑑照常記（送走不扣收藏）。 */
 const FY = { drops: 26, goal: 4, trips: [[{ lv: 2, n: 2, p: 1 }, { lv: 3, n: 1, p: 2 }], [{ lv: 3, n: 2, p: 1 }, { lv: 4, n: 1, p: 2 }], [{ lv: 2, n: 3, p: 1 }, { lv: 4, n: 1, p: 2 }]] };
-let ferryMode = false;
+let ferryMode = false, netMode = false;
+/* D431（GPT 1020 Q2 推薦 A「清網開港」）：合成港第二個試玩模式——池裡有固定的空廢網束（貼池底或池壁、不漂動、沒有困住動物），
+   在網束旁邊「真的合成」才算：一次合成只削最近的一束一層（完整→鬆開→清掉），清光全部網束就開港。投放有限、不倒數、不升關、不算點數。
+   近旁＝合成中心到網束外框的距離 ≤ 新海鮮半徑＋NETR.reach。三座港依序輪流（kiteNetLv1 記開港次數）；GPT 兩張網圖到了自動換上，沒到用程式畫。 */
+const NETR = { reach: 18, hp: 2, ports: [
+  { name: '東岸小港', drops: 24, nets: [{ x: 20, y: 512, w: 96, h: 44 }, { x: 244, y: 512, w: 96, h: 44 }] },
+  { name: '漁會碼頭', drops: 38, nets: [{ x: 128, y: 516, w: 104, h: 40 }, { x: 20, y: 404, w: 46, h: 64 }, { x: 294, y: 404, w: 46, h: 64 }] },
+  { name: '燈塔外港', drops: 44, nets: [{ x: 20, y: 516, w: 84, h: 40 }, { x: 256, y: 516, w: 84, h: 40 }, { x: 20, y: 380, w: 42, h: 60 }, { x: 298, y: 420, w: 42, h: 60 }] }] };
+const netStore = { get() { const v = store.get('kiteNetLv1', null); return v && typeof v.c === 'number' ? v : { c: 0, best: {} }; }, set(v) { store.set('kiteNetLv1', v); } };
+function netDist(n, x, y) { const cx = clamp(x, n.x, n.x + n.w), cy = clamp(y, n.y, n.y + n.h); return Math.hypot(x - cx, y - cy); }
 function makeMerge() {
   const g = { balls: [], fall: null, q: [], score: 0, done: false, over: 0, say: '', sayT: 0, top: 0, t: 0, lv: 1, merges: 0, mergesAll: 0, need: MF.needBase + MF.needStep, chain: 0, chainT: 0, bestChain: 0, tx: W / 2, wait: 0.5, banner: '', bannerT: 0, tap: null, found: null, newFound: [] };
-  g.ferry = ferryMode && !DS;
+  g.ferry = ferryMode && !DS; g.net = netMode && !DS && !g.ferry;
+  if (g.net) { const ns = netStore.get(), pi = ns.c % NETR.ports.length, P = NETR.ports[pi]; g.port = pi; g.drops = P.drops; g.nets = P.nets.map((n, i) => ({ ...n, i, hp: NETR.hp, hitT: 0, goneT: -1 })); g.outT = 0; g.clearT = 0; g.fEnd = ''; g.netHits = 0;
+    if (!IMG.net_full) { want('net_full', '../assets/merge/net_full.png'); want('net_loose', '../assets/merge/net_loose.png'); } }
+  g.netLive = () => g.net ? g.nets.filter((n) => n.hp > 0) : [];
   if (g.ferry) { g.drops = FY.drops; g.trip = 0; g.prog = 0; g.flog = []; g.orders = FY.trips[0]; g.outT = 0; g.clearT = 0; g.flyers = []; g.fEnd = ''; g.dockT = 99; g.dockLv = 0; g.dockN = 0; if (!IMG.dock_empty) { want('dock_empty', '../assets/merge/dock_empty.webp'); want('dock_arrived', '../assets/merge/dock_arrived.webp'); want('dock_arrived_crab', '../assets/merge/dock_arrived_crab.webp'); want('dock_arrived_octopus', '../assets/merge/dock_arrived_octopus.webp'); } }
   g.fHave = (o) => g.balls.filter((b) => b.lv === o.lv && !b.dead && b.age > 0.4).length;
   g.fReady = () => !!(g.ferry && g.orders && !g.done && g.orders.some((o) => g.fHave(o) >= o.n));
@@ -255,11 +267,11 @@ function makeMerge() {
   g.kx = W / 2;
   g.holdT = () => Math.max(MF.holdMin,      /* D173：後面關卡也至少抓 1 秒，小朋友不會覺得「我沒放啊」 */ MF.hold0 - (g.lv - 1) * MF.holdStep);
   g.spawn = () => {
-    if (g.ferry && (g.drops <= 0 || g.clearT > 0)) { g.wait = 0.3; return; }      /* D420：接駁航次投放用完就不再出 */
+    if ((g.ferry || g.net) && (g.drops <= 0 || g.clearT > 0)) { g.wait = 0.3; return; }      /* D420：接駁航次投放用完就不再出 */
     const lv = g.q[0], r = SEAF[lv][1], x = clamp(g.kx, BOX.l + r, BOX.r - r), y = KF + r - 2;
     /* QA 10/21：剛放下還在掉的海鮮擋住出生點，不算塞滿（原本 10 局有 10 局是這樣誤判結束）；等它掉下去再出。真的堆過頭交給紅線判定，等太久（3 秒）才算塞滿 */
     if (g.balls.some((b) => Math.hypot(b.x - x, b.y - y) < b.r + r - 4)) { g.blockT = (g.blockT || 0) + 0.15; if (g.blockT > 3) { g.done = true; g.say = '魚艙塞滿了！'; g.sayT = 2; } else g.wait = 0.15; return; }
-    g.blockT = 0; g.q.shift(); g.q.push(gen()); if (g.ferry) g.drops--;
+    g.blockT = 0; g.q.shift(); g.q.push(gen()); if (g.ferry || g.net) g.drops--;
     g.fall = { lv, x, y, r, held: true, hold: g.holdT(), hold0: g.holdT(), vy: 0, fast: false };
     if (g.pendingDrop != null) { g.dropAt = g.pendingDrop; g.pendingDrop = null; }      // 海鮮還在掉時先點的位置，下一隻出來就照那裡放
   };
@@ -277,6 +289,11 @@ function makeMerge() {
       if (g.clearT > 0) { g.clearT -= dt; if (g.clearT <= 0) { g.done = true; g.fEnd = 'clear'; } }
       else if (g.drops <= 0 && !g.fall && !g.done) { const calm = !g.balls.some((b) => Math.abs(b.vy) > 40); g.outT = calm && !g.anyReady ? g.outT + dt : 0; if (g.anyReady && !(g.sayT > 0)) { g.say = '湊齊了！按下面的接船'; g.sayT = 1.6; } if (g.outT > 2.2) { g.done = true; g.fEnd = 'drops'; g.say = '海鮮用完了'; g.sayT = 2; } }
     }
+    if (g.net) {      /* D431：清光網束 1.2 秒後開港；投放用完、海鮮都停好還有網 2.2 秒後結束（最後一顆的合成連鎖要先結算完） */
+      for (const n of g.nets) { if (n.hitT > 0) n.hitT -= dt; if (n.goneT >= 0) n.goneT += dt; }
+      if (g.clearT > 0) { g.clearT -= dt; if (g.clearT <= 0 && !g.done) { g.done = true; g.fEnd = 'clear'; } }
+      else if (g.drops <= 0 && !g.fall && !g.done) { const calm = !g.balls.some((b) => Math.abs(b.vy) > 40 || b.age < 0.6); g.outT = calm ? g.outT + dt : 0; if (g.outT > 2.2) { g.done = true; g.fEnd = 'drops'; g.say = '海鮮用完了'; g.sayT = 2; } }
+    }
     const f = g.fall;
     { const r = f && f.held ? f.r : 20, wantX = clamp(g.tx, BOX.l + r, BOX.r - r), mv = MF.steer * dt; g.kx += clamp(wantX - g.kx, -mv, mv); }
     if (f && f.held) { f.x = clamp(g.kx, BOX.l + f.r, BOX.r - f.r); if (!g.anyReady) f.hold -= dt;      /* D420：有接駁單可以接時，小鳶先抓著不自己放手，按接船不用趕 */ if (f.hold <= 0) { g.dropAt = null; g.release(); } else if (g.dropAt != null && Math.abs(g.kx - clamp(g.dropAt, BOX.l + f.r, BOX.r - f.r)) < 1.5) { g.dropAt = null; g.release(); } }      // D124：手放開（或點一下）後，小鳶飛到那個位置自動放手
@@ -287,6 +304,7 @@ function makeMerge() {
         f.y += f.vy * dt / steps;
         if (f.y >= BOX.floor - r) { f.y = BOX.floor - r; g.lock(f); break; }
         if (g.balls.find((b) => Math.hypot(b.x - f.x, b.y - f.y) < b.r + r - 1)) { g.lock(f); break; }
+        if (g.net && g.netLive().some((n) => netDist(n, f.x, f.y) < r - 1)) { g.lock(f); break; }      /* D431：落在網束上就停住 */
       }
     }
     const sub = 3, h = dt / sub;
@@ -297,6 +315,9 @@ function makeMerge() {
           const a = g.balls[i];
           if (a.x < BOX.l + a.r) { a.x = BOX.l + a.r; a.vx *= -0.2; } if (a.x > BOX.r - a.r) { a.x = BOX.r - a.r; a.vx *= -0.2; }
           if (a.y > BOX.floor - a.r) { a.y = BOX.floor - a.r; a.vy *= -0.15; a.vx *= 0.96; }
+          if (g.net) for (const n of g.nets) { if (n.hp <= 0) continue; const cx = clamp(a.x, n.x, n.x + n.w), cy = clamp(a.y, n.y, n.y + n.h); let dx = a.x - cx, dy = a.y - cy, d = Math.hypot(dx, dy);      /* D431：網束是固定方塊，海鮮碰到就推出去（中心跑進去時往上推） */
+            if (d >= a.r) continue; if (d < 0.01) { dx = 0; dy = -1; d = 1; a.y = n.y - a.r; } else { a.x += dx / d * (a.r - d); a.y += dy / d * (a.r - d); }
+            const nx = dx / d, ny = dy / d, vn = a.vx * nx + a.vy * ny; if (vn < 0) { a.vx -= 1.2 * vn * nx; a.vy -= 1.2 * vn * ny; } if (ny < -0.5) a.vx *= 0.96; }
           for (let j = i + 1; j < g.balls.length; j++) {
             const b = g.balls[j], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 0.01, ov = a.r + b.r - d;
             if (ov > 0) {
@@ -312,14 +333,15 @@ function makeMerge() {
       for (const b of g.balls) b.vx *= 0.995;
     }
     const high = g.balls.some((b) => b.age > 1.2 && b.y - b.r < BOX.line && Math.abs(b.vy) < 80);
-    const was = g.over; g.over = high ? g.over + dt : Math.max(0, g.over - dt * 2);
+    const was = g.over; g.over = high && !(g.net && g.clearT > 0) ? g.over + dt : Math.max(0, g.over - dt * 2);
     if (g.over > 0 && was === 0) { g.say = '快滿了！往旁邊放'; g.sayT = 1.4; beep(330, 0.12, 'square', 0.04); }
     if (g.over > 1.6) { g.done = true; g.say = '堆過紅線了！'; g.sayT = 2; }
   };
   g.merge = (a, b) => {
     const lv = a.lv + 1, x = (a.x + b.x) / 2, y = (a.y + b.y) / 2;
-    g.chain = g.chainT > 0 ? g.chain + 1 : 1; g.chainT = 1.3; g.bestChain = Math.max(g.bestChain, g.chain); const mul = g.chain >= 2 ? Math.min(5, g.chain) : 1; if (window.KiteBoard && !g.ferry) KiteBoard.ev('merge', { chain: g.chain });      // QA：連鎖倍數最多 ×5，亂丟快丟不會比用心放分數高
+    g.chain = g.chainT > 0 ? g.chain + 1 : 1; g.chainT = 1.3; g.bestChain = Math.max(g.bestChain, g.chain); const mul = g.chain >= 2 ? Math.min(5, g.chain) : 1; if (window.KiteBoard && !g.ferry && !g.net) KiteBoard.ev('merge', { chain: g.chain });      // QA：連鎖倍數最多 ×5，亂丟快丟不會比用心放分數高
     burst(x, y, 8 + lv * 2, SEAF[Math.min(9, lv)][2]); burst(x, y, 4 + lv, '#FFFFFF', 'star'); ring(x, y, SEAF[Math.min(9, lv)][1], '#FFFFFF');
+    if (g.net) g.netHit(x, y, SEAF[Math.min(9, lv)][1]);
     g.mergesAll++; beep(440 + lv * 70, 0.12, 'triangle', 0.07, 120); buzz(lv >= 6 ? 30 : 12);
     AQ.add(lv);      /* D186：我的小水族館記一筆 */
     if (lv <= 9 && (g.show == null || lv >= g.show)) g.show = lv;      /* D198：記下這局合出的最高一階（鯨鯊回大海不算新魚） */
@@ -333,28 +355,40 @@ function makeMerge() {
       g.discover(lv);
     }
     if (mul === 3 && !(g.newT > 0)) { g.say = '連鎖三次！'; g.sayT = 1.4; }      /* D262：新海鮮那句（鬼頭刀好帥！／鯨鯊！！…）講的 1 秒內不被「連鎖三次！」蓋掉，右上角連鎖 ×3 照樣顯示 */
-    g.merges++; if (!g.ferry && g.merges >= g.need) {      /* D420：接駁航次不升關、不加速 */ g.lv++; g.merges = 0; g.need = MF.needBase + MF.needStep * g.lv; g.score += 10 * g.lv; g.banner = '第 ' + g.lv + ' 關・掉得更快了'; g.bannerT = 1.4; for (const f of floats) if (!f.ban && banHit(f.big, f.s, f.y)) { if (f.life > 0.8) { f.y = Math.max(f.y, 340); f.ban = true; } else f.life = Math.min(f.life, 0.2); }      /* D263：同一下合成就升關時，剛跳出的連鎖浮字也移到橫幅條下；快淡完的就原地淡掉 */ jingle([660, 880], 110); }
+    g.merges++; if (!g.ferry && !g.net && g.merges >= g.need) {      /* D420：接駁航次不升關、不加速 */ g.lv++; g.merges = 0; g.need = MF.needBase + MF.needStep * g.lv; g.score += 10 * g.lv; g.banner = '第 ' + g.lv + ' 關・掉得更快了'; g.bannerT = 1.4; for (const f of floats) if (!f.ban && banHit(f.big, f.s, f.y)) { if (f.life > 0.8) { f.y = Math.max(f.y, 340); f.ban = true; } else f.life = Math.min(f.life, 0.2); }      /* D263：同一下合成就升關時，剛跳出的連鎖浮字也移到橫幅條下；快淡完的就原地淡掉 */ jingle([660, 880], 110); }
+  };
+  g.netHit = (x, y, r) => {      /* D431：合成中心離網束外框 ≤ 新海鮮半徑＋reach → 最近一束削一層（等距取先列的） */
+    let hit = null, hd = 1e9; for (const n of g.netLive()) { const d = netDist(n, x, y); if (d <= r + NETR.reach && d < hd - 0.01) { hd = d; hit = n; } }
+    if (!hit) return; hit.hp--; hit.hitT = 0.5; g.netHits++; const cx = hit.x + hit.w / 2, cy = hit.y + hit.h / 2;
+    burst(cx, cy, 10, '#C9B48E'); ring(cx, cy, Math.max(hit.w, hit.h) / 2, '#FFE45C');
+    if (hit.hp > 0) { pop('🕸 網子鬆開了！', cx, hit.y - 14, C.gold, false); beep(600, 0.1, 'triangle', 0.06, 80); }
+    else { hit.goneT = 0; burst(cx, cy, 16, '#FFFFFF', 'star'); const left = g.netLive().length; pop(left ? '清掉一束！還有 ' + left + ' 束' : '網子全清光了！', cx, hit.y - 14, C.gold, true); jingle([659, 784, 988], 80); buzz(20);
+      if (!left && !g.done) { g.clearT = 1.2; g.say = '開港囉！海鮮朋友可以出海了！'; g.sayT = 2; } }
   };
   g.down = (x, y) => { g.tx = x; g.dropAt = null; g.pendingDrop = null; g.tap = { x, y, t: g.t }; };      // D124（Dari 10/19 14:57）：按住滑動＝移動，手放開就落下；點一下＝飛到那裡自動放手
   g.move = (x, y) => { g.tx = x; };
   g.up = () => { if (g.tap) { if (g.fall && g.fall.held) g.dropAt = g.tx; else g.pendingDrop = g.tx; } g.tap = null; };
   g.draw = (tt) => {
+    if (!g.fall || !g.fall.held) g.netAim = null;
     const bg = ready('bg_merge'); if (bg) ctx.drawImage(bg, 0, 0, W, H); else { mergeBG = mergeBG || buildMergeBG(); ctx.drawImage(mergeBG, 0, 0, W, H); }
     // 紅線
     const warnA = g.over > 0 ? 0.6 + 0.4 * Math.sin(tt * 20) : 0.55;
     if (g.over > 0) { ctx.fillStyle = 'rgba(232,103,74,' + (0.10 + 0.08 * Math.sin(tt * 20)) + ')'; ctx.fillRect(BOX.l, BOX.line - 30, BOX.r - BOX.l, 30); }
     ctx.strokeStyle = 'rgba(232,103,74,' + warnA + ')'; ctx.lineWidth = 2.5; ctx.setLineDash([9, 6]); ctx.beginPath(); ctx.moveTo(BOX.l, BOX.line); ctx.lineTo(BOX.r, BOX.line); ctx.stroke(); ctx.setLineDash([]);
     if (g.ferry) drawDock(g, dockBox(), tt);      /* D424：碼頭畫在海鮮和小鳶下面 */
+    if (g.net) for (const n of g.nets) drawNet(n, tt, g.netAim === n);
     for (const b of g.balls) drawSea(b.lv, b.x, b.y, b.r, b.rot * 0.3, b.sq, seaFace(b, tt));
     const f = g.fall;
     if (f) {
       let gy = BOX.floor - f.r, hit = null; for (const b of g.balls) { const dx = Math.abs(b.x - f.x), rr = b.r + f.r - 1; if (dx < rr && b.y > f.y) { const yy = b.y - Math.sqrt(rr * rr - dx * dx); if (yy < gy) { gy = yy; hit = b; } } }
+      if (g.net) for (const n of g.netLive()) { const dx = f.x < n.x ? n.x - f.x : f.x > n.x + n.w ? f.x - n.x - n.w : 0; if (dx < f.r && n.y > f.y) { const yy = n.y - Math.sqrt(f.r * f.r - dx * dx); if (yy < gy) { gy = yy; hit = null; } } }      /* D431：落點影子也會停在網束上 */
       /* D226（合成港實玩）：小鳶還抓著時，落點正好碰到同一種海鮮 → 虛線變金色、落點影子變亮、兩隻都套金圈（瞄準就知道會合成）；減少動態不閃 */
       const aim = f.held && hit && hit.lv === f.lv ? hit : null, ap = aim ? (RM ? 1 : 0.75 + 0.25 * Math.sin(tt * 8)) : 0;
       const pf = festPF(); ctx.globalAlpha = pf; ctx.strokeStyle = aim ? 'rgba(255,210,58,.95)' : 'rgba(255,255,255,.7)'; ctx.lineWidth = aim ? 3 : 2; ctx.setLineDash([3, 6]); ctx.beginPath(); ctx.moveTo(f.x, f.y + f.r); ctx.lineTo(f.x, gy); ctx.stroke(); ctx.setLineDash([]);
       ctx.globalAlpha = (aim ? 0.6 : 0.3) * pf; drawSea(f.lv, f.x, gy, f.r, 0); ctx.globalAlpha = 1;
       if (aim) { ctx.globalAlpha = ap * pf; ctx.strokeStyle = '#FFD23A'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(f.x, gy, f.r + 3, 0, 6.283); ctx.stroke(); ctx.beginPath(); ctx.arc(aim.x, aim.y, aim.r + 3, 0, 6.283); ctx.stroke(); ctx.globalAlpha = 1; }
       g.aim = !!aim;
+      g.netAim = null; if (g.net && aim) { const mx = (f.x + aim.x) / 2, my = (gy + aim.y) / 2, rr = SEAF[Math.min(9, f.lv + 1)][1]; let hd = 1e9; for (const n of g.netLive()) { const d = netDist(n, mx, my); if (d <= rr + NETR.reach && d < hd) { hd = d; g.netAim = n; } } }      /* D431：瞄準會合成、而且合成會碰到網束 → 那束網框亮金色 */
       drawSea(f.lv, f.x, f.y, f.r, 0);
     }
     const kx = g.kx, ky = KF + Math.sin(tt * 3) * 3;
@@ -379,6 +413,9 @@ function makeMerge() {
       const DK = dockBox(), dkx = DK.x + 520 * DK.s, dky = DK.y + 70 * DK.s;
       for (const y of g.flyers) { const u = clamp((y.t - y.dl) / 1.1, 0, 1), e = u * u; if (u <= 0) continue; ctx.globalAlpha = 1 - u * 0.75; drawSea(y.lv, lerp(y.x, dkx, e), lerp(y.y, dky, e), y.r * (1 - 0.7 * e), 0, 0, 'h'); ctx.globalAlpha = 1; }      /* D424：送走的海鮮飛進碼頭的小船 */
       hud(g.score, g.chain >= 2 ? '連鎖 ×' + g.chain : null, '剩 ' + Math.max(0, g.drops) + ' 顆');
+    } else if (g.net) {      /* D431：分數下方每束網一格：灰＝完整、半金＝鬆開、金＝清掉 */
+      g.nets.forEach((n, i) => { const px = 10 + i * 24; rrect(px, 46, 20, 12, 5, n.hp <= 0 ? C.gold : n.hp < NETR.hp ? 'rgba(201,180,142,.9)' : 'rgba(16,41,61,.6)', 'rgba(255,248,234,.8)', 1.2); text(n.hp <= 0 ? '✓' : '網', px + 10, 52.5, 9, n.hp <= 0 ? C.ink : C.paper, 'center', 900, false); });
+      hud(g.score, g.chain >= 2 ? '連鎖 ×' + g.chain : null, '剩 ' + Math.max(0, g.drops) + ' 顆');
     } else {
     const bw = 118; rrect(10, 47, bw, 9, 4.5, 'rgba(16,41,61,.6)'); rrect(10, 47, Math.max(9, bw * g.merges / g.need), 9, 4.5, C.leaf);
     hud(g.score, g.chain >= 2 ? '連鎖 ×' + g.chain : null, '第 ' + g.lv + ' 關');
@@ -391,6 +428,25 @@ function makeMerge() {
 }
 /* D424：接駁航次換上 GPT 碼頭圖（D420 dock_empty_v2／dock_arrived_v2，只用下半）——左上港邊一座小碼頭＋接駁船。
    湊齊可接時船邊閃金光；按接船後海鮮飛進船、坐上船，船解纜往右開走，再開來下一艘空船 */
+/* D431：畫一束空廢網——有 GPT 圖（net_full／net_loose）就貼圖，沒有就程式畫：繩框＋交叉網目＋兩顆橘色浮球；鬆開＝網目變疏、歪掉、幾處斷開。清掉時放大淡出 0.5 秒 */
+function drawNet(n, tt, aim) {
+  if (n.hp <= 0 && (n.goneT < 0 || n.goneT > 0.5)) return;
+  const gone = n.hp <= 0 ? n.goneT / 0.5 : 0, loose = n.hp < NETR.hp, cx = n.x + n.w / 2, cy = n.y + n.h / 2;
+  ctx.save(); ctx.translate(cx, cy); if (gone) { const k = 1 + gone * 0.25; ctx.scale(k, k); ctx.globalAlpha = 1 - gone; } if (n.hitT > 0 && !RM) ctx.rotate(Math.sin(n.hitT * 40) * 0.04);
+  const w = n.w, h = n.h, im = ready(loose ? 'net_loose' : 'net_full');
+  if (im) { const sz = Math.max(w, h) * 1.25; ctx.save(); rrect(-w / 2 - 4, -h / 2 - 4, w + 8, h + 8, 8); ctx.clip(); ctx.drawImage(im, -sz / 2, -sz / 2, sz, sz); ctx.restore(); }
+  else {
+    rrect(-w / 2, -h / 2, w, h, 7, loose ? 'rgba(90,120,120,.25)' : 'rgba(46,68,72,.55)');
+    ctx.save(); rrect(-w / 2, -h / 2, w, h, 7); ctx.clip(); ctx.strokeStyle = loose ? 'rgba(232,214,170,.75)' : '#E8D6AA'; ctx.lineWidth = loose ? 1.4 : 1.8;
+    const sp = loose ? 15 : 9; let k = 0;
+    for (let d = -h; d < w + h; d += sp, k++) { if (loose && k % 3 === 1) continue; const wob = loose ? 3 : 0; ctx.beginPath(); ctx.moveTo(-w / 2 + d, -h / 2); ctx.quadraticCurveTo(-w / 2 + d - h / 2 + wob, wob, -w / 2 + d - h, h / 2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-w / 2 + d - h, -h / 2); ctx.quadraticCurveTo(-w / 2 + d - h / 2 - wob, -wob, -w / 2 + d, h / 2); ctx.stroke(); }
+    ctx.restore();
+    ctx.strokeStyle = '#7A5A3A'; ctx.lineWidth = loose ? 3 : 4; if (loose) ctx.setLineDash([14, 6]); ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-w / 2, -h / 2, w, h, 7) : ctx.rect(-w / 2, -h / 2, w, h); ctx.stroke(); ctx.setLineDash([]);
+    for (const bx of w > 60 ? [-w / 3, w / 3] : [0]) ell(bx, -h / 2, 5, 5, '#F08A3A', C.ink, 1.5);
+  }
+  if (aim || n.hitT > 0) { const a = n.hitT > 0 ? n.hitT / 0.5 : RM ? 0.9 : 0.6 + 0.35 * Math.sin(tt * 8); ctx.globalAlpha *= a; ctx.strokeStyle = n.hitT > 0 ? '#FFFFFF' : '#FFD23A'; ctx.lineWidth = 3; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-w / 2 - 4, -h / 2 - 4, w + 8, h + 8, 9) : ctx.rect(-w / 2 - 4, -h / 2 - 4, w + 8, h + 8); ctx.stroke(); }
+  ctx.restore();
+}
 function dockBox() { const w = 176, s = w / 720; return { x: 4, y: 58, w, h: 180 * s, s }; }
 function drawDock(g, D, tt) {
   const ie = ready('dock_empty'), ia = ready('dock_arrived'); if (!ie) return;
@@ -597,7 +653,7 @@ function makeStack() {
 }
 
 /* ---------- 開場、結束畫面 ---------- */
-let startBtnR = null, endBtnR = null, ferryR = null, endBtn2R = null;
+let startBtnR = null, endBtnR = null, ferryR = null, netR = null, endBtn2R = null;
 function drawTitle(tt) {
   ctx.fillStyle = 'rgba(14,34,50,.5)'; ctx.fillRect(0, 0, W, H);
   if (mode === 'merge') {
@@ -612,13 +668,15 @@ function drawTitle(tt) {
     text('圖鑑 ' + Object.keys(mdex).length + ' / 10', W / 2, 337, 14, C.leaf, 'center', 900, false);
     const tips = ['按住滑動，手放開就落下', '或直接點位置：小鳶飛過去放開', '越後面掉越快、抓得越短，別堆過紅線'];
     const ty0 = DS ? 364 : 360, tg = DS ? 26 : 24; tips.forEach((s, i) => { ell(70, ty0 + i * tg, 4, 4, C.dusk); text(s, 84, ty0 + i * tg, 13.5, C.ink, 'left', 700, false); });
-    if (DS) { ferryR = null; text(best.merge ? '最佳 ' + best.merge + ' 分' : '第一次玩，試試看能合到哪裡！', W / 2, 446, 13, '#6A7F8E', 'center', 700, false); startBtnR = btn('點一下開始', 456); }
+    if (DS) { ferryR = null; netR = null; text(best.merge ? '最佳 ' + best.merge + ' 分' : '第一次玩，試試看能合到哪裡！', W / 2, 446, 13, '#6A7F8E', 'center', 700, false); startBtnR = btn('點一下開始', 456); }
     else {      /* D420：開場多一顆「接駁航次（試玩）」；點按鈕以外照舊開始一般玩法 */
       text(best.merge ? '最佳 ' + best.merge + ' 分' : '第一次玩，試試看能合到哪裡！', W / 2, 434, 13, '#6A7F8E', 'center', 700, false);
       startBtnR = btn('點一下開始', 446);
-      const fw = 236, fx = W / 2 - fw / 2, fy = 500; rrect(fx, fy + 3, fw, 40, 20, 'rgba(0,0,0,.2)'); rrect(fx, fy, fw, 40, 20, '#2F7F86', C.ink, 2.5);
-      text('⛴ 接駁航次（試玩）', W / 2, fy + 20, 15, C.paper, 'center', 900); ferryR = { x: fx, y: fy, w: fw, h: 40 };
-      text(best.ferry ? '最佳航次 ' + best.ferry + ' / 6' : '湊齊接駁單，送海鮮朋友出港', W / 2, 554, 11.5, '#6A7F8E', 'center', 700, false);
+      const fw = 146, fy = 500, fxA = W / 2 - fw - 5, fxB = W / 2 + 5;      /* D431：兩個試玩並排——左「接駁航次」、右「清網開港」 */
+      for (const [fx, col, lb] of [[fxA, '#2F7F86', '⛴ 接駁航次'], [fxB, '#5E7F3A', '🕸 清網開港']]) { rrect(fx, fy + 3, fw, 40, 20, 'rgba(0,0,0,.2)'); rrect(fx, fy, fw, 40, 20, col, C.ink, 2.5); text(lb, fx + fw / 2, fy + 20, 14.5, C.paper, 'center', 900); }
+      ferryR = { x: fxA, y: fy, w: fw, h: 40 }; netR = { x: fxB, y: fy, w: fw, h: 40 };
+      const ns = netStore.get(); text(best.ferry ? '最佳航次 ' + best.ferry + ' / 6' : '湊單送海鮮出港', fxA + fw / 2, 554, 11, '#6A7F8E', 'center', 700, false);
+      text(ns.c ? '已開港 ' + ns.c + ' 次・下一座：' + NETR.ports[ns.c % NETR.ports.length].name : '在網子旁合成清網', fxB + fw / 2, 554, 11, '#6A7F8E', 'center', 700, false);
     }
   } else {
     panel(70, 440);
@@ -641,7 +699,7 @@ function drawEnd(e) {
   const k = clamp(e.t * 4, 0, 1); ctx.fillStyle = 'rgba(14,34,50,' + 0.55 * k + ')'; ctx.fillRect(0, 0, W, H);
   ctx.save(); ctx.translate(0, (1 - k) * 30); ctx.globalAlpha = k;
   panel(96, 400);
-  if (e.nb) { rrect(W / 2 - 64, 82, 128, 30, 15, C.warn, C.ink, 2.5); text(e.ferry ? '航次新紀錄！' : '新紀錄！', W / 2, 97, 15, C.paper, 'center', 900, false); }
+  if (e.nb) { rrect(W / 2 - 64, 82, 128, 30, 15, C.warn, C.ink, 2.5); text(e.ferry ? '航次新紀錄！' : e.net ? '開港成功！' : '新紀錄！', W / 2, 97, 15, C.paper, 'center', 900, false); }
   text(e.title, W / 2, 134, 16, '#3A5568', 'center', 700, false);
   const sx = e.snap ? W / 2 + 34 : W / 2; if (e.snap) snapDraw(e.snap);      /* D381：有縮圖時分數往右讓 34，縮圖放左邊 */
   text(String(e.s), sx, 178, 46, C.ink, 'center', 900, false); text('分', sx + ctx.measureText(String(e.s)).width / 2 + 14, 186, 15, C.ink, 'center', 700, false);
@@ -650,8 +708,8 @@ function drawEnd(e) {
   if (e.found && e.found.length) text('新發現 ' + e.found.length + ' 種海鮮！', W / 2, 232 + e.rows.length * 34 + 4, 13, C.warn, 'center', 900, false);
   if (e.rank) text((DS ? '📅 ' : '🏆 本月') + e.rank, W / 2, e.found && e.found.length ? 390 : 232 + e.rows.length * 34 + 4, 13, '#2F7F86', 'center', 900, false);      // D133
   text(e.bestTxt || (e.db ? e.db.label + ' ' + e.db.best + ' 分' : '最佳 ' + (best[mode] || e.s) + ' 分'), W / 2, 408, 13, '#6A7F8E', 'center', 700, false);      /* D265 A②：每日挑戰顯示今日正式／練習最佳 */
-  endBtnR = btn(DS && !DS.official ? '再練一次' : DS && mode === 'merge' && KiteDaily.left() > 0 ? '再正式挑戰（剩 ' + KiteDaily.left() + ' 次）' : '再玩一次', 426); endBtn2R = null;
-  if (e.ferry) { text('← 回開始畫面', W / 2, 486, 13, '#2F7F86', 'center', 900, false); endBtn2R = { x: W / 2 - 70, y: 476, w: 140, h: 24 }; }      /* D420：接駁航次結算可以回開始畫面換一般玩法 */      /* D265 C③：練習局主鈕改「再練一次」；D306（GPT 1230 B②）：合成港正式局主鈕寫明「再正式挑戰（剩 N 次）」（N＝結算後實際剩下），用完照原本「再玩一次」 */
+  endBtnR = btn(e.btnTxt ? e.btnTxt : DS && !DS.official ? '再練一次' : DS && mode === 'merge' && KiteDaily.left() > 0 ? '再正式挑戰（剩 ' + KiteDaily.left() + ' 次）' : '再玩一次', 426); endBtn2R = null;
+  if (e.ferry || e.net) { text('← 回開始畫面', W / 2, 486, 13, '#2F7F86', 'center', 900, false); endBtn2R = { x: W / 2 - 70, y: 476, w: 140, h: 24 }; }      /* D420：接駁航次結算可以回開始畫面換一般玩法 */      /* D265 C③：練習局主鈕改「再練一次」；D306（GPT 1230 B②）：合成港正式局主鈕寫明「再正式挑戰（剩 N 次）」（N＝結算後實際剩下），用完照原本「再玩一次」 */
   ctx.restore(); ctx.globalAlpha = 1;
 }
 
@@ -695,10 +753,10 @@ document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('cli
 function pos(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height }; }
 cv.addEventListener('pointerdown', (e) => {
   e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (er) {} const p = pos(e);
-  if (state === 'ready') { const fz = ferryR, wantF = mode === 'merge' && !DS && !e.kbd && !!fz && p.x > fz.x - 6 && p.x < fz.x + fz.w + 6 && p.y > fz.y - 6 && p.y < fz.y + fz.h + 6; if (wantF !== ferryMode || (G && G.ferry !== wantF)) { ferryMode = wantF; newGame(); } state = 'play'; dailyBegin(); if (window.KiteBoard && !ferryMode) KiteBoard.start(mode); beep(660, 0.08); if (mode === 'merge') { down = true; G.down(p.x, p.y); G.tap = null; } return; }
+  if (state === 'ready') { const inR = (z) => mode === 'merge' && !DS && !e.kbd && !!z && p.x > z.x - 4 && p.x < z.x + z.w + 4 && p.y > z.y - 6 && p.y < z.y + z.h + 6, wantF = inR(ferryR), wantN = !wantF && inR(netR); if (wantF !== ferryMode || wantN !== netMode || (G && (G.ferry !== wantF || !!G.net !== wantN))) { ferryMode = wantF; netMode = wantN; newGame(); } state = 'play'; dailyBegin(); if (netMode) netHow(); if (window.KiteBoard && !ferryMode && !netMode) KiteBoard.start(mode); beep(660, 0.08); if (mode === 'merge') { down = true; G.down(p.x, p.y); G.tap = null; } return; }
   if (state === 'end' && RP) { RP = null; AQ.ui(); return; }      /* D198：回顧中點一下就回到成績 */
-  if (state === 'end' && endBtn2R && endInfo && endInfo.t > 0.8 && !e.kbd) { const q = endBtn2R; if (p.x > q.x && p.x < q.x + q.w && p.y > q.y && p.y < q.y + q.h + 8) { ferryMode = false; newGame(); state = 'ready'; document.getElementById('how').innerHTML = HOW[mode]; beep(520, 0.06); return; } }
-  if (state === 'end') { const r = endBtnR, onBtn = e.kbd || (r && p.x > r.x - 14 && p.x < r.x + r.w + 14 && p.y > r.y - 14 && p.y < r.y + r.h + 14); if (endInfo && endInfo.t > 0.8 && onBtn) { newGame();      /* 玩家角度：結算畫面只有按「再玩一次」才重開，避免疊貨櫃連點時一下就跳過成績 */ state = 'play'; dailyBegin(); beep(660, 0.08); if (mode === 'merge') { down = true; G.down(p.x, p.y); G.tap = null; } } return; }
+  if (state === 'end' && endBtn2R && endInfo && endInfo.t > 0.8 && !e.kbd) { const q = endBtn2R; if (p.x > q.x && p.x < q.x + q.w && p.y > q.y && p.y < q.y + q.h + 8) { ferryMode = false; netMode = false; newGame(); state = 'ready'; document.getElementById('how').innerHTML = HOW[mode]; beep(520, 0.06); return; } }
+  if (state === 'end') { const r = endBtnR, onBtn = e.kbd || (r && p.x > r.x - 14 && p.x < r.x + r.w + 14 && p.y > r.y - 14 && p.y < r.y + r.h + 14); if (endInfo && endInfo.t > 0.8 && onBtn) { newGame(); if (G.net) netHow();      /* 玩家角度：結算畫面只有按「再玩一次」才重開，避免疊貨櫃連點時一下就跳過成績 */ state = 'play'; dailyBegin(); beep(660, 0.08); if (mode === 'merge') { down = true; G.down(p.x, p.y); G.tap = null; } } return; }
   down = true; G.down(p.x, p.y);
 });
 cv.addEventListener('pointermove', (e) => { if (state !== 'play') return; const p = pos(e); if (down || mode === 'merge') G.move(p.x, p.y); });
@@ -707,6 +765,7 @@ cv.addEventListener('pointerup', upH); cv.addEventListener('pointercancel', upH)
 document.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { if (state !== 'play') { const ev = new PointerEvent('pointerdown', { clientX: 0, clientY: 0 }); ev.kbd = true; cv.dispatchEvent(ev); upH(); } else if (mode === 'stack') G.tap(); else if (G.fall) G.release(); e.preventDefault(); } if (mode === 'merge' && state === 'play' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { G.tx = clamp(G.tx + (e.key === 'ArrowLeft' ? -30 : 30), 0, W); } });
 function finish() {
   if (G.ferry) return finishFerry();
+  if (G.net) return finishNet();
   if (window.KiteBoard) KiteBoard.ev('run_end', { game: mode });
   const s = Math.round(G.score), nb = DS ? false : saveBest(mode, s);      /* D265（GPT 2330 A②）：每日挑戰（正式／練習）不寫一般最佳、不出一般「新紀錄！」 */
   let rk = null, dr = DS ? KiteDaily.finish(DS, s) : null; let tl = ''; try { if (!DS && window.KiteCore && KiteCore.reportPlay && s > 0) { const rep = () => KiteCore.reportPlay({ game: mode, level: 'all', score: s, lbAll: true }); rk = KiteCore.rankAround ? KiteCore.rankAround(mode, 'all', rep) : { res: rep() }; tl = KiteCore.tierLine ? KiteCore.tierLine(rk.res) : ''; } } catch (e) {}      // D141：前 3 局算進今日積分、可換點      // D123：進排行榜；D133：記下名次
@@ -744,6 +803,19 @@ function ferryUI() {
   fyBox.innerHTML = h + '</div>';
 }
 /* D420：接駁航次結算——不回報點數／排行榜／今日挑戰，只記這支手機的最佳航次 */
+/* D431：清網開港結算——不回報點數／排行榜；開港成功才換下一座港，記這支手機每座港最少用幾顆 */
+function netHow() { const P = NETR.ports[G.port]; document.getElementById('how').innerHTML = '<span class="kd-banner">🕸 清網開港・' + P.name + '（試玩，不算點數）</span><br><span class="hl">在<b>網子旁邊合成</b>，網子會鬆開；再合一次就清掉。</span><span class="hl">清光 ' + G.nets.length + ' 束網就開港，海鮮只有 ' + P.drops + ' 顆。</span>'; }
+function finishNet() {
+  const s = Math.round(G.score), P = NETR.ports[G.port], win = G.fEnd === 'clear', used = P.drops - Math.max(0, G.drops), left = Math.max(0, G.drops), cl = G.nets.filter((n) => n.hp <= 0).length, ns = netStore.get();
+  const st = win ? (left >= 10 ? ' ★★★' : left >= 5 ? ' ★★' : ' ★') : ''; let nb = false;
+  if (win) { const k = String(G.port), pb = ns.best[k]; nb = !pb || used < pb; if (nb) ns.best[k] = used; ns.c++; netStore.set(ns); }
+  endInfo = { s, nb: win, t: 0, net: true, title: win ? P.name + '開港了！' + st : G.fEnd === 'drops' ? '海鮮用完了，還有 ' + (G.nets.length - cl) + ' 束網' : G.over > 1.6 ? '堆過紅線了' : '魚艙塞滿了',
+    rows: [['清掉網子', cl + ' / ' + G.nets.length + ' 束'], ['用了', used + ' / ' + P.drops + ' 顆'], ['削網合成', G.netHits + ' 次'], ['最大合到', SEAF[G.top][0]]], icon: null, found: G.newFound, replay: G.show == null ? null : G.show };
+  endInfo.snap = snapTake(); endInfo.rank = ''; endInfo.bestTxt = '已開港 ' + ns.c + ' 次' + (ns.best[String(G.port)] ? '・' + P.name + '最少 ' + ns.best[String(G.port)] + ' 顆' : '');
+  endInfo.btnTxt = win ? '去下一座：' + NETR.ports[ns.c % NETR.ports.length].name : '再挑戰' + P.name;
+  document.getElementById('how').innerHTML = '<span class="kd-banner">🕸 清網開港是試玩模式：不算點數、不進排行榜</span>';
+  state = 'end'; jingle(win ? [523, 659, 784, 1047] : [392, 330], 110);
+}
 function finishFerry() {
   const s = Math.round(G.score), pr = G.prog, nb = pr > 0 && saveBest('ferry', pr), hi = G.flog.filter((x) => x.hi).length, st = pr >= 6 ? ' ★★★' : pr >= 5 ? ' ★★' : pr >= FY.goal ? ' ★' : '';
   endInfo = { s, nb, t: 0, ferry: true, title: G.fEnd === 'clear' ? (pr >= FY.goal ? '航次達成！' : '三趟都送完了') : G.fEnd === 'drops' ? '海鮮用完了' : G.over > 1.6 ? '堆過紅線了' : '魚艙塞滿了',
@@ -820,7 +892,7 @@ const AQ = (() => {
   return { add, save, ui, open, data: d };
 })();
 window.__aq = AQ;
-window.__mini = { get G() { return G; }, get state() { return state; }, FY, ferry: () => { mode = 'merge'; ferryMode = true; newGame(); state = 'play'; }, setMode, seaFace, finish, IMG, SEAF, get fest() { return { pf: festPF(), n: fests.length, txt: !!festTxt, y: festTxt && festTxt.y, k: festTxt && festTxt.k }; }, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; }, get hudChip() { return hudChip; } };      /* D263：測試掛勾加 pop／floats；D306 加 finish */      /* D254：測試掛勾，固定亂數 */
+window.__mini = { get G() { return G; }, get state() { return state; }, FY, ferry: () => { mode = 'merge'; ferryMode = true; netMode = false; newGame(); state = 'play'; }, net: (pi) => { mode = 'merge'; ferryMode = false; netMode = true; if (pi != null) netStore.set({ ...netStore.get(), c: pi }); newGame(); state = 'play'; netHow(); }, NETR, netStore, setMode, seaFace, finish, IMG, SEAF, get fest() { return { pf: festPF(), n: fests.length, txt: !!festTxt, y: festTxt && festTxt.y, k: festTxt && festTxt.k }; }, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; }, get hudChip() { return hudChip; } };      /* D263：測試掛勾加 pop／floats；D306 加 finish */      /* D254：測試掛勾，固定亂數 */
 })();
 </script>
 <script>(function () { var b = document.getElementById('backBtn'); b.addEventListener('click', function (e) { if (window.__mini && window.__mini.state === 'play' && !confirm('這局還在進行，確定要離開嗎？（分數不會記錄）')) e.preventDefault(); }); /* QA：遊戲中按返回先確認 */ /* D161：一律回小鳶樂園（遊戲大廳），不再回舊版測試首頁 */ })();</script>
