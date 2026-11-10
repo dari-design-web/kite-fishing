@@ -642,7 +642,8 @@ function drawLvSel(tt) {
     drawEgg(x + 25, y - 22 + bob, 9, r.e ? 1 : 0);
     if (open) lvR.push({ x: x - 40, y: y - 38, w: 80, h: 88, f: () => lvStart(d.no) });
   });
-  const b = btn('← 回標題', 506, '#6A7F8E'); b.f = lvBack; lvR.push(b);
+  const b = hbtn('← 回標題', 34, 504, 120, '#6A7F8E'), tb = hbtn('⚓ 雙泊位（試玩）', 162, 504, 164, '#2F7F86'); b.f = lvBack; tb.f = twStart; lvR.push(b, tb);      /* D438：選關畫面多一顆「雙泊位吊裝」支線試玩（標題畫面仍維持兩顆試玩鈕） */
+  rrect(298, 494, 34, 20, 10, C.gold, C.ink, 2); text('新', 315, 504, 11, C.ink, 'center', 900, false);
   lvR.kbd = () => lvStart(cur || gp.lv.length);
 }
 function drawLvEnd(e) {
@@ -673,6 +674,138 @@ function drawLvEnd(e) {
   ctx.restore(); ctx.globalAlpha = 1;
 }
 function lvTap(p, kbd) { if (state === 'lvend' && (!lvEnd || lvEnd.t < 0.6)) return; if (kbd) { if (lvR.kbd) lvR.kbd(); return; } const r = lvR.find((q) => inR(q, p, 6)); if (r) r.f(); }
+
+/* ================= D438 雙泊位吊裝（試玩，GPT 1620 Q2 推薦 A＋1720 Q1 兩張泊位牌與數值） =================
+   同畫面左右兩座泊位、各自一疊。每一顆貨櫃先選泊位（點左半邊／右半邊或牌子；鍵盤 ←／→），選了才吊過去，照原本點一下放下、切邊、完美變寬。
+   選定後不能換邊、不能把失誤轉給另一塔。兩邊成功層數最多差 1：一樣多可任選；一邊多 1 層時下一顆自動只開放另一邊。
+   每邊 6 層滿船，一對＝左 6＋右 6（共 12 次成功放置），兩艘一起出港；一局 3 對，第 3 對出港就收局（不再續對）。
+   沒放到：全局 1 次補救（同一邊再抓一個），再沒放到收局。不套 D434 單程吊運、不出起風／起霧事件。
+   不算點數、不進排行榜、不算告示板委託；只存本機 kiteTwinRec1 { best 最多對數, place 最多成功放置, clear 完成次數 }。 */
+const TW_KEY = 'kiteTwinRec1', TW_FULL = 6, TW_PAIRS = 3, TW_BASE = 108, TW_CX = [92, 268], TW_SW = 66;
+let TW = null, twR = [];
+function twHow() { document.getElementById('how').innerHTML = '<span class="hl"><b>雙泊位吊裝（試玩）</b>先選<b>左</b>或<b>右</b>泊位，再點一下放下。</span><span class="hl">兩邊最多差 1 層，各 6 層兩艘船一起出港！</span>'; }
+function twStart() {
+  TW = { pair: 1, side: [twTower(0), twTower(1)], pick: -1, mv: null, dir: 1, combo: 0, bestCombo: 0, perfects: 0, placed: 0, saves: 1, cut: [], splash: [], ship: null, say: '一樣多可以任選，點左邊或右邊！', sayT: 2.6, t: 0, autoT: 0, end: null, pairT: 0, flash: 0 };
+  state = 'twin'; twHow(); ['berth_left', 'berth_right'].forEach((k) => { if (!IMG[k]) want(k, '../assets/stack/' + k + '.png'); }); ['ship', 'bg_stack_base', 'kite_carry', 'box_gold', 'fx_splash_l', 'fx_splash_s'].concat(BOXC.map((_, i) => 'box_' + i)).forEach((k) => { if (!IMG[k]) want(k, '../assets/stack/' + k + (k.indexOf('bg_') === 0 ? '.jpg' : '.png')); }); festLoad(); beep(660, 0.08);
+}
+function twTower(i) { return { blocks: [{ x: TW_CX[i] - TW_BASE / 2, w: TW_BASE, c: i ? 1 : 0 }], glowT: 0 }; }
+const twN = (i) => TW.side[i].blocks.length - 1;
+function twAllowed(i) { const a = twN(i), b = twN(1 - i); return a < TW_FULL && a <= b; }      /* 兩邊差最多 1：自己比較少或一樣多，而且還沒滿 */
+function twChoose(i) {
+  if (!TW || TW.end || TW.mv || TW.pairT > 0 || !twAllowed(i)) return false;
+  const tw = TW.side[i], top = tw.blocks[tw.blocks.length - 1], n = tw.blocks.length, fromL = (twN(0) + twN(1)) % 2 === 0;
+  TW.pick = i; TW.dir = fromL ? 1 : -1;
+  TW.mv = { x: fromL ? TW_CX[i] - TW_SW - top.w / 2 : TW_CX[i] + TW_SW - top.w / 2, w: top.w, c: (n + i * 3) % BOXC.length, gold: n === 3, i };      /* 每邊第 3 層是金貨櫃（切齊多變寬一點） */
+  TW.speed = Math.min(280, 112 + (TW.pair - 1) * 22 + (twN(0) + twN(1)) * 4);
+  beep(i ? 740 : 620, 0.07, 'triangle', 0.06); return true;
+}
+function twTap() {
+  const m = TW.mv; if (!m) return; const tw = TW.side[m.i], top = tw.blocks[tw.blocks.length - 1];
+  const l = Math.max(m.x, top.x), r = Math.min(m.x + m.w, top.x + top.w), yTop = Y0 - tw.blocks.length * BH;
+  if (r - l < 8) {
+    TW.cut.push({ x: m.x, w: m.w, y: yTop, vy: 0, c: m.c, gold: m.gold }); TW.combo = 0; beep(140, 0.25, 'square', 0.05, -60); buzz(60); TW.mv = null;
+    if (TW.saves > 0) { TW.saves--; TW.say = '沒關係！同一邊再抓一個（只有一次喔）'; TW.sayT = 2.2; setTimeout(() => { if (TW && !TW.end) { TW.pick = -1; twChoose(m.i); } }, 500); return; }      /* 補救：同一邊再來，不能轉給另一塔 */
+    TW.say = '咦——沒放到！'; TW.sayT = 2; twFinish(false, 1.2); return;
+  }
+  const tol = twN(m.i) < 2 ? 16 : 10;
+  if (Math.abs(m.x - top.x) < tol) {
+    TW.combo++; TW.perfects++; TW.bestCombo = Math.max(TW.bestCombo, TW.combo); const add = (TW.combo >= 2 ? 8 : 0) + (m.gold ? 16 : 0), nw = Math.min(TW_BASE, top.w + add);
+    tw.blocks.push({ x: top.x - (nw - top.w) / 2, w: nw, c: m.c, gold: m.gold, sq: 0.3, glow: 0.4 });
+    pop((m.gold ? '金貨櫃切齊！' : '完美 ×' + TW.combo) + (add > 0 && nw > top.w ? '　變寬！' : ''), TW_CX[m.i], yTop - 46, C.gold, true);
+    burst(TW_CX[m.i], yTop + BH, m.gold ? 22 : 10, C.gold); ring(top.x + top.w / 2, yTop + BH / 2, top.w / 2, '#FFF4C2');
+    { const SC = [0, 2, 4, 5, 7, 9, 11], st = Math.min(TW.combo - 1, 14); beep(523.25 * Math.pow(2, (SC[st % 7] + 12 * Math.floor(st / 7)) / 12), 0.16, 'triangle', 0.07); } buzz(15);
+  } else {
+    TW.combo = 0; let nx = l, nw = r - l; if (m.gold) { const w2 = Math.min(TW_BASE, nw + 8); nx -= (w2 - nw) / 2; nw = w2; }
+    tw.blocks.push({ x: nx, w: nw, c: m.c, gold: m.gold, sq: 0.2 }); beep(300, 0.09, 'sine', 0.06, -80); buzz(8);
+    const cx = m.x < l ? m.x : r, cw = m.x < l ? l - m.x : m.x + m.w - r; TW.cut.push({ x: cx, w: cw, y: yTop + BH, vy: 0, c: m.c, gold: m.gold, vr: m.x < l ? -2 : 2, rot: 0 });
+  }
+  TW.placed++; TW.mv = null; TW.pick = -1;
+  const a = twN(0), b = twN(1);
+  if (twN(m.i) === TW_FULL && a + b < TW_FULL * 2) { TW.say = (m.i ? '右' : '左') + '邊裝滿了！等另一邊補齊'; TW.sayT = 1.8; }
+  if (a === TW_FULL && b === TW_FULL) {      /* 一對完成：兩艘船一起出港 */
+    TW.ship = { x: -120, t: 0 }; TW.pairT = 2.2; TW.say = TW.pair >= TW_PAIRS ? '三對船都出港了！' : '嗚——兩艘船一起出港！'; TW.sayT = 2.2; jingle([392, 523, 659, 784], 110); setTimeout(toot, 380);
+    festBurst(W * 0.28, 150, 0.8); festBurst(W * 0.72, 140, 0.8);
+    if (TW.pair >= TW_PAIRS) { TW.donePairs = TW_PAIRS; twFinish(true, 2.4); }
+    return;
+  }
+  TW.autoT = a === b ? 0 : 0.45;      /* 一邊多 1 層 → 0.45 秒後自動吊到另一邊 */
+  if (a === b && TW.sayT <= 0.3) { TW.say = '一樣多了，這顆可以任選！'; TW.sayT = 1.4; }
+}
+function twFinish(win, delay) {
+  if (TW.end) return; const pairs = win ? TW_PAIRS : TW.pair - 1, rec = store.get(TW_KEY, {}) || {}, nb = pairs > (rec.best || 0) || (pairs === (rec.best || 0) && TW.placed > (rec.place || 0));
+  rec.best = Math.max(rec.best || 0, pairs); rec.place = Math.max(rec.place || 0, TW.placed); if (win) rec.clear = (rec.clear || 0) + 1; store.set(TW_KEY, rec);
+  TW.end = { win, pairs, nb, t: -delay, rec };
+}
+function twUpdate(dt) {
+  if (!TW) return; TW.t += dt; if (TW.sayT > 0) TW.sayT -= dt; if (TW.flash > 0) TW.flash -= dt;
+  for (const s of TW.side) for (const b of s.blocks) { if (b.sq) b.sq = Math.max(0, b.sq - dt * 1.5); if (b.glow > 0) b.glow -= dt; }
+  if (TW.ship) { TW.ship.t += dt; TW.ship.x += 150 * dt; }
+  if (TW.pairT > 0) { TW.pairT -= dt; if (TW.pairT <= 0 && !TW.end) { TW.pair++; TW.side = [twTower(0), twTower(1)]; TW.ship = null; TW.say = '第 ' + TW.pair + ' 對船進港，速度快一點囉！'; TW.sayT = 2; beep(523, 0.1, 'triangle', 0.06); } }
+  if (TW.autoT > 0 && !TW.mv && !TW.end) { TW.autoT -= dt; if (TW.autoT <= 0) twChoose(twAllowed(0) ? 0 : 1); }
+  const m = TW.mv; if (m) { m.x += TW.dir * TW.speed * dt; const c = m.x + m.w / 2, lo = TW_CX[m.i] - TW_SW, hi = TW_CX[m.i] + TW_SW;      /* 擺動只在自己泊位上方，不越過中線蓋到另一塔 */ if (c > hi && TW.dir > 0) TW.dir = -1; if (c < lo && TW.dir < 0) TW.dir = 1; }
+  for (const c of TW.cut) { c.vy += 900 * dt; c.y += c.vy * dt; c.rot = (c.rot || 0) + (c.vr || 0) * dt; if (!c.sp && c.y + BH / 2 >= 548) { c.sp = 1; const big = c.w >= 60; TW.splash.push({ x: clamp(c.x + c.w / 2, 30, W - 30), y: 548, big, t: 0 }); beep(big ? 150 : 220, 0.16, 'sine', 0.05, -90); } }
+  TW.cut = TW.cut.filter((c) => !c.sp); TW.splash.forEach((p) => { p.t += dt; }); TW.splash = TW.splash.filter((p) => p.t < 0.65);
+  if (TW.end) { TW.end.t += dt; if (TW.end.t > 0 && state === 'twin') { state = 'twinend'; jingle(TW.end.win ? [523, 659, 784, 1047] : [440, 523], 110); } }
+}
+function twPlate(i, x, y, on, sel, tt) {
+  const im = ready(i ? 'berth_right' : 'berth_left'), s = 58, bob = on && !sel && !RM ? Math.sin(tt * 5 + i * 2) * 2 : 0;
+  ctx.save(); ctx.globalAlpha = on || sel ? 1 : 0.42;
+  if (on && !sel) { ctx.globalAlpha = 0.45 + 0.3 * Math.sin(tt * 5); ell(x, y + bob, 36, 36, 'rgba(255,214,107,.35)', C.gold, 3); ctx.globalAlpha = 1; }
+  if (sel) { ctx.shadowColor = '#FFD23A'; ctx.shadowBlur = 14; rrect(x - s / 2 - 5, y - s / 2 - 5, s + 10, s + 10, 12, null, '#FFD23A', 4); ctx.shadowBlur = 0; }
+  if (im) ctx.drawImage(im, x - s / 2, y - s / 2 + bob, s, s); else { rrect(x - 24, y - 20 + bob, 48, 40, 8, '#3F7FBF', C.ink, 2.5); text(i ? '→' : '←', x, y + bob, 20, C.paper, 'center', 900); }
+  ctx.restore();
+}
+function twDraw(tt) {
+  const bg = ready('bg_stack_base'); if (bg) ctx.drawImage(bg, 0, 0, W, H); else { ctx.fillStyle = '#7FC4D6'; ctx.fillRect(0, 0, W, H); }
+  ctx.fillStyle = 'rgba(14,34,50,.12)'; ctx.fillRect(0, 0, W, H);
+  /* 船：一對完成時兩艘一起往右開走；平時兩艘停在各自泊位下方，裝了幾層就載幾個小貨櫃 */
+  const sim = ready('ship');
+  for (let i = 0; i < 2; i++) { const sx = TW.ship ? TW_CX[i] + TW.ship.x + 120 : TW_CX[i], sy = Y0 + BH + 46, w = 150, n = TW.ship ? TW_FULL : twN(i);
+    if (sim) { const h = w * sim.naturalHeight / sim.naturalWidth; ctx.drawImage(sim, sx - w / 2, sy - h * 0.62, w, h); } else poly([sx - 62, sy - 6, sx + 64, sy - 6, sx + 52, sy + 18, sx - 52, sy + 18], '#C0473A', C.ink, 2.5);
+    for (let k = 0; k < Math.min(n, 6); k++) { ctx.save(); ctx.translate(sx - 50 + (k % 3) * 27, sy - 16 - Math.floor(k / 3) * 10); ctx.scale(0.32, 0.32); crate(0, 0, 80, k % 6, false); ctx.restore(); } }
+  for (const p of TW.splash) { const im = ready(p.big ? 'fx_splash_l' : 'fx_splash_s'); if (!im) continue; const w = p.big ? 96 : 64, h = w * im.naturalHeight / im.naturalWidth; ctx.globalAlpha = p.t < 0.3 ? 1 : clamp(1 - (p.t - 0.3) / 0.35, 0, 1); ctx.drawImage(im, p.x - w / 2, p.y - h * 0.86, w, h); ctx.globalAlpha = 1; }
+  if (!TW.ship) for (let i = 0; i < 2; i++) {
+    const tw = TW.side[i], cx = TW_CX[i], n = twN(i);
+    rrect(cx - 70, Y0 + BH - 4, 140, 10, 4, 'rgba(16,41,61,.55)');      /* 泊位碼頭邊 */
+    tw.blocks.forEach((b, k) => { const sq = b.sq || 0; ctx.save(); ctx.translate(b.x + b.w / 2, Y0 - k * BH + BH); ctx.scale(1 + sq * 0.15, 1 - sq * 0.25); crate(-b.w / 2, -BH, b.w, b.c, b.gold);
+      if (b.glow > 0) { ctx.globalAlpha = RM ? 0.9 : clamp(b.glow / 0.4, 0, 1); rrect(-b.w / 2 - 2, -BH - 2, b.w + 4, BH + 4, 6, null, '#FFD23A', 4); } ctx.restore(); });
+    /* 滿船格：6 格小刻度 */
+    for (let k = 0; k < TW_FULL; k++) rrect(cx - 33 + k * 11.5, Y0 + BH + 12, 9, 7, 2, k < n ? C.gold : 'rgba(255,248,234,.45)', C.ink, 1.2);
+    const py = 156, on = !TW.mv && !TW.end && TW.pairT <= 0 && twAllowed(i), sel = TW.mv && TW.mv.i === i;
+    twPlate(i, cx, py, on, sel, tt);
+    ctx.font = FONT(13, 900); const lab = n >= TW_FULL ? '裝滿 ✓' : n + ' / ' + TW_FULL + ' 層'; pill(cx - 38, py + 34, 76, 24, n >= TW_FULL ? 'rgba(47,127,90,.9)' : 'rgba(16,41,61,.78)'); text(lab, cx, py + 46, 13, n >= TW_FULL ? '#FFFFFF' : '#FFE9A8', 'center', 900, false);
+    if (!TW.mv && !TW.end && TW.pairT <= 0 && !twAllowed(i) && n < TW_FULL) text('先放另一邊', cx, py + 72, 12, C.paper, 'center', 800);
+  }
+  for (const c of TW.cut) { ctx.save(); ctx.translate(c.x + c.w / 2, c.y + BH / 2); ctx.rotate(c.rot || 0); crate(-c.w / 2, -BH / 2, c.w, c.c, c.gold); ctx.restore(); }
+  if (TW.mv) { const m = TW.mv, tw = TW.side[m.i], tp = tw.blocks[tw.blocks.length - 1], y = Y0 - tw.blocks.length * BH, tol = twN(m.i) < 2 ? 16 : 10;
+    ctx.fillStyle = 'rgba(255,214,107,.26)'; ctx.fillRect(tp.x - tol, y - 60, tol * 2, 60 + BH); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 5]); ctx.beginPath(); ctx.moveTo(tp.x, y - 60); ctx.lineTo(tp.x, y + BH); ctx.moveTo(tp.x + tp.w, y - 60); ctx.lineTo(tp.x + tp.w, y + BH); ctx.stroke(); ctx.setLineDash([]);
+    crate(m.x, y, m.w, m.c, m.gold); drawKiteCarry(m.x + m.w / 2, y + 2, 0.72, tt * 9, 'kite_carry'); }
+  if (TW.sayT > 0) bubble(TW.say, W / 2, 98);
+  pill(10, 10, 132, 32); text('⚓ 第 ' + Math.min(TW.pair, TW_PAIRS) + ' / ' + TW_PAIRS + ' 對船', 76, 26, 14, C.paper, 'center', 900, false);      /* 試玩不算分：左上改成第幾對船 */
+  { const rt = '成功 ' + TW.placed + (TW.saves ? '・♥補救 1' : ''); ctx.font = FONT(14); const w = ctx.measureText(rt).width + 26; pill(W - 10 - w, 10, w, 32); text(rt, W - 10 - w / 2, 26, 14, C.paper, 'center', 700, false); }
+  if (TW.combo > 1) { const mt = '完美連擊 ×' + TW.combo; ctx.font = FONT(13); const w = ctx.measureText(mt).width + 24; pill(W / 2 - w / 2, 48, w, 26, 'rgba(16,41,61,.62)'); text(mt, W / 2, 61, 13, C.paper, 'center', 700, false); }
+}
+function twDrawEnd(tt) {
+  const e = TW.end, k = clamp(e.t * 4, 0, 1); ctx.fillStyle = 'rgba(14,34,50,' + 0.55 * k + ')'; ctx.fillRect(0, 0, W, H); twR = [];
+  ctx.save(); ctx.translate(0, (1 - k) * 30); ctx.globalAlpha = k; panel(100, 420);
+  text('雙泊位吊裝（試玩）', W / 2, 128, 13, '#6A7F8E', 'center', 700, false);
+  text(e.win ? '三對船都出港了！' : '差一點點！', W / 2, 160, 24, e.win ? C.leaf : '#E0884A', 'center', 900, false);
+  for (let i = 0; i < TW_PAIRS; i++) { const on = i < e.pairs, x = W / 2 - 70 + i * 70; ctx.globalAlpha = k * (on ? 1 : 0.35); const im = ready('ship'); if (im) ctx.drawImage(im, x - 30, 186, 60, 60 * im.naturalHeight / im.naturalWidth); else rrect(x - 24, 196, 48, 16, 4, '#C0473A', C.ink, 2); ctx.globalAlpha = k; text(on ? '✓' : '—', x, 222, 14, on ? C.leaf : '#B0A48C', 'center', 900, false); }
+  const rows = [['出港', e.pairs + ' / ' + TW_PAIRS + ' 對（每對左 6＋右 6）'], ['成功放置', TW.placed + ' 次'], ['完美', TW.perfects + ' 次・最長 ×' + Math.max(1, TW.bestCombo)], ['最佳紀錄', (e.rec.best || 0) + ' 對' + (e.rec.clear ? '・完成 ' + e.rec.clear + ' 次' : '')]];
+  rows.forEach((r, i) => { const y = 270 + i * 30; rrect(46, y - 13, W - 92, 26, 10, '#F3EAD8'); text(r[0], 60, y, 13, '#3A5568', 'left', 700, false); text(r[1], W - 60, y, 13, C.ink, 'right', 900, false); });
+  text(e.nb ? '新紀錄！' : e.win ? '先選哪一邊，讓兩邊都穩穩的' : '寬的那邊比較好放，先選它試試', W / 2, 394, 13, e.nb ? '#2F7F86' : '#6A7F8E', 'center', 900, false);
+  const a = btn('再玩一次', 410); a.f = twStart; twR.push(a); twR.kbd = a.f;
+  const b = sbtn('回選關', 72, 468, 104), c = sbtn('回標題', W - 176, 468, 104); b.f = () => { TW = null; lvSel(); }; c.f = () => { TW = null; lvBack(); }; twR.push(b, c);
+  ctx.restore(); ctx.globalAlpha = 1;
+}
+function twDown(p, kbd, key) {
+  if (state === 'twinend') { if (TW.end.t < 0.6) return; if (kbd) { if (twR.kbd) twR.kbd(); return; } const r = twR.find((q) => inR(q, p, 6)); if (r) r.f(); return; }
+  if (TW.end) return;
+  if (key === 'L' || key === 'R') { twChoose(key === 'L' ? 0 : 1); return; }
+  if (TW.mv) { twTap(); return; }
+  if (kbd) { if (twAllowed(0) !== twAllowed(1)) twChoose(twAllowed(0) ? 0 : 1); return; }
+  if (!twChoose(p.x < W / 2 ? 0 : 1)) { const o = p.x < W / 2 ? 1 : 0; if (TW.pairT <= 0 && twAllowed(o)) { TW.say = '這邊多 1 層了，先放' + (o ? '右' : '左') + '邊'; TW.sayT = 1.4; beep(220, 0.08, 'sine', 0.04); } }
+}
 
 /* ================= D425 貨櫃方塊（試玩，GPT 2240 Q2 推薦） =================
    8×8 裝船區、四組共 12 塊固定方向的貨櫃形狀（不旋轉）；同組三塊可自選先後，三塊都用完才換下一組。
@@ -1046,6 +1179,7 @@ function pos(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX -
 cv.addEventListener('pointerdown', (e) => {
   e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (er) {} const p = pos(e);
   if (state === 'lvsel' || state === 'lvend') { lvTap(p, e.kbd); return; }
+  if (state === 'twin' || state === 'twinend') { twDown(p, e.kbd, e.twKey); return; }      /* D438 雙泊位 */
   if (state === 'blkcal') { calTap(p, e.kbd); return; }      /* D430 完成日曆 */
   if (state === 'blk' || state === 'blkend') { bkDown(p, e.kbd); return; }      /* D425 貨櫃方塊 */
   if (state === 'ready' && mode === 'stack' && !e.kbd && inR(calBtnR, p, 4)) { calOpen('title'); return; }
@@ -1059,7 +1193,7 @@ cv.addEventListener('pointerdown', (e) => {
 cv.addEventListener('pointermove', (e) => { if (state === 'blk') { bkMove(pos(e)); return; } if (state !== 'play') return; const p = pos(e); if (down || mode === 'merge') G.move(p.x, p.y); });
 const upH = () => { if (state === 'blk') { bkUp(); return; } if (!down) return; down = false; if (state === 'play') G.up(); };
 cv.addEventListener('pointerup', upH); cv.addEventListener('pointercancel', upH);
-document.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { if (state !== 'play') { const ev = new PointerEvent('pointerdown', { clientX: 0, clientY: 0 }); ev.kbd = true; cv.dispatchEvent(ev); upH(); } else if (mode === 'stack') G.tap(); else if (G.fall) G.release(); e.preventDefault(); } if (mode === 'merge' && state === 'play' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { G.tx = clamp(G.tx + (e.key === 'ArrowLeft' ? -30 : 30), 0, W); } });
+document.addEventListener('keydown', (e) => { if (state === 'twin' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { twDown({ x: 0, y: 0 }, true, e.key === 'ArrowLeft' ? 'L' : 'R'); e.preventDefault(); return; }      /* D438：←／→ 選泊位 */ if (e.key === ' ' || e.key === 'Enter') { if (state !== 'play') { const ev = new PointerEvent('pointerdown', { clientX: 0, clientY: 0 }); ev.kbd = true; cv.dispatchEvent(ev); upH(); } else if (mode === 'stack') G.tap(); else if (G.fall) G.release(); e.preventDefault(); } if (mode === 'merge' && state === 'play' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { G.tx = clamp(G.tx + (e.key === 'ArrowLeft' ? -30 : 30), 0, W); } });
 function finish() {
   if (window.KiteBoard) KiteBoard.ev('run_end', { game: mode });
   const s = Math.round(G.score), nb = DS ? false : saveBest(mode, s);      /* D265（GPT 2330 A②）：每日挑戰（正式／練習）不寫一般最佳、不出一般「新紀錄！」 */
@@ -1081,13 +1215,14 @@ function finish() {
 function frame(now) {
   const dt = Math.min(0.033, (now - last) / 1000); last = now; clock += dt;
   if (state === 'play') { G.update(dt); if (G.done) { if (LV) lvFinish(); else finish(); } } else if (state === 'lvend') G.update(dt);
-  if (state === 'blk' || state === 'blkend') { bkUpdate(dt); bkDraw(clock); } else G.draw(clock);
-  if (fests.length || festTxt) { festTick(dt); if (state === 'play' || state === 'blk' || state === 'blkend') drawFest(); }
+  if (state === 'twin' || state === 'twinend') { twUpdate(dt); twDraw(clock); } else if (state === 'blk' || state === 'blkend') { bkUpdate(dt); bkDraw(clock); } else G.draw(clock);
+  if (fests.length || festTxt) { festTick(dt); if (state === 'play' || state === 'blk' || state === 'blkend' || state === 'twin' || state === 'twinend') drawFest(); }
   drawRings(dt); drawParts(dt); drawFloats(dt);
   if (state === 'ready') drawTitle(clock);
   if (state === 'lvsel') drawLvSel(clock);
   if (state === 'lvend') { lvEnd.t += dt; drawLvEnd(lvEnd); }
   if (state === 'blkend') bkDrawEnd(clock);
+  if (state === 'twinend') twDrawEnd(clock);
   if (state === 'blkcal' && CAL) calDraw(clock);
   if (state === 'end') { endInfo.t += dt; drawEnd(endInfo); }
   requestAnimationFrame(frame);
@@ -1102,7 +1237,7 @@ function toot() { const now = performance.now(); if (now - hornT < 1100) return;
   if (snd && navigator.vibrate) try { navigator.vibrate([90, 140, 110]); } catch (e) {} }
 let tab = 'stack';      // D119：放進遊戲大廳的單一遊戲版（不計分・隨時玩）
 setMode(HOW[tab] ? tab : 'merge'); requestAnimationFrame(frame); dailyTag();
-window.__mini = { get G() { return G; }, get state() { return state; }, setMode, finish, IMG, SEAF, get fest() { return { pf: festPF(), n: fests.length, txt: !!festTxt }; }, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; }, lv: { start: lvStart, sel: lvSel, back: lvBack, LVG, get save() { return lvSave; }, get end() { return lvEnd; }, get cur() { return LV; } }, bk: { start: bkStart, back: bkBack, drop: bkDrop, make: bkMake, solve: bkSolve, get BK() { return BK; }, cal: { open: calOpen, load: calLoad, mark: calMark, get CAL() { return CAL; } } } };      /* 關卡模式測試掛勾 */      /* D263：測試掛勾加 pop／floats；D307 加 finish */      /* D254：測試掛勾，固定亂數 */
+window.__mini = { get G() { return G; }, get state() { return state; }, setMode, finish, IMG, SEAF, get fest() { return { pf: festPF(), n: fests.length, txt: !!festTxt }; }, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; }, lv: { start: lvStart, sel: lvSel, back: lvBack, LVG, get save() { return lvSave; }, get end() { return lvEnd; }, get cur() { return LV; } }, tw: { start: twStart, choose: (i) => twChoose(i), tap: () => twTap(), allowed: (i) => twAllowed(i), get TW() { return TW; } }, bk: { start: bkStart, back: bkBack, drop: bkDrop, make: bkMake, solve: bkSolve, get BK() { return BK; }, cal: { open: calOpen, load: calLoad, mark: calMark, get CAL() { return CAL; } } } };      /* 關卡模式測試掛勾 */      /* D263：測試掛勾加 pop／floats；D307 加 finish */      /* D254：測試掛勾，固定亂數 */
 })();
 </script>
 <script>(function () { var b = document.getElementById('backBtn'); b.addEventListener('click', function (e) { if (window.__mini && window.__mini.state === 'play' && !confirm('這局還在進行，確定要離開嗎？（分數不會記錄）')) e.preventDefault(); }); /* QA：遊戲中按返回先確認 */ /* D161：一律回小鳶樂園（遊戲大廳），不再回舊版測試首頁 */ })();</script>
