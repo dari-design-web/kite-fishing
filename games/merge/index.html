@@ -243,7 +243,7 @@ function makeMerge() {
   const g = { balls: [], fall: null, q: [], score: 0, done: false, over: 0, say: '', sayT: 0, top: 0, t: 0, lv: 1, merges: 0, mergesAll: 0, need: MF.needBase + MF.needStep, chain: 0, chainT: 0, bestChain: 0, tx: W / 2, wait: 0.5, banner: '', bannerT: 0, tap: null, found: null, newFound: [] };
   g.ferry = ferryMode && !DS; g.net = netMode && !DS && !g.ferry;
   if (g.net) { const ns = netStore.get(), pi = ns.c % NETR.ports.length, P = NETR.ports[pi]; g.port = pi; g.drops = P.drops; g.nets = P.nets.map((n, i) => ({ ...n, i, hp: NETR.hp, hitT: 0, goneT: -1 })); g.outT = 0; g.clearT = 0; g.fEnd = ''; g.netHits = 0;
-    if (!IMG.net_full) { want('net_full', '../assets/merge/net_full.png'); want('net_loose', '../assets/merge/net_loose.png'); } }
+    if (!IMG.net_floor_full) for (const k of ['net_floor_full', 'net_floor_loose', 'net_wall_full', 'net_wall_loose']) want(k, '../assets/merge/' + k + '.png'); }      /* D432：GPT 1120 四張網束 */
   g.netLive = () => g.net ? g.nets.filter((n) => n.hp > 0) : [];
   if (g.ferry) { g.drops = FY.drops; g.trip = 0; g.prog = 0; g.flog = []; g.orders = FY.trips[0]; g.outT = 0; g.clearT = 0; g.flyers = []; g.fEnd = ''; g.dockT = 99; g.dockLv = 0; g.dockN = 0; if (!IMG.dock_empty) { want('dock_empty', '../assets/merge/dock_empty.webp'); want('dock_arrived', '../assets/merge/dock_arrived.webp'); want('dock_arrived_crab', '../assets/merge/dock_arrived_crab.webp'); want('dock_arrived_octopus', '../assets/merge/dock_arrived_octopus.webp'); } }
   g.fHave = (o) => g.balls.filter((b) => b.lv === o.lv && !b.dead && b.age > 0.4).length;
@@ -433,8 +433,8 @@ function drawNet(n, tt, aim) {
   if (n.hp <= 0 && (n.goneT < 0 || n.goneT > 0.5)) return;
   const gone = n.hp <= 0 ? n.goneT / 0.5 : 0, loose = n.hp < NETR.hp, cx = n.x + n.w / 2, cy = n.y + n.h / 2;
   ctx.save(); ctx.translate(cx, cy); if (gone) { const k = 1 + gone * 0.25; ctx.scale(k, k); ctx.globalAlpha = 1 - gone; } if (n.hitT > 0 && !RM) ctx.rotate(Math.sin(n.hitT * 40) * 0.04);
-  const w = n.w, h = n.h, im = ready(loose ? 'net_loose' : 'net_full');
-  if (im) { const sz = Math.max(w, h) * 1.25; ctx.save(); rrect(-w / 2 - 4, -h / 2 - 4, w + 8, h + 8, 8); ctx.clip(); ctx.drawImage(im, -sz / 2, -sz / 2, sz, sz); ctx.restore(); }
+  const w = n.w, h = n.h, wall = h > w, im = ready('net_' + (wall ? 'wall' : 'floor') + (loose ? '_loose' : '_full'));
+  if (im) { if (wall) { if (cx > W / 2) ctx.scale(-1, 1); ctx.drawImage(im, 3, 5, 80, 182, -w / 2 - 3, -h / 2 - 4, w + 6, h + 8); } else ctx.drawImage(im, 3, 32, 250, 94, -w / 2 - 6, -h / 2 - 6, w + 12, h + 10); }      /* D432：GPT 四張網束——池底 256×128 只取網束框（x3 y32 250×94）；池壁 128×192 取左側框（3,5～83,187），貼右牆時整張左右翻；碰撞框照原本 n 不變 */
   else {
     rrect(-w / 2, -h / 2, w, h, 7, loose ? 'rgba(90,120,120,.25)' : 'rgba(46,68,72,.55)');
     ctx.save(); rrect(-w / 2, -h / 2, w, h, 7); ctx.clip(); ctx.strokeStyle = loose ? 'rgba(232,214,170,.75)' : '#E8D6AA'; ctx.lineWidth = loose ? 1.4 : 1.8;

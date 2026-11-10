@@ -185,6 +185,8 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .stage.dailycard small .dup{color:#FFF4D6}
 .stage.dailycard.forkcard{margin-top:4px;border-color:#BFF0D0;background:rgba(20,70,60,.92);padding:3px 12px;flex-direction:row;align-items:baseline;justify-content:space-between;gap:8px}
 .stage.dailycard.forkcard small{color:#BFF0D0;white-space:nowrap}
+.trialrow{display:flex;gap:6px;margin-top:4px}.trialrow .stage.dailycard.forkcard{flex:1 1 0;min-width:0;margin-top:0;flex-direction:column;align-items:flex-start;gap:0;padding:3px 10px}.trialrow .stage.dailycard b{font-size:13px;white-space:nowrap}.trialrow .stage.dailycard small{font-size:11px;line-height:14px}
+.stage.dailycard.salvcard{border-color:#FFE08A;background:rgba(92,62,24,.92)}.stage.dailycard.salvcard small{color:#FFE08A}
 #startPanel.daily .how li:not(.dly),#startPanel.daily .ptnote{display:none}
 #startPanel .how li.dly{display:none}
 #startPanel.daily .how li.dly{display:flex}
@@ -507,7 +509,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '1.13',
+  version: '1.14',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -784,6 +786,8 @@ function spawn(e) {
   if (e.type === 'say') { banner(e.text); return; }
   if (e.type === 'fork') { forkAdd(e); return; }      /* D421 風道分流 */
   if (e.type === 'fpick') { addPick(e.kind, e.x, -10); return; }
+  if (e.type === 'sbun') { salvAddBun(e.x); return; }      /* D432 回收航次 */
+  if (e.type === 'berth') { salvAddBerth(); return; }
   if (TH() === 'coast' && T[e.type] && e.x > 0 && e.x < W) e = Object.assign({}, e, { x: coastClamp(e.x, 0, T[e.type].r) });
   if (e.type === 'heat') { addVent(e.fromLeft, e.beat ? { beat: true, warn: BEAT.warn, on: BEAT.on } : null); return; }
   if (e.type === 'beatDemo') { beatDemo = { pat: e.pat, t: 0, k: -1 }; banner('看燈記節拍：' + e.pat.split('').map((c) => (c === 'L' ? '左' : '右')).join('')); return; }
@@ -1350,16 +1354,17 @@ function update(dt) {
   // 畫面資訊
   const total = CONFIG.boss.at + 14, sb = $('stageBar');      // v0.20：魔王出場後，上方長條改成魔王血量（D51：第 4 關血量顯示和上方長條疊在一起）
   const sbT = $('stageBarT'), br = boss && !won ? Math.max(0, Math.min(1, barRatio(boss))) : 1; sb.parentNode.classList.toggle('boss', !!(boss && !won)); if (sbT) { sbT.r = sbT.r === undefined || br > sbT.r ? br : sbT.r + (br - sbT.r) * Math.min(1, real * 2.2); sbT.style.transform = 'scaleX(' + sbT.r + ')'; }      /* D346：魔王血條加粗＋黃色殘影慢慢追上 */
-  if (boss && !won) { sb.classList.add('hp'); sb.style.transform = 'scaleX(' + br + ')'; } else { sb.classList.remove('hp'); sb.style.transform = 'scaleX(' + Math.min(1, daily ? daily.rt / (daily.fork ? FORK.len : DAILY.len * 3) : t / total) + ')'; }
+  if (boss && !won) { sb.classList.add('hp'); sb.style.transform = 'scaleX(' + br + ')'; } else { sb.classList.remove('hp'); sb.style.transform = 'scaleX(' + Math.min(1, daily ? daily.rt / dLen() : t / total) + ')'; }
   /* D244：GPT 1830 B 窄版（寬度不到 375）魔王標籤只留名字，血量數字不顯示（原本被截成「阿根納 22…」），血條照舊 */
   const goal = boss && boss.phased ? bossGoalText(boss) : null, secs = boss ? Math.max(0, Math.ceil(BTIME() - (t - boss.born))) + ' 秒' : '';
   $('stageText').classList.toggle('two', Array.isArray(goal));
   $('stageText').textContent = Array.isArray(goal) ? goal[0] + '\n' + (goal[1] ? (innerWidth < 375 ? goal[1].replace('礦石 ', '') + ' ' : goal[1] + '　') : '') + secs : goal ? goal + '　' + secs : boss ? (innerWidth < 375 ? (T.boss.short || T.boss.name) : (T.boss.short || T.boss.name) + ' ' + Math.max(0, Math.ceil(boss.hp)) + ' / ' + boss.maxHp) : '分數 ' + scoreNow() + (stats.combo >= 3 ? '　連清 ' + stats.combo : '');
+  if (daily && daily.salv && !boss) $('stageText').textContent = salvHud();      /* D432 */
   const ub = $('ultBtn'), full = gauge >= CONFIG.ult.need; ub.disabled = !full || !!ult; ub.style.setProperty('--fill', Math.round(gauge / CONFIG.ult.need * 100) + '%'); ub.classList.toggle('ready', full && !ult); const tag = $('ultTag'), word = full && !ult ? (NM() ? '祈福！' : '出動！') : ULTN(); if (tag.textContent !== word) tag.textContent = word;
   if (full && !toldUlt && !ult) { toldUlt = true; banner(ULTN() + '準備好了！按右下角'); jingle([659, 880], 120); }
   $('hint').hidden = firstMove || t > 8;
   // 結束條件：大垃圾團清掉或漂走、體力歸零；保險：事件表跑完且畫面清空
-  if (daily && daily.rt >= (daily.fork ? FORK.len : DAILY.len * 3) && !ult && !cut && kite.hearts > 0 && endTimer <= 0) { daily.done = true; return finish(); } /* D225：只有這裡算「三段都飛完」 */
+  if (daily && daily.rt >= dLen() && !ult && !cut && kite.hearts > 0 && endTimer <= 0) { daily.done = true; return finish(); } /* D225：只有這裡算「三段都飛完」 */
   if (endTimer > 0) { endTimer -= real; if (endTimer <= 0) return finish(); }
   else if (si >= script.length && !boss && !foes.length && t > CONFIG.boss.at + 2) endTimer = 0.8;
 }
@@ -3423,6 +3428,7 @@ function draw() {
   drawClearRings();
   if (boss && boss.rage && boss.dying === undefined && !boss.hidden) { const rr = boss.r || T.boss.r, pz = calm ? 0 : Math.sin(clock * (boss.rage > 1 ? 9 : 6)); ctx.save(); ctx.translate(boss.x, boss.y + rageGlowY() * bossVis()); if (img.fx_rage_glow) { const d = rr * 4.4 * bossVis() + pz * 8; ctx.globalAlpha = Math.max(0, Math.min(1, ((boss.rage > 1 ? 0.42 : 0.28) + pz * 0.06) * RAGE_K)); ctx.drawImage(img.fx_rage_glow, -d / 2, -d / 2, d, d); } else glow(rr * 2.4 + pz * 6, boss.rage > 1 ? '255,60,40' : '255,110,70', (boss.rage > 1 ? 0.42 : 0.28) + pz * 0.06); ctx.restore(); }      /* D347：魔王生氣／暴走時身後泛紅光（第二段更紅、脈動更快）；D350 換成 GPT boss_rage_glow_v1（沒圖時用程式畫的） */
   if (daily && daily.fork) drawForks();      /* D421 */
+  if (daily && daily.salv) drawSalv();      /* D432 */
   drawBulTrails();
   for (const f of foes) drawFoe(f);
   if (NEWT()) drawNewOver();
@@ -3496,8 +3502,9 @@ function dailySeg(k, first) {
   daily.holdT = first ? 0 : DAILY.hold;      /* D270：GPT 1130 B② 換段後 1 秒先不出新的「第一次說明」，讓淡換和地名橫幅先被看到；危險警示照舊，沒說到的之後情境還在再說 */
 }
 function newHold() { return !!(daily && daily.holdT > 0); }
-function dailyBegin() { if (daily.fork) return forkBegin(); daily.rt = 0; daily.k = 0; daily.done = false; dailyFade = null; dailySeg(0, true); }
-function dailyTick(dt) { if (daily.fork) return forkTick(dt); daily.rt += dt; if (daily.holdT > 0) daily.holdT -= dt; const k = Math.min(2, Math.floor(daily.rt / DAILY.len)); if (k > daily.k && !ult && !cut) dailySeg(k, false); }
+function dLen() { return daily.fork ? FORK.len : daily.salv ? SALV.len : DAILY.len * 3; }      /* D432 */
+function dailyBegin() { if (daily.fork) return forkBegin(); if (daily.salv) return salvBegin(); daily.rt = 0; daily.k = 0; daily.done = false; dailyFade = null; dailySeg(0, true); }
+function dailyTick(dt) { if (daily.fork) return forkTick(dt); if (daily.salv) return salvTick(dt); daily.rt += dt; if (daily.holdT > 0) daily.holdT -= dt; const k = Math.min(2, Math.floor(daily.rt / DAILY.len)); if (k > daily.k && !ult && !cut) dailySeg(k, false); }
 function dailyDraw() { if (!dailyFade) return; const a = 1 - (performance.now() - dailyFade.t0) / 1000 / DAILY.fade; if (a <= 0) { dailyFade = null; return; } ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = a; ctx.drawImage(dailyFade.c, 0, 0); ctx.restore(); }
 function dailyOpen() {
   daily = { route: dailyRoute(), rt: 0, k: 0, done: false }; const r = daily.route; stageNo = r.segs[0].id;
@@ -3507,6 +3514,7 @@ function dailyOpen() {
 function dailySub() { const tt = $('stageTitle'), d = tt.querySelector('.dmd'); if (!d) return; tt.classList.remove('dwrap'); const a = tt.firstChild; if (d.offsetTop > a.offsetTop + 4) tt.classList.add('dwrap'); }      /* D270：GPT 1130 A② 日期放不下換到第二行時，改成 14px 副標（同一行放得下就不動） */
 function dailyFinish() {
   if (daily.fork) return forkFinish();
+  if (daily.salv) return salvFinish();
   $('snap').hidden = true; BGM.stop(); if (window.KiteBoard) KiteBoard.ev('run_end', { game: 'fly' }); dailyFade = null;
   mode = 'result'; $('hud').hidden = true; $('banner').hidden = true; $('hint').hidden = true; $('ultBtn').hidden = true;
   const sc = scoreFinal(), day = daily.route.date, old = dailyBestGet(day), best = old === undefined ? sc : Math.max(old, sc); if (old === undefined || sc > old) dailyBestSet(day, sc);
@@ -3642,11 +3650,127 @@ function forkFinish() {
   const tn = $('tipNote'); tn.textContent = '試玩模式：不加點數或星星'; tn.hidden = false;
   show('resultPanel');
 }
-function start() { reset(); if (daily) dailyBegin(); if (window.KiteBoard) KiteBoard.start('fly'); if (soundOn) BGM.play('fly_' + stageNo); ultIcon(); mode = 'play'; show(null); $('hud').hidden = false; $('hint').hidden = false; $('ultBtn').hidden = false; if (!daily) banner('第 ' + stageNo + ' 關　' + ST().name); beep(523, 0.12, 'triangle', 0.06, 260); }
+/* D432：回收航次（試玩）——GPT 1120 Q3。開局知道這趟要回收幾件（SALV.goal），最多飛三段；小鳶飛過🧺回收束就收進來（羽毛打不到它，只能自己飛過去）。
+   達標就鎖定「基本完成」；第 2 段尾有回港泊位，滑進去就回港結束，不進去就續飛第 3 段加收。續段被打光只算基本完成，續段加收的不算；第 3 段飛完自動收局。
+   單人、不計點數與星星，只記這支手機的紀錄（kiteSalvRec1） */
+const SALV = { len: 72, seg: 24, goal: 12, vy: 92, bunR: 26, bw: 150, bh: 86, berthAt: 41, key: 'kiteSalvRec1' };
+function buildSalvScript() {
+  const E = [], add = (time, type, x, o) => E.push(Object.assign({ t: time, type, x }, o));
+  const row = (time, type, xs) => xs.forEach((x) => add(time, type, x));
+  const col = (time, type, x, n, gap) => { for (let i = 0; i < n; i++) add(time + i * gap, type, x); };
+  const bun = (time, x) => add(time, 'sbun', x);
+  /* 第 1 段：回收束慢慢排一條路，垃圾稀疏，先學「飛過去收」 */
+  [70, 120, 175, 230, 285, 250, 150, 95].forEach((x, i) => bun(2.2 + i * 2.5, x));
+  row(3.4, 'bottle', [300, 40]); col(6, 'can', 310, 3, 0.4); add(8.6, 'log', 70, { w: 110 }); row(11.2, 'bottle', [50, 300]); add(13.4, 'foam', 320); add(15.6, 'log', 290, { w: 110 }); col(17.2, 'can', 40, 3, 0.4); row(19.6, 'bottle', [300, 60]); add(21.2, 'tire', 200, { give: 'jerky' });
+  /* 第 2 段：回收束藏在漂流木縫隙之間；後半右邊留給泊位，垃圾都在左邊 */
+  add(24, 'say', 0, { text: '第 2 段：回收束在漂流木中間，看縫隙飛過去' });
+  [[25.4, 180], [27.6, 90], [29.6, 270], [31.6, 180], [33.6, 80], [35.4, 260], [37.4, 140], [39.2, 90]].forEach(([tm, x]) => bun(tm, x));
+  add(26.2, 'log', 60, { w: 100 }); add(26.2, 'log', 300, { w: 100 }); add(28.4, 'log', 200, { w: 120 }); add(30.4, 'log', 80, { w: 110 }); add(32.4, 'log', 290, { w: 110 }); row(33, 'bottle', [180, 330]); add(34.4, 'log', 180, { w: 120 });
+  col(36, 'can', 30, 3, 0.4); add(38.2, 'log', 200, { w: 100 }); add(39.6, 'net', 40, { give: 'power' }); row(41.6, 'bottle', [40, 130]); col(43.6, 'can', 70, 3, 0.45); add(45.4, 'foam', 40);
+  add(SALV.berthAt, 'berth', 0);
+  /* 第 3 段（自選續飛）：回收束多、但垃圾密，被打光就只算基本完成 */
+  add(48.6, 'say', 0, { text: '第 3 段：加收的要飛完才算送回' });
+  [[49.2, 60], [50.6, 300], [52, 180], [53.6, 80], [55, 280], [56.6, 180], [58.2, 60], [59.8, 300], [61.6, 180], [63.4, 110], [65.2, 250], [67, 180]].forEach(([tm, x]) => bun(tm, x));
+  row(49.8, 'bottle', [130, 230]); col(51.2, 'can', 30, 3, 0.35); col(51.4, 'can', 330, 3, 0.35); add(52.8, 'log', 290, { w: 120 }); add(54.2, 'log', 70, { w: 120 }); row(55.8, 'bottle', [40, 110, 250, 320]);
+  add(57.4, 'barrel', 300); add(58.8, 'log', 200, { w: 120 }); row(60.4, 'can', [60, 130, 230]); add(62.4, 'log', 60, { w: 110 }); add(62.4, 'log', 300, { w: 110 }); add(64, 'tire', 180, { give: 'jerky' });
+  row(65.6, 'bottle', [40, 110, 330]); add(66.6, 'log', 250, { w: 120 }); col(68, 'can', 120, 3, 0.35); row(69.4, 'bottle', [60, 300]);
+  return E.sort((a, b) => a.t - b.t);
+}
+function salvOpen() {
+  daily = { salv: true, rt: 0, bun: [], got: 0, met: false, lock: 0, berth: null, seg3: false, docked: false, done: false, holdT: 0 }; stageNo = 1;
+  $('stageTitle').innerHTML = '<span style="white-space:nowrap">🧺 回收航次</span><span style="white-space:nowrap">（試玩）</span>';
+  $('stageIntro').textContent = '這趟要收回 ' + SALV.goal + ' 件海漂物：小鳶飛過 🧺 回收束就收進來（羽毛打不到，要自己飛過去）。收滿就算基本完成；第 2 段尾的回港泊位，滑進去就回港，不進去可以續飛第 3 段加收——被打光的話，加收的不算。不計點數與星星。';
+  $('startPanel').classList.add('daily'); reset(); mode = 'start'; show('startPanel');
+}
+function salvBegin() {
+  Object.assign(daily, { rt: 0, bun: [], got: 0, met: false, lock: 0, berth: null, seg3: false, docked: false, done: false, holdT: 0, miss: 0 }); dailyFade = null; stageNo = 1; T = stageTypes();
+  script = buildSalvScript(); si = 0; t = 0; $('ultTag').textContent = ULTN(); ultIcon();
+}
+function salvSeg() { return daily.seg3 ? 3 : daily.rt < SALV.seg ? 1 : 2; }
+function salvHud() { const d = daily; return d.met ? '回收 ' + d.got + '　✓ 達標' + (d.seg3 ? '・加收中' : '') : '回收 ' + d.got + '／' + SALV.goal; }
+function salvAddBun(x) { daily.bun.push({ x0: x, x, y: -24, ph: R(0, 6.28), first: !daily.toldBun }); daily.toldBun = true; }
+function salvAddBerth() {
+  const d = daily; d.berth = { x: W - SALV.bw / 2 - 8, y: -SALV.bh / 2 - 10, done: false };
+  banner(d.met ? '回港泊位來了！滑進去就回港，不進去就續飛第 3 段' : '回港泊位來了，還差 ' + (SALV.goal - d.got) + ' 件，現在還不能靠港'); beep(520, 0.16, 'triangle', 0.05, 260);
+}
+function salvTick(dt) {
+  const d = daily; d.rt += dt;
+  const pr = CONFIG.kite.r + SALV.bunR;
+  for (const b of d.bun) {
+    b.y += SALV.vy * dt; b.x = b.x0 + Math.sin(clock * 1.3 + b.ph) * 10;
+    if (kite.hearts > 0 && !b.got && Math.hypot(b.x - kite.x, b.y - kite.y) < pr) {
+      b.got = true; d.got++; say('+1', b.x, b.y - 24, '#BFF0D0', false, '#1F3A4D'); burst(b.x, b.y, 8, '#BFF0D0', 70); beep(880 + Math.min(8, d.got % 9) * 40, 0.07, 'triangle', 0.05, 120);
+      if (!d.met && d.got >= SALV.goal) { d.met = true; d.lock = d.got; say('達標！基本完成已鎖定', W / 2, Math.max(150, kite.y - 80), '#FFE08A', true, '#1F3A4D'); jingle([659, 784, 1047], 90); }
+    }
+  }
+  d.miss += d.bun.filter((b) => !b.got && b.y > H + 30).length; d.bun = d.bun.filter((b) => !b.got && b.y <= H + 30);
+  const B = d.berth;
+  if (B && !B.done) {
+    B.y += SALV.vy * dt;
+    if (B.y >= kite.y) {
+      B.done = true; d.seg3 = true; const inside = Math.abs(kite.x - B.x) < SALV.bw / 2 - 4;
+      if (inside && d.met && kite.hearts > 0) { d.docked = true; d.done = true; d.lock = d.got; kite.safe = 3; say('⚓ 回港！', B.x - 30, B.y - 50, '#FFE08A', true, '#1F3A4D'); jingle([523, 659, 784, 1047], 90); burst(kite.x, kite.y, 16, '#FFE08A'); endTimer = 0.9; }
+      else if (d.met) { d.lock = d.got; banner('續飛第 3 段！這段加收的，飛完才算送回'); }
+      else banner('還沒收滿，繼續回收！第 3 段飛完自動收局');
+    }
+  }
+  if (B && B.done && B.y < H + 80) B.y += SALV.vy * dt;
+}
+function drawSalv() {
+  const d = daily, FF = "'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif", B = d.berth;
+  ctx.save(); ctx.textAlign = 'center';
+  if (B && B.y > -SALV.bh && B.y < H + SALV.bh) {      /* 俯視回港泊位：木棧板＋繫纜樁；達標亮綠、未達灰（GPT 圖到了再換） */
+    const ok = d.met && !B.done, x0 = B.x - SALV.bw / 2, y0 = B.y - SALV.bh / 2, pz = calm ? 0 : Math.sin(clock * 5) * 0.5 + 0.5;
+    if (ok) { ctx.fillStyle = 'rgba(191,240,208,' + (0.22 + pz * 0.2) + ')'; ctx.fillRect(x0 - 8, y0 - 8, SALV.bw + 16, SALV.bh + 16); }
+    rrect(x0, y0, SALV.bw, SALV.bh, 8, ok || d.docked ? '#B9875A' : '#8D8A84', ok ? '#BFF0D0' : '#5B5A57', 3);
+    ctx.strokeStyle = 'rgba(60,40,20,.45)'; ctx.lineWidth = 2; for (let i = 1; i < 5; i++) { const y = y0 + i * SALV.bh / 5; ctx.beginPath(); ctx.moveTo(x0 + 4, y); ctx.lineTo(x0 + SALV.bw - 4, y); ctx.stroke(); }
+    for (const [bx, by] of [[x0 + 10, y0 + 10], [x0 + SALV.bw - 10, y0 + 10], [x0 + 10, y0 + SALV.bh - 10], [x0 + SALV.bw - 10, y0 + SALV.bh - 10]]) ell(bx, by, 6, 6, '#3B3A3F', '#1F1E22');
+    ctx.font = '800 17px ' + FF; ctx.lineWidth = 4; ctx.strokeStyle = '#1F3A4D'; ctx.fillStyle = ok || d.docked ? '#FFE08A' : '#E8E6E1';
+    const tx = ok ? '⚓ 滑進來回港' : d.docked ? '⚓ 回港' : B.done ? '⚓ 泊位' : '還差 ' + Math.max(0, SALV.goal - d.got) + ' 件';
+    ctx.strokeText(tx, B.x, B.y + 6); ctx.fillText(tx, B.x, B.y + 6);
+    if (ok) { ctx.font = '700 12px ' + FF; ctx.lineWidth = 3.5; ctx.fillStyle = '#BFF0D0'; ctx.strokeText('不進來＝續飛第 3 段', B.x, y0 + SALV.bh + 16); ctx.fillText('不進來＝續飛第 3 段', B.x, y0 + SALV.bh + 16); }
+  }
+  for (const b of d.bun) {      /* 🧺 回收束：網袋包著瓶罐，外圈淡綠光（GPT 96×96 圖到了再換） */
+    const pz = calm ? 0 : Math.sin(clock * 4 + b.ph);
+    ctx.save(); ctx.translate(b.x, b.y);
+    ctx.globalAlpha = 0.35 + pz * 0.12; ell(0, 0, SALV.bunR + 4, SALV.bunR + 4, '#BFF0D0', null); ctx.globalAlpha = 1;
+    ctx.rotate(Math.sin(clock * 1.6 + b.ph) * 0.15);
+    poly([-9, -14, -3, -14, -3, -6, -9, -6], '#7FC8E8', '#1F5A6E'); poly([2, -16, 8, -16, 8, -6, 2, -6], '#F2B880', '#7A4210');
+    ell(0, 4, 17, 13, '#D9B77A', '#6B4A22'); ctx.strokeStyle = 'rgba(107,74,34,.8)'; ctx.lineWidth = 1.5;
+    for (const k of [-10, -3, 4, 11]) { ctx.beginPath(); ctx.moveTo(k - 6, -6); ctx.lineTo(k + 6, 14); ctx.stroke(); ctx.beginPath(); ctx.moveTo(k + 6, -6); ctx.lineTo(k - 6, 14); ctx.stroke(); }
+    ell(0, -8, 9, 3, '#C9452E', '#6B1E12');
+    ctx.restore();
+    if (b.first) { ctx.font = '700 12px ' + FF; ctx.lineWidth = 3.5; ctx.strokeStyle = '#1F3A4D'; ctx.fillStyle = '#BFF0D0'; ctx.strokeText('飛過去收', b.x, b.y - 34); ctx.fillText('飛過去收', b.x, b.y - 34); }
+  }
+  ctx.restore();
+}
+function salvRecGet() { try { const o = JSON.parse(localStorage.getItem(SALV.key) || 'null'); return o && typeof o === 'object' ? o : { best: 0, clear: 0, dock: 0 }; } catch (e) { return { best: 0, clear: 0, dock: 0 }; } }
+function salvFinish() {
+  $('snap').hidden = true; BGM.stop(); if (window.KiteBoard) KiteBoard.ev('run_end', { game: 'fly' });
+  mode = 'result'; $('hud').hidden = true; $('banner').hidden = true; $('hint').hidden = true; $('ultBtn').hidden = true;
+  const d = daily, alive = kite.hearts > 0, deliv = d.met ? (alive ? d.got : d.lock) : 0, extra = Math.max(0, deliv - SALV.goal);
+  const rec = salvRecGet(), old = rec.best || 0; let saved = true;
+  if (d.met) { rec.best = Math.max(old, deliv); rec.clear = (rec.clear || 0) + 1; if (d.docked) rec.dock = (rec.dock || 0) + 1; try { localStorage.setItem(SALV.key, JSON.stringify(rec)); } catch (e) { saved = false; } }
+  jingle(d.met ? [523, 659, 784] : [392, 330, 262], 120);
+  $('resTitle').textContent = d.docked ? '⚓ 回港了！' : d.met && alive ? '三段飛完，滿載回港！' : d.met ? '基本完成・續段中止' : '這趟還差 ' + (SALV.goal - d.got) + ' 件';
+  $('rank').textContent = ''; $('rank').hidden = true; $('bigStars').textContent = ''; $('cleanPct').textContent = deliv; { const u = $('cleanPct').nextElementSibling; if (u) u.textContent = '件送回'; }
+  const rows = $('rows'); rows.textContent = ''; rows.classList.add('open');
+  const add = (a, b) => { const l = document.createElement('span'); l.textContent = a; const v = document.createElement('span'); v.textContent = b; rows.append(l, v); };
+  add('這趟目標', SALV.goal + ' 件'); add('收到', d.got + ' 件');
+  add('結果', d.docked ? '第 2 段回港' : d.met && alive ? '續飛到第 3 段飛完' : d.met ? '續段被打光，加收不算' : '未達標');
+  if (d.met) add('加收', extra + ' 件');
+  add('被打到', stats.hits + ' 次');
+  add('這支手機最多送回', Math.max(old, deliv) + ' 件' + (d.met && deliv > old ? '　新紀錄！' : ''));
+  for (const id of ['moreRows', 'farBar', 'cheerBtn', 'unlockNote', 'ask']) { const e = $(id); if (e) e.hidden = true; }
+  const tn = $('tipNote'); tn.textContent = saved ? '試玩模式：不加點數或星星' : '紀錄沒存成功（瀏覽器不讓存），這趟成績只顯示不保留'; tn.hidden = false;
+  show('resultPanel');
+}
+function start() { { const u = $('cleanPct').nextElementSibling; if (u) u.textContent = '分'; } reset(); if (daily) dailyBegin(); if (window.KiteBoard) KiteBoard.start('fly'); if (soundOn) BGM.play('fly_' + stageNo); ultIcon(); mode = 'play'; show(null); $('hud').hidden = false; $('hint').hidden = false; $('ultBtn').hidden = false; if (!daily) banner('第 ' + stageNo + ' 關　' + ST().name); beep(523, 0.12, 'triangle', 0.06, 260); }
 function pause() { if (mode !== 'play') return; mode = 'pause'; BGM.stop(); kite.drag = false; pauseInfo(); show('pausePanel'); }
 /* v0.35（C-140）：暫停時看得到這一關的三顆星條件，和「照現在這樣過關的話」拿不拿得到；還有體力 */
 function pauseInfo() {
   const box = $('pauseInfo'); if (!box) return;
+  if (daily && daily.salv) { box.classList.add('dly'); box.innerHTML = '<div><span>回收航次</span><em class="wait">第 ' + salvSeg() + '／3 段</em></div><div><span>回收</span><em class="' + (daily.met ? 'ok' : 'wait') + '">' + daily.got + '／' + SALV.goal + (daily.met ? '　已達標' : '') + '</em></div><div><span>剩下體力</span><em class="' + (kite.hearts <= 1 ? 'no' : 'ok') + '">' + Math.max(0, kite.hearts) + ' / ' + LV().hearts + '</em></div>'; return; }      /* D432 */
   if (daily && daily.fork) { box.classList.add('dly'); box.innerHTML = '<div><span>風道分流</span><em class="wait">第 ' + Math.min(3, daily.walls.length ? daily.walls[daily.walls.length - 1].k + 1 : daily.picks.length + 1) + '／3 次分岔</em></div><div><span>已飛</span><em class="wait">' + Math.min(FORK.len, Math.floor(daily.rt)) + '／' + FORK.len + ' 秒</em></div><div><span>剩下體力</span><em class="' + (kite.hearts <= 1 ? 'no' : 'ok') + '">' + Math.max(0, kite.hearts) + ' / ' + LV().hearts + '</em></div>'; return; }      /* D421 */
   if (daily) { const nw = (x) => '<span style="white-space:nowrap">' + x + '</span>', tot = DAILY.len * daily.route.segs.length; box.classList.add('dly'); box.innerHTML = '<div><span>今日航線</span><em class="wait">' + nw('第 ' + (daily.k + 1) + '／' + daily.route.segs.length + ' 段') + nw('・' + ST().name) + '</em></div><div><span>已飛</span><em class="wait">' + nw(Math.min(tot, Math.floor(daily.rt)) + '／' + tot + ' 秒') + '</em></div><div><span>剩下體力</span><em class="' + (kite.hearts <= 1 ? 'no' : 'ok') + '">' + Math.max(0, kite.hearts) + ' / ' + LV().hearts + '</em></div>'; return; }      /* D271：GPT 1230 A② 每日航線不計星星，暫停卡改當局航段／已飛遊戲秒數（暫停不累加）／剩下體力 */
   box.classList.remove('dly');
@@ -3701,7 +3825,8 @@ function renderMap() {
     const h = document.createElement('b'); h.textContent = '🌊 今日潮汐航線　' + dailyMD(r.date); const pl = document.createElement('span'); pl.className = 'dpl'; dailyNamesFill(pl, r);
     const sm = document.createElement('small'); sm.textContent = '不計點數與星星｜'; const up = document.createElement('span'); up.className = 'dup'; up.textContent = '航線每天更新，明天再來！'; sm.append(up);
     dc.append(h, pl, sm); dc.onclick = dailyOpen; const wr = document.createElement('div'); wr.className = 'dailywrap'; wr.append(dc); box.append(wr);
-    { const fc = document.createElement('button'); fc.type = 'button'; fc.className = 'stage dailycard forkcard'; fc.id = 'forkCard'; const fb = document.createElement('b'); fb.textContent = '🌬 風道分流（試玩）'; const fs = document.createElement('small'); fs.textContent = '看路選邊・不計點數'; fc.append(fb, fs); fc.onclick = forkOpen; wr.append(fc); }      /* D421：GPT D420 F2 */
+    { const fc = document.createElement('button'); fc.type = 'button'; fc.className = 'stage dailycard forkcard'; fc.id = 'forkCard'; const fb = document.createElement('b'); fb.textContent = '🌬 風道分流'; const fs = document.createElement('small'); fs.textContent = '試玩・看路選邊'; fc.append(fb, fs); fc.onclick = forkOpen; const tr = document.createElement('div'); tr.className = 'trialrow'; tr.id = 'trialRow'; tr.append(fc); wr.append(tr); }      /* D421：GPT D420 F2 */
+    { const sc = document.createElement('button'); sc.type = 'button'; sc.className = 'stage dailycard forkcard salvcard'; sc.id = 'salvCard'; const sb = document.createElement('b'); sb.textContent = '🧺 回收航次'; const ss = document.createElement('small'); ss.textContent = '試玩・收滿回港'; sc.append(sb, ss); sc.onclick = salvOpen; wr.querySelector('.trialrow').append(sc); }      /* D432：GPT 1120 Q3；兩張試玩卡並排一列，地圖按鈕不再被往下擠 */
     const dn = document.createElement('p'); dn.className = 'dailynote'; dn.setAttribute('aria-hidden', 'true'); dn.textContent = '航線每天更新，明天再來！'; wr.append(dn); /* D214（GPT 2235 A）：更新句移進卡內第三行；卡外這行只留高度（看不見），關卡座標與積分條避讓維持原樣 */
     dailyMakeRoom(box, wr); } else dailyMakeRoom(box, null);
 }
@@ -3880,6 +4005,7 @@ $('copyBtn').onclick = () => {
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
 };
 window.__flyGame = { CONFIG, team: () => ({ perfect: stats.perfect || 0, left: foes.filter((f) => f.team).map((f) => f.team.n - f.team.hit) }), teamClear: () => { const L = foes.filter((f) => f.team); for (const f of L) clearFoe(f, ''); return L.length; }, hud: () => ({ fly: hudFly.map((f) => ({ n: f.n, t: +f.t.toFixed(2) })), pops: hudPops.length, tg: hudTarget(), gauge }), clearN: (k) => { const L = foes.filter((f) => f.type !== 'boss').slice(0, k); for (const f of L) clearFoe(f, ''); return L.length; },      /* D376 測試掛勾 */ daily: { route: () => dailyRoute(), state: () => daily, open: () => dailyOpen(), skip: (sec) => { if (daily) daily.rt += sec; } }, live: () => ({ foes, kite, stats, T, floats }), hz: () => ({ vents: vents.map((v) => ({ y: v.y, w: v.w, fromLeft: v.fromLeft, t: v.t, warn: v.warn, on: v.on })), boats: boats.map((b) => ({ x: b.x, y: b.y, t: b.t, warn: b.warn })) }), state: () => ({ mode, t, control, level, kite, gauge, foes: foes.map((f) => ({ type: f.type, x: f.x, y: f.y, r: f.r, hp: f.hp, vx: f.vx, w: f.w || 0, cross: !!f.cross, tired: !!f.tired, aimed: !!f.aimed })), warns: warns.map((w) => ({ y: w.y, t: w.t })), slam: boss && boss.slam ? { s: boss.slam, x: boss.slamX } : null, picks: picks.map((p) => ({ kind: p.kind, x: p.x, y: p.y })), pals: pals.length, stats, boss: !!boss, ult: ult ? ult.t : -1 }), fillGauge: () => { gauge = CONFIG.ult.need; }, record, skipTo: (sec) => { t = sec; while (si < script.length && script[si].t < sec) si++; }, hurtOff: () => { kite.safe = 1e9; }, testLose: (by, n, cl) => { if (by) stats.hitBy[by] = n || 3; if (cl) stats.cleared = cl; kite.hearts = 0; finish(); }, setStage: (n) => { stageNo = n; }, progress: () => progress, stage: () => stageNo, test: { parts: () => (boss && boss.parts ? { parts: boss.parts.map((q) => ({ id: q.id, hp: q.hp, broken: q.broken, x: boss.x + q.cx * bossVis(), y: boss.y + q.cy * bossVis() })), stop: boss.stopAtk, hp: boss.hp } : null), breakPart: (i) => { const q = boss && boss.parts && boss.parts[i]; if (q && !q.broken) partBreak(boss, q, boss.x + q.cx * bossVis(), boss.y + q.cy * bossVis()); }, fx351: (k) => { if (!boss) return null; if (k === 'rage') boss.rage = 2; if (k === 'frag') { fragBurst(boss.x, boss.y); frag.life = 0.12; } return { vis: bossVis(), wp: weakPoints(boss), r: boss.r, x: boss.x, y: boss.y }; }, sparks: () => sparks.length, toldDot: () => toldDot, pick: (kind, x, y) => { addPick(kind, x, y); }, rush: (n) => { addRush(n || 4); }, railX: () => RAIL_X(), hzN: () => hzRects.length, resetSeen: () => { for (const k in seenPick) delete seenPick[k]; }, buff: () => { kite.power = 3; kite.powerT = CONFIG.feather.powerTime * 0.7; kite.galeT = CONFIG.feather.galeTime * 0.5; kite.shield = true; }, spawn: (type, x, y) => { const f = mk(type, x, y); f.vy = CONFIG.scroll; return true; }, hearts: (n) => { kite.hearts = n; kite.safe = 0; drawHearts(); }, warn: (sec) => { warns.push({ y: kite.y, fromLeft: true, n: 3, t: sec }); }, friends: () => friends.map((c) => ({ kind: c.kind, x: Math.round(c.x), y: Math.round(c.y) })), won: () => won, nets: () => netg.filter((g) => g.ring).map((g) => ({ x: g.ring.x, y: g.y + g.ring.dy, acc: g.ring.acc || 0, slowK: g.slowK || 1, done: g.ring.done, lost: g.ring.lost, warn: g.warn })),      /* D411 測試 */ logs: () => foes.filter((f) => f.type === 'log').map((f) => ({ x: Math.round(f.x), y: Math.round(f.y), w: Math.round(f.w) })) }, bossAtk: (a) => { if (boss) { boss.atk = a; boss.atkT = 0; boss.vol = 0; boss.rocks = []; boss.cables = []; boss.wave = 0; boss.stars = []; boss.beams = []; boss.lanes = []; boss.starAcc = 0; if (a === 'ram') { boss.ramX = kite.x; boss.ramT = 0; boss.ramS = 'warn'; } if (a === 'corridor') { boss.gx = W / 2; boss.rows = 0; } if (a === 'cross') { boss.cx = kite.x; boss.cy = kite.y; } } }, pierFriend: (id) => { pierGift(id, kite.x, kite.y); }, jiao: (r) => { jiaoForce = r; }, vents: () => vents.length, friend: (id, x, y) => { const f = mk('tangle', x, y); f.friend = id; f.vy = 30; }, floats: () => floats.map((f) => f.text), banner: () => $('banner').textContent, clouds: () => clouds.length, ring: () => kite.ringT, testWin: (sq, tu) => { stats.rescuedBy.squid = sq; stats.rescuedBy.turtle = tu; stats.rescued = sq + tu; stats.trapped = Math.max(stats.trapped, sq + tu); if (boss) { if (boss.phased) { for (const k in boss.pools) boss.pools[k] = 0; foes = foes.filter((o) => o.type !== 'minib'); boss.hidden = false; boss.phase = 3; cine = 0; } boss.hp = 0; } }, bossPhase: (n) => { const f = boss; if (!f || !f.phased) return; cine = 0; if (RM()) { if (n >= 2) { f.pools.armL = f.pools.armR = 0; f.phase = 2; } if (n >= 3) { f.pools.head = 0; f.phase = 3; } } else { if (n >= 2) { f.pools.shell = 0; f.layers = 0; f.phase = 2; } if (n >= 3) { f.pools.core = 0; splitBlob(f); cine = 0; } } syncHp(f); }, bossInfo: () => (boss ? { phase: boss.phase, hp: boss.hp, pools: boss.pools, hidden: !!boss.hidden, dying: boss.dying, cine } : null), setControl: (c) => { control = c; } };
+window.__flyGame.salv = { open: salvOpen, st: () => ({ mode, daily, kite, stats }) };      /* D432 測試掛勾 */
 window.__flyGame.fork = { open: forkOpen, map: toMap, st: () => ({ mode, t, daily, kite, foes, stats, sc: scoreFinal() }) };      /* D421 測試掛勾 */
 /* C-81／C-82（Dari 10/13 01:03）：音樂開關、暫停鈕改圖示；選單畫面也有音樂，每個場景不同曲子 */
 const MENU_TRACK = () => 'fly_map', PLAY_TRACK = () => 'fly_' + stageNo;
