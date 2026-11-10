@@ -509,7 +509,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '1.14',
+  version: '1.15',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -645,6 +645,7 @@ for (const k in STAGE_ART) ASSET_FILES[k] = 'stages/' + STAGE_ART[k];
 for (const k of ['tt_lampL', 'tt_lampL_b', 'tt_lampR', 'tt_lampR_b', 'ag_cable', 'ag_cable_b', 'ag_shield', 'ag_shield_b', 'part_burst']) ASSET_FILES[k] = 'parts/' + k + '.png';      /* D367：GPT 0110 魔王零件 9 張（256 縮 160） */
 for (const k of ['fw_radial', 'fw_fan', 'fw_star']) ASSET_FILES[k] = 'fest/' + k + '.png'; ASSET_FILES.hud_star = 'fest/hud_star.png'; for (const k of ['txt_pretty', 'txt_done', 'txt_clean']) ASSET_FILES[k] = 'fest/' + k + '.webp';      /* D370：GPT 1830 最後一擊慶典素材（煙火白色、程式上色；大字） */
 for (const k of ['wind_col', 'wind_tip', 'sign_dodge', 'sign_clear', 'debris']) ASSET_FILES['fk_' + k] = 'fork/' + k + '.webp';      /* D423：GPT D421 風道分流五張 */
+for (const k of ['berth', 'bundle']) ASSET_FILES['sv_' + k] = 'salv/' + k + '.webp';      /* D433：GPT 1220 回收航次兩張（泊位取主體框 252×144） */
 for (const k in ASSET_FILES) { const im = new Image(); im.onload = () => { img[k] = im; }; im.src = 'assets/' + ASSET_FILES[k]; }
 
 let stageNo = 1, progress = { unlocked: 1, stars: {}, best: {} };
@@ -3722,9 +3723,16 @@ function drawSalv() {
   if (B && B.y > -SALV.bh && B.y < H + SALV.bh) {      /* 俯視回港泊位：木棧板＋繫纜樁；達標亮綠、未達灰（GPT 圖到了再換） */
     const ok = d.met && !B.done, x0 = B.x - SALV.bw / 2, y0 = B.y - SALV.bh / 2, pz = calm ? 0 : Math.sin(clock * 5) * 0.5 + 0.5;
     if (ok) { ctx.fillStyle = 'rgba(191,240,208,' + (0.22 + pz * 0.2) + ')'; ctx.fillRect(x0 - 8, y0 - 8, SALV.bw + 16, SALV.bh + 16); }
+    if (img.sv_berth) {      /* D433：GPT 泊位圖；未達標壓灰、達標外框亮綠 */
+      if (!(ok || d.docked)) ctx.filter = 'grayscale(.75) brightness(.85)';
+      ctx.drawImage(img.sv_berth, x0, y0, SALV.bw, SALV.bh); ctx.filter = 'none';
+      if (ok) { ctx.strokeStyle = '#BFF0D0'; ctx.lineWidth = 3; ctx.strokeRect(x0 - 2, y0 - 2, SALV.bw + 4, SALV.bh + 4); }
+      ctx.fillStyle = 'rgba(31,58,77,.42)'; ctx.fillRect(x0 + 18, B.y - 13, SALV.bw - 36, 26);
+    } else {
     rrect(x0, y0, SALV.bw, SALV.bh, 8, ok || d.docked ? '#B9875A' : '#8D8A84', ok ? '#BFF0D0' : '#5B5A57', 3);
     ctx.strokeStyle = 'rgba(60,40,20,.45)'; ctx.lineWidth = 2; for (let i = 1; i < 5; i++) { const y = y0 + i * SALV.bh / 5; ctx.beginPath(); ctx.moveTo(x0 + 4, y); ctx.lineTo(x0 + SALV.bw - 4, y); ctx.stroke(); }
     for (const [bx, by] of [[x0 + 10, y0 + 10], [x0 + SALV.bw - 10, y0 + 10], [x0 + 10, y0 + SALV.bh - 10], [x0 + SALV.bw - 10, y0 + SALV.bh - 10]]) ell(bx, by, 6, 6, '#3B3A3F', '#1F1E22');
+    }
     ctx.font = '800 17px ' + FF; ctx.lineWidth = 4; ctx.strokeStyle = '#1F3A4D'; ctx.fillStyle = ok || d.docked ? '#FFE08A' : '#E8E6E1';
     const tx = ok ? '⚓ 滑進來回港' : d.docked ? '⚓ 回港' : B.done ? '⚓ 泊位' : '還差 ' + Math.max(0, SALV.goal - d.got) + ' 件';
     ctx.strokeText(tx, B.x, B.y + 6); ctx.fillText(tx, B.x, B.y + 6);
@@ -3735,11 +3743,13 @@ function drawSalv() {
     ctx.save(); ctx.translate(b.x, b.y);
     ctx.globalAlpha = 0.35 + pz * 0.12; ell(0, 0, SALV.bunR + 4, SALV.bunR + 4, '#BFF0D0', null); ctx.globalAlpha = 1;
     ctx.rotate(Math.sin(clock * 1.6 + b.ph) * 0.15);
+    if (img.sv_bundle) { const z = SALV.bunR * 2.6; ctx.drawImage(img.sv_bundle, -z / 2, -z / 2, z, z); ctx.restore(); }      /* D433：GPT 回收束圖（碰撞半徑不變） */
+    else {
     poly([-9, -14, -3, -14, -3, -6, -9, -6], '#7FC8E8', '#1F5A6E'); poly([2, -16, 8, -16, 8, -6, 2, -6], '#F2B880', '#7A4210');
     ell(0, 4, 17, 13, '#D9B77A', '#6B4A22'); ctx.strokeStyle = 'rgba(107,74,34,.8)'; ctx.lineWidth = 1.5;
     for (const k of [-10, -3, 4, 11]) { ctx.beginPath(); ctx.moveTo(k - 6, -6); ctx.lineTo(k + 6, 14); ctx.stroke(); ctx.beginPath(); ctx.moveTo(k + 6, -6); ctx.lineTo(k - 6, 14); ctx.stroke(); }
     ell(0, -8, 9, 3, '#C9452E', '#6B1E12');
-    ctx.restore();
+    ctx.restore(); }
     if (b.first) { ctx.font = '700 12px ' + FF; ctx.lineWidth = 3.5; ctx.strokeStyle = '#1F3A4D'; ctx.fillStyle = '#BFF0D0'; ctx.strokeText('飛過去收', b.x, b.y - 34); ctx.fillText('飛過去收', b.x, b.y - 34); }
   }
   ctx.restore();
