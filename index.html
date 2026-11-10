@@ -505,7 +505,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整節奏與難度（對應「事件節奏表」） ====== */
 const CONFIG = {
-  version: '0.71',
+  version: '0.72',
   // v0.18（C-117，工作單 21 ⑤、工作單 23）：瞄準小幫手。點的位置附近 radius 點內有魚，小鳶俯衝會追著那條魚轉彎。預設關（等 Dari 決定）；網址加 ?assist=1 或測試首頁連結開啟
   assist: { on: /[?&]assist=1/.test(location.search), radius: 22 },      // v0.19（C-118）：模擬比較後 36 → 22 點（36 太強，一般大人也近 80 分；22 點時一般大人約 50 分、很會玩的約 93 分，想抓大魚的小朋友六種魚都抓得到）
   paintedSea: true,             // 底圖已畫好水下的透光、岩礁、沙地與海草（G-42）：關掉程式畫的海底與海草，光束減半，只留浮游、氣泡、閃光
@@ -620,6 +620,7 @@ const PAL = { body: '#A66F45', wing: '#865B3D', cream: '#F5DDB7', gold: '#F4BB42
 const rand = (a, b) => a + Math.random() * (b - a);
 const calm = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 const img = {};
+ASSET_FILES.rip_a = 'cruise/rip_a.png'; ASSET_FILES.rip_b = 'cruise/rip_b.png';      /* D435：GPT 1420 水紋兩態（未探查／已探查） */
 if (window.USE_ASSETS !== false) for (const k in STAGE_ART) ASSET_FILES[k] = 'stages/' + STAGE_ART[k];
 if (window.USE_ASSETS !== false) for (const k in ASSET_FILES) { const im = new Image(); im.onload = () => { img[k] = im; if (k === 's3_reef_front') reefMaskFrom(im); }; im.src = 'assets/' + ASSET_FILES[k]; }
 
@@ -641,10 +642,52 @@ const CRUISE = { segLen: 20, segs: [
   { name: '外海', bg: 's4', routes: [
     { name: '鰺魚洄游群', art: 'cruise/c05.webp', tag: '魚多・好抓', desc: '真鰺、雙帶鰺結隊游過，紅魽也在', every: 0.6, speedMul: 1, w: { zhenshen: 3, shuangdai: 2.4, baimao: 2.6, trash: 0.6 }, rare: { type: 'amber', at: 10 } },
     { name: '大物外海', art: 'cruise/c06.webp', tag: '有大物・要眼明手快', hi: true, desc: '正鰹、鬼頭刀，還有雨傘旗魚', every: 0.8, speedMul: 1.1, w: { zhengjian: 3, shuangdai: 2, mahi: 0.5, trash: 0.8 }, rare: { type: 'sailfish', at: 7 } } ] } ] };
-const CRUISE_ST = { id: 'cruise', name: '港灣巡航', full: '港灣巡航（試玩）', trial: true, note: '一局走過港邊、礁岩、外海三段。每段開始前，從兩張魚群預告選一條航線，遇見不一樣的魚。', how: ['選航線', '每段開始選一條，魚群不一樣'], tip: '選好航線了，點魚抓魚！',
+const CRUISE_ST = { id: 'cruise', name: '港灣巡航', full: '港灣巡航（試玩）', trial: true, note: '一局走過港邊、礁岩、外海三段。每段開始前，從兩張魚群預告選一條航線，遇見不一樣的魚。每段還會冒出兩處水紋：先點水紋看是什麼魚，再點魚去抓。', how: ['選航線', '每段開始選一條，魚群不一樣'], tip: '選好航線了，點魚抓魚！',
   sp: (() => { const o = []; for (const g of CRUISE.segs) for (const r of g.routes) { for (const k in r.w) if (k !== 'trash' && !o.includes(k)) o.push(k); if (r.rare && !o.includes(r.rare.type)) o.push(r.rare.type); } return o; })() };
 let cr = null, segFade = 0, segPrevKey = null;      /* 巡航這一局的狀態：seg 第幾段、pick 每段選哪條、seen／got 每段遇見／抓到 */
 const IS_CRUISE = () => lvl === 'cruise';
+/* D435（GPT 1320 Q3 A「水紋尋魚」）：巡航每段第 3 秒出現兩處水紋，各藏一種這條航線的魚（看得到魚影和名字）。第一下點水紋只探查：顯出那條魚、另一處退去；第二下點魚才照原本俯衝去抓。探查不算抓空、不動連抓、不加分；顯出的魚佔一次生成名額。港邊水紋固定、礁岩分在左右兩側、外海會慢慢漂 */
+let rip = null; const RIP = { at: 3, life: 9, size: 112 }, silC = {};
+function ripStart() {
+  const i = cr.seg, r = CRUISE.segs[i].routes[cr.pick[i] || 0], ks = Object.keys(r.w).filter((k) => k !== 'trash' && !CONFIG.fish[k].rare).sort((a, b) => r.w[b] - r.w[a]); if (ks.length < 2) return;
+  const a = ks[0], b = ks.slice(1).sort((x, y) => CONFIG.fish[y].kg - CONFIG.fish[x].kg)[0], pos = i === 0 ? [[96, 300], [262, 420]] : i === 1 ? [[74, rand(330, 400)], [286, rand(390, 470)]] : [[120, 330], [240, 450]];
+  if (Math.random() < 0.5) pos.reverse();
+  rip = { seg: i, born: t, list: [a, b].map((k, j) => { const d = CONFIG.fish[k].depth; return { k, x: pos[j][0], y: Math.max(d[0] + 14, Math.min(d[1] - 14, pos[j][1])), vx: i === 2 ? (j ? -12 : 12) : 0, st: 'idle', t0: t, a: 0 }; }) };
+  bubbles(rip.list[0].x, rip.list[0].y, 4); bubbles(rip.list[1].x, rip.list[1].y, 4); beep(880, 0.12, 'sine', 0.04, -300);
+  if (!stats.ripHint) { stats.ripHint = 1; say('🔍 水紋下面有魚！先點水紋看看', W / 2, 262, '#BFE6F0', true); floats[floats.length - 1].hold = 1.2; }
+}
+function ripUpdate(dt) {
+  if (!rip) return; let alive = 0;
+  for (const q of rip.list) {
+    if (q.st === 'idle') { q.a = Math.min(1, q.a + dt * 3); if (t - q.t0 > RIP.life) { q.st = 'gone'; q.t0 = t; } if (q.vx) { q.x += q.vx * dt; if (q.x < 60 || q.x > W - 60) q.vx = -q.vx; } }
+    else if (q.st === 'open') { if (t - q.t0 > 1.6) q.a = Math.max(0, q.a - dt * 2); }
+    else q.a = Math.max(0, q.a - dt * 2.5);
+    if (q.a > 0 || q.st === 'idle') alive++;
+  }
+  if (!alive) rip = null;
+}
+function ripTap(x, y) {
+  if (!rip) return false; const q = rip.list.find((o) => o.st === 'idle' && o.a > 0.4 && Math.abs(o.x - x) < 54 && Math.abs(o.y - y) < 32); if (!q) return false;
+  if (kite.state !== 'glide' || kite.wait > 0) { sayClear('等小鳶回來，再點水紋', q.x, q.y - 40, '#FFE08A'); return true; }      /* 俯衝來回中不接受探查，也不排進「先記住的點」 */
+  q.st = 'open'; q.t0 = t; for (const o of rip.list) if (o !== q && o.st === 'idle') { o.st = 'gone'; o.t0 = t; }
+  const def = CONFIG.fish[q.k], dir = q.x < W / 2 ? 1 : -1; addFish(q.k, dir, rand(def.speed[0], def.speed[1]) * CRUISE.segs[cr.seg].routes[cr.pick[cr.seg] || 0].speedMul, q.y);
+  const o = things[things.length - 1]; o.x = q.x; o.y0 = q.y; o.rp = 1; o.hold = 1.3; spawnAcc -= phaseAt(t).every;      /* 顯出的魚在水紋上停 1.3 秒，之後照這條航線原本的速度游走 */
+  stats.ripOpen = (stats.ripOpen || 0) + 1; bubbles(q.x, q.y, 9); stars(q.x, q.y, 6, 45, '#BFE6F0'); jingle([659, 880], 70);
+  say('是' + def.name + '！點牠抓抓看', q.x, q.y - 44, '#BFE6F0'); return true;
+}
+function silOf(key) { if (silC[key]) return silC[key]; const im = img[key]; if (!im || !im.naturalWidth) return null; const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const g = c.getContext('2d'); g.drawImage(im, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#0D3550'; g.fillRect(0, 0, c.width, c.height); return (silC[key] = c); }
+function drawRip() {
+  if (!rip) return; const S = RIP.size;
+  for (const q of rip.list) { if (q.a <= 0) continue; const op = q.st === 'open', sc = (op ? 1.08 : 1 + 0.04 * Math.sin(clock * 3 + q.x)) * (0.7 + 0.3 * Math.min(1, q.a * 1.4));
+    ctx.save(); ctx.globalAlpha = q.a; ctx.translate(q.x, q.y); ctx.scale(sc, sc);
+    if (!sprite(op ? 'rip_b' : 'rip_a', S, S)) { ell(0, 0, 48, 20, op ? 'rgba(20,90,130,.55)' : 'rgba(190,235,250,.55)', 'rgba(255,255,255,.8)'); }
+    if (!op) { const d = CONFIG.fish[q.k], sl = silOf(d.sprite), k = Math.min(1, 44 / d.sw), sw = Math.sin(clock * 2 + q.x) * 3; ctx.globalAlpha = q.a * 0.62; if (sl) ctx.drawImage(sl, -d.sw * k / 2 + sw, -d.sh * k / 2 + 1, d.sw * k, d.sh * k); else ell(sw, 1, 16, 6, '#0D3550', null); }
+    ctx.restore();
+    if (!op) { const d = CONFIG.fish[q.k]; ctx.save(); ctx.globalAlpha = q.a; ctx.font = "700 12px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; const tx = d.name + '？', w2 = ctx.measureText(tx).width / 2 + 7, ly = q.y + 34;
+      ctx.fillStyle = 'rgba(13,53,80,.78)'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(q.x - w2, ly - 9, w2 * 2, 18, 9) : ctx.rect(q.x - w2, ly - 9, w2 * 2, 18); ctx.fill(); ctx.fillStyle = '#E6F6FB'; ctx.fillText(tx, q.x, ly + 0.5); ctx.restore(); }
+  }
+}
+
 const LVL = () => (lvl === 'cruise' ? CRUISE_ST : CONFIG.stages.find((x) => x.id === lvl) || CONFIG.stages[0]);
 const BGL = () => (cr ? CRUISE.segs[cr.seg].bg : lvl);      /* 畫背景用哪一關的海 */
 const bgKeyNow = () => { const lv = BGL(), S = CONFIG.sessions[todIdx] || CONFIG.sessions[0]; if (lv !== 'keelung' && img['bg_' + lv + '_' + S.id]) return 'bg_' + lv + '_' + S.id; return img[S.bg] ? S.bg : 'bg'; };
@@ -666,7 +709,8 @@ function openRoute(i) {
 }
 function pickRoute(j) {
   if (mode !== 'choose' || !cr) return; const i = cr.pending;
-  if (i > 0) { segPrevKey = bgKeyNow(); segFade = 1; for (const o of things) o.vx *= 2.2; }      /* 上一段的魚加速游走 */
+  if (i > 0) { segPrevKey = bgKeyNow(); segFade = 1; for (const o of things) { o.vx *= 2.2; o.hold = 0; } }      /* 上一段的魚加速游走 */
+  rip = null;      /* D435：換段收掉上一段的水紋 */
   cr.seg = i; cr.pick[i] = j; cr.rareDone[i] = false; mode = 'play'; show(null); $('hint').hidden = false; ultUI();
   const r = CRUISE.segs[i].routes[j]; say((i ? '航向' : '出發！') + CRUISE.segs[i].name + '・' + r.name, W / 2, 300, '#BFE6F0', true); floats[floats.length - 1].hold = 1;
   if (i > 0) { for (let k = 0; k < 3; k++) bubbles(rand(40, W - 40), rand(300, 560), 6); }
@@ -721,7 +765,7 @@ function beep(f, d, type, g, slide) {
 function jingle(notes, gap) { notes.forEach((f, i) => setTimeout(() => beep(f, 0.22, 'triangle', 0.07), i * (gap || 90))); }
 
 function reset() {
-  cr = lvl === 'cruise' ? { seg: 0, pending: 0, pick: [], rareDone: [], seen: [{}, {}, {}], got: [{}, {}, {}], home: 0 } : null; segFade = 0; segPrevKey = null;
+  cr = lvl === 'cruise' ? { seg: 0, pending: 0, pick: [], rareDone: [], ripDone: [], seen: [{}, {}, {}], got: [{}, {}, {}], home: 0 } : null; segFade = 0; segPrevKey = null; rip = null;
   todStart = todIdx = cr ? 0 : Math.floor(Math.random() * CONFIG.sessions.length); session = SES().id; todFade = 0; prevBg = null; energy = 0;
   lamp = LVL().lamp ? { x: W / 2, vx: (Math.random() < 0.5 ? -1 : 1) * LVL().lamp.speed } : null; jumpAt = LVL().jump ? LVL().jump.first : 1e9; reefHintT = 0;
   fcut = null; t = 0; spawnAcc = 0; kg = 0; things = []; floats = []; rings = []; parts = []; shark = null; firstCatchDone = false; rareIdx = 0; flash = 0; sparkAcc = 0;
@@ -797,7 +841,7 @@ function resolveDive() {
     const watch = false;      // D120（Dari 10/19「第三關一樣抓，抓了上面有個相機也奇怪」）：取消 D119 的觀察模式，第 3 關跟其他關一樣抓走
     if (watch) { best.seen = true; best.seenT = t; best.vx *= LVL().leave; } else things.splice(things.indexOf(best), 1);
     const def = CONFIG.fish[best.type], inEvent = EVENT(), mult = inEvent ? CONFIG.ult.mult : 1, lucky = best.type === LK(), gain = def.kg * mult * (lucky ? LUCKY_MUL : 1);
-    kg += gain; stats.hits++; stats.counts[best.type]++; if (cr) { const gs = cr.got[best.sg || 0]; gs[best.type] = (gs[best.type] || 0) + 1; } if (inEvent) stats.kgInEvent += gain; else { energy = Math.min(CONFIG.ult.need, energy + (def.rare ? 3 : def.kg >= 1.5 ? 2 : 1)); ultUI(); } kite.carry = watch ? null : best.type; firstCatchDone = true; if (watch) { stars(best.x, best.y, 8, 55, '#FFFFFF'); flash = Math.max(flash, 0.18); } if (best.jp === 'air') { stats.jumps = (stats.jumps || 0) + 1; } /* D296：空中抓到的浮字放高 40px（下限 84），小鳶抓完往上飛時不會蓋住字 */
+    kg += gain; stats.hits++; stats.counts[best.type]++; if (best.rp) stats.ripGot = (stats.ripGot || 0) + 1; if (cr) { const gs = cr.got[best.sg || 0]; gs[best.type] = (gs[best.type] || 0) + 1; } if (inEvent) stats.kgInEvent += gain; else { energy = Math.min(CONFIG.ult.need, energy + (def.rare ? 3 : def.kg >= 1.5 ? 2 : 1)); ultUI(); } kite.carry = watch ? null : best.type; firstCatchDone = true; if (watch) { stars(best.x, best.y, 8, 55, '#FFFFFF'); flash = Math.max(flash, 0.18); } if (best.jp === 'air') { stats.jumps = (stats.jumps || 0) + 1; } /* D296：空中抓到的浮字放高 40px（下限 84），小鳶抓完往上飛時不會蓋住字 */
     stats.combo++; stats.bestCombo = Math.max(stats.bestCombo, stats.combo); stats.missRun = 0;
     if (window.KiteBoard) KiteBoard.ev('fish_catch', { sp: best.type });      /* D175：告示板委託 */
     if (!dex[best.type]) { dex[best.type] = true; stats.newDex.push(best.type); try { localStorage.setItem('kiteFishingDex2', JSON.stringify(dex)); } catch (e) {} }
@@ -905,7 +949,7 @@ function update(dt) {
   if (segFade > 0) segFade = Math.max(0, segFade - dt * 0.8);
   const p = phaseAt(t); spawnAcc += dt;
   while (spawnAcc >= p.every) { spawnAcc -= p.every; spawn(p); }
-  if (cr) { const r = CRUISE.segs[cr.seg].routes[cr.pick[cr.seg] || 0]; if (r.rare && !cr.rareDone[cr.seg] && t >= cr.seg * CRUISE.segLen + r.rare.at) { cr.rareDone[cr.seg] = true; spawn(p, r.rare.type); } }
+  if (cr) { const r = CRUISE.segs[cr.seg].routes[cr.pick[cr.seg] || 0]; if (r.rare && !cr.rareDone[cr.seg] && t >= cr.seg * CRUISE.segLen + r.rare.at) { cr.rareDone[cr.seg] = true; spawn(p, r.rare.type); } if (!cr.ripDone[cr.seg] && t >= cr.seg * CRUISE.segLen + RIP.at) { cr.ripDone[cr.seg] = 1; ripStart(); } ripUpdate(dt); }
   else { const rr = LVL().rare || CONFIG.rare; if (rareIdx < rr.at.length && t >= rr.at[rareIdx]) { rareIdx++; spawn(p, rr.type); } }
   stageUpdate(dt);
   /* D118：天色輪替。換段時舊底圖淡出、換配樂、跳一句提示 */
@@ -921,6 +965,7 @@ function update(dt) {
   }
   for (const o of things) {
     if (o.jp === 'hint' || o.jp === 'air') continue;      // 跳躍中的飛魚由 stageUpdate 移動
+    if (o.hold > 0) { o.hold -= dt; continue; }      /* D435：水紋顯出的魚先停一下 */
     const sl = lampSlow(o); if (sl !== 1) { o.x += o.vx * (sl - 1) * dt * (o.move === 'jet' ? 0.9 : 1); }
     if (o.move === 'jet') o.x += o.vx * (0.35 + 1.3 * Math.max(0, Math.sin(clock * 5 + o.ph))) * dt;
     else o.x += o.vx * dt;
@@ -1353,7 +1398,7 @@ function draw() {
   if (a > 0) drawEventLight(a);
   if (shark) drawShark();
   drawStage(false); drawCovers(false);
-  drawParts(false);
+  drawParts(false); drawRip();
   for (const o of things) {
     if (o.jp === 'hint') continue;
     ctx.save(); ctx.translate(o.x, o.y + (o.move === 'wave' || o.jp === 'air' ? 0 : Math.sin(clock * 2.4 + o.ph) * 3));
@@ -1520,7 +1565,7 @@ function record() {
     stage: LVL().name, startTod: CONFIG.sessions[todStart].name, whales: stats.whales || 0, answers, assets: Object.keys(img), screen: innerWidth + 'x' + innerHeight, ua: navigator.userAgent };
 }
 /* D418：巡航結束，鯨鯊友善陪游返港（不加倍、不能點），約 2.6 秒後結算 */
-function goHome() { mode = 'home'; cr.home = 0; ultUI(); $('hint').hidden = true; fcut = null; shark = { x: -120, y: 470, vx: (W + 260) / 2.6, t0: -9, until: -9, bye: true, friend: true }; kite.state = 'glide'; kite.carry = null;
+function goHome() { mode = 'home'; cr.home = 0; rip = null; ultUI(); $('hint').hidden = true; fcut = null; shark = { x: -120, y: 470, vx: (W + 260) / 2.6, t0: -9, until: -9, bye: true, friend: true }; kite.state = 'glide'; kite.carry = null;
   const bn = $('banner'); bn.textContent = '巡航完成！鯨鯊陪小鳶回港'; bn.hidden = false; bannerPad(); jingle([523, 659, 784, 1047], 100); hearts(W / 2, 300); }
 function updateHome(dt) { cr.home += dt;
   shark.x += shark.vx * dt; kite.x += (shark.x + 20 - kite.x) * Math.min(1, dt * 2.5); kite.face = 1; kite.y = CONFIG.skyY + Math.sin(clock * 2.2) * 5;
@@ -1546,6 +1591,7 @@ function finish() { BGM.stop(); if (window.KiteBoard) KiteBoard.ev('run_end', { 
   /* v0.25（C-169）：結算多一行「今日幸運魚」——抓到幾條、分數乘幾倍；這局沒抓到就提醒下一局找找看（文字是建議） */
   if (cr) { const st = document.createElement('div'); st.className = 'crPosts'; CRUISE.segs.forEach((g, i) => { const r = g.routes[cr.pick[i] || 0]; if (!r.art) return; const f = document.createElement('figure'), im2 = document.createElement('img'), fc = document.createElement('figcaption'); im2.src = 'assets/' + r.art; im2.alt = ''; fc.textContent = r.name; const pm = document.createElement('img'); pm.className = 'crPm'; pm.alt = ''; pm.src = 'assets/cruise/pm' + (i + 1) + '.webp'; pm.style.animationDelay = (0.5 + i * 0.35) + 's'; f.append(im2, fc, pm); st.appendChild(f); });      /* D421：GPT 三段郵戳（港邊／礁岩／外海）依序蓋上 */ const old2 = rows.parentNode.querySelector('.crPosts'); if (old2) old2.remove(); rows.parentNode.insertBefore(st, rows); } else { const old2 = rows.parentNode.querySelector('.crPosts'); if (old2) old2.remove(); }      /* D419：結算排出這趟三張航線明信片 */
   if (cr) CRUISE.segs.forEach((g, i) => { const r = g.routes[cr.pick[i] || 0], sn = Object.keys(cr.seen[i]).filter((k) => k !== 'trash'), gt = Object.keys(cr.got[i]); add('🧭 ' + g.name + '・' + r.name, '遇見 ' + sn.length + ' 種・抓到 ' + gt.length + ' 種'); });      /* D418：巡航回顧，三段各走哪條、遇見／抓到幾種 */
+  if (cr) add('🔍 水紋尋魚', stats.ripOpen ? '探查 ' + stats.ripOpen + ' 處・抓到 ' + (stats.ripGot || 0) + ' 條' : '這趟沒探查水紋');      /* D435 */
   { const LU = LK(), ln = CONFIG.fish[LU].name, lc = stats.counts[LU] || 0; add('🍀 幸運魚・' + ln, lc ? lc + UN(LU) + '・分數 ×' + LUCKY_MUL : '這次沒' + VB + '到'); }
   const sid = lvl, old = prog.best[sid]; prog.played[sid] = (prog.played[sid] || 0) + 1; if (old === undefined || kg > old) prog.best[sid] = +kg.toFixed(1); saveProg();
   $('unlockNote').hidden = true;
@@ -1606,6 +1652,7 @@ cv.addEventListener('pointerdown', (e) => {
   stats.taps++;
   const airFish = RULE() === 'jump' && things.some((o) => o.jp === 'air' && Math.hypot(o.x - x, o.y - y) < o.r + CONFIG.kite.hitPad + 6);      // D119 第 4 關：跳起來的飛魚可以在水面上點
   if (y < CONFIG.surfaceY + 12 && !airFish) { stats.skyTaps++; say(RULE() === 'jump' ? '等飛魚跳起來再點' : '點水面下的魚', x, CONFIG.surfaceY + 30, '#fff'); return; }
+  if (mode === 'play' && ripTap(x, y)) return;      /* D435：點水紋＝探查，不俯衝 */
   if (RULE() === 'reef' && things.some((o) => o.hid && Math.hypot(o.x - x, o.y - y) < o.r + CONFIG.kite.hitPad) && !things.some((o) => !o.hid && !o.seen && Math.hypot(o.x - x, o.y - y) < o.r + CONFIG.kite.hitPad)) { stats.reefTaps = (stats.reefTaps || 0) + 1; sayClear('等牠游出石頭旁，再點！', x, y - 20, '#FFE08A'); return; } /* D119 第 3 關：躲在礁石後的魚不能點，也不算失誤；D292：改走 sayClear，跟「幸運魚游過來了」等浮字整段錯開 */
   if ((kite.state === 'stun' || kite.stunNext) && !kite.stunSaid) { kite.stunSaid = true; sayClear('暈暈的…等一下再點', kite.x, CONFIG.skyY + 48, '#FFD0C4'); } /* D288：暈的時候點畫面，提示一次（每次暈只說一次） */
   if (kite.state !== 'glide' || kite.wait > 0) { stats.blocked++; kite.queued = { x, y, t: performance.now() }; return; }      // QA 10/21：小鳶還在飛時點的位置先記住，回到空中就照那裡衝（原本六成的點擊被直接忽略）
@@ -1639,7 +1686,7 @@ $('copyBtn').onclick = () => {
   const fallback = () => { log.value = text; log.hidden = false; log.focus(); log.select(); $('copyBtn').textContent = '請長按上方文字複製'; };
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
 };
-window.__kiteGame = { cruise: () => cr, pickRoute: (j) => pickRoute(j), CRUISE, CONFIG, say, backAvoid: () => backAvoid(), rawThings: () => things, floats: () => floats, lucky: () => LK(), stageState: () => ({ lvl, rule: RULE(), lamp, jumpAt }), setSession: (s) => { lvl = s; renderStart(); show('startPanel'); }, callWhale, fillEnergy: () => { energy = CONFIG.ult.need; ultUI(); }, tod: () => ({ start: todStart, idx: todIdx, id: session, fade: todFade }), energy: () => energy, prog: () => prog, state: () => ({ mode, session, t, kg, kite, things: things.map((o) => ({ type: o.type, x: o.x, y: o.y, vx: o.vx, move: o.move })), stats, shark: !!shark, flash }), skip: (s) => { t = s; }, testEnd: (k, h, lc) => { kg = k; if (h) stats.hits = h; if (lc) stats.counts[LK()] = lc; finish(); } };      // v0.20：testEnd 只給自動測試用（指定分數直接結算）
+window.__kiteGame = { rip: () => rip, ripTap: (x, y) => ripTap(x, y), cruise: () => cr, pickRoute: (j) => pickRoute(j), CRUISE, CONFIG, say, backAvoid: () => backAvoid(), rawThings: () => things, floats: () => floats, lucky: () => LK(), stageState: () => ({ lvl, rule: RULE(), lamp, jumpAt }), setSession: (s) => { lvl = s; renderStart(); show('startPanel'); }, callWhale, fillEnergy: () => { energy = CONFIG.ult.need; ultUI(); }, tod: () => ({ start: todStart, idx: todIdx, id: session, fade: todFade }), energy: () => energy, prog: () => prog, state: () => ({ mode, session, t, kg, kite, things: things.map((o) => ({ type: o.type, x: o.x, y: o.y, vx: o.vx, move: o.move })), stats, shark: !!shark, flash }), skip: (s) => { t = s; }, testEnd: (k, h, lc) => { kg = k; if (h) stats.hits = h; if (lc) stats.counts[LK()] = lc; finish(); } };      // v0.20：testEnd 只給自動測試用（指定分數直接結算）
 /* C-81／C-82（Dari 10/13 01:03）：音樂開關、暫停鈕改圖示；選單畫面也有音樂，每個場景不同曲子 */
 const MENU_TRACK = () => 'fish_' + session, PLAY_TRACK = () => 'fish_' + session;
 function drawSnd() { const h = SND_ICON[soundOn ? 'on' : 'off']; for (const b of [$('soundBtn'), $('menuSnd')]) { if (!b) continue; b.innerHTML = h; b.setAttribute('aria-pressed', String(!soundOn)); b.setAttribute('aria-label', soundOn ? '音樂開著，點一下關掉' : '音樂關著，點一下打開'); } }
