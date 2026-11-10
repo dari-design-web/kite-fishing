@@ -714,7 +714,7 @@ function bkHow() { document.getElementById('how').innerHTML = '<span class="hl">
 function bkStart(practice) {
   const day = bkToday(), seed = practice ? (Math.random() * 1e9) | 0 : bkHash(day + '#' + BKVER), P = practice === 'same' && BK ? BK.P : practice ? bkMake(seed) : (bkDaily && bkDaily.day === day ? bkDaily.P : (bkDaily = { day, P: bkMake(seed) }).P);
   BK = { P, practice: !!practice, day, grid: P.g0.slice(), col: P.g0.map((v) => (v === 2 ? 6 : 0)), gi: 0, used: [0, 0, 0], n: 0, lines: 0, drag: null, sel: -1, fx: [], flash: [], shipT: 0, shipGo: 0, t: 0, end: null, say: '木箱那一行一列裝不了，避開它！', sayT: 3.4 };
-  state = 'blk'; bkHow(); for (let i = 0; i < 6; i++) if (!IMG['box_' + i]) want('box_' + i, '../assets/stack/box_' + i + '.png'); if (!IMG.ship) want('ship', '../assets/stack/ship.png'); if (!IMG.blk_deck) want('blk_deck', '../assets/stack/blk_deck.webp'); if (!IMG.blk_cell) want('blk_cell', '../assets/stack/blk_cell.png'); festLoad(); beep(660, 0.08);
+  state = 'blk'; bkHow(); for (let i = 0; i < 6; i++) if (!IMG['box_' + i]) want('box_' + i, '../assets/stack/box_' + i + '.png'); if (!IMG.ship) want('ship', '../assets/stack/ship.png'); if (!IMG.blk_deck) want('blk_deck', '../assets/stack/blk_deck.webp'); if (!IMG.blk_cell) want('blk_cell', '../assets/stack/blk_cell.png'); if (!IMG.blk_crate) want('blk_crate', '../assets/stack/blk_crate.png'); festLoad(); beep(660, 0.08);
 }
 function bkBack() { BK = null; setMode('stack'); dailyTag(); beep(520, 0.06); }
 const bkCur = () => BK.P.sets[BK.gi];
@@ -726,7 +726,8 @@ function bkTint(ci) {      /* D427：GPT 灰階單格（64×64）乘上六色，
   c2.drawImage(im, 0, 0, 64, 64); c2.globalCompositeOperation = 'multiply'; c2.fillStyle = ci === 6 ? '#B07A45' : BOXC[ci]; c2.fillRect(0, 0, 64, 64);
   c2.globalCompositeOperation = 'destination-in'; c2.drawImage(im, 0, 0, 64, 64); return (bkTintC[ci] = cv);
 }
-function bkCrate(x, y, cs) {      /* 待檢木箱：木頭色貨櫃＋兩條交叉綁帶＋小紅牌 */
+function bkCrate(x, y, cs) {      /* 待檢木箱：D428 換 GPT 木箱圖（blk_crate.png 64×64）；還沒載入時程式畫木頭色貨櫃＋綁帶＋小紅牌 */
+  const ci = ready('blk_crate'); if (ci) { ctx.drawImage(ci, x, y, cs, cs); return; }
   bkCell(x, y, cs, 6); ctx.save(); ctx.strokeStyle = 'rgba(70,40,18,.85)'; ctx.lineWidth = Math.max(2, cs * 0.09); ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(x + cs * 0.2, y + cs * 0.2); ctx.lineTo(x + cs * 0.8, y + cs * 0.8); ctx.moveTo(x + cs * 0.8, y + cs * 0.2); ctx.lineTo(x + cs * 0.2, y + cs * 0.8); ctx.stroke();
   rrect(x + cs * 0.56, y + cs * 0.06, cs * 0.36, cs * 0.26, 3, '#D6604A', C.ink, 1.2); ctx.restore();
