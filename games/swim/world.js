@@ -10,7 +10,7 @@ export async function makeWorld(THREE, base, onProgress) {
     'shipwreck_buried', 'cargo_decor', 'tire_decor', 'anchor_decor', 'fishing_boat_broken', 'harbor_buoy', 'harbor_signal', 'bg_harbor',
     'jellyfish_glow', 'coral_glow', 'anglerfish', 'deep_rock', 'tube_sponge_glow', 'shells_glow', 'bg_deep',
     'ob_net', 'ob_net_vertical', 'ob_reef_pillar', 'ob_reef_arch', 'ob_bottle', 'ob_plastic_bag', 'ob_tire', 'ob_oil_barrel', 'ob_cargo', 'ob_harpoon', 'ob_jellyfish_group',
-    'food_plankton', 'food_krill', 'food_roe', 'food_small_fish', 'item_speed_ring', 'item_bubble_shield', 'kite_dive_v1', 'item_dash_lightning', 'item_frenzy_flame'];
+    'food_plankton', 'food_krill', 'food_roe', 'food_small_fish', 'item_speed_ring', 'item_bubble_shield', 'kite_dive_v1', 'item_dash_lightning', 'item_frenzy_flame', 'dive_curtain_full', 'dive_curtain_open', 'dive_zone_marker'];
   const TX = {}, AR = {}, loader = new THREE.TextureLoader(); let done = 0;
   await Promise.all(NAMES.map((n) => loader.loadAsync(base + n + '.webp').then((t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; TX[n] = keep(t); AR[n] = t.image.width / t.image.height; done++; onProgress && onProgress(done / NAMES.length); })));
 
