@@ -655,7 +655,10 @@ function lvTap(p, kbd) { if (state === 'lvend' && (!lvEnd || lvEnd.t < 0.6)) ret
    每日一題：台北日期＋題組版本 BKVER 決定形狀；每組題目先用解題器找到一組可達成的擺法才出題（找不到就換下一個種子），
    所以每天的題目都保證有解（解法存在 BK.sol，測試用）。「換一題練習」用隨機種子，同樣先驗證有解。
    本機只存今天最少用幾塊完成（kiteBlk1），不算點數、不進排行榜、不算告示板委託、不接卡冊。圖先用程式畫＋現有貨櫃圖的鐵皮，等 GPT 底板與單格圖。 */
-const BKVER = 1, BKN = 8, BKGOAL = 3, BKNG = 4, BKP = BKNG * 3, BKKEY = 'kiteBlk1';
+/* D427（GPT 2340 Q2 推薦 B 固定貨物）：每題開場甲板上有 BKFIX 個「待檢木箱」（盤面值 2）——不能放、不能搬、不算滿格，
+   所以木箱所在那一行、那一列都裝不了船；兩個木箱不同行不同列。解題器從有木箱的盤面開始驗證（不是空盤驗完才加）。
+   bot 實測（300 題）：沒木箱 貪心 92%／2 個 76%／3 個 65% → 先用 2 個。題組版本 BKVER 2（今日一題跟著換）。 */
+const BKVER = 2, BKN = 8, BKGOAL = 3, BKNG = 4, BKP = BKNG * 3, BKKEY = 'kiteBlk1', BKFIX = 2;
 const BKS = [      /* [形狀格子 [列,行]..., 權重] 固定方向；偏大塊（bot 實測：九塊清三條太難，貪心玩法只有 1 成過關） */
   [[[0, 0], [0, 1]], 2], [[[0, 0], [1, 0]], 2], [[[0, 0], [0, 1], [0, 2]], 4], [[[0, 0], [1, 0], [2, 0]], 4],
   [[[0, 0], [0, 1], [0, 2], [0, 3]], 6], [[[0, 0], [1, 0], [2, 0], [3, 0]], 6], [[[0, 0], [0, 1], [1, 0], [1, 1]], 6],
@@ -673,13 +676,18 @@ const bkFits = (gr, s, r, c) => s.every((q) => { const y = r + q[0], x = c + q[1
 function bkPlace(gr, s, r, c) {      /* 放下並清掉滿的行列；回傳 {g 新盤面, rows, cols, n 條數} */
   const g = gr.slice(); s.forEach((q) => { g[(r + q[0]) * BKN + c + q[1]] = 1; });
   const rows = [], cols = [];
-  for (let i = 0; i < BKN; i++) { let fr = 1, fc = 1; for (let j = 0; j < BKN; j++) { if (!g[i * BKN + j]) fr = 0; if (!g[j * BKN + i]) fc = 0; } if (fr) rows.push(i); if (fc) cols.push(i); }
+  for (let i = 0; i < BKN; i++) { let fr = 1, fc = 1; for (let j = 0; j < BKN; j++) { if (g[i * BKN + j] !== 1) fr = 0; if (g[j * BKN + i] !== 1) fc = 0; } if (fr) rows.push(i); if (fc) cols.push(i); }
   rows.forEach((i) => { for (let j = 0; j < BKN; j++) g[i * BKN + j] = 0; }); cols.forEach((i) => { for (let j = 0; j < BKN; j++) g[j * BKN + i] = 0; });
   return { g, rows, cols, n: rows.length + cols.length };
 }
 const bkAny = (gr, s) => { for (let r = 0; r < BKN; r++) for (let c = 0; c < BKN; c++) if (bkFits(gr, s, r, c)) return true; return false; };
 /* 解題器：深度優先，先試會清線、靠邊靠格子的位置；節點上限內找到就回傳擺法 */
-function bkSolve(sets) {
+function bkFixGrid(seed) {      /* 木箱位置：同一個種子決定，兩個不同行不同列 */
+  const R = bkRng(seed ^ 0x5bd1e995), g = new Array(BKN * BKN).fill(0), ur = {}, uc = {}; let k = 0, t = 0;
+  while (k < BKFIX && t++ < 500) { const i = (R() * BKN * BKN) | 0, y = Math.floor(i / BKN), x = i % BKN; if (g[i] || ur[y] || uc[x]) continue; g[i] = 2; ur[y] = uc[x] = 1; k++; }
+  return g;
+}
+function bkSolve(sets, g0) {
   let nodes = 0; const path = [];
   function score(gr, s, r, c) { const p = bkPlace(gr, s, r, c); let adj = 0; s.forEach((q) => { const y = r + q[0], x = c + q[1]; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach((d) => { const yy = y + d[0], xx = x + d[1]; if (yy < 0 || xx < 0 || yy >= BKN || xx >= BKN || gr[yy * BKN + xx]) adj++; }); }); return { p, k: p.n * 100 + adj }; }
   function go(gr, gi, left, lines) {
@@ -690,33 +698,47 @@ function bkSolve(sets) {
       for (const o of opts.slice(0, 5)) { path.push([gi, pi, o.r, o.c]); if (go(o.p.g, gi, left.filter((x) => x !== pi), lines + o.p.n)) return true; path.pop(); } }
     return false;
   }
-  return go(new Array(BKN * BKN).fill(0), 0, [0, 1, 2], 0) ? path.slice() : null;
+  return go(g0 ? g0.slice() : new Array(BKN * BKN).fill(0), 0, [0, 1, 2], 0) ? path.slice() : null;
 }
 function bkMake(seed) {      /* 種子 → 三組形狀；先驗證有解（而且不是 3 塊內就清完的太簡單題），不行就換下一個種子 */
   for (let k = 0; k < 60; k++) { const R = bkRng(seed + k * 7919), pick1 = () => { let x = R() * bkW; for (const s of BKS) { x -= s[1]; if (x < 0) return s[0]; } return BKS[0][0]; };
-    const sets = [0, 1, 2, 3].map(() => [pick1(), pick1(), pick1()]), sol = bkSolve(sets);
-    if (sol && sol.length >= 4) return { sets, sol, seed: seed + k * 7919 }; }
-  return { sets: [[BKS[17][0], BKS[17][0], BKS[6][0]], [BKS[6][0], BKS[6][0], BKS[4][0]], [BKS[4][0], BKS[4][0], BKS[2][0]], [BKS[2][0], BKS[0][0], BKS[1][0]]], sol: null, seed };
+    const sets = [0, 1, 2, 3].map(() => [pick1(), pick1(), pick1()]), g0 = bkFixGrid(seed + k * 7919), sol = bkSolve(sets, g0);
+    if (sol && sol.length >= 4) return { sets, sol, g0, seed: seed + k * 7919 }; }
+  return { g0: new Array(BKN * BKN).fill(0), sets: [[BKS[17][0], BKS[17][0], BKS[6][0]], [BKS[6][0], BKS[6][0], BKS[4][0]], [BKS[4][0], BKS[4][0], BKS[2][0]], [BKS[2][0], BKS[0][0], BKS[1][0]]], sol: null, seed };
 }
 const bkHash = (s) => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
 let BK = null, bkR = [], blkBtnR = null, bkDaily = null;
 const BKG = { x: 32, y: 128, cs: 37 }, BKT = { y: 446, h: 116 };
 const BKCOL = [0, 1, 2, 3, 4, 5];
-function bkHow() { document.getElementById('how').innerHTML = '<span class="hl"><b>貨櫃方塊（試玩）</b>把下面的貨櫃<b>拖進</b>裝船區，</span><span class="hl">排滿一整行或一整列就<b>裝船</b>！' + BKP + ' 塊內裝滿 <b>3 條</b>過關。</span>'; }
+function bkHow() { document.getElementById('how').innerHTML = '<span class="hl"><b>貨櫃方塊（試玩）</b>排滿一行或一列就<b>裝船</b>！</span><span class="hl">' + BKP + ' 塊內裝滿 <b>3 條</b>就開船，</span><span class="hl"><b>木箱</b>那一行一列裝不了。</span>'; }
 function bkStart(practice) {
   const day = bkToday(), seed = practice ? (Math.random() * 1e9) | 0 : bkHash(day + '#' + BKVER), P = practice === 'same' && BK ? BK.P : practice ? bkMake(seed) : (bkDaily && bkDaily.day === day ? bkDaily.P : (bkDaily = { day, P: bkMake(seed) }).P);
-  BK = { P, practice: !!practice, day, grid: new Array(BKN * BKN).fill(0), col: new Array(BKN * BKN).fill(0), gi: 0, used: [0, 0, 0], n: 0, lines: 0, drag: null, sel: -1, fx: [], flash: [], shipT: 0, shipGo: 0, t: 0, end: null, say: '先想想看：哪一塊先放？', sayT: 3 };
-  state = 'blk'; bkHow(); for (let i = 0; i < 6; i++) if (!IMG['box_' + i]) want('box_' + i, '../assets/stack/box_' + i + '.png'); if (!IMG.ship) want('ship', '../assets/stack/ship.png'); festLoad(); beep(660, 0.08);
+  BK = { P, practice: !!practice, day, grid: P.g0.slice(), col: P.g0.map((v) => (v === 2 ? 6 : 0)), gi: 0, used: [0, 0, 0], n: 0, lines: 0, drag: null, sel: -1, fx: [], flash: [], shipT: 0, shipGo: 0, t: 0, end: null, say: '木箱那一行一列裝不了，避開它！', sayT: 3.4 };
+  state = 'blk'; bkHow(); for (let i = 0; i < 6; i++) if (!IMG['box_' + i]) want('box_' + i, '../assets/stack/box_' + i + '.png'); if (!IMG.ship) want('ship', '../assets/stack/ship.png'); if (!IMG.blk_deck) want('blk_deck', '../assets/stack/blk_deck.webp'); if (!IMG.blk_cell) want('blk_cell', '../assets/stack/blk_cell.png'); festLoad(); beep(660, 0.08);
 }
 function bkBack() { BK = null; setMode('stack'); dailyTag(); beep(520, 0.06); }
 const bkCur = () => BK.P.sets[BK.gi];
 function bkTrayBox(i) { return { x: 10 + i * 116, y: BKT.y, w: 108, h: BKT.h }; }
-function bkCell(x, y, cs, ci, a) {      /* 一格貨櫃：用現有貨櫃圖中段的波浪鐵皮，四邊深框；還沒載入就程式畫 */
-  const im = ready('box_' + ci); ctx.save(); if (a != null) ctx.globalAlpha = a;
+const bkTintC = {};
+function bkTint(ci) {      /* D427：GPT 灰階單格（64×64）乘上六色，第 7 色（ci 6）是木箱的木頭色；做一次存起來 */
+  if (bkTintC[ci]) return bkTintC[ci]; const im = ready('blk_cell'); if (!im) return null;
+  const cv = document.createElement('canvas'); cv.width = cv.height = 64; const c2 = cv.getContext('2d');
+  c2.drawImage(im, 0, 0, 64, 64); c2.globalCompositeOperation = 'multiply'; c2.fillStyle = ci === 6 ? '#B07A45' : BOXC[ci]; c2.fillRect(0, 0, 64, 64);
+  c2.globalCompositeOperation = 'destination-in'; c2.drawImage(im, 0, 0, 64, 64); return (bkTintC[ci] = cv);
+}
+function bkCrate(x, y, cs) {      /* 待檢木箱：木頭色貨櫃＋兩條交叉綁帶＋小紅牌 */
+  bkCell(x, y, cs, 6); ctx.save(); ctx.strokeStyle = 'rgba(70,40,18,.85)'; ctx.lineWidth = Math.max(2, cs * 0.09); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x + cs * 0.2, y + cs * 0.2); ctx.lineTo(x + cs * 0.8, y + cs * 0.8); ctx.moveTo(x + cs * 0.8, y + cs * 0.2); ctx.lineTo(x + cs * 0.2, y + cs * 0.8); ctx.stroke();
+  rrect(x + cs * 0.56, y + cs * 0.06, cs * 0.36, cs * 0.26, 3, '#D6604A', C.ink, 1.2); ctx.restore();
+}
+function bkCell(x, y, cs, ci, a) {      /* 一格貨櫃：D427 起用 GPT 單格染色；還沒載入就用舊貨櫃圖中段鐵皮／程式畫 */
+  const tc = bkTint(ci);
+  if (tc) { ctx.save(); if (a != null) ctx.globalAlpha = a; ctx.drawImage(tc, x, y, cs, cs); ctx.restore(); return; }
+  const im = ready('box_' + Math.min(ci, 5)); ctx.save(); if (a != null) ctx.globalAlpha = a;
   rrect(x + 1, y + 2, cs - 2, cs - 2, 4, 'rgba(0,0,0,.25)');
   ctx.save(); rrect(x + 1, y + 1, cs - 2, cs - 2, 4); ctx.clip();
   if (im) ctx.drawImage(im, 180, 6, 84, 84, x + 1, y + 1, cs - 2, cs - 2);
-  else { const base = BOXC[ci]; ctx.fillStyle = base; ctx.fillRect(x, y, cs, cs); ctx.strokeStyle = 'rgba(0,0,0,.22)'; ctx.lineWidth = 1.2; for (let xx = x + 5; xx < x + cs - 3; xx += 5) { ctx.beginPath(); ctx.moveTo(xx, y + 4); ctx.lineTo(xx, y + cs - 4); ctx.stroke(); } }
+  else { const base = ci === 6 ? '#B07A45' : BOXC[ci]; ctx.fillStyle = base; ctx.fillRect(x, y, cs, cs); ctx.strokeStyle = 'rgba(0,0,0,.22)'; ctx.lineWidth = 1.2; for (let xx = x + 5; xx < x + cs - 3; xx += 5) { ctx.beginPath(); ctx.moveTo(xx, y + 4); ctx.lineTo(xx, y + cs - 4); ctx.stroke(); } }
   ctx.fillStyle = 'rgba(255,255,255,.22)'; ctx.fillRect(x + 1, y + 1, cs - 2, Math.max(2, cs * 0.12));
   ctx.restore(); rrect(x + 1, y + 1, cs - 2, cs - 2, 4, null, C.ink, cs > 30 ? 2 : 1.5);
   if (cs > 24) { ctx.fillStyle = 'rgba(16,41,61,.5)'; for (const cx of [x + 3, x + cs - 7]) for (const cy of [y + 3, y + cs - 7]) ctx.fillRect(cx, cy, 4, 4); }
@@ -769,20 +791,24 @@ function bkDraw(tt) {
   const loadN = Math.min(BKGOAL, BK.lines);
   for (let i = 0; i < loadN; i++) bkCell(sx + 46 + i * 26, sy + 6, 24, BKCOL[i % 6]);
   pill(10, 10, 168, 32); text('已裝船 ' + Math.min(BK.lines, BKGOAL) + ' / ' + BKGOAL + ' 條', 94, 26, 15, C.paper, 'center', 900);
-  pill(186, 10, 164, 32); text((BK.practice ? '練習題・' : '今日一題・') + '第 ' + (BK.gi + 1) + ' 組　剩 ' + (9 - BK.n) + ' 塊', 268, 26, 12.5, C.paper, 'center', 800);
+  pill(186, 10, 164, 32); text((BK.practice ? '練習題・' : '今日一題・') + '第 ' + (BK.gi + 1) + ' 組　剩 ' + (BKP - BK.n) + ' 塊', 268, 26, 12.5, C.paper, 'center', 800);
   for (let i = 0; i < BKGOAL; i++) { const on = i < BK.lines; rrect(14 + i * 30, 56, 24, 24, 6, on ? C.gold : 'rgba(255,248,234,.35)', C.ink, 2); if (on) text('✓', 26 + i * 30, 68, 15, C.ink, 'center', 900, false); }
   if (BK.sayT > 0 && !(BK.drag && BK.drag.moved)) { ctx.globalAlpha = clamp(BK.sayT * 2, 0, 1); bubble(BK.say, 98, 100); ctx.globalAlpha = 1; }
   /* 裝船區甲板 */
   const bx = BKG.x, by = BKG.y, cs = BKG.cs, bw = cs * BKN;
-  rrect(bx - 10, by - 8, bw + 20, bw + 18, 14, 'rgba(0,0,0,.3)'); rrect(bx - 10, by - 10, bw + 20, bw + 20, 14, '#5E6F7A', C.ink, 3);
-  rrect(bx - 3, by - 3, bw + 6, bw + 6, 8, '#3E4F5B');
-  for (let r = 0; r < BKN; r++) for (let c = 0; c < BKN; c++) { const x = bx + c * cs, y = by + r * cs; rrect(x + 2, y + 2, cs - 4, cs - 4, 4, (r + c) % 2 ? '#4A5C68' : '#475864'); ctx.strokeStyle = 'rgba(255,214,107,.18)'; ctx.lineWidth = 1; ctx.strokeRect(x + 5.5, y + 5.5, cs - 11, cs - 11); }
+  const dk = ready('blk_deck'), dm = bw * 36 / 648;      /* D427：GPT 甲板底板（720 圖中央 648 對 8×8），格線程式畫 */
+  rrect(bx - dm, by - dm + 3, bw + dm * 2, bw + dm * 2, 16, 'rgba(0,0,0,.3)');
+  if (dk) ctx.drawImage(dk, bx - dm, by - dm, bw + dm * 2, bw + dm * 2);
+  else { rrect(bx - 10, by - 10, bw + 20, bw + 20, 14, '#5E6F7A', C.ink, 3); rrect(bx - 3, by - 3, bw + 6, bw + 6, 8, '#3E4F5B'); }
+  for (let r = 0; r < BKN; r++) for (let c = 0; c < BKN; c++) { const x = bx + c * cs, y = by + r * cs; rrect(x + 2, y + 2, cs - 4, cs - 4, 5, dk ? ((r + c) % 2 ? 'rgba(40,80,120,.10)' : 'rgba(40,80,120,.05)') : ((r + c) % 2 ? '#4A5C68' : '#475864'), dk ? 'rgba(40,80,120,.22)' : null, 1); }
+  for (let i = 0; i < BKN * BKN; i++) if (BK.grid[i] === 2) {      /* 木箱那一行一列：淡淡紅色＝這條裝不了 */
+    const fy = Math.floor(i / BKN), fx = i % BKN; ctx.save(); ctx.fillStyle = 'rgba(214,96,74,.10)'; ctx.fillRect(bx, by + fy * cs, bw, cs); ctx.fillRect(bx + fx * cs, by, cs, bw); ctx.restore(); }
   const gh = state === 'blk' ? bkGhost() : null;
   if (gh && gh.ok) {      /* 落點預覽：會補滿的行列先亮起來 */
     const s = bkCur()[BK.drag.i], p = bkPlace(BK.grid, s, gh.r, gh.c);
     ctx.fillStyle = 'rgba(255,214,107,' + (0.22 + 0.12 * Math.sin(tt * 8)) + ')'; p.rows.forEach((y) => ctx.fillRect(bx, by + y * cs, bw, cs)); p.cols.forEach((x) => ctx.fillRect(bx + x * cs, by, cs, bw));
   }
-  for (let i = 0; i < BKN * BKN; i++) if (BK.grid[i]) bkCell(bx + (i % BKN) * cs, by + Math.floor(i / BKN) * cs, cs, BK.col[i]);
+  for (let i = 0; i < BKN * BKN; i++) if (BK.grid[i] === 2) bkCrate(bx + (i % BKN) * cs, by + Math.floor(i / BKN) * cs, cs); else if (BK.grid[i]) bkCell(bx + (i % BKN) * cs, by + Math.floor(i / BKN) * cs, cs, BK.col[i]);
   if (gh && gh.ok) { const s = bkCur()[BK.drag.i]; s.forEach((q) => { const x = bx + (gh.c + q[1]) * cs, y = by + (gh.r + q[0]) * cs; rrect(x + 3, y + 3, cs - 6, cs - 6, 5, 'rgba(79,191,136,.45)', '#BFF3D8', 2); }); }
   BK.flash.forEach((f) => { ctx.fillStyle = 'rgba(255,255,255,' + (0.7 * (1 - f.t / 0.4)) + ')'; if (f.r >= 0) ctx.fillRect(bx, by + f.r * cs, bw, cs); else ctx.fillRect(bx + f.c * cs, by, cs, bw); });
   /* 托盤：三塊（用過的變成虛線空位） */
