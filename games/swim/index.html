@@ -138,6 +138,12 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
 .stage.curOn::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:3;box-shadow:inset 0 0 46px 10px rgba(110,235,255,.55);animation:curP .6s ease-in-out infinite alternate}
 @keyframes curP{to{box-shadow:inset 0 0 30px 6px rgba(110,235,255,.35)}}
 @media (prefers-reduced-motion:reduce){.stage.curOn::before{animation:none}}
+/* D444：短航段（試玩）——開場次要鈕、結算完成章 */
+#shBtn small{display:block;font-size:12px;font-weight:700;opacity:.75;line-height:1.2}#shBtn{line-height:1.25;padding:6px 10px}
+.shres{display:flex;align-items:center;justify-content:center;gap:8px;margin:6px 0 2px;font-size:22px;font-weight:900}.shres img{width:48px;height:48px}
+.shbar{height:10px;border:2px solid var(--ink);border-radius:999px;background:#fff;overflow:hidden;margin:6px 4px 8px}.shbar i{display:block;height:100%;background:#4FBF88}
+#endCard .go2{flex:0 0 auto}
+.gobar{position:sticky;bottom:-16px;z-index:2;background:var(--paper);margin:0 -4px -16px;padding:0 4px 16px}.gobar .go{position:static}.gobar .go2{margin-top:6px;min-height:40px}
 </style></head><body>
 <div class="top"><a class="back" href="../../line/index.html?p=park" id="backBtn">← 小鳶樂園</a><b>鯨鯊快游</b><span id="lbSlot"></span><button class="snd" id="sndBtn" type="button" aria-pressed="true" aria-label="音效開關">音效</button></div>
 <div class="stage" id="stage">
@@ -160,7 +166,8 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
     <div class="lg bad"><b>⚠️ 撞到扣血</b><img src="assets/ob_net.webp" alt="漁網"><img src="assets/ob_reef_pillar.webp" alt="礁石"><img src="assets/ob_bottle.webp" alt="垃圾"><img src="assets/ob_harpoon.webp" alt="魚叉"><img src="assets/ob_jellyfish_group.webp" alt="水母"><span>紅圈、紅黃條紋要閃</span></div>
     <div class="book" id="bookStart"></div>
     <span class="mis" id="misStart"></span>
-    <button class="go" id="goBtn" type="button">開始</button>
+    <div class="gobar"><button class="go" id="goBtn" type="button">開始</button>
+    <button class="go2" id="shBtn" type="button">短航段（試玩）<small>游滿 60 秒就到港・不計分</small></button></div>
   </div>
   <div class="card" id="endCard" hidden></div>
   <div class="card" id="pauseCard" hidden><h2>暫停</h2><p id="pauseMis"></p><button class="go" id="resumeBtn" type="button">繼續</button><a class="go2" href="../../line/index.html?p=park" style="text-decoration:none;line-height:40px">回小鳶樂園</a></div>
@@ -309,7 +316,7 @@ function diveEv(ln) { const g = new THREE.Group(), x = L[ln], full = W.spr('dive
 function diveOK() { const tq = Q.get('dive'); return diveLane < 0 && curLane < 0 && P.fever <= 0 && diveN < DIVE.max && playT >= (tq ? 3 : DIVE.first) && playT - diveEndT >= (tq ? 5 : DIVE.cd) && (tq || gR() < 0.45); }
 function diveTry() { const b = diveObj; if (!b || b.opened || b.done || vstate !== 'up' || lane !== b.lane) return false; const z = b.o.position.z; if (z < -DIVE.zone || z > -0.6) return false;
   b.opened = true; diveOpen++; b.full.visible = false; b.open.visible = true; vstate = 'down'; diveRush = 0.45; pop('💧 急潛破幕！', pos.x, pos.y + 1.2, 0, 'pw'); beep([880, 660, 440, 330], 45, 'triangle', 0.07); buzz(35);
-  if (window.KiteBoard) KiteBoard.ev('swim_lane'); return true; }
+  if (KB()) KiteBoard.ev('swim_lane'); return true; }
 
 /* ---------- 狀態 ---------- */
 /* G98-M1：每局一個小任務（只記在遊戲裡，不給點數） */
@@ -322,13 +329,18 @@ dailyTag();
 let lastHeal = 0;
 const kill = (b) => { drop(b.o); if (b.glow) drop(b.glow); if (b.mark) drop(b.mark); };
 let state = 'ready', v = CFG.v0, dist = 0, score = 0, bonus = 0, hearts = CFG.hearts, inv = 0, nextRow = 30, combo = 0, t = 0, playT = 0, last = performance.now(), lane = 1, vstate = 'mid', vT = 0, prevFree = 1, step = 0, tipT = 0, seen = {}, feverE = 0;
+/* D444（GPT 2220 A）：短航段（試玩）——有效遊玩 60 秒到港（只算真的在跑的世界更新，暫停、背景、開場、結算不算）；54 秒出終點浮標（純裝飾、沒有碰撞）；碰撞與收局照原本；不寫最佳、點數、排行榜、旅行冊、告示板 */
+let SH = false, shSaid = false; const SHL = 60, SHW = 54, KB = () => !SH && window.KiteBoard;
+const finTex = new THREE.TextureLoader().load('assets/finish_buoys.png'); finTex.colorSpace = THREE.SRGBColorSpace;
+const fin = add(new THREE.Mesh(new THREE.PlaneGeometry(12, 5.33), new THREE.MeshBasicMaterial({ map: finTex, transparent: true, depthWrite: false }))); fin.position.set(0, 2.0, -80); fin.visible = false; fin.renderOrder = 1;
+function shFin() { if (playT < SHW) return; if (!fin.visible) { fin.visible = true; if (!shSaid) { shSaid = true; tip('看到終點浮標了，再游一下就到港！', true, 2.2); beep([660, 880], 70, 'triangle', 0.06); } } fin.position.z = -80 + clamp((playT - SHW) / (SHL - SHW), 0, 1) * 82; }
 const pos = { x: 0, y: CFG.yMid }, P = { shield: 0, magnet: 0, dash: 0, fever: 0 }, curve = { x: 0, y: 0, tx: 0, ty: 0, next: 6 };
 let bestNow = (() => { try { return +localStorage.getItem('kiteSwimBest1') || 0; } catch (e) { return 0; } })();
 function resize() { const w = stage.clientWidth, h = stage.clientHeight; R.setSize(w, h, false); cam.aspect = w / h; cam.fov = w / h < 0.62 ? 64 : 58; cam.updateProjectionMatrix(); } addEventListener('resize', resize); resize();
-function reset() { bookNew = []; objs.splice(0).forEach(kill); lastHeal = 0; v = CFG.v0; dist = 0; score = 0; bonus = 0; hearts = CFG.hearts; inv = 0; nextRow = 22; combo = 0; playT = 0; lane = 1; vstate = 'mid'; vT = 0; prevFree = 1; step = 0; pos.x = 0; pos.y = CFG.yMid; Object.keys(P).forEach((k) => (P[k] = 0)); seen = {}; feverE = 0; misV = 0; misDone = false; maxCombo = 0; lastHit = null; eaten = 0; curve.tx = curve.ty = 0; curve.next = 8; wakeSaid = false; amuSaid = false; wakeT = 0; curOn = false; curSec = 0; curAcc = 0; curLane = -1; diveN = 0; diveOpen = 0; diveEndT = -99; diveLane = -1; diveObj = null; diveRush = 0; stage.classList.remove('curOn'); WAKE.forEach((w) => { w.visible = false; w.userData.life = 0; }); if (zone !== 0) setZone(0, true); hud(); }
+function reset() { bookNew = []; objs.splice(0).forEach(kill); lastHeal = 0; v = CFG.v0; dist = 0; score = 0; bonus = 0; hearts = CFG.hearts; inv = 0; nextRow = 22; combo = 0; playT = 0; lane = 1; vstate = 'mid'; vT = 0; prevFree = 1; step = 0; pos.x = 0; pos.y = CFG.yMid; Object.keys(P).forEach((k) => (P[k] = 0)); seen = {}; feverE = 0; misV = 0; misDone = false; maxCombo = 0; lastHit = null; eaten = 0; curve.tx = curve.ty = 0; curve.next = 8; wakeSaid = false; amuSaid = false; wakeT = 0; curOn = false; curSec = 0; curAcc = 0; curLane = -1; diveN = 0; diveOpen = 0; diveEndT = -99; diveLane = -1; diveObj = null; diveRush = 0; stage.classList.remove('curOn'); WAKE.forEach((w) => { w.visible = false; w.userData.life = 0; }); if (zone !== 0) setZone(0, true); shSaid = false; fin.visible = false; fin.position.z = -80; hud(); }
 const speedLv = () => Math.min(Math.floor(playT / CFG.vEvery) + 1, Math.floor((CFG.vMax - CFG.v0) / CFG.vStep) + 1);
 const mult = () => Math.min(5, (combo >= 50 ? 4 : combo >= 25 ? 3 : combo >= 10 ? 2 : 1) * (P.dash > 0 ? 2 : 1) * (P.fever > 0 ? 3 : 1));
-function hud() { $('sc').textContent = score.toLocaleString(); $('dist').textContent = Math.floor(dist) + ' 公尺'; $('spd').textContent = '速度 ' + speedLv(); $('hp').textContent = '💙'.repeat(Math.max(0, hearts)) + '🤍'.repeat(Math.max(0, CFG.hearts - hearts)); const m = mult(); $('cb').hidden = combo < 3 && m < 2; $('cb').textContent = (combo >= 3 ? '連吃 ' + combo : '') + (m > 1 ? '・×' + m : '');
+function hud() { $('sc').textContent = score.toLocaleString(); $('dist').textContent = SH ? '航程 ' + Math.min(SHL, Math.floor(playT)) + '／' + SHL + ' 秒' : Math.floor(dist) + ' 公尺'; $('spd').textContent = '速度 ' + speedLv(); $('hp').textContent = '💙'.repeat(Math.max(0, hearts)) + '🤍'.repeat(Math.max(0, CFG.hearts - hearts)); const m = mult(); $('cb').hidden = combo < 3 && m < 2; $('cb').textContent = (combo >= 3 ? '連吃 ' + combo : '') + (m > 1 ? '・×' + m : '');
   $('misH').hidden = false; $('misH').textContent = '🎯 ' + mis.txt.replace(/^安全/, '') + ' ' + (misDone ? '✅' : Math.floor(misV) + '/' + mis.n); $('feverI').style.height = (P.fever > 0 ? P.fever / CFG.fever * 100 : feverE / CFG.feverNeed * 100) + '%'; $('fever').classList.toggle('on', P.fever > 0); $('feverfx').classList.toggle('on', P.fever > 0);
   $('pw').innerHTML = ['shield', 'magnet', 'dash'].filter((k) => P[k] > 0).map((k) => '<span><img src="assets/' + PW[k].img + '.webp" alt="">' + PW[k].name + '<b><em style="width:' + Math.round(P[k] / CFG[k] * 100) + '%"></em></b></span>').join('') + (P.fever > 0 ? '<span><img src="assets/item_frenzy_flame.webp" alt="">鯨鯊狂歡<b><em style="width:' + Math.round(P.fever / CFG.fever * 100) + '%"></em></b></span>' : '') + (curOn ? '<span><i>🌊</i>洋流加速</span>' : ''); }
 /* D377（主動待辦①快游，GPT 0845 選 A：只飛分數）：拿到分數時，一顆金色小光點從那裡直線約 0.5 秒飛到左上分數框上緣，到達時 GPT 單星亮一次 16→24px；
@@ -392,7 +404,7 @@ function update(dt) {
   const vt = Math.min(CFG.vMax, CFG.v0 + (speedLv() - 1) * CFG.vStep); v = lerp(v, vt * (P.dash > 0 ? 1.5 : 1) * (P.fever > 0 ? 1.25 : 1) * (curOn ? 1.3 : 1), 1 - Math.exp(-dt * 2.5));
   if (Math.floor(playT / CFG.vEvery) !== Math.floor((playT - dt) / CFG.vEvery) && playT > 1) { pop('加速！速度 ' + speedLv(), 0, 4.5, -6, 'gold'); beep([700, 900], 60, 'triangle', 0.06); }
   const dz = v * dt; dist += dz; score = Math.floor(dist) + bonus; if (mis.id === 'dist' && !misDone) misSet('dist', dist);
-  const zi = Math.max(0, Math.floor(dist / CFG.zoneLen)); if (zi !== zone) setZone(zi); bookCheck();
+  const zi = Math.max(0, Math.floor(dist / CFG.zoneLen)); if (zi !== zone) setZone(zi); if (!SH) bookCheck();
   curve.next -= dt; if (curve.next <= 0) { curve.next = grnd(6, 10); const k = smooth(15, 120, playT); curve.tx = playT < 15 ? 0 : gpick([-1, 1]) * grnd(0.35, 1) * 0.0018 * (0.5 + k * 0.5); curve.ty = playT < 15 ? 0 : grnd(-1, 1) * 0.0005 * k;      /* D203：彎道變緩（Dari 10/28：後面場景有點飄忽） */ }
   curve.x = lerp(curve.x, curve.tx, 1 - Math.exp(-dt * 0.8)); curve.y = lerp(curve.y, curve.ty, 1 - Math.exp(-dt * 0.8)); W.bend.value.set(curve.x, curve.y);
   const ty = vstate === 'up' ? CFG.yUp : vstate === 'down' ? CFG.yDown : CFG.yMid;
@@ -437,6 +449,7 @@ function update(dt) {
   sand.offset.y += dz / 170 * 22; caustic.offset.y += dz / 170 * 16; laneTex.offset.y += dz / 170 * 40; caustic.offset.x += dt * 0.02;
   const a = bubG.attributes.position; for (let i = 0; i < NB; i++) { a.array[i * 3 + 1] += dt * 0.6; a.array[i * 3 + 2] += dz * 0.7; if (a.array[i * 3 + 2] > 9) a.array[i * 3 + 2] -= 88; if (a.array[i * 3 + 1] > 9) a.array[i * 3 + 1] = -0.5; } a.needsUpdate = true;
   if (big) { big.position.z += dz * 0.25 + dt * 1.5; big.position.x -= big.userData.side * dt * 2.4; if (big.position.z > 20) { drop(big); big = null; } }
+  if (SH) shFin();
   if (Math.floor(t * 8) !== Math.floor((t - dt) * 8)) hud();
 }
 const helper = $('helper');
@@ -461,14 +474,14 @@ function pose(dt) {
 }
 function frame(now) {
   const dt = clamp((now - last) / 1000, 0, 0.1); last = now;
-  if (state === 'play') { const TS = +Q.get('ts') || 1; for (let k = 0; k < TS && state === 'play'; k++) { let rem = dt; while (rem > 0 && state === 'play') { const st = Math.min(rem, 0.034); update(st); rem -= st; } } }      // ?ts=4：測試用快轉；手機卡一下也不會變慢（拆成小步算）
+  if (state === 'play') { const TS = +Q.get('ts') || 1; for (let k = 0; k < TS && state === 'play'; k++) { let rem = dt; while (rem > 0 && state === 'play') { const st = Math.min(rem, 0.034); update(st); if (SH && state === 'play' && playT >= SHL) shEnd(true); rem -= st; } } }      // ?ts=4：測試用快轉；手機卡一下也不會變慢（拆成小步算）
   else { t += dt; pos.x = lerp(pos.x, Math.sin(t * 0.5) * 1.4, 0.02); pos.y = lerp(pos.y, CFG.yMid + Math.sin(t * 0.8) * 0.4, 0.02); if (state === 'ready') deco.forEach((o) => { o.position.z += dt * 3; }); }
   pose(dt); R.render(S, cam); requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 
 /* ---------- 操作：滑動；輕點左右三分之一也可換水道；方向鍵 ---------- */
-function move(dir) { if (state !== 'play') return; if (dir === 'D' && diveTry()) return; const pl = lane, pv = vstate; if (dir === 'L') lane = Math.max(0, lane - 1); else if (dir === 'R') lane = Math.min(2, lane + 1); else { const lv = { down: -1, mid: 0, up: 1 }[vstate] + (dir === 'U' ? 1 : -1); vstate = lv > 0 ? 'up' : lv < 0 ? 'down' : 'mid';      /* D170：一次只移一層，停在那層（不再自己掉回中間撞到後面的東西） */ } beep([dir === 'U' ? 700 : dir === 'D' ? 400 : 560], 40, 'sine', 0.05); if (lane !== pl) { wakeT = 0.3; wakeAcc = 1; if (!wakeSaid) { wakeSaid = true; pop('咻，轉過去囉！', pos.x, pos.y + 1.4, 0, 'pw'); } } if (window.KiteBoard && (lane !== pl || vstate !== pv)) KiteBoard.ev('swim_lane'); }
+function move(dir) { if (state !== 'play') return; if (dir === 'D' && diveTry()) return; const pl = lane, pv = vstate; if (dir === 'L') lane = Math.max(0, lane - 1); else if (dir === 'R') lane = Math.min(2, lane + 1); else { const lv = { down: -1, mid: 0, up: 1 }[vstate] + (dir === 'U' ? 1 : -1); vstate = lv > 0 ? 'up' : lv < 0 ? 'down' : 'mid';      /* D170：一次只移一層，停在那層（不再自己掉回中間撞到後面的東西） */ } beep([dir === 'U' ? 700 : dir === 'D' ? 400 : 560], 40, 'sine', 0.05); if (lane !== pl) { wakeT = 0.3; wakeAcc = 1; if (!wakeSaid) { wakeSaid = true; pop('咻，轉過去囉！', pos.x, pos.y + 1.4, 0, 'pw'); } } if (KB() && (lane !== pl || vstate !== pv)) KiteBoard.ev('swim_lane'); }
 let sw = null;
 cv.addEventListener('pointerdown', (e) => { if (state !== 'play') return; sw = { x: e.clientX, y: e.clientY, t: performance.now(), done: false }; cv.setPointerCapture && cv.setPointerCapture(e.pointerId); });
 cv.addEventListener('pointermove', (e) => { if (!sw || sw.done) return; const dx = e.clientX - sw.x, dy = e.clientY - sw.y, ax = Math.abs(dx), ay = Math.abs(dy); if (Math.hypot(dx, dy) < 36) return; if (Math.max(ax, ay) < Math.min(ax, ay) * 1.3 && Math.hypot(dx, dy) < 70) return; sw.done = true; move(ax > ay ? (dx < 0 ? 'L' : 'R') : (dy < 0 ? 'U' : 'D')); });      /* D172：滑動門檻 26→36px；斜斜滑先等方向明確（差 1.3 倍）再判斷，手指一抖不會亂換道 */
@@ -476,8 +489,9 @@ cv.addEventListener('pointerup', (e) => { if (sw && !sw.done && performance.now(
 addEventListener('keydown', (e) => { if (state === 'pause') { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); resume(); } return; } if (state !== 'play') { if ((e.key === 'Enter' || e.key === ' ') && state !== 'end') { e.preventDefault(); start(); } return; } const k = { ArrowLeft: 'L', ArrowRight: 'R', ArrowUp: 'U', ArrowDown: 'D', a: 'L', d: 'R', w: 'U', s: 'D' }[e.key]; if (k) { e.preventDefault(); move(k); } });
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') pause(); });      // 切到背景就暫停，回來按「繼續」
 
-function start() { reset(); if (window.KiteBoard) KiteBoard.start('swim'); if (DS) { gR = KiteDaily.rng(DS.td.seed); if (DS.official && KiteDaily.left() <= 0) { DS.official = false; DS.practice = true; } KiteDaily.begin(DS); if (DS.td.key === 'shield') P.shield = CFG.shield; dailyTag(); } $('startCard').hidden = true; $('endCard').hidden = true; $('pauseCard').hidden = true; $('hud').hidden = false; $('fever').hidden = false; $('lvl').hidden = false; $('pauseBtn').hidden = false; state = 'play'; last = performance.now(); music(); beep([523, 659, 784], 90); tip('左右滑換水道・上下滑一次換一層', true, 2.4); }
+function start() { reset(); if (KB()) KiteBoard.start('swim'); if (DS) { gR = KiteDaily.rng(DS.td.seed); if (DS.official && KiteDaily.left() <= 0) { DS.official = false; DS.practice = true; } KiteDaily.begin(DS); if (DS.td.key === 'shield') P.shield = CFG.shield; dailyTag(); } $('startCard').hidden = true; $('endCard').hidden = true; $('pauseCard').hidden = true; $('hud').hidden = false; $('fever').hidden = false; $('lvl').hidden = false; $('pauseBtn').hidden = false; state = 'play'; last = performance.now(); music(); beep([523, 659, 784], 90); tip(SH ? '短航段：游滿 60 秒就到港' : '左右滑換水道・上下滑一次換一層', true, 2.4); }
 function end() {
+  if (SH) { shEnd(false); return; }
   { const zi = Math.max(0, Math.floor(dist / CFG.zoneLen)); if (zi !== zone) setZone(zi, true); bookCheck(); }      /* D312（GPT 1830 B）：結算前先照距離對齊區域與旅行冊，「到了○○」「下一站還差」不會出現負數 */
   if (window.KiteBoard) { KiteBoard.ev('swim_time', { sec: playT }); KiteBoard.ev('run_end', { game: 'swim' }); }      /* D175：告示板委託 */
   snapTake();      /* D380：先抓這一刻（HUD 是網頁元素，不會進縮圖） */
@@ -517,8 +531,18 @@ function nextZone() { const nz = W.THEMES[(zone + 1) % W.THEMES.length], left = 
 function pause() { if (state !== 'play') return; state = 'pause'; music(); $('pauseMis').textContent = '🎯 ' + mis.txt + '（' + (misDone ? '完成' : Math.floor(misV) + '/' + mis.n) + '）'; $('pauseCard').hidden = false; }
 function resume() { if (state !== 'pause') return; $('pauseCard').hidden = true; last = performance.now(); state = 'play'; inv = Math.max(inv, 1.2); music(); }      /* QA：繼續後 1.2 秒無敵，不會一回來就撞 */
 $('pauseBtn').onclick = pause; $('resumeBtn').onclick = resume;
-goBtn.onclick = start;
+goBtn.onclick = () => { SH = false; start(); };
+const shBtn = $('shBtn'); if (DS) shBtn.hidden = true; shBtn.onclick = () => { if (goBtn.disabled) return; SH = true; start(); };
+function shEnd(ok) {
+  if (state !== 'play' && state !== 'pause') return; state = 'end';      /* 先鎖住：之後的碰撞、回呼都改不了結果 */
+  const sec = ok ? SHL : Math.min(SHL - 1, Math.floor(playT)); music(); fin.visible = false;
+  $('hud').hidden = true; $('fever').hidden = true; $('lvl').hidden = true; $('pauseBtn').hidden = true; $('tip').hidden = true; $('pauseCard').hidden = true; $('pw').innerHTML = ''; helper.style.display = 'none'; $('feverfx').classList.remove('on'); stage.querySelectorAll('.pop,.zone,.hf,.hs').forEach((e) => e.remove()); stage.classList.remove('curOn');
+  const c = $('endCard'); c.innerHTML = '<div class="sc"><img class="hero" src="assets/' + (ok ? 'shark_1' : 'shark_hit') + '.webp" alt="">' + (ok ? '<div class="shres"><img src="assets/short_finish_stamp.png" alt="">短航段完成</div>' : '<div class="shres">這趟先到這裡</div>') + '<div class="shbar"><i style="width:' + (sec / SHL * 100) + '%"></i></div><div class="row"><span>航程</span><span>' + sec + '／' + SHL + ' 秒</span></div><div class="row ms"><span>🎯 ' + mis.txt + '</span><span class="v">' + (misDone ? '✅ 完成' : Math.floor(misV) + '/' + mis.n) + '</span></div><div class="row"><span>游了</span><span>' + Math.floor(dist) + ' 公尺・' + theme.name + '</span></div><div class="row"><span>最高連吃</span><span>' + maxCombo + '</span></div>' + (diveN ? '<div class="row"><span>💧 急潛破幕</span><span>' + diveOpen + '／' + diveN + '</span></div>' : '') + '<p style="margin:8px 0 0;font-size:13px;opacity:.75">試玩：不計分、不進排行榜，也不記錄。</p></div><i class="scf" aria-hidden="true"></i><button class="go" id="againBtn" type="button">再試 60 秒</button><button class="go2" id="shBack" type="button">回快游開場</button>';
+  c.hidden = false; scFade(c); $('againBtn').onclick = () => { mis = MIS[Math.floor(Math.random() * MIS.length)]; start(); }; $('shBack').onclick = shBack; $('againBtn').disabled = true; setTimeout(() => { const b = $('againBtn'); if (b) b.disabled = false; }, 700);
+  beep(ok ? [523, 659, 784, 1047] : [392, 330], 110); if (ok) buzz(60);
+}
+function shBack() { SH = false; reset(); $('endCard').hidden = true; $('startCard').hidden = false; state = 'ready'; music(); }
 if (window.KiteLB) KiteLB.button($('lbSlot'), () => Object.assign({ cat: 'swim' }, (KiteLB.CATS.filter((c) => c[0] === 'swim')[0] || [])[2] || {}));
-window.__swim = { end: () => end(), get dive() { return { n: diveN, open: diveOpen, lane: diveLane, z: diveObj ? diveObj.o.position.z : null, opened: !!(diveObj && diveObj.opened) }; }, move: (d) => move(d), get vstate() { return vstate; }, get playT() { return playT; }, get glow() { return seaGlow; }, get sea() { return '#' + seaC.getHexString(); }, hf: () => hfList.filter((f) => f.el.isConnected).map((f) => f.n), hfSend: (x, y, z) => hfSend(x, y, z), set combo(x) { combo = x; },      /* D378 測試掛勾 */      /* D377 測試掛勾 */ get wake() { return WAKE.filter((w) => w.visible).length; }, ob: (n, l) => obstacle(n, l), get state() { return state; }, get score() { return score; }, get dist() { return dist; }, set dist(x) { dist = x; }, get hearts() { return hearts; }, set hearts(x) { hearts = x; }, get lane() { return lane; }, get pos() { return pos; }, get theme() { return theme && theme.id; }, regen() { deco.splice(0).forEach((o) => drop(o)); for (let z = 6; z > -130; z -= 2.6) decoAt(z); }, get speed() { return speedLv(); }, set playT(x) { playT = x; }, P, objs, start, end, move, L, setZone, get cur() { return { on: curOn, sec: curSec, lane: curLane, v }; }, set hit(x) { inv = x ? 0 : 999; } };      /* D417 測試掛勾 */
+window.__swim = { short: () => { SH = true; start(); }, get sh() { return { on: SH, t: playT, fin: fin.visible, z: fin.position.z }; }, end: () => end(), get dive() { return { n: diveN, open: diveOpen, lane: diveLane, z: diveObj ? diveObj.o.position.z : null, opened: !!(diveObj && diveObj.opened) }; }, move: (d) => move(d), get vstate() { return vstate; }, get playT() { return playT; }, get glow() { return seaGlow; }, get sea() { return '#' + seaC.getHexString(); }, hf: () => hfList.filter((f) => f.el.isConnected).map((f) => f.n), hfSend: (x, y, z) => hfSend(x, y, z), set combo(x) { combo = x; },      /* D378 測試掛勾 */      /* D377 測試掛勾 */ get wake() { return WAKE.filter((w) => w.visible).length; }, ob: (n, l) => obstacle(n, l), get state() { return state; }, get score() { return score; }, get dist() { return dist; }, set dist(x) { dist = x; }, get hearts() { return hearts; }, set hearts(x) { hearts = x; }, get lane() { return lane; }, get pos() { return pos; }, get theme() { return theme && theme.id; }, regen() { deco.splice(0).forEach((o) => drop(o)); for (let z = 6; z > -130; z -= 2.6) decoAt(z); }, get speed() { return speedLv(); }, set playT(x) { playT = x; }, P, objs, start, end, move, L, setZone, get cur() { return { on: curOn, sec: curSec, lane: curLane, v }; }, set hit(x) { inv = x ? 0 : 999; } };      /* D417 測試掛勾 */
 </script>
 </body></html>
