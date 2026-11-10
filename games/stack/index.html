@@ -707,7 +707,7 @@ function bkMake(seed) {      /* 種子 → 三組形狀；先驗證有解（而�
   return { g0: new Array(BKN * BKN).fill(0), sets: [[BKS[17][0], BKS[17][0], BKS[6][0]], [BKS[6][0], BKS[6][0], BKS[4][0]], [BKS[4][0], BKS[4][0], BKS[2][0]], [BKS[2][0], BKS[0][0], BKS[1][0]]], sol: null, seed };
 }
 const bkHash = (s) => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
-let BK = null, bkR = [], blkBtnR = null, bkDaily = null;
+let BK = null, bkR = [], blkBtnR = null, bkDaily = null, calBtnR = null;
 const BKG = { x: 32, y: 128, cs: 37 }, BKT = { y: 446, h: 116 };
 const BKCOL = [0, 1, 2, 3, 4, 5];
 function bkHow() { document.getElementById('how').innerHTML = '<span class="hl"><b>貨櫃方塊（試玩）</b>排滿一行或一列就<b>裝船</b>！</span><span class="hl">' + BKP + ' 塊內裝滿 <b>3 條</b>就開船，</span><span class="hl"><b>木箱</b>那一行一列裝不了。</span>'; }
@@ -772,7 +772,8 @@ function bkDrop(i, r, c) {
 function bkFinish(win, delay, why) {
   const rec = store.get(BKKEY, {}) || {}; let nb = false;
   if (win && !BK.practice) { if (rec.d !== BK.day) { rec.d = BK.day; rec.best = 0; } if (!rec.best || BK.n < rec.best) { rec.best = BK.n; nb = true; } store.set(BKKEY, rec); }
-  BK.end = { win, why: why || '', delay, t: -delay, nb, best: !BK.practice && rec.d === BK.day ? rec.best : 0 };
+  const cal = win && !BK.practice ? calMark(BK.day, BKVER, BK.P.seed, BK.n) : null;      /* D430：今日一題成功才在日曆留記號（BK.day＝開局時的台北日期） */
+  BK.end = { win, why: why || '', delay, t: -delay, nb, best: !BK.practice && rec.d === BK.day ? rec.best : 0, cal };
 }
 function bkUpdate(dt) {
   if (!BK) return; BK.t += dt; BK.sayT -= dt; if (BK.shipGo) BK.shipGo += dt;
@@ -834,10 +835,11 @@ function bkDrawEnd(tt) {
   const rows = [['裝船', Math.min(BK.lines, 9) + ' / ' + BKGOAL + ' 條'], ['用了', BK.n + ' 塊']];
   if (!BK.practice) rows.push(['今天最少', e.best ? e.best + ' 塊完成' : '還沒完成']);
   rows.forEach((r, i) => { const y = 270 + i * 30; rrect(50, y - 13, W - 100, 26, 10, '#F3EAD8'); text(r[0], 66, y, 13, '#3A5568', 'left', 700, false); text(r[1], W - 66, y, 14, C.ink, 'right', 900, false); });
-  if (e.nb && e.win) text('今天的新紀錄！', W / 2, 270 + rows.length * 30 + 2, 14, '#2F7F86', 'center', 900, false);
+  if (e.cal && e.win) text(!e.cal.ok ? '完成了，本機紀錄尚未存好' : e.cal.newDay ? '📅 日曆上這天留下完成記號了！' : e.nb ? '今天的新紀錄！（日曆記號已經有了）' : '📅 這天已經留過記號', W / 2, 270 + rows.length * 30 + 2, 13.5, e.cal.ok ? '#2F7F86' : C.warn, 'center', 900, false);
+  else if (e.nb && e.win) text('今天的新紀錄！', W / 2, 270 + rows.length * 30 + 2, 14, '#2F7F86', 'center', 900, false);
   else if (!e.win) text('先放哪一塊、放哪裡，留好空間再試一次！', W / 2, 270 + rows.length * 30 + 2, 12.5, '#6A7F8E', 'center', 700, false);
   const a = btn(BK.practice ? '同一題再玩' : '再玩今日一題', 384); a.f = () => bkStart(BK.practice ? 'same' : false); bkR.push(a); bkR.kbd = a.f;
-  const b = sbtn('換一題練習', 52, 446, 122), c = sbtn('回標題', W - 174, 446, 122); b.f = () => bkStart(true); c.f = bkBack; bkR.push(b, c);
+  const b = sbtn('換一題練習', 34, 446, 110), d = sbtn('📅 日曆', 150, 446, 96), c = sbtn('回標題', 252, 446, 74); b.f = () => bkStart(true); d.f = () => calOpen('end'); c.f = bkBack; bkR.push(b, d, c);      /* D430：多一顆「日曆」 */
   ctx.restore(); ctx.globalAlpha = 1;
 }
 function bkDown(p, kbd) {
@@ -855,6 +857,94 @@ function bkUp() {
   d.moved = true; BK.drag = d; const gh = bkGhost(); BK.drag = null;
   if (gh && gh.ok) bkDrop(d.i, gh.r, gh.c); else beep(220, 0.08, 'sine', 0.04);      /* 放不下就退回托盤，不消耗 */
 }
+/* ================= D430 貨櫃方塊「今日一題」完成日曆（GPT 0920 Q3 非連續完成日曆規格） =================
+   完成今日一題 → 那一天（開局時的台北題目日期，跨午夜也算原題那天）留一個小貨櫃記號。不算連續、不設全勤、缺天不責備、往期不補玩。
+   練習題不留記號。同一天多次完成只算一天；同一版本＋同一實際題目（BKVER＋實際種子）取最少用塊數，不同題分開記。
+   存在本機 kiteBlkCal1：{ v:1, start 開始記錄日, rec:{ '日期|版本|題目': { d, ver, pid, first, best } } }。
+   讀到壞資料不覆寫（顯示「紀錄讀取失敗」）；寫入失敗不撤銷過關，只說「本機紀錄尚未存好」。舊的 kiteBlk1 只有日期＋最少塊數、沒有版本與題目，不補成記號，只在那天的說明裡標「舊紀錄版本待確認」。 */
+const CALKEY = 'kiteBlkCal1';
+function calLoad() {
+  let raw; try { raw = localStorage.getItem(CALKEY); } catch (e) { return { err: 1 }; }
+  if (raw == null) return { v: 1, start: bkToday(), rec: {}, fresh: 1 };
+  try { const o = JSON.parse(raw); if (!o || o.v !== 1 || typeof o.rec !== 'object' || !o.rec) return { err: 1 }; return o; } catch (e) { return { err: 1 }; }
+}
+function calSave(o) { try { const c = { v: 1, start: o.start, rec: o.rec }; localStorage.setItem(CALKEY, JSON.stringify(c)); return true; } catch (e) { return false; } }
+function calMark(day, ver, pid, n) {      /* 今日一題成功結算時呼叫一次；回傳 { ok, newDay, best, prev } */
+  const o = calLoad(); if (o.err) return { ok: false, err: 1 };
+  const k = day + '|' + ver + '|' + pid, had = Object.keys(o.rec).some((q) => o.rec[q].d === day), r = o.rec[k], prev = r ? r.best : 0;
+  if (r) { if (n < r.best) r.best = n; } else o.rec[k] = { d: day, ver, pid, first: Date.now(), best: n };
+  if (day < o.start) o.start = day;
+  return { ok: calSave(o), newDay: !had, best: o.rec[k].best, prev };
+}
+const calDays = (o) => { const s = {}; if (o && o.rec) Object.keys(o.rec).forEach((k) => { s[o.rec[k].d] = 1; }); return s; };
+let CAL = null, calR = [];
+function calOpen(from) {
+  const o = calLoad(), t = bkToday();
+  CAL = { o, from, y: +t.slice(0, 4), m: +t.slice(5, 7), sel: from === 'end' && BK ? BK.day : t, t: 0, pop: from === 'end' && BK && BK.end && BK.end.cal && BK.end.cal.newDay ? BK.day : null };
+  if (CAL.sel !== t) { CAL.y = +CAL.sel.slice(0, 4); CAL.m = +CAL.sel.slice(5, 7); }
+  if (o.fresh && !o.err) calSave(o);      /* 第一次打開就記下「開始記錄」那天 */
+  state = 'blkcal'; for (let i = 0; i < 6; i++) if (!IMG['box_' + i]) want('box_' + i, '../assets/stack/box_' + i + '.png'); if (!IMG.blk_cell) want('blk_cell', '../assets/stack/blk_cell.png'); if (!IMG.bg_stack_base) want('bg_stack_base', '../assets/stack/bg_stack_base.jpg'); beep(700, 0.06);
+}
+const calYm = (y, m) => y + '-' + String(m).padStart(2, '0');
+function calDraw(tt) {
+  const o = CAL.o, today = bkToday(), ym = calYm(CAL.y, CAL.m), days = calDays(o); calR = []; CAL.t += 1 / 60;
+  const bg = ready('bg_stack_base'); if (bg) ctx.drawImage(bg, 0, 0, W, H); else { ctx.fillStyle = '#7FC4D6'; ctx.fillRect(0, 0, W, H); }
+  ctx.fillStyle = 'rgba(14,34,50,.5)'; ctx.fillRect(0, 0, W, H);
+  panel(20, 560);
+  text('貨櫃方塊・完成日曆', W / 2, 46, 18, C.ink, 'center', 900, false);
+  /* 月份導覽：最早到「開始記錄」或最早紀錄那個月，最晚到這個月 */
+  const minYm = o.err ? today.slice(0, 7) : (Object.keys(days).concat([o.start]).sort()[0] || today).slice(0, 7), maxYm = today.slice(0, 7);
+  const canP = ym > minYm, canN = ym < maxYm;
+  text(CAL.y + ' 年 ' + CAL.m + ' 月', W / 2, 80, 16, C.ink, 'center', 900, false);
+  const pv = { x: 40, y: 64, w: 52, h: 32 }, nx = { x: W - 92, y: 64, w: 52, h: 32 };
+  rrect(pv.x, pv.y, pv.w, pv.h, 16, canP ? '#FFF1C9' : '#EFE6D6', canP ? C.ink : '#C9BCA6', 2); text('◀', pv.x + 26, pv.y + 16, 14, canP ? C.ink : '#B7A98F', 'center', 900, false);
+  rrect(nx.x, nx.y, nx.w, nx.h, 16, canN ? '#FFF1C9' : '#EFE6D6', canN ? C.ink : '#C9BCA6', 2); text('▶', nx.x + 26, nx.y + 16, 14, canN ? C.ink : '#B7A98F', 'center', 900, false);
+  if (canP) { pv.f = () => { CAL.m--; if (CAL.m < 1) { CAL.m = 12; CAL.y--; } CAL.sel = null; beep(600, 0.04); }; calR.push(pv); }
+  if (canN) { nx.f = () => { CAL.m++; if (CAL.m > 12) { CAL.m = 1; CAL.y++; } CAL.sel = null; beep(600, 0.04); }; calR.push(nx); }
+  /* 星期列（一～日）＋日期格 */
+  const gx = 36, gy = 112, cw = 41.1, ch = 40, wk = ['一', '二', '三', '四', '五', '六', '日'];
+  wk.forEach((s, i) => text(s, gx + i * cw + cw / 2, gy, 12, i > 4 ? '#C9503C' : '#6A7F8E', 'center', 800, false));
+  const first = new Date(Date.UTC(CAL.y, CAL.m - 1, 1)), lead = (first.getUTCDay() + 6) % 7, nd = new Date(Date.UTC(CAL.y, CAL.m, 0)).getUTCDate();
+  let monthN = 0;
+  for (let d = 1; d <= nd; d++) {
+    const i = lead + d - 1, x = gx + (i % 7) * cw, y = gy + 14 + Math.floor(i / 7) * ch, ds = ym + '-' + String(d).padStart(2, '0'), done = !!days[ds], isT = ds === today, fut = ds > today, isSel = ds === CAL.sel;
+    if (done) monthN++;
+    rrect(x + 2, y + 2, cw - 4, ch - 4, 8, isSel ? '#FFE3A1' : fut ? 'rgba(243,234,216,.45)' : '#F3EAD8', isT ? '#E0884A' : isSel ? '#F4BB42' : null, isT ? 3 : 2);
+    text(String(d), x + 9, y + 12, 11.5, fut ? '#B7A98F' : '#3A5568', 'left', 800, false);
+    if (done) { const pop = CAL.pop === ds ? clamp(CAL.t * 3, 0, 1) : 1; bkCell(x + cw - 24 + 9 * (1 - pop), y + ch - 22 + 9 * (1 - pop), 18 * pop + 0.01, 1, pop); }
+    const r = { x: x + 2, y: y + 2, w: cw - 4, h: ch - 4, f: () => { CAL.sel = ds; beep(640, 0.04); } }; calR.push(r);
+  }
+  /* 圖例＋本月天數 */
+  const ly = gy + 14 + 6 * ch + 8;
+  rrect(40, ly - 9, 18, 18, 5, '#F3EAD8', '#E0884A', 2.5); text('今天', 62, ly, 11.5, '#3A5568', 'left', 700, false);
+  bkCell(98, ly - 9, 18, 1); text('已完成', 120, ly, 11.5, '#3A5568', 'left', 700, false);
+  text(o.err ? '紀錄讀取失敗' : '本月已留下 ' + monthN + ' 天完成紀錄', W - 40, ly, 13, o.err ? C.warn : '#2F7F86', 'right', 900, false);
+  /* 選到的日期：資訊＋可以做什麼 */
+  const iy = ly + 22; rrect(40, iy, W - 80, 92, 12, '#FFFDF8', '#E3D6BE', 2);
+  const sel = CAL.sel, lines = []; let act = null;
+  const old = store.get(BKKEY, null), recs = o.err ? [] : Object.keys(o.rec).map((k) => o.rec[k]).filter((r) => r.d === sel);
+  if (!sel) lines.push('點一天看看那天的紀錄');
+  else {
+    const md = (+sel.slice(5, 7)) + ' 月 ' + (+sel.slice(8, 10)) + ' 日';
+    if (o.err) lines.push(md, '紀錄讀取失敗，原本的資料沒有動。');
+    else if (sel > today) lines.push(md, '尚未到日期');
+    else if (sel === today) {
+      const cur = recs.filter((r) => r.ver === BKVER);
+      if (cur.length) { lines.push(md + '・今天 ✓ 已完成'); cur.forEach((r) => lines.push('這一題最少 ' + r.best + ' 塊完成')); act = ['再玩今日一題', () => bkStart(false)]; }
+      else { lines.push(md + '・今天'); if (recs.length) lines.push('之前版本的題目已完成；這一版還沒有紀錄'); else lines.push('今日一題還沒完成'); act = ['開始今日一題', () => bkStart(false)]; }
+    } else if (recs.length) { lines.push(md + '・✓ 已完成'); recs.slice(0, 2).forEach((r, i) => lines.push((recs.length > 1 ? '第 ' + (i + 1) + ' 題（版本 ' + r.ver + '）' : '') + '最少 ' + r.best + ' 塊完成')); }
+    else if (sel < o.start) lines.push(md, '尚未開始記錄');
+    else lines.push(md, '本機無完成紀錄');
+    if (!o.err && old && old.d === sel && old.best && !recs.length) lines.push('舊紀錄（版本待確認）：最少 ' + old.best + ' 塊');
+    if (sel !== today && sel <= today && !o.err) lines.push('往期只看紀錄，不能補玩');
+  }
+  lines.slice(0, 4).forEach((s, i) => text(s, W / 2, iy + 18 + i * 19, i ? 12.5 : 14, i ? '#3A5568' : C.ink, 'center', i ? 700 : 900, false));
+  text('紀錄只存在這個瀏覽器，換手機或清除資料就看不到', W / 2, iy + 108, 10.5, '#8A9AA6', 'center', 700, false);
+  /* 按鈕 */
+  calR.kbd = null; if (act) { const a = sbtn(act[0], 40, iy + 120, 160); a.f = act[1]; calR.push(a); calR.kbd = a.f; }
+  const back = sbtn(CAL.from === 'end' ? '回結算' : '回標題', act ? W - 152 : W / 2 - 56, iy + 120, act ? 112 : 112); back.f = () => { if (CAL.from === 'end' && BK && BK.end) { state = 'blkend'; } else { CAL = null; bkBack(); } beep(520, 0.05); }; calR.push(back); if (!calR.kbd) calR.kbd = back.f;
+}
+function calTap(p, kbd) { if (kbd) { if (calR.kbd) calR.kbd(); return; } const r = calR.slice().reverse().find((q) => inR(q, p, 2)); if (r) r.f(); }
 function hbtn(label, x, y, w, col) { rrect(x, y + 4, w, 46, 23, 'rgba(0,0,0,.25)'); rrect(x, y, w, 46, 23, col, C.ink, 3); text(label, x + w / 2, y + 23, 14.5, C.paper, 'center', 900); return { x, y, w, h: 46 }; }
 /* ---------- 開場、結束畫面 ---------- */
 let startBtnR = null, endBtnR = null;
@@ -875,7 +965,7 @@ function drawTitle(tt) {
     text(best.merge ? '最佳 ' + best.merge + ' 分' : '第一次玩，試試看能合到哪裡！', W / 2, 446, 13, '#6A7F8E', 'center', 700, false);
     startBtnR = btn('點一下開始', 456);
   } else {
-    panel(70, DS ? 440 : 494);      /* 關卡模式：一般進來（不是今日挑戰）多一顆「關卡模式（試玩）」；點按鈕以外的地方照舊開始無盡模式 */
+    panel(70, DS ? 440 : 520);      /* 關卡模式：一般進來（不是今日挑戰）多一顆「關卡模式（試玩）」；點按鈕以外的地方照舊開始無盡模式 */
     text('小鳶疊貨櫃', W / 2, 108, 30, C.ink, 'center', 900, false);
     text('點一下放下貨櫃，越高越好', W / 2, 140, 13, '#3A5568', 'center', 700, false);
     // 示意：一疊貨櫃＋小鳶
@@ -885,8 +975,9 @@ function drawTitle(tt) {
     const tips = ['點一下：放下貨櫃', '切齊下面那個＝完美，連續完美會變寬', '金貨櫃加分又補寬、每 10 層裝滿一艘船'];
     tips.forEach((s, i) => { ell(58, 368 + i * 24, 4, 4, C.dusk); text(s, 70, 368 + i * 24, 13, C.ink, 'left', 700, false); });
     const bt = best.stack ? '最佳 ' + best.stack + ' 分' + (best.stackH ? '・最高 ' + best.stackH + ' 層' : '') : '第一次玩，看看能疊幾層！';
-    if (DS) { lvBtnR = null; blkBtnR = null; text(bt, W / 2, 446, 13, '#6A7F8E', 'center', 700, false); startBtnR = btn('點一下開始', 456); }
-    else { text(bt, W / 2, 434, 13, '#6A7F8E', 'center', 700, false); startBtnR = btn('無盡模式', 446); lvBtnR = hbtn('關卡（試玩）', 34, 502, 140, '#3F7FBF'); blkBtnR = hbtn('貨櫃方塊（試玩）', 186, 502, 140, '#D9773F'); rrect(298, 492, 34, 20, 10, C.gold, C.ink, 2); text('新', 315, 502, 11, C.ink, 'center', 900, false); }      /* D425：多一顆「貨櫃方塊（試玩）」，和關卡模式並排 */
+    if (DS) { lvBtnR = null; blkBtnR = null; calBtnR = null; text(bt, W / 2, 446, 13, '#6A7F8E', 'center', 700, false); startBtnR = btn('點一下開始', 456); }
+    else { text(bt, W / 2, 434, 13, '#6A7F8E', 'center', 700, false); startBtnR = btn('無盡模式', 446); lvBtnR = hbtn('關卡（試玩）', 34, 502, 140, '#3F7FBF'); blkBtnR = hbtn('貨櫃方塊（試玩）', 186, 502, 140, '#D9773F'); rrect(298, 492, 34, 20, 10, C.gold, C.ink, 2); text('新', 315, 502, 11, C.ink, 'center', 900, false);
+      const cd = calLoad(), cm = bkToday().slice(0, 7), cn = cd.err ? 0 : Object.keys(calDays(cd)).filter((k) => k.slice(0, 7) === cm).length; calBtnR = { x: 96, y: 554, w: 168, h: 30 }; rrect(96, 554, 168, 28, 14, '#F3EAD8', '#D9773F', 2); text('📅 方塊完成日曆' + (cn ? '・本月 ' + cn + ' 天' : ''), W / 2, 568, 12, '#8A4A22', 'center', 900, false); }      /* D430 */      /* D425：多一顆「貨櫃方塊（試玩）」，和關卡模式並排 */
   }
 }
 /* D381（GPT 1251：合成港／疊貨櫃結算加這局最後一刻的遊戲畫面縮圖＋每局雙星貼紙）：結算前抓畫布上最後一格，裁 16:9（合成港偏下看魚艙、疊貨櫃以塔頂為中心）；只畫在結算卡上，不存檔、不下載、不開相機、不改計分 */
@@ -929,7 +1020,9 @@ function pos(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX -
 cv.addEventListener('pointerdown', (e) => {
   e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (er) {} const p = pos(e);
   if (state === 'lvsel' || state === 'lvend') { lvTap(p, e.kbd); return; }
+  if (state === 'blkcal') { calTap(p, e.kbd); return; }      /* D430 完成日曆 */
   if (state === 'blk' || state === 'blkend') { bkDown(p, e.kbd); return; }      /* D425 貨櫃方塊 */
+  if (state === 'ready' && mode === 'stack' && !e.kbd && inR(calBtnR, p, 4)) { calOpen('title'); return; }
   if (state === 'ready' && mode === 'stack' && !e.kbd && inR(blkBtnR, p, 6)) { bkStart(false); return; }
   if (state === 'ready' && mode === 'stack' && !e.kbd && inR(lvBtnR, p, 8)) { lvSel(); return; }
   if (state === 'ready') { state = 'play'; dailyBegin(); if (window.KiteBoard) KiteBoard.start(mode); beep(660, 0.08); if (mode === 'merge') { down = true; G.down(p.x, p.y); G.tap = null; } return; }
@@ -969,6 +1062,7 @@ function frame(now) {
   if (state === 'lvsel') drawLvSel(clock);
   if (state === 'lvend') { lvEnd.t += dt; drawLvEnd(lvEnd); }
   if (state === 'blkend') bkDrawEnd(clock);
+  if (state === 'blkcal' && CAL) calDraw(clock);
   if (state === 'end') { endInfo.t += dt; drawEnd(endInfo); }
   requestAnimationFrame(frame);
 }
@@ -982,7 +1076,7 @@ function toot() { const now = performance.now(); if (now - hornT < 1100) return;
   if (snd && navigator.vibrate) try { navigator.vibrate([90, 140, 110]); } catch (e) {} }
 let tab = 'stack';      // D119：放進遊戲大廳的單一遊戲版（不計分・隨時玩）
 setMode(HOW[tab] ? tab : 'merge'); requestAnimationFrame(frame); dailyTag();
-window.__mini = { get G() { return G; }, get state() { return state; }, setMode, finish, IMG, SEAF, get fest() { return { pf: festPF(), n: fests.length, txt: !!festTxt }; }, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; }, lv: { start: lvStart, sel: lvSel, back: lvBack, LVG, get save() { return lvSave; }, get end() { return lvEnd; }, get cur() { return LV; } }, bk: { start: bkStart, back: bkBack, drop: bkDrop, make: bkMake, solve: bkSolve, get BK() { return BK; } } };      /* 關卡模式測試掛勾 */      /* D263：測試掛勾加 pop／floats；D307 加 finish */      /* D254：測試掛勾，固定亂數 */
+window.__mini = { get G() { return G; }, get state() { return state; }, setMode, finish, IMG, SEAF, get fest() { return { pf: festPF(), n: fests.length, txt: !!festTxt }; }, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; }, lv: { start: lvStart, sel: lvSel, back: lvBack, LVG, get save() { return lvSave; }, get end() { return lvEnd; }, get cur() { return LV; } }, bk: { start: bkStart, back: bkBack, drop: bkDrop, make: bkMake, solve: bkSolve, get BK() { return BK; }, cal: { open: calOpen, load: calLoad, mark: calMark, get CAL() { return CAL; } } } };      /* 關卡模式測試掛勾 */      /* D263：測試掛勾加 pop／floats；D307 加 finish */      /* D254：測試掛勾，固定亂數 */
 })();
 </script>
 <script>(function () { var b = document.getElementById('backBtn'); b.addEventListener('click', function (e) { if (window.__mini && window.__mini.state === 'play' && !confirm('這局還在進行，確定要離開嗎？（分數不會記錄）')) e.preventDefault(); }); /* QA：遊戲中按返回先確認 */ /* D161：一律回小鳶樂園（遊戲大廳），不再回舊版測試首頁 */ })();</script>

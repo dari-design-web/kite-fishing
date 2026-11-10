@@ -1,5 +1,6 @@
 /* D428（GPT 0840 Q2 推薦、G105 A8）：雨後小船送菜——小院 4×4 水槽，點一下轉 90 度，把菜園（左）接到廚房門口（右），按「放船」讓紙船載菜籃過去。
-   不倒數、不扣料、接錯船會停住，可以再轉再放；到了才進原本的做菜流程（home.js 處理扣料）。圖先用程式畫，GPT 四張圖（底板／直槽／彎槽／紙船）交了再換。 */
+   不倒數、不扣料、接錯船會停住，可以再轉再放；到了才進原本的做菜流程（home.js 處理扣料）。圖先用程式畫，GPT 四張圖（底板／直槽／彎槽／紙船）交了再換。
+   D429：換上 GPT 0920 四張圖（assets/boat/yard.webp 小院底板、ch_s／ch_c 直槽彎槽、boat.png 紙船）；接通的藍水仍用程式疊在槽上。圖載不到時退回程式畫。 */
 (function () {
   var N = 4, DX = [0, 1, 0, -1], DY = [-1, 0, 1, 0];      /* 方向 0 上 1 右 2 下 3 左 */
   function $(id) { return document.getElementById(id); }
@@ -57,28 +58,32 @@
   css.textContent = '.bt{position:fixed;inset:0;z-index:60;max-width:430px;margin:0 auto;display:flex;flex-direction:column;background:linear-gradient(#9FC7D8,#CFE3D3 30%,#B9D6A3);font-family:inherit;touch-action:manipulation;-webkit-user-select:none;user-select:none;overflow:hidden}' +
     '.bt .top{margin:10px;display:flex;align-items:center;gap:8px;background:#FFFDF8;border-radius:14px;padding:8px 12px;box-shadow:0 3px 10px rgba(0,0,0,.18)}.bt .top b{font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bt .top span{margin-left:auto;font:800 13px/1 sans-serif;color:#2B6E8F;white-space:nowrap}' +
     '.bt .tip{margin:0 10px 8px;padding:8px 12px;border-radius:12px;background:rgba(255,241,204,.97);color:#5B4A3A;text-align:center;font-weight:800;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,.15)}' +
-    '.bt .yard{position:relative;margin:4px auto 0;width:min(96vw,400px);aspect-ratio:1/1.12}' +
-    '.bt .grid{position:absolute;left:13%;right:13%;top:6%;aspect-ratio:1;display:grid;grid-template-columns:repeat(4,1fr);gap:3px;padding:6px;border-radius:16px;background:#7E9B5E;box-shadow:inset 0 0 0 3px #5E7A44,0 4px 10px rgba(0,0,0,.2)}' +
-    '.bt .cell{position:relative;border:0;padding:0;border-radius:10px;background:#A7C77F;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:inset 0 -3px 0 rgba(0,0,0,.12)}.bt .cell svg{position:absolute;inset:0;width:100%;height:100%;transition:transform .16s ease-out}.bt .cell.spin{filter:brightness(1.08)}' +
-    '.bt .cell .ch{fill:none;stroke:#8C7A62;stroke-width:34;stroke-linecap:butt}.bt .cell .wt{fill:none;stroke:#D6E8EE;stroke-width:22;stroke-linecap:butt;transition:stroke .25s}.bt .cell.wet .wt{stroke:#3D9BD1}.bt .cell.wet .rp{opacity:1}.bt .cell .rp{fill:none;stroke:#BFE6FA;stroke-width:3;stroke-dasharray:6 14;opacity:0;animation:btR 1s linear infinite}@keyframes btR{to{stroke-dashoffset:-20}}' +
-    '.bt .end{position:absolute;top:6%;width:13%;display:flex;flex-direction:column;align-items:center;font:800 11px/1.1 sans-serif;color:#4A3426;text-align:center;pointer-events:none}.bt .end i{font-size:26px;font-style:normal;display:block;filter:drop-shadow(0 2px 2px rgba(0,0,0,.2))}' +
-    '.bt .spout{position:absolute;width:13%;height:7%;background:#3D9BD1;border-radius:6px;box-shadow:inset 0 0 0 3px #8C7A62}.bt .spout.out{background:#D6E8EE}.bt .spout.out.wet{background:#3D9BD1}' +
-    '.bt .boat{position:absolute;width:15%;aspect-ratio:3/2;transform:translate(-50%,-60%);transition:left .32s linear,top .32s linear;pointer-events:none;z-index:3;filter:drop-shadow(0 3px 2px rgba(0,0,0,.25))}.bt .boat svg{width:100%;height:100%;display:block}.bt .boat i{position:absolute;left:50%;top:-6%;transform:translateX(-50%);font-size:18px;font-style:normal}.bt .boat.stuck{animation:btS .35s 2}@keyframes btS{30%{margin-left:-4px}70%{margin-left:4px}}.bt .boat.home{transition:left .6s ease-in,top .6s ease-in,opacity .6s;opacity:0}' +
+    '.bt .yard{position:relative;margin:4px auto 0;width:min(96vw,400px);aspect-ratio:1;background:#A9CF6A url(assets/boat/yard.webp) center/100% 100% no-repeat;border-radius:18px;box-shadow:0 4px 12px rgba(0,0,0,.2)}' +
+    '.bt .grid{position:absolute;left:13%;right:13%;top:13%;aspect-ratio:1;display:grid;grid-template-columns:repeat(4,1fr);gap:0;padding:6px;border-radius:16px;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 2px rgba(94,122,68,.35)}' +
+    '.bt .cell{position:relative;border:0;padding:0;border-radius:10px;background:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:inset 0 0 0 1px rgba(94,122,68,.18)}.bt .cell:active{background:rgba(255,255,255,.18)}.bt .cell svg{position:absolute;inset:0;width:100%;height:100%;transition:transform .16s ease-out}.bt .cell.spin{filter:brightness(1.08)}' +
+    '.bt .cell .ch{fill:none;stroke:#8C7A62;stroke-width:34;stroke-linecap:butt}.bt .cell .wt{fill:none;stroke:#D6E8EE;stroke-width:22;stroke-linecap:butt;transition:stroke .25s}.bt.img .cell .wt{stroke:transparent;stroke-width:24}.bt.img .cell.wet .wt{stroke:rgba(61,155,209,.88)}.bt .cell.wet .wt{stroke:#3D9BD1}.bt .cell.wet .rp{opacity:1}.bt .cell .rp{fill:none;stroke:#BFE6FA;stroke-width:3;stroke-dasharray:6 14;opacity:0;animation:btR 1s linear infinite}@keyframes btR{to{stroke-dashoffset:-20}}' +
+    '.bt .end{position:absolute;top:13%;width:13%;display:flex;flex-direction:column;align-items:center;font:800 11px/1.1 sans-serif;color:#4A3426;text-align:center;pointer-events:none}.bt .end i{font-size:26px;font-style:normal;display:block;filter:drop-shadow(0 2px 2px rgba(0,0,0,.2))}' +
+    '.bt .spout{position:absolute;width:13%;height:7%;background:#3D9BD1;border-radius:6px;box-shadow:inset 0 0 0 3px #C9A570,0 1px 0 #8C6A3E}.bt .end b{display:inline-block;margin-top:2px;padding:1px 6px;border-radius:8px;background:rgba(255,253,248,.92)}.bt .spout.out{background:#D6E8EE}.bt .spout.out.wet{background:#3D9BD1}' +
+    '.bt .boat{position:absolute;width:15%;aspect-ratio:3/2;transform:translate(-50%,-60%);transition:left .32s linear,top .32s linear;pointer-events:none;z-index:3;filter:drop-shadow(0 3px 2px rgba(0,0,0,.25))}.bt .boat svg,.bt .boat img{width:100%;height:100%;display:block}.bt .boat i{position:absolute;left:50%;top:-6%;transform:translateX(-50%);font-size:18px;font-style:normal}.bt .boat.stuck{animation:btS .35s 2}@keyframes btS{30%{margin-left:-4px}70%{margin-left:4px}}.bt .boat.home{transition:left .6s ease-in,top .6s ease-in,opacity .6s;opacity:0}' +
     '.bt .rain{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(105deg,transparent 0 22px,rgba(255,255,255,.28) 22px 23px);background-size:60px 60px;animation:btRain 1.2s linear infinite;opacity:.5}@keyframes btRain{to{background-position:-20px 60px}}' +
     '.bt .sp{flex:1}.bt .row{display:flex;gap:8px;padding:8px 12px calc(10px + env(safe-area-inset-bottom,0px));background:#6B4A2E}.bt .row .btn{flex:1}.bt .row .btn.ghost{color:#FFF4D6}' +
     '.bt .go.ready{animation:btG 1.1s ease-in-out infinite}@keyframes btG{50%{box-shadow:0 0 0 5px rgba(244,187,66,.55)}}' +
     '.bt .yay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:rgba(30,20,10,.55);color:#fff;text-align:center;z-index:5;padding:20px}.bt .yay b{font-size:20px}.bt .yay .big{font-size:52px}' +
     '@media (prefers-reduced-motion:reduce){.bt .rain,.bt .cell .rp,.bt .go.ready{animation:none}}';
   document.head.appendChild(css);
-  function svgTile(t, wetIn) {
+  /* D429：圖有載入（IMGOK）就用 GPT 槽圖當底，程式只畫水；沒有就照舊整條程式畫 */
+  var IMGOK = false, pre = ['assets/boat/ch_s.png', 'assets/boat/ch_c.png', 'assets/boat/boat.png'], preN = 0;
+  pre.forEach(function (u) { var im = new Image(); im.onload = function () { if (++preN === pre.length) IMGOK = true; }; im.src = u; });
+  function svgTile(t) {
     var d = t.k === 's' ? 'M50 0 L50 100' : 'M50 0 Q50 50 100 50';
+    if (IMGOK) return '<svg viewBox="0 0 100 100" style="transform:rotate(' + t.r * 90 + 'deg)"><image href="assets/boat/ch_' + t.k + '.png" x="0" y="0" width="100" height="100"/><path class="wt" d="' + d + '"/><path class="rp" d="' + d + '"/></svg>';
     return '<svg viewBox="0 0 100 100" style="transform:rotate(' + t.r * 90 + 'deg)"><path class="ch" d="' + d + '"/><path class="wt" d="' + d + '"/><path class="rp" d="' + d + '"/></svg>';
   }
-  var BOAT = '<svg viewBox="0 0 60 40"><path d="M4 18 L56 18 L46 34 L14 34 Z" fill="#FFF8EA" stroke="#8C7A62" stroke-width="2"/><path d="M14 18 L30 4 L46 18" fill="#F3E3C8" stroke="#8C7A62" stroke-width="2"/></svg>';
+  function boatHtml() { return IMGOK ? '<img src="assets/boat/boat.png" alt="">' : '<svg viewBox="0 0 60 40"><path d="M4 18 L56 18 L46 34 L14 34 Z" fill="#FFF8EA" stroke="#8C7A62" stroke-width="2"/><path d="M14 18 L30 4 L46 18" fill="#F3E3C8" stroke="#8C7A62" stroke-width="2"/></svg>'; }
   /* opt：{ title, items:'🥬🍅', practice } → onArrive(moves) 抵達廚房；onQuit() 不送了 */
   function start(opt, onArrive, onQuit) {
     var P = puzzle(), moves = 0, sailing = false;
-    var w = el('div', 'bt');
+    var w = el('div', 'bt' + (IMGOK ? ' img' : ''));
     w.innerHTML = '<div class="top"><b>⛵ 雨後送菜：' + (opt.title || '練習') + '</b><span id="btMv">轉了 0 下</span></div><div class="tip" id="btTip">點水槽轉方向，把菜園接到廚房門口</div>' +
       '<div class="sp"></div><div class="yard" id="btYard"><div class="rain"></div><div class="grid" id="btGrid"></div></div><div class="sp"></div>' +
       '<div class="row"><button class="btn go" id="btGo">⛵ 放船</button><button class="btn ghost" id="btNew">換一題</button><button class="btn ghost" id="btX">' + (opt.practice ? '關閉' : '直接進廚房') + '</button></div>';
@@ -99,14 +104,14 @@
         var a = pos(0, P.sy), z = pos(N - 1, P.ey), cw = a[2];
         var s = el('div', 'spout'); s.style.cssText = 'left:0;top:' + (a[1] - cw * .17) + 'px;width:' + (a[0] - cw / 2) + 'px;height:' + cw * .34 + 'px'; yard.appendChild(s);
         var o = el('div', 'spout out'); o.id = 'btOut'; o.style.cssText = 'right:0;top:' + (z[1] - cw * .17) + 'px;width:' + (yard.clientWidth - z[0] - cw / 2) + 'px;height:' + cw * .34 + 'px'; yard.appendChild(o);
-        var e1 = el('div', 'end', '<i>🥬</i>菜園'); e1.style.cssText = 'left:0;top:' + (a[1] + cw * .2) + 'px'; yard.appendChild(e1);
-        var e2 = el('div', 'end', '<i>🏠</i>廚房'); e2.style.cssText = 'right:0;top:' + (z[1] - cw * .17 - 44) + 'px'; yard.appendChild(e2);
-        var bt = el('div', 'boat', BOAT + '<i>🧺</i>'); bt.id = 'btBoat'; bt.style.left = (a[0] - cw) + 'px'; bt.style.top = a[1] + 'px'; yard.appendChild(bt);
+        var e1 = el('div', 'end', '<i>🥬</i><b>菜園</b>'); e1.style.cssText = 'left:0;top:' + (a[1] + cw * .2) + 'px'; yard.appendChild(e1);
+        var e2 = el('div', 'end', '<i>🏠</i><b>廚房</b>'); e2.style.cssText = 'right:0;top:' + (z[1] - cw * .17 - 44) + 'px'; yard.appendChild(e2);
+        var bt = el('div', 'boat', boatHtml() + '<i>🧺</i>'); bt.id = 'btBoat'; bt.style.left = (a[0] - cw) + 'px'; bt.style.top = a[1] + 'px'; yard.appendChild(bt);
         paint();
       });
     }
     function paint() {
-      var f = flow(P), wet = {};
+      var f = flow(P), wet = {}; w.classList.toggle('img', IMGOK);
       f.cells.forEach(function (c) { wet[c[0] + ',' + c[1]] = 1; });
       for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) { var b = cells[y * N + x]; b.innerHTML = svgTile(P.g[y][x]); b.classList.toggle('wet', !!wet[x + ',' + y]); }
       var o = $('btOut'); if (o) o.classList.toggle('wet', f.done);
