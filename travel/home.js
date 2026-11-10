@@ -96,7 +96,7 @@
   function dishImg(k) { return img('dish_' + DISH[k].f); }
   function sv() { try { save(); return true; } catch (e) { return false; } }
   function modal(html) { var m = $('modal'); m.innerHTML = '<div class="sheet2 hm">' + html + '</div>'; m.classList.add('on'); return m; }
-  function close() { $('modal').classList.remove('on'); render(); }
+  function close() { $('modal').classList.remove('on'); render(); deskMaybe(); }
   function say(t) {
     var hm = document.querySelector('#modal.on .hm');
     if (hm) { var e = hm.querySelector('.hmSay'); if (!e) { e = document.createElement('p'); e.className = 'hmSay'; hm.insertBefore(e, hm.firstChild); } e.textContent = '小鳶：' + t; e.classList.remove('pop'); void e.offsetWidth; e.classList.add('pop'); return; }
@@ -501,7 +501,7 @@
   function visDone(line, gain, f, extra) {
     var h = H(), r0 = rec(f); r0.n++; r0.h += gain; h.vis.cur = null; h.vis.next = Date.now() + VIS_MIN * MIN; sv();
     modal('<div class="vCard">' + vimg(f) + '</div><h3 style="text-align:center">' + FR[f].n + '</h3><p style="text-align:center">「' + line + '」</p>' + (extra || '') + '<p class="mu sm" style="text-align:center">' + (gain ? '💛 +' + gain + '（和' + FR[f].n + '的回憶 ' + r0.h + '）' : '一起度過了一段時間') + '・' + FR[f].n + '來玩過 ' + r0.n + ' 次</p><div class="row"><button class="btn" id="hmOk">好</button><button class="btn ghost" id="hmVb2">📒 看手帳</button></div>');
-    $('hmOk').onclick = close; $('hmVb2').onclick = bookSheet; say(gain > 1 ? '朋友好開心！' : '下次還要再來喔～');
+    if (gain > 0) deskJudge(); $('hmOk').onclick = close; $('hmVb2').onclick = bookSheet; say(gain > 1 ? '朋友好開心！' : '下次還要再來喔～');
   }
   function visitSheet() {
     var h = H(), v = visTick(); if (!v) { say('現在沒有人敲門，等等再看看。'); return; }
@@ -513,6 +513,47 @@
     modal(html);
     document.querySelectorAll('[data-vk]').forEach(function (b) { b.onclick = function () { var k = b.dataset.vk, m = moodOf(k) === v.m; if (DISH[k]) { if (!(h.box[k] > 0)) return; h.box[k]--; } else { if (!(h.hb[k] > 0)) return; h.hb[k]--; } visDone(m ? F.yum : F.ok, m ? 2 : 1, v.f, '<div class="dish" style="width:96px;height:96px">' + food(k).pic + '</div>'); }; });
     $('hmChat').onclick = function () { visDone(F.chat, 0, v.f); }; $('hmX').onclick = close;
+  }
+  /* --- D443（GPT 2120 Q1／Q2）朋友桌面小請託：每次進小屋，第一次真正招待完（端出料理）才判定一次 1／3；
+     3 欄×2 列同欄成對（六種裡取三種各兩件），完整看 2 秒後下排少一件，托盤只放那一件；免費不限次再看；
+     放錯回托盤、成功一句謝謝。只有這次進屋的暫時狀態：不存、不加分、不給獎勵、不是日課；開手帳／重畫不會重抽 --- */
+  var DK = { judged: false, pending: false };
+  var DKIND = { cup: '茶杯', plate: '小盤', planter: '花盆', bowl: '小碗', spoon: '湯匙', napkin: '餐巾' };
+  var DCX = [80, 180, 280], DCY = [64, 156];
+  function deskJudge(force) { if (DK.judged) return; DK.judged = true; DK.pending = force != null ? !!force : Math.random() < 1 / 3; }
+  function deskWatch() { var hm = $('home'); if (!hm || hm._dkW) return; hm._dkW = 1; var was = hm.classList.contains('on');
+    new MutationObserver(function () { var on = hm.classList.contains('on'); if (on && !was) DK = { judged: false, pending: false }; if (!on) DK.pending = false; was = on; }).observe(hm, { attributes: true, attributeFilter: ['class'] }); }
+  function deskMaybe() { if (!DK.pending || S.room !== 'living' || !$('home') || !$('home').classList.contains('on')) return; DK.pending = false; setTimeout(deskInvite, 380); }
+  function dkImg(k, cls) { return '<img class="' + cls + '" src="' + A + 'desk_' + k + '.webp" alt="' + (DKIND[k] || '') + '" draggable="false">'; }
+  function deskInvite() {
+    modal('<h3>🍵 朋友桌面小請託</h3><p>「幫我把桌上最後一件擺好嗎？」</p><p class="mu sm">照著上排，把缺的一件放好。沒有倒數，可以慢慢擺；不想玩也沒關係。</p><div class="row"><button class="btn" id="dkGo">好呀</button><button class="btn ghost" id="hmX">先不用</button></div>');
+    $('dkGo').onclick = deskPlay; $('hmX').onclick = close;
+  }
+  function deskPlay() {
+    var ks = Object.keys(DKIND).sort(function () { return Math.random() - .5; }).slice(0, 3), miss = Math.floor(Math.random() * 3), done = false, prevT = null;
+    var cells = '';
+    for (var r = 0; r < 2; r++) for (var c = 0; c < 3; c++) cells += '<div class="dkC' + (r === 1 && c === miss ? ' dkMiss' : '') + '" style="left:' + (DCX[c] / 3.6) + '%;top:' + (DCY[r] / 2.2) + '%">' + dkImg(ks[c], 'dkI') + (r === 1 && c === miss ? dkImg('missing_slot', 'dkF') : '') + '</div>';
+    modal('<h3>🍵 朋友桌面小請託</h3><p class="mu sm" id="dkTip">先看看整張桌子……</p><div class="dkT" id="dkT">' + cells + '</div><div class="dkTray" id="dkTray"><button type="button" class="dkP" id="dkP" aria-label="托盤上的' + DKIND[ks[miss]] + '">' + dkImg(ks[miss], 'dkI') + '</button></div><p class="dkFb" id="dkFb" aria-live="polite"></p><div class="row"><button class="btn ghost" id="dkAg">再看一次</button><button class="btn ghost" id="hmX">先不用</button></div>');
+    var T = $('dkT'), P = $('dkP'), slot = T.querySelector('.dkMiss'), tip = $('dkTip'), fb = $('dkFb');
+    function show(full) { T.classList.toggle('full', full); $('dkTray').classList.toggle('hide', full); }
+    function preview(then) { show(true); var left = 2000, last = Date.now(); clearInterval(prevT);
+      prevT = setInterval(function () { var n = Date.now(); if (!document.hidden) left -= n - last; last = n; if (left <= 0) { clearInterval(prevT); prevT = null; show(false); then && then(); } }, 100); }
+    function ready() { tip.textContent = '照著上排，把缺的一件放好'; if (!fb.textContent) fb.textContent = '拖過去，或點一下再點空位'; }
+    function back() { P.classList.remove('sel', 'drag'); P.style.transform = ''; }
+    function hit(x, y) { var b = slot.getBoundingClientRect(), pad = b.width * .1; return x >= b.left - pad && x <= b.right + pad && y >= b.top - pad && y <= b.bottom + pad; }
+    function drop(ok) { if (done) return; if (ok) { done = true; back(); slot.classList.add('got'); $('dkTray').classList.add('hide'); tip.textContent = '擺好了！';
+        fb.innerHTML = '<b class="ok">「謝謝，剛剛好。」</b>'; $('dkAg').remove(); $('hmX').textContent = '好'; $('hmX').className = 'btn'; say('桌面擺得剛剛好～'); }
+      else { back(); P.classList.add('nudge'); setTimeout(function () { P.classList.remove('nudge'); }, 420); fb.textContent = '看看上排，還缺哪一件？'; } }
+    var sx = 0, sy = 0, moved = false, down = false;
+    P.addEventListener('pointerdown', function (e) { if (done || prevT) return; down = true; moved = false; sx = e.clientX; sy = e.clientY; try { P.setPointerCapture(e.pointerId); } catch (_) {} e.preventDefault(); });
+    P.addEventListener('pointermove', function (e) { if (!down) return; var dx = e.clientX - sx, dy = e.clientY - sy; if (!moved && Math.abs(dx) + Math.abs(dy) < 8) return; moved = true; P.classList.add('drag'); P.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(1.06)'; });
+    P.addEventListener('pointerup', function (e) { if (!down) return; down = false; if (moved) drop(hit(e.clientX, e.clientY)); else { P.classList.toggle('sel'); fb.textContent = P.classList.contains('sel') ? '再點桌上的空位' : ''; } });
+    P.addEventListener('pointercancel', function () { down = false; back(); });
+    T.addEventListener('click', function (e) { if (done || prevT || !P.classList.contains('sel')) return; drop(hit(e.clientX, e.clientY)); });
+    $('dkAg').onclick = function () { if (done || prevT) return; back(); fb.textContent = ''; tip.textContent = '再看一次整張桌子……'; preview(ready); };
+    $('hmX').onclick = function () { clearInterval(prevT); close(); };
+    window.__desk = { ks: ks, miss: miss, drop: drop, busy: function () { return !!prevT; }, done: function () { return done; } };
+    preview(ready);
   }
   /* --- D389（GPT 2146 訪客手帳 A／A）：只回看既有資料，不新增欄位、不補舊資料、不加點數或獎勵。
      朋友的一句話＝FR 固定 chat 台詞（不是歷史對話）；初次認識＝kiteFriends1 時間；來小屋玩過／小屋回憶 💛＝S.home.fr；現場見面＝kiteFriendVisits1。四項分開標，沒有紀錄就寫「尚無紀錄」 --- */
@@ -699,6 +740,9 @@
     '.potI{width:180px;height:180px;object-fit:contain}' +
     '.stc{background:url(' + A + 'card_shared.webp) center/100% 100% no-repeat;aspect-ratio:3/2;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,.18);position:relative}' +
     '.stIn{position:absolute;inset:12% 10%;display:grid;grid-template-columns:30% 1fr;grid-template-rows:auto 1fr;gap:2px 10px;align-items:start}.stL{grid-row:1/3;width:100%;object-fit:contain}.stD{position:absolute;right:-4%;bottom:-8%;width:24%}.stIn b{font-size:15px}.stIn p{margin:0;font-size:13px;line-height:1.55;padding-right:18%}' +
+    '.dkT{position:relative;width:100%;aspect-ratio:360/220;background:url(' + A + 'desk_tabletop.webp) center/100% 100% no-repeat;margin:4px 0 6px}.dkC{position:absolute;width:22.2%;aspect-ratio:1;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center}.dkC .dkI{width:85%;height:85%;object-fit:contain;filter:drop-shadow(0 2px 2px rgba(60,40,20,.25))}' +
+    '.dkC .dkF{position:absolute;inset:0;width:100%;height:100%;opacity:0}.dkMiss .dkI{opacity:0;transition:opacity .25s}.dkT.full .dkMiss .dkI,.dkMiss.got .dkI{opacity:1}.dkT:not(.full) .dkMiss:not(.got) .dkF{opacity:1;animation:dkB 1.6s ease-in-out infinite}.dkMiss.got .dkI{animation:hmD .45s}@keyframes dkB{50%{transform:scale(1.05)}}' +
+    '.dkTray{width:96px;height:96px;margin:2px auto;border-radius:16px;background:#F3E3C6;box-shadow:inset 0 2px 6px rgba(120,80,40,.25);display:flex;align-items:center;justify-content:center;transition:opacity .2s}.dkTray.hide{opacity:0;pointer-events:none}.dkP{width:72px;height:72px;padding:0;border:0;background:none;touch-action:none;cursor:grab;position:relative;z-index:5}.dkP .dkI{width:100%;height:100%;object-fit:contain}.dkP.sel{outline:3px solid #E39A1F;border-radius:12px}.dkP.drag{transition:none;z-index:20}.dkP.nudge{animation:dkN .4s}@keyframes dkN{25%{rotate:-8deg}75%{rotate:8deg}}.dkFb{min-height:22px;text-align:center;font-size:13px;color:#8A5A2B;margin:4px 0 0}' +
     '.hm{max-height:86vh;overflow:auto}.hm h3{margin:0 0 8px}.hm .mu{color:var(--muted);font-size:13px;margin:6px 0}.hm .sm{font-size:12px}.hm .row{display:flex;gap:8px;margin-top:12px}.hm .row .btn{flex:1}' +
     '.opt .em,.hm .em{font-size:34px;line-height:44px;text-align:center}.hm .nw{font-style:normal;font-size:11px;background:#E8674A;color:#fff;border-radius:6px;padding:1px 5px;margin-left:4px}' +
     '.pot{display:block;margin:6px auto;padding:0;background:none;border:0;cursor:pointer;min-height:96px}.pot.stir{animation:hmS .3s}@keyframes hmS{50%{transform:rotate(-14deg) scale(1.05)}}' +
@@ -714,7 +758,7 @@
     '.ordC[aria-pressed="true"]{border-color:#E39A1F;background:#FFF6E0}.oSwap{display:block;width:auto!important;flex:none;margin:-2px 0 8px auto;min-height:32px;padding:2px 12px;font-size:12px}.hmAni .bub .crate{font-size:22px;line-height:26px;width:26px;text-align:center}' +
     '.hm .row{position:sticky;bottom:-18px;background:var(--paper,#FFFDF8);padding-top:8px;padding-bottom:14px;margin-bottom:-18px}';      /* D172：清單很長時「關閉」鈕黏在下面；D278：黏到卡片最底（含 18px 內距），按鈕下面不再露出後面捲動的字 */
   document.head.appendChild(css);
-  window.HOME = { render: render, kitchen: kitchen, book: book, packHTML: packHTML, bindPack: bindPack, onDepart: onDepart, letterExtra: letterExtra, story: story, bentoKeys: function () { return BORDER; }, hbCount: hbCount, lidPeek: lidPeek, bentoIcon: bentoIcon, _H: H };
+  window.HOME = { desk: deskInvite, _dk: function (f) { if (f != null) { DK.judged = false; deskJudge(f); } return DK; }, render: render, kitchen: kitchen, book: book, packHTML: packHTML, bindPack: bindPack, onDepart: onDepart, letterExtra: letterExtra, story: story, bentoKeys: function () { return BORDER; }, hbCount: hbCount, lidPeek: lidPeek, bentoIcon: bentoIcon, _H: H };
   setInterval(function () { if ($('home') && $('home').classList.contains('on') && !$('modal').classList.contains('on')) render(); }, FAST ? 1000 : 15000);
-  if (document.readyState !== 'loading') setTimeout(render, 0); else document.addEventListener('DOMContentLoaded', render);
+  if (document.readyState !== 'loading') setTimeout(function () { render(); deskWatch(); }, 0); else document.addEventListener('DOMContentLoaded', function () { render(); deskWatch(); });
 })();
