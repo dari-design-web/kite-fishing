@@ -281,6 +281,25 @@
     if ($('hmGoRc')) $('hmGoRc').onclick = riceCooker;
     $('hmBook').onclick = book; $('hmOrd').onclick = ordersSheet; $('hmX').onclick = close;
   }
+  /* D428（GPT 0840 Q2）：雨後小船送菜——花園的可選支線。先選一道現在材料齊的配菜，接好水路、紙船送到廚房，再進原本的做菜（扣料照原流程一次）；沒有能做的菜也可以練習 */
+  function boatSheet() {
+    if (S.state !== 'home' && S.state !== 'back') { modal('<h3>⛵ 雨後送菜</h3><p>小鳶出門了，等牠回家再一起送菜吧！</p><div class="row"><button class="btn" id="hmX">好</button></div>'); $('hmX').onclick = close; return; }
+    var can = DORDER.filter(open).filter(function (k) { return have(DISH[k].need); });
+    var html = '<h3>⛵ 雨後送菜</h3><p class="mu sm" style="margin-top:0">剛下過雨，小院的水槽積滿了水。轉對水槽，讓紙船把菜籃送到廚房門口，再一起做菜。</p><div class="list" style="margin:0">';
+    html += can.length ? can.map(function (k) { var d = DISH[k]; return '<button type="button" class="opt can" data-bk="' + k + '"><span class="ic em">' + dishImg(k) + '</span><span class="tx">' + d.name + '<small>' + needLine(d.need) + '<br><b class="ok">送這籃菜過去</b></small></span></button>'; }).join('') : '<p class="mu sm">冰箱裡的材料還不夠做配菜，可以先收成，或先練習送一趟空籃子。</p>';
+    html += '<button type="button" class="opt" data-bk=""><span class="ic em">🧺</span><span class="tx">練習送一趟<small>不用材料，只玩水路</small></span></button></div><div class="row"><button class="btn ghost" id="hmX">關閉</button></div>';
+    modal(html);
+    document.querySelectorAll('.hm .opt[data-bk]').forEach(function (b) { b.onclick = function () { boatGo(b.dataset.bk); }; });
+    $('hmX').onclick = close;
+  }
+  function boatGo(k) {
+    $('modal').classList.remove('on');
+    var d = k && DISH[k], items = d ? Object.keys(d.need).map(function (v) { return EMO[v] || (GOOD[v] && GOOD[v].em) || ''; }).join('') : '';
+    BOAT.start({ title: d ? d.name : '練習', items: d ? d.name + ' ' + items : '', practice: !d }, function () {
+      if (!d) { toast('紙船送到了！'); render(); return; }
+      setRoom('kitchen'); render(); if (have(d.need)) cook('d', k); else kitchen('dish');
+    }, function () { if (d) { setRoom('kitchen'); render(); kitchen('dish'); } else render(); });
+  }
   function grpHTML(can, no, extra) { return (can.length ? '<div class="kgH">現在能做（' + can.length + '）</div>' + can.join('') : '<div class="kgH">還差一點材料，先準備這些</div>') + (no.length ? (can.length ? '<div class="kgH">還差材料（' + no.length + '）</div>' : '') + no.join('') : '') + extra; }
   function cook(type, k, veg) {
     var d0 = type === 'd' ? DISH[k] : BENTO[k], need0 = Object.assign({}, d0.need); (veg || []).forEach(function (v) { need0[v] = (need0[v] || 0) + 1; }); var d = { name: d0.name, need: need0 }, prog = 0, done = false;
@@ -623,8 +642,9 @@
     var ol = ordTick().list.length, cc = careCan(), hasDeco = GORDER.some(function (g) { return (h.deco || {})[g]; });
     if (rid === 'kitchen') btn = '<button type="button" id="hmO">📋 訂單' + (ol ? '<em>' + ol + '</em>' : '') + '</button><button type="button" id="hmB">📖 菜譜冊</button>';
     else if (rid === 'living') btn = (vis ? '<button type="button" id="hmV">🚪 有人敲門<em>!</em></button>' : '<button type="button" id="hmL">' + (ripe ? '🥬 菜長好了<em>' + ripe + '</em>' : penReady ? '🐔 牧場可以收<em>' + penReady + '</em>' : '🌱 去花園種菜') + '</button>') + (hasDeco ? '<button type="button" id="hmDc">🪴 佈置</button>' : '') + (vis ? '' : '<button type="button" id="hmVb">📒 手帳</button>');      /* D389：有人敲門時門上的「叩叩！」在 SE 會壓到第三顆鈕，敲門時先不放手帳鈕（招待完的小卡裡可以看手帳） */
-    else if (rid === 'garden' || rid === 'ranch') btn = (rid === 'garden' && ripe ? '<button type="button" id="hmHA" class="allB">🧺 全部收成<em>' + ripe + '</em></button>' : '') + (rid === 'ranch' && penReady ? '<button type="button" id="hmCA" class="allB">🧺 全部收<em>' + penReady + '</em></button>' : '') + (rid === 'ranch' ? '<button type="button" id="hmAd">💌 委託' + (cc ? '<em>' + cc + '</em>' : '') + '</button>' : '') + '<button type="button" id="hmF">' + img('icon_fridge', 'bi') + '冰箱</button>';
+    else if (rid === 'garden' || rid === 'ranch') btn = (rid === 'garden' && ripe ? '<button type="button" id="hmHA" class="allB">🧺 全部收成<em>' + ripe + '</em></button>' : '') + (rid === 'ranch' && penReady ? '<button type="button" id="hmCA" class="allB">🧺 全部收<em>' + penReady + '</em></button>' : '') + (rid === 'ranch' ? '<button type="button" id="hmAd">💌 委託' + (cc ? '<em>' + cc + '</em>' : '') + '</button>' : '') + (rid === 'garden' && window.BOAT ? '<button type="button" id="hmBt">⛵ 送菜</button>' : '') + '<button type="button" id="hmF">' + img('icon_fridge', 'bi') + '冰箱</button>';
     a.innerHTML = btn;
+    if ($('hmBt')) $('hmBt').onclick = boatSheet;
     if ($('hmB')) $('hmB').onclick = book;
     if ($('hmAd')) $('hmAd').onclick = adoptSheet; if ($('hmHA')) $('hmHA').onclick = harvestAll; if ($('hmCA')) $('hmCA').onclick = collectAll;
     if ($('hmO')) $('hmO').onclick = ordersSheet; if ($('hmV')) $('hmV').onclick = visitSheet; if ($('hmDc')) $('hmDc').onclick = decoSheet; if ($('hmVb')) $('hmVb').onclick = bookSheet;
