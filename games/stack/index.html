@@ -357,6 +357,13 @@ function drawFound(fd) {      // 玩家角度：新發現要有「抽到新角�
 
 /* ================= B. 疊貨櫃 ================= */
 const BOXC = ['#D6604A', '#3F7FBF', '#4FA36A', '#E8A33A', '#8A6AC0', '#2F9BA6'];
+function lockMark(w, life) {      /* D451：普通落定扣角（只畫在這顆貨櫃內側，不改判定／分數；減少動態時不伸長、不淡出，直接短暫顯示） */
+  if (w < 14) return; const L0 = Math.min(7, w * 0.22), k = RM ? 1 : clamp((0.22 - life) / 0.05, 0, 1), len = L0 * (0.4 + 0.6 * k), a = RM ? 1 : clamp(life / 0.1, 0, 1), x0 = -w / 2 + 2.5, x1 = w / 2 - 2.5, y0 = -2.5;
+  ctx.save(); ctx.globalAlpha = 0.9 * a; ctx.fillStyle = 'rgba(16,41,61,.28)'; ctx.fillRect(-w / 2 + 3, -1.5, w - 6, 2.5);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (const [c, lw] of [['rgba(255,248,234,.85)', 3.6], ['#3A4650', 1.8]]) { ctx.strokeStyle = c; ctx.lineWidth = lw; ctx.beginPath(); ctx.moveTo(x0, y0 - len); ctx.lineTo(x0, y0); ctx.lineTo(x0 + len, y0); ctx.moveTo(x1, y0 - len); ctx.lineTo(x1, y0); ctx.lineTo(x1 - len, y0); ctx.stroke(); }
+  ctx.restore();
+}
 const ST = { perfect: 9, perfectEasy: 16, easyN: 8, spd0: 150, spdUp: 4, spdMax: 330, layerPts: 5, perfectPts: 10, comboPts: 3, comboFrom: 2, comboGrow: 8,
   goldEvery: 5, goldBonus: 30, goldGrow: 24, goldGrowOk: 10, shipEvery: 10, shipBonus: 50, evFrom: 12, evChance: 0.4, rushN: 5, rushK: 1.3, rushBonus: 15,
   focusAt: 5, focusN: 3, focusK: 0.55, saves: 1 };
@@ -498,7 +505,7 @@ function makeStack(L) {
     } else {
       g.combo = 0; let nx = l, nw = r - l;
       if (m.gold) { const w2 = Math.min(base.w, nw + ST.goldGrowOk); nx = clamp(nx - (w2 - nw) / 2, 0, W - w2); nw = w2; if (m.egg) { g.egg = -1; pop('金蛋滑走了～下次切齊試試', W / 2, yTop - 98, C.gold); } else pop('金貨櫃！還是變寬一點 +' + (ST.layerPts + 10), W / 2, yTop - 98, C.gold); g.score += 10; }
-      g.blocks.push({ x: nx, w: nw, c: m.c, gold: m.egg ? true : m.gold, sq: 0.2 }); g.score += ST.layerPts; g.shake = 0.18; beep(300, 0.09, 'sine', 0.06, -80); buzz(8);
+      g.blocks.push({ x: nx, w: nw, c: m.c, gold: m.egg ? true : m.gold, sq: 0.2, lock: 0.22 });      /* D451（GPT 1320 Q2 A）：普通落定（非完美）在裁切／補寬都算完後，新塔頂兩端下角畫短扣角＋接縫陰影 0.22 秒，看清這次實際留下多寬；完美照舊金邊不疊 */ g.score += ST.layerPts; g.shake = 0.18; beep(300, 0.09, 'sine', 0.06, -80); buzz(8);
       const cx = m.x < l ? m.x : r, cw = m.x < l ? l - m.x : m.x + m.w - r; g.cut.push({ x: cx, w: cw, y: Y0 - g.blocks.length * BH + BH, vy: 0, c: m.c, gold: m.gold, vr: m.x < l ? -2 : 2, rot: 0 });
     }
     const n = g.blocks.length - 1; if (window.KiteBoard && !L) KiteBoard.ev('stack_place');      /* D175：告示板委託（關卡模式不算） */
@@ -512,7 +519,7 @@ function makeStack(L) {
   g.update = (dt) => {
     if (g.winT > 0) { g.winT -= dt; if (g.winT <= 0) g.done = true; } if (g.failT > 0) { g.failT -= dt; if (g.failT <= 0) g.done = true; }
     g.t += dt; if (g.owBan) { g.owBan.t += dt; if (g.owBan.t > 2.4) g.owBan = null; } if (g.lmT > 0) g.lmT -= dt; if (g.sayT > 0) g.sayT -= dt; if (g.say2T > 0) g.say2T -= dt; if (g.shake > 0) g.shake -= dt; if (g.flash > 0) g.flash -= dt;
-    for (const b of g.blocks) { if (b.sq) b.sq = Math.max(0, b.sq - dt * 1.5); if (b.glow > 0) { b.glow -= dt; if (b.glow <= 0) delete b.glow; } }
+    for (const b of g.blocks) { if (b.sq) b.sq = Math.max(0, b.sq - dt * 1.5); if (b.glow > 0) { b.glow -= dt; if (b.glow <= 0) delete b.glow; } if (b.lock > 0) { b.lock -= dt; if (b.lock <= 0) delete b.lock; } }
     if (g.mv) {
       const k = g.mv.wind ? 1 + 0.55 * Math.sin(g.t * 3.2 + g.mv.ph) : 1;
       g.mv.x += g.dir * g.speed * k * dt;
@@ -565,6 +572,7 @@ function makeStack(L) {
       ctx.save(); ctx.globalAlpha = p.t < 0.3 ? 1 : clamp(1 - (p.t - 0.3) / 0.35, 0, 1); ctx.translate(p.x, p.y); ctx.scale(sx, sy); ctx.drawImage(im, -w / 2, -h * 0.86, w, h); ctx.restore(); }      /* D360（GPT 0830 A）：水花改畫在已堆好的貨櫃後面，底層貨櫃輪廓不被蓋住；大小、時間不變 */
     g.blocks.forEach((b, i) => { const sq = b.sq || 0; ctx.save(); ctx.translate(b.x + b.w / 2, Y0 - i * BH + BH); ctx.scale(1 + sq * 0.15, 1 - sq * 0.25); crate(-b.w / 2, -BH, b.w, b.c, b.gold);
       if (b.glow > 0) { const a = clamp(b.glow / 0.4, 0, 1); ctx.save(); ctx.globalAlpha = RM ? 0.9 : a; ctx.shadowColor = '#FFD23A'; ctx.shadowBlur = 14; rrect(-b.w / 2 - 2, -BH - 2, b.w + 4, BH + 4, 6, null, '#FFD23A', 4); ctx.shadowBlur = 0; rrect(-b.w / 2 - 1, -BH - 1, b.w + 2, BH + 2, 5, null, '#FFF4C2', 1.5); ctx.restore(); }      /* D355：完美金邊光，0.4 秒淡掉 */
+      if (b.lock > 0) lockMark(b.w, b.lock);
       ctx.restore(); });
     for (const c of g.cut) { ctx.save(); ctx.translate(c.x + c.w / 2, c.y + BH / 2); ctx.rotate(c.rot || 0); crate(-c.w / 2, -BH / 2, c.w, c.c, c.gold); ctx.restore(); }
     if (g.mv) { const tp = g.blocks[g.blocks.length - 1], yy = Y0 - g.blocks.length * BH, tol = g.tol(); ctx.fillStyle = 'rgba(255,214,107,.26)'; ctx.fillRect(tp.x - tol, yy - 70, tol * 2, 70 + BH); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 5]); ctx.beginPath(); ctx.moveTo(tp.x, yy - 70); ctx.lineTo(tp.x, yy + BH); ctx.moveTo(tp.x + tp.w, yy - 70); ctx.lineTo(tp.x + tp.w, yy + BH); ctx.stroke(); ctx.setLineDash([]); }
@@ -737,7 +745,7 @@ function twTap() {
     { const SC = [0, 2, 4, 5, 7, 9, 11], st = Math.min(TW.combo - 1, 14); beep(523.25 * Math.pow(2, (SC[st % 7] + 12 * Math.floor(st / 7)) / 12), 0.16, 'triangle', 0.07); } buzz(15);
   } else {
     TW.combo = 0; let nx = l, nw = r - l; if (m.gold) { const w2 = Math.min(TW_BASE, nw + 8); nx -= (w2 - nw) / 2; nw = w2; }
-    tw.blocks.push({ x: nx, w: nw, c: m.c, gold: m.gold, sq: 0.2, mk: m.mk }); beep(300, 0.09, 'sine', 0.06, -80); buzz(8);
+    tw.blocks.push({ x: nx, w: nw, c: m.c, gold: m.gold, sq: 0.2, mk: m.mk, lock: 0.22 });      /* D451：雙泊位也只標這一邊 */ beep(300, 0.09, 'sine', 0.06, -80); buzz(8);
     const cx = m.x < l ? m.x : r, cw = m.x < l ? l - m.x : m.x + m.w - r; TW.cut.push({ x: cx, w: cw, y: yTop + BH, vy: 0, c: m.c, gold: m.gold, vr: m.x < l ? -2 : 2, rot: 0 });
   }
   TW.placed++; TW.mv = null; TW.pick = -1;
@@ -759,7 +767,7 @@ function twFinish(win, delay) {
 }
 function twUpdate(dt) {
   if (!TW) return; TW.t += dt; if (TW.sayT > 0) TW.sayT -= dt; if (TW.flash > 0) TW.flash -= dt;
-  for (const s of TW.side) for (const b of s.blocks) { if (b.sq) b.sq = Math.max(0, b.sq - dt * 1.5); if (b.glow > 0) b.glow -= dt; }
+  for (const s of TW.side) for (const b of s.blocks) { if (b.sq) b.sq = Math.max(0, b.sq - dt * 1.5); if (b.glow > 0) b.glow -= dt; if (b.lock > 0) b.lock -= dt; }
   if (TW.ship) { TW.ship.t += dt; TW.ship.x += 150 * dt; }
   if (TW.pairT > 0) { TW.pairT -= dt; if (TW.pairT <= 0 && !TW.end) { TW.pair++; TW.side = [twTower(0), twTower(1)]; TW.ship = null; TW.mk = TW.pair % 2 ? [1, 0] : [0, 1]; TW.dblAt = [1, 3, 4, 5][Math.floor(Math.random() * 4)]; TW.dblDone = false; twNext(); TW.say = TW.pair === 2 ? '這對船掛了標記！看貨櫃的標記選泊位' : '第 ' + TW.pair + ' 對船進港，標記左右換邊囉！'; TW.sayT = 2.6; beep(523, 0.1, 'triangle', 0.06); } }
   if (TW.autoT > 0 && !TW.mv && !TW.end) { TW.autoT -= dt; if (TW.autoT <= 0) twChoose(twAllowed(0) ? 0 : 1); }
@@ -791,7 +799,7 @@ function twDraw(tt) {
     const tw = TW.side[i], cx = TW_CX[i], n = twN(i);
     rrect(cx - 70, Y0 + BH - 4, 140, 10, 4, 'rgba(16,41,61,.55)');      /* 泊位碼頭邊 */
     tw.blocks.forEach((b, k) => { const sq = b.sq || 0; ctx.save(); ctx.translate(b.x + b.w / 2, Y0 - k * BH + BH); ctx.scale(1 + sq * 0.15, 1 - sq * 0.25); crate(-b.w / 2, -BH, b.w, b.c, b.gold); if (b.mk >= 0 && b.w > (b.mk === 2 ? 46 : 34)) mkDraw(b.mk, 0, -BH / 2 - 1, b.mk === 2 ? 9.5 : 9);
-      if (b.glow > 0) { ctx.globalAlpha = RM ? 0.9 : clamp(b.glow / 0.4, 0, 1); rrect(-b.w / 2 - 2, -BH - 2, b.w + 4, BH + 4, 6, null, '#FFD23A', 4); } ctx.restore(); });
+      if (b.glow > 0) { ctx.globalAlpha = RM ? 0.9 : clamp(b.glow / 0.4, 0, 1); rrect(-b.w / 2 - 2, -BH - 2, b.w + 4, BH + 4, 6, null, '#FFD23A', 4); } if (b.lock > 0) lockMark(b.w, b.lock); ctx.restore(); });
     /* 滿船格：6 格小刻度 */
     for (let k = 0; k < TW_FULL; k++) rrect(cx - 33 + k * 11.5, Y0 + BH + 12, 9, 7, 2, k < n ? C.gold : 'rgba(255,248,234,.45)', C.ink, 1.2);
     const py = 156, on = !TW.mv && !TW.end && TW.pairT <= 0 && twAllowed(i), sel = TW.mv && TW.mv.i === i;
