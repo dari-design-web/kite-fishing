@@ -509,7 +509,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '1.17',
+  version: '1.18',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -895,9 +895,9 @@ function clearFoe(f, how) {      // how：'' 羽毛或墨汁、'blast' 被炸到
   if (!calmClear) clearBurst(f, d);      /* D341：清掉時爆開＋金光飛向小鳶 */
   if (window.KiteBoard && !f.noCount && how !== 'sweep' && f.type !== 'boss' && !d.friend) KiteBoard.ev('fly_clear');      /* D175：告示板委託（收尾自動清、魔王不算） */
   if (how !== 'sweep') { stats.combo++; stats.comboT = CONFIG.combo.window; stats.bestCombo = Math.max(stats.bestCombo, stats.combo); }
+  if (how !== 'sweep') comboBump(f);      /* D453 */
   if (!calmClear && gauge < CONFIG.ult.need) hudSend(f.x, f.y);      /* D376：集氣小光點飛進右下角的鯨鯊圈（只是畫面，集氣照舊當下入帳） */
   if (!calmClear) gauge = Math.min(CONFIG.ult.need, gauge + (f.fill ? 0.5 : d.score) + (stats.combo >= CONFIG.combo.bonusFrom ? 1 : 0));      // 鯨鯊清掉的不再幫鯨鯊集氣
-  if (stats.combo >= 5 && stats.combo % 5 === 0) say('連清 ' + stats.combo + '！', f.x, f.y - 26, '#BFF0D0');
   burst(f.x, f.y, f.type === 'boss' ? 36 : 6, how === 'ult' ? '#FFE08A' : '#BFF0D0'); if (!NEWT()) bubbles(f.x, f.y, 3);      // D123：第 5～8 關不冒泡泡
   if (how === 'ult') { if (booms.filter((b) => b.mini).length < 6) booms.push({ t: 0, x: f.x, y: f.y, mini: true, done: true }); stats.ultCleared++;      // G93：命中火花最多同時 6 個、不逐隻震動      // D127 命中爆點
   }
@@ -942,7 +942,7 @@ function rescue(kind, x, y, f) {
 function hurt(by) {
   if (kite.safe > 0 || ult || kite.hearts <= 0 || won || cine > 0) return;      // 魔王登場與換階段演出期間不扣血
   if (kite.shield) { kite.shield = false; kite.safe = 0.8; stats.shieldSaves++; say('泡泡擋住了', kite.x, kite.y - 36, '#BFE3F0'); bubbles(kite.x, kite.y, 10); beep(900, 0.15, 'sine', 0.06, -400); return; }
-  kite.hearts--; kite.safe = CONFIG.kite.safe; kite.power = Math.max(1, kite.power - 1); stats.hits++; stats.hitBy[by] = (stats.hitBy[by] || 0) + 1; stats.combo = 0; drawHearts(); shake = Math.max(shake, 0.2);
+  kite.hearts--; kite.safe = CONFIG.kite.safe; kite.power = Math.max(1, kite.power - 1); stats.hits++; stats.hitBy[by] = (stats.hitBy[by] || 0) + 1; comboBreak(); stats.combo = 0; drawHearts(); shake = Math.max(shake, 0.2);
   say('被' + by + '打到', kite.x, kite.y - 36, '#FFD0C4'); beep(150, 0.25, 'square', 0.05, -60); for (let i = 0; i < 6; i++) part('drop', kite.x, kite.y, { vx: rand(-90, 90), vy: rand(-90, 60), size: rand(2, 3.5), color: PAL.cream });
   if (kite.hearts <= 0) endTimer = 0.9;
 }
@@ -1204,7 +1204,8 @@ function update(dt) {
   if (kite.safe > 0) kite.safe -= dt;
   if (kite.galeT > 0) kite.galeT -= dt;
   if (kite.powerT > 0) { kite.powerT -= dt; if (kite.powerT <= 0 && kite.power > 1) { kite.power--; kite.powerT = kite.power > 1 ? CONFIG.feather.powerTime : 0; } }
-  if (stats.comboT > 0) { stats.comboT -= dt; if (stats.comboT <= 0) stats.combo = 0; }
+  if (stats.comboT > 0) { stats.comboT -= dt; if (stats.comboT <= 0) { CB.fade = CB.shown; stats.combo = 0; } }
+  comboTick(dt);      /* D453 */
   fillUp(dt);
   // 自動發射風之羽
   fireAcc += dt;
@@ -1359,7 +1360,7 @@ function update(dt) {
   /* D244：GPT 1830 B 窄版（寬度不到 375）魔王標籤只留名字，血量數字不顯示（原本被截成「阿根納 22…」），血條照舊 */
   const goal = boss && boss.phased ? bossGoalText(boss) : null, secs = boss ? Math.max(0, Math.ceil(BTIME() - (t - boss.born))) + ' 秒' : '';
   $('stageText').classList.toggle('two', Array.isArray(goal));
-  $('stageText').textContent = Array.isArray(goal) ? goal[0] + '\n' + (goal[1] ? (innerWidth < 375 ? goal[1].replace('礦石 ', '') + ' ' : goal[1] + '　') : '') + secs : goal ? goal + '　' + secs : boss ? (innerWidth < 375 ? (T.boss.short || T.boss.name) : (T.boss.short || T.boss.name) + ' ' + Math.max(0, Math.ceil(boss.hp)) + ' / ' + boss.maxHp) : '分數 ' + scoreNow() + (stats.combo >= 3 ? '　連清 ' + stats.combo : '');
+  $('stageText').textContent = Array.isArray(goal) ? goal[0] + '\n' + (goal[1] ? (innerWidth < 375 ? goal[1].replace('礦石 ', '') + ' ' : goal[1] + '　') : '') + secs : goal ? goal + '　' + secs : boss ? (innerWidth < 375 ? (T.boss.short || T.boss.name) : (T.boss.short || T.boss.name) + ' ' + Math.max(0, Math.ceil(boss.hp)) + ' / ' + boss.maxHp) : '分數 ' + scoreNow();      /* D453：連清改在左上徽章顯示，頂端只留分數（SE 不再被截成…） */
   if (daily && daily.salv && !boss) $('stageText').textContent = salvHud();      /* D432 */
   const ub = $('ultBtn'), full = gauge >= CONFIG.ult.need; ub.disabled = !full || !!ult; ub.style.setProperty('--fill', Math.round(gauge / CONFIG.ult.need * 100) + '%'); ub.classList.toggle('ready', full && !ult); const tag = $('ultTag'), word = full && !ult ? (NM() ? '祈福！' : '出動！') : ULTN(); if (tag.textContent !== word) tag.textContent = word;
   if (full && !toldUlt && !ult) { toldUlt = true; banner(ULTN() + '準備好了！按右下角'); jingle([659, 880], 120); }
@@ -3192,6 +3193,30 @@ function hudTick(dt) {
   const done = hudFly.filter(f => f.t >= HUD_FLY.dur); if (done.length) { const tg = hudTarget(); if (tg) for (const f of done) hudPops.push({ x: tg[0], y: tg[1], t: 0, n: f.n }); hudFly = hudFly.filter(f => f.t < HUD_FLY.dur); }
   hudPops = hudPops.filter(p => p.t < 0.32);
 }
+/* D453：主玩法「連清」看得見——原本連清只在每 5 件冒一次小字，第 5 件起鯨鯊多集 1 分但玩家不知道。
+   左上（愛心下面）放連清徽章：連到 3 件出現、數字每清一件彈一下、下方細條是「還剩多久要接下一件」；
+   5 件起綠色＋「鯨鯊加速」、10 件起金色、20 件起橘色發光；每滿 10 件小鳶身邊炸一圈金環＋短音。被打中或斷掉時徽章淡出。
+   計分與集氣規則不變（只是畫面與聲音）。calm（減少動態）時不彈跳、不發光。 */
+const CB = { pop: 0, shown: 0, fade: 0, fadeT: 0, ring: 0 };
+function comboBump(f) { CB.pop = 1; CB.shown = stats.combo; CB.fadeT = 0;
+  if (stats.combo >= 10 && stats.combo % 10 === 0) { CB.ring = 1; rings.push({ x: kite.x, y: kite.y, r: 18, max: 120, life: 1, color: stats.combo >= 20 ? '255,150,60' : '255,215,90', lw: 4 }); if (!calm) { flash = Math.max(flash, 0.12); shake = Math.max(shake, 0.08); } jingle(stats.combo >= 20 ? [784, 988, 1175, 1568] : [659, 784, 1047], 60); } }
+function comboTick(dt) { if (CB.pop > 0) CB.pop = Math.max(0, CB.pop - dt * 5); if (CB.ring > 0) CB.ring = Math.max(0, CB.ring - dt * 1.5); if (CB.fade && stats.combo === 0) { CB.fadeT += dt; if (CB.fadeT > 0.6) { CB.fade = 0; CB.fadeT = 0; } } }
+function comboBreak() { if (stats.combo >= 3) { CB.fade = stats.combo; CB.fadeT = 0; } }
+function drawCombo() {
+  if (mode !== 'play') return; const live = stats.combo >= 3, n = live ? stats.combo : CB.fade; if (!n || n < 3) return;
+  const a = live ? 1 : Math.max(0, 1 - CB.fadeT / 0.6), tier = n >= 20 ? 3 : n >= 10 ? 2 : n >= 5 ? 1 : 0;
+  const col = ['#FFFDF6', '#BFF0D0', '#FFE08A', '#FFB070'][tier], ink = ['#2B3A40', '#1F5A36', '#7A4E12', '#8A3A10'][tier];
+  const sc = calm ? 1 : 1 + CB.pop * 0.28, x = 14, y = 50, w = 92, h = 34;
+  ctx.save(); ctx.globalAlpha = a; ctx.translate(x + 22, y + h / 2); ctx.scale(sc, sc); ctx.translate(-(x + 22), -(y + h / 2));
+  if (tier >= 2 && !calm) { ctx.shadowColor = tier === 3 ? 'rgba(255,140,40,.9)' : 'rgba(255,210,80,.8)'; ctx.shadowBlur = 10 + Math.sin(clock * 8) * 4; }
+  ctx.fillStyle = col; ctx.strokeStyle = '#1E2E3A'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.roundRect(x, y, w, h, 17); ctx.fill(); ctx.shadowBlur = 0; ctx.stroke();
+  const FF = "'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif";
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = ink; ctx.font = '800 12px ' + FF; ctx.fillText('連清', x + 10, y + 15);
+  ctx.font = '900 20px ' + FF; ctx.fillText('×' + n, x + 40, y + 15);
+  const k = live ? Math.max(0, Math.min(1, stats.comboT / CONFIG.combo.window)) : 0; ctx.fillStyle = 'rgba(30,46,58,.18)'; ctx.fillRect(x + 10, y + 27, w - 20, 3); ctx.fillStyle = ink; ctx.fillRect(x + 10, y + 27, (w - 20) * k, 3);
+  if (tier >= 1 && live) { ctx.font = '800 11px ' + FF; ctx.fillStyle = '#FFFFFF'; ctx.strokeStyle = 'rgba(16,40,60,.85)'; ctx.lineWidth = 3; ctx.strokeText('🦈 鯨鯊加速', x + 4, y + h + 10); ctx.fillText('🦈 鯨鯊加速', x + 4, y + h + 10); }
+  ctx.restore(); ctx.textBaseline = 'alphabetic';
+}
 function drawHudFly() {
   const tg = hudTarget(); if (!tg) { hudFly = []; hudPops = []; return; }
   ctx.save(); ctx.textAlign = 'left'; ctx.lineJoin = 'round';
@@ -3470,6 +3495,7 @@ function draw() {
   ctx.restore();
   if (fests.length || festTxt) drawFest();
   if (hudFly.length || hudPops.length) drawHudFly();
+  drawCombo();      /* D453 */
   if (flash > 0) { ctx.fillStyle = 'rgba(255,248,220,' + flash * (calm ? 0.2 : 0.5) + ')'; ctx.fillRect(0, 0, W, H); }
   ctx.textAlign = 'center'; ctx.lineJoin = 'round';
   for (const f of floats) { const FF = "px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif"; let fs = f.big ? 24 : 15; ctx.font = "700 " + fs + FF; const tw = ctx.measureText(f.text).width; if (tw > W - 16) { fs = Math.floor(fs * (W - 16) / tw); ctx.font = "700 " + fs + FF; f.x = Math.max(W / 2 - (W - 16) / 2 + ctx.measureText(f.text).width / 2, Math.min(W / 2 + (W - 16) / 2 - ctx.measureText(f.text).width / 2, f.x)); }      /* D242：太長的浮字縮小到畫面寬，不被切掉（「先直後橫…鋼索」原本最後一字出界） */

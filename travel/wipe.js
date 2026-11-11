@@ -61,12 +61,13 @@
     '.wp .stg{position:absolute;bottom:8px;width:30%;margin-left:-15%;text-align:center;font:800 11px/1.2 sans-serif;color:#4A3426;z-index:5;pointer-events:none}.wp .stg i{display:inline-block;padding:2px 6px;border-radius:8px;background:rgba(255,253,248,.88);font-style:normal}' +
     '.wp .cur{position:absolute;width:56px;height:56px;margin:-28px 0 0 -28px;pointer-events:none;z-index:6;display:none;filter:drop-shadow(0 3px 3px rgba(0,0,0,.3))}.wp .cur svg,.wp .cur img,.wp .tl svg,.wp .tl img{width:100%;height:100%;display:block}' +
     '.wp .spk{position:absolute;pointer-events:none;z-index:6;font-size:18px;animation:wpS .7s ease-out forwards}@keyframes wpS{0%{opacity:0;transform:scale(.4)}30%{opacity:1}100%{opacity:0;transform:translateY(-18px) scale(1.15)}}' +
+    '.wp .nite{position:absolute;inset:0;background:url(assets/wipe/night_clear.png) 0 0/100% 100% no-repeat;opacity:0;transition:opacity 1.6s;pointer-events:none;z-index:2}.wp .nite.on{opacity:1}' +
     '.wp .bow{position:absolute;left:-20%;right:-20%;top:4%;aspect-ratio:2/1;border-radius:50% 50% 0 0;background:radial-gradient(circle at 50% 100%,transparent 52%,rgba(150,90,200,.35) 53%,rgba(70,130,230,.35) 56%,rgba(80,190,110,.35) 59%,rgba(250,220,70,.4) 62%,rgba(250,150,60,.38) 65%,rgba(240,80,80,.35) 68%,transparent 69%);opacity:0;transition:opacity 1.6s;pointer-events:none;z-index:2}.wp .bow.on{opacity:1}' +
     '.wp .tools{display:flex;justify-content:center;gap:12px;margin:8px 10px 6px}.wp .tl{display:flex;align-items:center;gap:6px;min-height:52px;padding:4px 14px 4px 6px;border:0;border-radius:16px;background:#FFFDF8;color:#4A3426;font:800 14px/1.1 inherit;font-family:inherit;box-shadow:0 2px 8px rgba(0,0,0,.18);cursor:pointer;-webkit-tap-highlight-color:transparent}.wp .tl span{width:44px;height:44px;flex:none}.wp .tl.on{background:#FFE7A8;box-shadow:0 0 0 3px #E9A23B,0 2px 8px rgba(0,0,0,.18)}.wp .tl.hint{animation:wpH 1s ease-in-out infinite}@keyframes wpH{50%{box-shadow:0 0 0 5px rgba(62,155,79,.6),0 2px 8px rgba(0,0,0,.18)}}' +
     '.wp .row{display:flex;gap:8px;padding:8px 12px calc(10px + env(safe-area-inset-bottom,0px));background:#6B4A2E}.wp .row .btn{flex:1}.wp .row .btn.ghost{color:#FFF4D6}' +
     '.wp .yay{position:absolute;left:6%;right:6%;bottom:12%;padding:12px;border-radius:14px;background:rgba(255,253,248,.95);color:#4A3426;text-align:center;z-index:7;box-shadow:0 4px 14px rgba(0,0,0,.25);animation:wpY .5s ease-out}.wp .yay b{display:block;font-size:17px;margin-bottom:4px}.wp .yay p{margin:0;font-size:13px}@keyframes wpY{from{opacity:0;transform:translateY(12px)}}' +
     '.wp .gl.shake{animation:wpK .3s}@keyframes wpK{30%{transform:translateX(-3px)}70%{transform:translateX(3px)}}' +
-    '@media (prefers-reduced-motion:reduce){.wp .tl.hint,.wp .spk,.wp .yay{animation:none}.wp .bow{transition:none}}';
+    '@media (prefers-reduced-motion:reduce){.wp .tl.hint,.wp .spk,.wp .yay{animation:none}.wp .bow,.wp .nite{transition:none}}';
   document.head.appendChild(css);
 
   /* opt：{ onClose() } */
@@ -74,7 +75,7 @@
     opt = opt || {};
     var w = el('div', 'wp');
     w.innerHTML = '<div class="top"><b>🪟 雨後擦窗</b><span id="wpN">清楚 0／3 格</span></div><div class="tip" id="wpTip">剛下過雨，窗戶濕濕的。先拿刮水器上下拖，把水珠刮掉</div>' +
-      '<div class="sp"></div><div class="win" id="wpWin"><div class="gl" id="wpGl"><div class="bow" id="wpBow"></div><canvas id="wpFog"></canvas><canvas id="wpDrop"></canvas><div class="mn" style="left:33.333%"></div><div class="mn" style="left:66.667%"></div><div class="cur" id="wpCur"></div></div></div><div class="sp"></div>' +
+      '<div class="sp"></div><div class="win" id="wpWin"><div class="gl" id="wpGl"><div class="bow" id="wpBow"></div><div class="nite" id="wpNite"></div><canvas id="wpFog"></canvas><canvas id="wpDrop"></canvas><div class="mn" style="left:33.333%"></div><div class="mn" style="left:66.667%"></div><div class="cur" id="wpCur"></div></div></div><div class="sp"></div>' +
       '<div class="tools"><button type="button" class="tl on" data-t="squeegee"><span>' + toolHTML('squeegee') + '</span>刮水器</button><button type="button" class="tl" data-t="cloth"><span>' + toolHTML('cloth') + '</span>軟布</button></div>' +
       '<div class="row"><button class="btn ghost" id="wpAg">重新來</button><button class="btn" id="wpX">回客廳</button></div>';
     document.body.appendChild(w);
@@ -92,7 +93,7 @@
       paintDrops(cD, W, H, S); fogTex = makeFog(W, H, S);
       panes = []; for (var p = 0; p < P; p++) { var d = [], f = []; for (var k = 0; k < COLS * ROWS; k++) { d.push(1); f.push(1); } panes.push({ d: d, f: f, dOk: false, done: false }); }
       for (p = 0; p < P; p++) { $('wpOk' + p).classList.remove('on'); $('wpSg' + p).innerHTML = '<i>💧 水珠</i>'; }
-      $('wpBow').classList.remove('on'); var y = w.querySelector('.yay'); if (y) y.remove();
+      $('wpBow').classList.remove('on'); $('wpNite').classList.remove('on'); var y = w.querySelector('.yay'); if (y) y.remove();
       scene = pickScene(); gl.style.backgroundImage = 'url(' + SCENES[scene].src + ')'; gl.dataset.scene = scene;
       strokes = { sq: 0, cl: 0 }; finished = false; setTool('squeegee'); drawFog(); count();
       tip.classList.remove('warn'); tip.textContent = '剛下過雨，窗戶濕濕的。先拿刮水器上下拖，把水珠刮掉';
@@ -145,10 +146,11 @@
       return wet && !changed;
     }
     function finish() {
-      if (finished) return; finished = true; $('wpBow').classList.add('on'); tip.classList.remove('warn');
+      if (finished) return; finished = true; $(scene === 2 ? 'wpNite' : 'wpBow').classList.add('on');      /* D453：夜燈港景完成時換 GPT 1520 雨停夜空（星星＋月光），不出彩虹 */
+      tip.classList.remove('warn');
       tip.textContent = '三格都清楚了！';
       w.querySelectorAll('.tl').forEach(function (b) { b.classList.remove('hint'); });
-      var y = el('div', 'yay', '<b>🌈 雨停了，' + SCENES[scene].name + '看得好清楚！</b><p>刮了 ' + strokes.sq + ' 下、擦了 ' + strokes.cl + ' 下。想再擦一次按「重新來」。</p>');
+      var y = el('div', 'yay', '<b>' + (scene === 2 ? '✨' : '🌈') + ' 雨停了，' + SCENES[scene].name + '看得好清楚！</b><p>刮了 ' + strokes.sq + ' 下、擦了 ' + strokes.cl + ' 下。想再擦一次按「重新來」。</p>');
       gl.appendChild(y);
     }
     var drag = null;
