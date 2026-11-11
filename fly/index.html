@@ -509,7 +509,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '1.23',
+  version: '1.24',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -619,7 +619,7 @@ const ASSET_FILES = { cb_w: 'combo_badge_w.png', cb_g: 'combo_badge_g.png', cb_y
   jerky: 'pick_jerky_v2.png', power: 'pick_power_v2.png', gale: 'pick_gale_v2.png', m_tofu: /[?&]helmet=1/.test(location.search) ? 'm_tofu_helmet.png' : 'm_tofu.png', m_ele: 'm_ele.png',      // 網址加 ?helmet=1 換成戴礦工帽的豆腐君（給 Dari 比較，U-24）
   // G-31 第 2 關角色（ChatGPT，暫用）與兩關整張底圖（ChatGPT，暫用）
   n_shark: 'n_shark.png', n_sausage: 'n_sausage.png', n_head: 'n_head.png', n_dragon: 'n_dragon.png', n_jelly: 'n_jelly.png', n_ice: 'n_ice.png', n_ice_s: 'n_ice_s.png', n_puff: 'n_puff.png', n_crab: 'n_crab.png', n_sand: 'n_sand.png', n_sand_h: 'n_sand_h.png',
-  n_guard: 'n_guard.png', n_lamp_s: 'n_lamp_s.png', fx_lamp: 'fx_lamp.png', fx_fire: 'fx_fire.png', f_oden: 'f_oden.png', f_jelly: 'f_jelly.png', f_rice: 'f_rice.png', f_ring: 'f_ring.png', boss_idle: 'boss_idle.png', boss_open: 'boss_open.png',
+  n_guard: 'n_guard.png', n_lamp_s: 'n_lamp_s.png', fx_lamp: 'fx_lamp.png', fx_fire: 'fx_fire.png', f_oden: 'f_oden.png', f_jelly: 'f_jelly.png', f_rice: 'f_rice.png', f_ring: 'f_ring.png', boss_idle: 'boss_idle.png', boss_open: 'boss_open.png', boss_rage_steam: 'boss_rage_steam.png',
   // G-33 第 3 關正濱漁港（ChatGPT，暫用）
   p_snake_head: 'p_snake_head.png', p_snake: 'p_snake_body.png', p_crab: 'p_crab.png', p_ray: 'p_ray.png', p_ghost: 'p_ghost.png', p_snail: 'p_snail.png', p_shell: 'p_shell.png', p_oil: 'p_oil.png', p_cat: 'p_cat.png', p_bird: 'p_bird.png', p_otter: 'p_otter.png', p_boss: 'p_boss.png', p_boss_ram: 'p_boss_ram.png', p_boat: 'p_boat.png', p_rope: 'p_rope.png', bg_pier_a: 'bg_pier_a.jpg', bg_pier_b: 'bg_pier_b.jpg', bg_pier_c: 'bg_pier_c.jpg',
   // G-34 第 4 關深澳（ChatGPT，暫用）。河豚車、山野君、河豚車按鈕等 Dari 確認車款與第三位角色後再換（m_forest、m_puffer、m_puffer_full、ult_icon_rail）
@@ -1964,7 +1964,9 @@ function drawTaotie(f) {
   if ((f.tell || open) && img.danger_vortex) { const R0 = Math.min(190, CONFIG.taotie.suckR || 190) * (open ? 1 : 0.6 + 0.4 * Math.min(1, (f.atkT || 0) / (CONFIG.taotie.suckWarn || 1))); ctx.save(); ctx.globalAlpha = open ? 0.42 : 0.26; ctx.rotate(calm ? 0 : -clock * (open ? 4 : 1.5)); ctx.drawImage(img.danger_vortex, -R0, -R0, R0 * 2, R0 * 2); ctx.restore(); }      /* D353：饕餮要吸／吸的時候腳下出現 GPT 吸入漩渦（大小＝吸的範圍） */
   glow(r + 34 + br * 4, open ? '220,90,170' : f.tell ? '230,120,200' : '150,70,140', f.tell ? 0.6 + 0.2 * Math.sin(clock * 20) : 0.45);
   ctx.save(); if (f.tell && !calm) ctx.translate(rand(-2, 2), rand(-2, 2)); ctx.rotate(Math.sin(clock * 1.5) * 0.04);
-  sprite(open ? 'boss_open' : 'boss_idle', 128, 117); drawBossParts(f); ctx.restore();
+  sprite(open ? 'boss_open' : 'boss_idle', 128, 117); drawBossParts(f);
+  { const hr = f.maxHp > 0 && f.hp > 0 && f.hp <= f.maxHp / 2; f.steamA = calm ? (hr ? 1 : 0) : Math.max(0, Math.min(1, (f.steamA || 0) + (hr ? 1 : -1) / 18)); if (f.steamA > 0 && img.boss_rage_steam) { ctx.save(); ctx.globalAlpha = 0.92 * f.steamA; sprite('boss_rage_steam', 128, 117); ctx.restore(); } }      /* D459：第 2 關鬼王半血以下頭上冒暖紅蒸氣（GPT 2130 Q1 圖，同畫布同變換；補回 >50% 就淡掉；0.3 秒淡入淡出，減少動態直接切） */
+  ctx.restore();
   if (open) {      // 張嘴的這段時間才加倍：嘴巴旁邊標「×2」
     if (!calm) { ctx.strokeStyle = 'rgba(255,190,240,.55)'; ctx.lineWidth = 2; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(0, 30, 8 + ((clock * 30 + i * 9) % 26), 0, 6.2832); ctx.stroke(); } }
     ctx.font = "700 15px 'Noto Sans TC',system-ui,sans-serif"; ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = '#10293D'; ctx.strokeText('×2', 46, 40); ctx.fillStyle = '#FFE08A'; ctx.fillText('×2', 46, 40);
