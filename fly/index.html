@@ -509,7 +509,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '1.22',
+  version: '1.23',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -708,6 +708,10 @@ function buildScript() {
   side(37, true, 3); add(39, 'sprayer', 70); gate(42, 180); add(45, 'chaser', 340); side(47, false, 3); add(49, 'log', 180); gate(53, 280); side(55.5, true, 3); add(58, 'chaser', 20); add(60.5, 'sprayer', 290); gate(62, 90); side(64, false, 3); gate(66, 200);
   add(CONFIG.boss.at, 'boss', 180);
   add(24, 'dive', 0, { fromLeft: true }); add(30, 'split', 180); add(39.5, 'dive', 0, { fromLeft: false }); add(52, 'split', 110); add(59, 'dive', 0, { fromLeft: true, n: 4 });      // D109／G79：小怪新軌跡（弧線俯衝、編隊分流）
+  if (ST().theme === 'market' || ST().theme === 'pier') {      /* D458（GPT 2030 Q1）：第 2、3 關把 18.5 秒那排 4 隻瓶罐改成「左兩隻先、右兩隻後」錯峰：同 4 隻、同怪種，只改出生秒數與 x；x 沿原排附近，避開 19.2 秒塑膠袋與 20.5 秒泡泡怪 */
+    const q = E.filter((e) => e.t === 18.5 && e.type === 'bottle').sort((a, b) => a.x - b.x), SL = [[0, 70], [0.5, 130], [1.5, 230], [2, 290]];
+    if (q.length === 4) q.forEach((e, i) => { e.t = 18.5 + SL[i][0]; e.x = SL[i][1]; e.stag = i < 2 ? 'L' : 'R'; });
+  }
   if (ST().theme === 'market') {
     const order = ['rice', 'jelly', 'ring', 'oden'];      // 被包住的小吃朋友依序出現：小卷米粉、石花凍、大腸圈、基隆黑輪
     E.filter((e) => e.type === 'net' || e.type === 'tangle').sort((a, b) => a.t - b.t).forEach((e, i) => { e.friend = order[i % 4]; e.give = ''; });
