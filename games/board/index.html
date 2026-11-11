@@ -5,7 +5,8 @@
 /* D454：港口大富翁 A「單機骰子短局」首版（Dari 11/11 選 A；GPT 港口大富翁A_規格_20261111_v2）。
    凍結中：沒有任何入口連到這頁，只能打網址試玩；不寫任何存檔、不回報點數、不接卡冊。
    18 格（6 欄×5 列外環）、小鳶對兩位電腦、每人 6 回合、機會／命運各 12 張、章支援卡每人 2 張（骰前 +1 殼）。
-   短挑戰格：三個主玩法短段還沒做隔離接點 → 依規格第 5 節鎖成 FALLBACK，這局所有人統一 1 星（下一輪接）。 */
+   短挑戰格：三個主玩法短段還沒做隔離接點 → 依規格第 5 節鎖成 FALLBACK，這局所有人統一 1 星（下一輪接）。
+   D455：換 GPT 1735 五張美術（港灣棋盤底、共用格底、機會／命運卡背、空白卡正面），抽卡改成「卡背→翻面」；電腦回合照 GPT 估時稿縮成一般約 2 秒、有摘要最多約 3 秒。 */
 :root{--ink:#10293D;--paper:#FFF8EA;--sea:#7FC4D6;--deep:#0E2232;--leaf:#4FBF88;--sun:#F2B544;--coral:#E8795A;
   --land:#F6D7A7;--chance:#9ED3F0;--fate:#C9B6F2;--mini:#BFE8C4;--rest:#FFE6A8;--start:#FFD0B5;
   --p0:#E39A1F;--p1:#3D7FB8;--p2:#C0569A;
@@ -29,12 +30,12 @@ body{background:linear-gradient(#0E2232,#123B52);color:var(--ink);font-family:va
 .pl .cd{font-size:10.5px;color:#4A6272;white-space:nowrap}
 .pl.bump{animation:bump .4s}
 @keyframes bump{40%{transform:scale(1.07)}}
-.board{position:relative;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(5,minmax(0,1fr));gap:3px;aspect-ratio:6/5.4;background:radial-gradient(ellipse at 50% 55%,#9FD7E4 0,#6DB7CB 60%,#4F98AE 100%);border-radius:16px;padding:4px;box-shadow:0 5px 0 rgba(0,0,0,.25)}
-.tile{position:relative;border-radius:9px;border:2px solid rgba(16,41,61,.55);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:2px 1px 0;overflow:hidden;font-size:10px;line-height:1.1;font-weight:700;text-align:center}
+.board{position:relative;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(5,minmax(0,1fr));gap:3px;aspect-ratio:6/5;background:#6DB7CB url(../assets/board/board_base.jpg) center/cover no-repeat;border-radius:16px;padding:4px;box-shadow:0 5px 0 rgba(0,0,0,.25);overflow:hidden}
+.tile{position:relative;border-radius:10px;border:0;box-shadow:0 2px 0 rgba(16,41,61,.35);background-image:url(../assets/board/tile_base.png);background-size:116% 116%;background-position:center;background-repeat:no-repeat;background-blend-mode:multiply;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:2px 1px 0;overflow:hidden;font-size:10px;line-height:1.1;font-weight:700;text-align:center}
 .tile .ic{font-size:17px;line-height:1.15;margin-top:1px}
 .tile .tn{font-size:9.5px;letter-spacing:-.02em;white-space:nowrap}
 .tile .no{position:absolute;left:2px;top:1px;font-size:8px;opacity:.55}
-.tile.land{background:var(--land)}.tile.chance{background:var(--chance)}.tile.fate{background:var(--fate)}.tile.mini{background:var(--mini)}.tile.rest{background:var(--rest)}.tile.start{background:var(--start)}
+.tile.land{background-color:var(--land)}.tile.chance{background-color:var(--chance)}.tile.fate{background-color:var(--fate)}.tile.mini{background-color:var(--mini)}.tile.rest{background-color:var(--rest)}.tile.start{background-color:var(--start)}
 .tile .own{position:absolute;inset:0;border-radius:7px;pointer-events:none}
 .tile .flag{position:absolute;right:1px;bottom:1px;font-size:10px;font-weight:900;color:#fff;border-radius:6px;padding:0 3px;line-height:14px}
 .tile.hl{outline:3px solid #fff;outline-offset:-1px;z-index:2;box-shadow:0 0 12px #fff}
@@ -43,7 +44,7 @@ body{background:linear-gradient(#0E2232,#123B52);color:var(--ink);font-family:va
 .pawn img{width:100%;height:100%;object-fit:contain}
 .pawn.hop img{animation:hop .14s}
 @keyframes hop{50%{transform:translateY(-22%)}}
-.center{grid-column:2/6;grid-row:2/5;background:rgba(255,248,234,.93);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 8px;gap:5px;text-align:center;position:relative;z-index:3}
+.center{grid-column:2/6;grid-row:2/5;background:rgba(255,248,234,.62);box-shadow:0 0 18px 6px rgba(255,248,234,.45);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 8px;gap:5px;text-align:center;position:relative;z-index:3}
 .over{position:absolute;inset:0;grid-column:1/-1;grid-row:1/-1;z-index:6;background:rgba(255,248,234,.97);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px 12px;text-align:center;animation:flip .35s}
 .over .msg{font-size:16px;font-weight:900}
 .center .msg{font-size:14px;font-weight:900;line-height:1.35;min-height:1.3em}
@@ -52,10 +53,19 @@ body{background:linear-gradient(#0E2232,#123B52);color:var(--ink);font-family:va
 .dice i{width:8px;height:8px;border-radius:50%;background:var(--ink);place-self:center;visibility:hidden}
 .dice.roll{animation:roll .5s}
 @keyframes roll{0%{transform:rotate(0)}100%{transform:rotate(720deg)}}
-.card{width:min(100%,220px);background:#fff;border-radius:12px;border:3px solid var(--ink);padding:6px 8px;display:flex;flex-direction:column;gap:3px;align-items:center;animation:flip .35s}
+.card{width:min(100%,220px);background:#FFF8EA url(../assets/board/card_face.png) center/100% 100% no-repeat;border-radius:10px;padding:10px 12px 8px;filter:drop-shadow(0 2px 2px rgba(16,41,61,.3));display:flex;flex-direction:column;gap:3px;align-items:center;animation:flip .35s}
 .card .k{font-size:11px;font-weight:900;color:#fff;padding:1px 8px;border-radius:99px}
 .card .t{font-size:14px;font-weight:900;line-height:1.35}
 @keyframes flip{0%{transform:rotateY(90deg)}100%{transform:none}}
+.cpop{position:absolute;inset:0;z-index:7;display:flex;align-items:center;justify-content:center;background:rgba(14,34,50,.38);border-radius:16px}
+.cc{position:relative;height:90%;aspect-ratio:360/504;background:center/100% 100% no-repeat;filter:drop-shadow(0 6px 8px rgba(0,0,0,.35));transition:transform .17s ease-in}
+.cc.in{animation:ccin .3s ease-out}
+@keyframes ccin{0%{transform:translateY(30%) scale(.6) rotate(-8deg);opacity:0}100%{transform:none;opacity:1}}
+.cc.half{transform:scaleX(0)}
+.cc.face{transition:transform .17s ease-out}
+.cc .ck{position:absolute;left:50%;top:7%;transform:translateX(-50%);font-size:13px;font-weight:900;color:#fff;padding:2px 12px;border-radius:99px;white-space:nowrap;visibility:hidden}
+.cc .ct{position:absolute;left:10%;right:10%;top:22%;bottom:13%;display:flex;align-items:center;justify-content:center;text-align:center;font-size:16px;font-weight:900;line-height:1.45;color:var(--ink);visibility:hidden}
+.cc.face .ck,.cc.face .ct{visibility:visible}
 .btns{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;width:100%}
 .btns button{font-family:var(--round);font-weight:900;font-size:15px;min-height:44px;padding:8px 14px;border-radius:14px;border:3px solid var(--ink);background:var(--sun);color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--ink)}
 .btns button.alt{background:#fff;font-size:14px}
@@ -76,7 +86,7 @@ body{background:linear-gradient(#0E2232,#123B52);color:var(--ink);font-family:va
 .intro ul{margin:4px 0 8px;padding-left:18px}
 .supp{display:flex;gap:6px;justify-content:center;margin:6px 0}
 .supp img{width:40px;height:40px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px var(--ink)}
-@media (prefers-reduced-motion:reduce){.pawn{transition:none}.dice.roll,.card,.pl.bump,.pawn.hop img{animation:none}}
+@media (prefers-reduced-motion:reduce){.pawn{transition:none}.dice.roll,.card,.pl.bump,.pawn.hop img,.cc.in{animation:none}.cc,.cc.face{transition:none}}
 </style></head><body>
 <div class="wrap">
   <div class="top"><h1>港口大富翁</h1><span class="rd" id="rd">準備</span><button id="back" type="button">離開</button></div>
@@ -86,7 +96,7 @@ body{background:linear-gradient(#0E2232,#123B52);color:var(--ink);font-family:va
 </div>
 <script>
 'use strict';
-const VER = '0.1';
+const VER = '0.2';
 const A = '../assets/board/';
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TEST = /[?&]test=1/.test(location.search);
@@ -128,6 +138,7 @@ const $ = id => document.getElementById(id);
 const rnd = n => { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n; };
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const clampS = v => Math.max(0, Math.min(12, v));
+const nw = (p, h, n) => wait(p.human ? h : n);      /* D455：電腦回合較短（GPT 1735 估時稿：一般約 2 秒、有摘要最多約 3 秒） */
 async function wait(ms) { ms *= SP; const t0 = performance.now(); let left = ms; while (left > 0) { await new Promise(r => setTimeout(r, Math.min(left, 100))); if (!document.hidden) left = ms - (performance.now() - t0); else return wait(left / SP); } }
 
 let G = null;
@@ -188,6 +199,17 @@ function hl(id) { document.querySelectorAll('.tile.hl').forEach(e => e.classList
 function center(html) { $('center').innerHTML = html; }
 const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 function diceHtml(n) { return '<div class="dice" id="dice">' + Array.from({ length: 9 }, (_, i) => '<i style="visibility:' + (PIPS[n].includes(i) ? 'visible' : 'hidden') + '"></i>').join('') + '</div>'; }
+/* D455：抽卡大圖——卡背飛進來→翻面→牌文（GPT 1735 卡背／正面；文字由程式疊在安全區） */
+async function reveal(c, k, p) {
+  const ov = document.createElement('div'); ov.className = 'cpop'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', (k === 'C' ? '機會' : '命運') + '卡：' + c[1]);
+  ov.innerHTML = '<div class="cc in" style="background-image:url(' + A + (k === 'C' ? 'card_chance' : 'card_fate') + '.png)"><span class="ck" style="background:' + (k === 'C' ? '#C98A12' : '#2E7FA8') + '">' + (k === 'C' ? '✨ 機會' : '🌊 命運') + '</span><span class="ct">' + c[1] + '</span></div>';
+  $('board').appendChild(ov); const cc = ov.firstChild;
+  await wait(RM ? 120 : p.human ? 420 : 300);
+  if (!RM) { cc.classList.add('half'); await wait(170); }
+  cc.style.backgroundImage = 'url(' + A + 'card_face.png)'; cc.classList.remove('in'); cc.classList.add('face'); void cc.offsetWidth; cc.classList.remove('half');
+  await wait(p.human ? 1250 : 700);
+  ov.remove();
+}
 function cardHtml(c, k) { return '<div class="card"><span class="k" style="background:' + (k === 'C' ? '#2E8BC0' : '#7B5CC4') + '">' + (k === 'C' ? '機會' : '命運') + '</span><span class="t">' + c[1] + '</span></div>'; }
 /* 人類做選擇：按鈕。auto（測試）時照小卷規則自動選 */
 function ask(msg, opts, extra) {
@@ -207,20 +229,20 @@ async function playTurn(p) {
     let use;
     if (p.human) use = await ask('第 ' + p.turn + ' 回合，你的回合！', [{ t: '用章卡 ＋1🐚（剩 ' + p.cards + '）', v: true, alt: true }, { t: '🎲 擲骰', v: false }], supportHtml(p));
     else use = p.turn <= 2;
-    if (use && once(tk + ':card')) { p.cards--; addShell(p, 1); log(p.name + ' 用了章支援卡，＋1🐚'); toast('＋1🐚'); if (!p.human) { center('<div class="msg">' + p.name + ' 用了章支援卡</div><div class="sub">＋1🐚</div>'); await wait(700); } }
+    if (use && once(tk + ':card')) { p.cards--; addShell(p, 1); log(p.name + ' 用了章支援卡，＋1🐚'); toast('＋1🐚'); if (!p.human) { center('<div class="msg">' + p.name + ' 用了章支援卡</div><div class="sub">＋1🐚</div>'); await wait(450); } }
     if (use && p.human) await ask('要擲骰了！', [{ t: '🎲 擲骰', v: 1 }]);
   } else if (p.human) await ask('第 ' + p.turn + ' 回合，你的回合！', [{ t: '🎲 擲骰', v: 1 }]);
-  else { center('<div class="msg">' + p.name + ' 的回合</div>'); await wait(500); }
+  else { center('<div class="msg">' + p.name + ' 的回合</div>'); await wait(250); }
   /* 擲骰：按下就定，只記一次 */
   if (!once(tk + ':roll')) return;
   const n = 1 + rnd(6);
   center(diceHtml(n) + '<div class="msg">' + (p.human ? '你' : p.name) + '擲出 ' + n + ' 點</div>');
   if (!RM) $('dice').classList.add('roll');
-  await wait(RM ? 200 : 600);
+  await wait(RM ? 200 : p.human ? 600 : 450);
   for (let s = 0; s < n; s++) {
     p.pos = (p.pos + 1) % 18; drawPawns(); const pw = $('pawns').children[p.id]; pw.classList.remove('hop'); void pw.offsetWidth; pw.classList.add('hop'); hl(p.pos);
     if (p.pos === 0 && once(tk + ':pass')) { addShell(p, 2); log(p.name + ' 經過集合碼頭，＋2🐚'); toast('＋2🐚'); }
-    await wait(RM ? 40 : 150);
+    await wait(RM ? 40 : p.human ? 150 : 100);
   }
   await land(p, tk);
   hl(-1);
@@ -230,19 +252,19 @@ function supportHtml(p) { return p.faces ? '<div class="supp">' + p.faces.slice(
 async function land(p, tk) {
   const c = CELLS[p.pos], who = p.human ? '你' : p.name;
   if (!once(tk + ':land')) return;
-  if (c.type === 'start') { center('<div class="msg">' + who + '回到集合碼頭</div>'); await wait(900); return; }
-  if (c.type === 'rest') { addShell(p, 1); log(p.name + ' 在小吃休息站，＋1🐚'); center('<div class="msg">🍵 ' + who + '在休息站喝口茶</div><div class="sub">＋1🐚，繼續前進</div>'); toast('＋1🐚'); await wait(1300); return; }
+  if (c.type === 'start') { center('<div class="msg">' + who + '回到集合碼頭</div>'); await nw(p, 900, 600); return; }
+  if (c.type === 'rest') { addShell(p, 1); log(p.name + ' 在小吃休息站，＋1🐚'); center('<div class="msg">🍵 ' + who + '在休息站喝口茶</div><div class="sub">＋1🐚，繼續前進</div>'); toast('＋1🐚'); await nw(p, 1300, 850); return; }
   if (c.type === 'land') return landTile(p, c);
   if (c.type === 'chance' || c.type === 'fate') return cardTile(p, c.type === 'chance' ? 'C' : 'F', tk);
   if (c.type === 'mini') return miniTile(p, c, tk);
 }
 async function landTile(p, c) {
   const o = G.owner[c.id], who = p.human ? '你' : p.name;
-  if (o === p.id) { addShell(p, 1); log(p.name + ' 回到自己的「' + c.name + '」，＋1🐚'); center('<div class="msg">🏠 回到自己的小站</div><div class="sub">' + who + '＋1🐚</div>'); toast('＋1🐚'); await wait(1300); return; }
+  if (o === p.id) { addShell(p, 1); log(p.name + ' 回到自己的「' + c.name + '」，＋1🐚'); center('<div class="msg">🏠 回到自己的小站</div><div class="sub">' + who + '＋1🐚</div>'); toast('＋1🐚'); await nw(p, 1300, 850); return; }
   if (o >= 0) {
     const ow = G.P[o], pay = Math.min(1, p.shell); p.shell -= pay; addShell(ow, 1);
     log(p.name + ' 拜訪' + ow.name + '的「' + c.name + '」' + (pay ? '，付 1🐚 給港口' : '') + '；' + ow.name + ' 由港口拿 1🐚');
-    center('<div class="msg">👋 拜訪' + (ow.human ? '你' : ow.name) + '的小站</div><div class="sub">' + who + (pay ? '付 1🐚 給港口' : '沒有貝殼也沒關係') + '<br>' + (ow.human ? '你' : ow.name) + '從港口拿到 1🐚</div>'); drawPlayers(); await wait(1600); return;
+    center('<div class="msg">👋 拜訪' + (ow.human ? '你' : ow.name) + '的小站</div><div class="sub">' + who + (pay ? '付 1🐚 給港口' : '沒有貝殼也沒關係') + '<br>' + (ow.human ? '你' : ow.name) + '從港口拿到 1🐚</div>'); drawPlayers(); await nw(p, 1600, 1150); return;
   }
   const pr = price(p), can = p.shell >= pr && p.lands.length < 2;
   let buy;
@@ -250,13 +272,14 @@ async function landTile(p, c) {
   else buy = can && p.shell - pr >= reserve(p);
   if (buy && can) {
     p.shell -= pr; if (p.coupon) p.coupon = false; p.lands.push(c.id); G.owner[c.id] = p.id; drawOwners(); drawPlayers(); bump(p);
-    log(p.name + ' 花 ' + pr + '🐚 蓋了「' + c.name + '」（結算 ＋2⭐）'); center('<div class="msg">🏠 ' + who + '蓋了「' + c.name + '」</div><div class="sub">結算時 ＋2⭐</div>'); toast('🏠 蓋好了！'); await wait(1400);
-  } else if (!p.human) { center('<div class="msg">' + p.name + ' 先不蓋</div>'); await wait(1000); }
+    log(p.name + ' 花 ' + pr + '🐚 蓋了「' + c.name + '」（結算 ＋2⭐）'); center('<div class="msg">🏠 ' + who + '蓋了「' + c.name + '」</div><div class="sub">結算時 ＋2⭐</div>'); toast('🏠 蓋好了！'); await nw(p, 1400, 1050);
+  } else if (!p.human) { center('<div class="msg">' + p.name + ' 先不蓋</div>'); await wait(650); }
 }
 async function cardTile(p, k, tk) {
   const c = draw(k), e = c[2], who = p.human ? '你' : p.name, show = cardHtml(c, k);
   log(p.name + ' 抽到' + (k === 'C' ? '機會' : '命運') + '：' + c[1]);
-  center(show + '<div class="sub">' + who + '抽到</div>'); await wait(p.human ? 1200 : 1500);
+  center('<div class="msg">' + who + '抽' + (k === 'C' ? '機會' : '命運') + '卡…</div>'); await reveal(c, k, p);
+  center(show + '<div class="sub">' + who + '抽到</div>'); await nw(p, 300, 150);
   if (!once(tk + ':card:' + c[0])) return;
   const T = e.type, ai = p.ai;
   if (T === 'star') addStar(p, e.d);
@@ -283,11 +306,11 @@ async function cardTile(p, k, tk) {
     if (v === 'start') { p.pos = 0; drawPawns(); } log(p.name + (v === 'start' ? ' 回到起點' : ' 留在原地'));
   } else if (T === 'move') { p.pos = (p.pos + e.d + 18) % 18; drawPawns(); }
   else if (T === 'toStart') { p.pos = 0; drawPawns(); }
-  await wait(p.human ? 500 : 700);
+  await nw(p, 500, 350);
 }
 async function miniTile(p, c, tk) {
   const who = p.human ? '你' : p.name;
-  if (p.minis >= 3) { addShell(p, 1); log(p.name + ' 短挑戰已滿 3 次，改拿 1🐚'); center('<div class="msg">🎮 短挑戰已經玩滿 3 次</div><div class="sub">' + who + '改拿 1🐚</div>'); await wait(1300); return; }
+  if (p.minis >= 3) { addShell(p, 1); log(p.name + ' 短挑戰已滿 3 次，改拿 1🐚'); center('<div class="msg">🎮 短挑戰已經玩滿 3 次</div><div class="sub">' + who + '改拿 1🐚</div>'); await nw(p, 1300, 850); return; }
   p.minis++;
   let kind = c.mini;
   if (kind === 'pick') kind = p.human ? 'pick' : (p.ai === 'shark' ? 'fish12' : 'stack15');
@@ -295,10 +318,10 @@ async function miniTile(p, c, tk) {
   if (p.human) {
     const nm = kind === 'pick' ? '三選一（捕魚／疊貨櫃／飛行）' : MINI_NAME[kind];
     await ask('🎮 ' + c.name, [{ t: '開始挑戰', v: 'go', off: !ready }, { t: '拿 1⭐', v: 'skip', alt: !ready }], '<div class="sub">' + nm + '<br>' + (ready ? '0／1／2⭐，也可以略過拿 1⭐' : '短挑戰還在準備中，這局大家都直接拿 1⭐') + '</div>');
-  } else { center('<div class="msg">🎮 ' + p.name + '來到「' + c.name + '」</div>'); await wait(900); }
+  } else { center('<div class="msg">🎮 ' + p.name + '來到「' + c.name + '」</div>'); await wait(550); }
   if (!once(tk + ':mini')) return;
   addStar(p, 1); log(p.name + ' 在「' + c.name + '」拿到 1⭐'); toast('＋1⭐');
-  center('<div class="msg">⭐ ' + who + '拿到 1 顆星</div><div class="sub">短挑戰第 ' + p.minis + '／3 次</div>'); await wait(1100);
+  center('<div class="msg">⭐ ' + who + '拿到 1 顆星</div><div class="sub">短挑戰第 ' + p.minis + '／3 次</div>'); await nw(p, 1100, 800);
 }
 
 async function intro() {
