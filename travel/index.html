@@ -125,6 +125,11 @@ header h1{font-size:20px;margin:0;flex:1}
 @keyframes slotpop{0%{transform:scale(.8)}60%{transform:scale(1.08)}100%{transform:none}}      /* v0.31（C-182） */
 .slot{flex:1;height:96px;border:2px dashed var(--line);border-radius:14px;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:13px;text-align:center;padding:4px}
 .slot.filled{border-style:solid;border-color:var(--teal)}
+.slot.can{border-color:var(--teal);background:#EEF7F6;box-shadow:0 0 0 3px rgba(42,157,143,.25)}.slot.over{transform:scale(1.06);box-shadow:0 0 0 4px rgba(42,157,143,.5)}      /* D459：直接拿放（GPT 2130 Q2）：可放的格子亮起來，手指在上面再放大 */
+#pack .opt,#pack .slot{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.pkGhost{position:fixed;z-index:60;width:56px;height:56px;margin:-28px 0 0 -28px;pointer-events:none;filter:drop-shadow(0 4px 6px rgba(0,0,0,.3));transform:scale(1.15)}.pkGhost .ic,.pkGhost img,.pkGhost svg{width:100%;height:100%}
+.opt.lift{opacity:.45}
+.pkTip{margin:-4px 16px 4px;font-size:12px;color:var(--muted);text-align:center}
 .slot b{font-size:12px;color:var(--muted);font-weight:400}
 h3{font-size:15px;margin:14px 16px 6px}
 .list{display:flex;flex-direction:column;gap:8px;margin:0 16px}
@@ -313,6 +318,7 @@ header .back,.letter .skip{min-height:44px;min-width:44px;display:inline-flex;al
       <div class="slot" id="slot1"><b>道具可不帶</b><span>空</span></div>
       <div class="slot" id="slot2"><b>道具可不帶</b><span>空</span></div>
     </div>
+    <p class="pkTip">點一下就放進背包；也可以按住拖進格子，放錯會回原位</p>
     <h3>便當</h3>
     <div class="list" id="bentoList"></div>
     <h3>道具</h3>
@@ -345,7 +351,7 @@ header .back,.letter .skip{min-height:44px;min-width:44px;display:inline-flex;al
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.93',
+  version: '0.94',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 0,      // D80：遠行便當改用點數換，不再每 3 趟送 1 份（0＝關閉）
@@ -857,6 +863,52 @@ function renderPack() {
   } else $('destInfo').textContent = '選便當或散步，看看這趟可能去哪裡、大約幾點回來。';
   $('goBtn').disabled = !b; $('goBtn').onclick = depart;
 }
+
+/* D459：打包直接拿放（GPT 2130 Q2）。按住 0.22 秒不動才拿起（不影響清單上下滑），拿起後只有合法的格子亮；放到亮的格子才走原本點一下的同一條路（一次提交選取）；
+   放錯、取消、離開都回原位，不扣任何東西。背包裡已放的東西也可以按住拖出格子拿掉。點一下照舊。 */
+(function packDrag() {
+  const scr = document.getElementById('pack'); if (!scr) return;
+  let D = null, noClick = 0;
+  function slotsFor(src) { if (src.kind === 'bento') return ['slot0']; if (src.kind === 'item') { if (pk.bento === 'walk') return []; const n = pk.items.length; return n >= 2 ? [] : ['slot1', 'slot2']; } return []; }
+  function srcOf(el) {
+    const o = el.closest('#bentoList .opt, #itemList .opt'); if (o && !o.disabled && o.getAttribute('aria-pressed') !== 'true') return { kind: o.closest('#bentoList') ? 'bento' : 'item', el: o };
+    const sl = el.closest('.slot.filled'); if (sl) return { kind: 'out', el: sl, slot: sl.id };
+    return null;
+  }
+  function overSlot(x, y, ok) { ok = ok || (D && D.ok) || []; for (const id of ok) { const r = $(id).getBoundingClientRect(); if (x >= r.left - 8 && x <= r.right + 8 && y >= r.top - 8 && y <= r.bottom + 8) return id; } return null; }
+  function inSlots(x, y) { const r = scr.querySelector('.slots').getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top - 10 && y <= r.bottom + 10; }
+  function lift() {
+    const ic = D.src.el.querySelector('.ic'); if (!ic) { D = null; return; }
+    D.on = true; D.ok = D.src.kind === 'out' ? [] : slotsFor(D.src);
+    if (D.src.kind !== 'out' && !D.ok.length) { toast(D.src.kind === 'item' && pk.bento === 'walk' ? '散步不帶道具喔' : '道具最多帶兩件'); D = null; return; }
+    const g = document.createElement('div'); g.className = 'pkGhost'; g.appendChild(ic.cloneNode(true)); document.body.appendChild(g); D.g = g; move(D.x, D.y);
+    D.src.el.classList.add('lift'); for (const id of D.ok) $(id).classList.add('can');
+    (function edge() { if (!D || !D.on) return; const H = innerHeight, dy = D.y < 110 ? -Math.ceil((110 - D.y) / 8) : D.y > H - 90 ? Math.ceil((D.y - H + 90) / 8) : 0; if (dy) { scr.scrollTop += dy; move(D.x, D.y); } requestAnimationFrame(edge); })();      /* 拖到上下邊緣自動捲，清單捲下去也拖得回背包格 */
+    if (navigator.vibrate) try { navigator.vibrate(12); } catch (e) { /* 不支援就算了 */ }
+  }
+  function move(x, y) { if (!D || !D.g) return; D.g.style.left = x + 'px'; D.g.style.top = y + 'px'; const ov = overSlot(x, y); for (const id of ['slot0', 'slot1', 'slot2']) $(id).classList.toggle('over', id === ov); if (D.src.kind === 'out') D.src.el.style.opacity = inSlots(x, y) ? '' : '.45'; }
+  function end(x, y, cancel) {
+    if (!D) return; clearTimeout(D.tm); const d = D; D = null;
+    if (!d.on) return;
+    noClick = Date.now();
+    if (d.g) d.g.remove(); d.src.el.classList.remove('lift'); d.src.el.style.opacity = ''; for (const id of ['slot0', 'slot1', 'slot2']) $(id).classList.remove('can', 'over');
+    if (cancel || !scr.classList.contains('on')) return;
+    if (d.src.kind === 'out') { if (!inSlots(x, y)) { if (d.src.slot === 'slot0') { pk.bento = ''; pk.items = []; } else pk.items.splice(+d.src.slot.slice(4) - 1, 1); pk.pick = ''; renderPack(); toast('拿出來了'); } return; }
+    const ov = overSlot(x, y, d.ok); if (!ov) return;
+    const btn = d.src.el; if (!document.body.contains(btn) || btn.disabled || btn.getAttribute('aria-pressed') === 'true') return;
+    btn.onclick && btn.onclick();      /* 跟點一下走同一條路：再驗一次合法才放進去 */
+  }
+  scr.addEventListener('pointerdown', (e) => { if (D || (e.pointerType === 'mouse' && e.button !== 0)) return; const src = srcOf(e.target); if (!src) return; D = { src, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, id: e.pointerId, on: false }; D.tm = setTimeout(() => { if (D && !D.on) lift(); }, 220); });
+  addEventListener('pointermove', (e) => { if (!D || e.pointerId !== D.id) return; D.x = e.clientX; D.y = e.clientY; if (!D.on) { if (Math.hypot(D.x - D.x0, D.y - D.y0) > 8) { clearTimeout(D.tm); D = null; } return; } move(D.x, D.y); });
+  addEventListener('pointerup', (e) => { if (D && e.pointerId === D.id) end(D.x, D.y, false); });      /* 用最後一次移動的位置（有些手機放開時座標是 0） */
+  addEventListener('pointercancel', (e) => { if (D && e.pointerId === D.id) end(0, 0, true); });
+  addEventListener('blur', () => end(0, 0, true));
+  document.addEventListener('visibilitychange', () => { if (document.hidden) end(0, 0, true); });
+  scr.addEventListener('touchmove', (e) => { if (D && D.on) e.preventDefault(); }, { passive: false });      /* 只在拿起後才擋捲動，不全域 touch-action:none */
+  scr.addEventListener('contextmenu', (e) => { if (D) e.preventDefault(); });
+  scr.addEventListener('click', (e) => { if (Date.now() - noClick < 250) { e.stopPropagation(); e.preventDefault(); } }, true);
+  window.__packDrag = { state: () => (D ? { on: D.on, ok: D.ok || [] } : null) };
+})();
 function depart(e, peeked) {
   const k = pk.bento; if (!k || bentoCount(k) <= 0) return;
   if (!peeked && /^hb_/.test(k) && window.HOME && HOME.lidPeek) { HOME.lidPeek(k, () => depart(null, true)); return; }      /* D191：手作便當出門前先掀蓋看一眼 */
@@ -1234,10 +1286,10 @@ function travelBgmSync() { if (travelBgmOn) BGM.play('travel_' + ({ ranch: 'scho
   document.addEventListener('pointerdown', () => { if (travelBgmOn) travelBgmSync(); }, { passive: true });
 })();
 </script>
-<script src="cook.js?v=0.93"></script>
+<script src="cook.js?v=0.94"></script>
 <script src="boat.js?v=0.90"></script>
 <script src="wipe.js?v=0.93"></script>
-<script src="home.js?v=0.93"></script>
+<script src="home.js?v=0.94"></script>
 <script src="../shared/back_line.js?v=2"></script>
 <script>/* D104：旅行排行榜（明信片收藏數） */ if (window.KiteLB) { KiteLB.button(document.getElementById('lbSlot'), { title: '小鳶旅行收藏排行', travel: true }); setTimeout(function () { try { pushTravelStat(); } catch (e) {} }, 1500); }</script>
 </body>
