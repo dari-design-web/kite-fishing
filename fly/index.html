@@ -509,7 +509,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '1.24',
+  version: '1.25',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -635,7 +635,12 @@ const SPR = { can: ['can', 26, 26], bag: ['bag', 32, 32], butt: ['butt', 10, 24]
   goo: ['goo', 32, 32], chaser: ['goo', 30, 30], battery: ['battery', 31, 31], sprayer: ['sprayer', 40, 44], log: ['log', 0, 26], net: ['net', 60, 60], tangle: ['tangle', 60, 60], boss: ['boss', 120, 104], minib: ['boss_mini', 60, 52] };
 
 const $ = (id) => document.getElementById(id);
-const stage = $('stage'), cv = $('world'); let ctx = cv.getContext('2d');      // ctx 用 let：畫底圖的離屏畫布時會暫時換掉
+const stage = $('stage'), cv = $('world'); let ctx = cv.getContext('2d');
+/* D460（Dari 11/11：饕餮那關有點 lag）效能：受擊白閃不再用 ctx.filter（手機上每次都要多開一層、很吃效能），改成第一次用到時先做一張「變亮的圖」存起來，之後直接貼；
+   柔光 glow 改貼預先畫好的光暈圖，不每幀新建漸層；連清徽章的 shadowBlur 改成光暈圖。畫面看起來一樣，規則不動。 */
+const DI = CanvasRenderingContext2D.prototype.drawImage; let FL = false; const BRIGHT = new WeakMap();
+function brightOf(im) { let c = BRIGHT.get(im); if (c !== undefined) return c || im; const w = im.naturalWidth || im.width, h = im.naturalHeight || im.height; if (!w || !h || !CANF) { return im; } try { c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.filter = 'brightness(2.3) saturate(.6)'; DI.call(g, im, 0, 0, w, h); } catch (e) { c = null; } BRIGHT.set(im, c); return c || im; }
+ctx.drawImage = function (im) { if (FL && im) { arguments[0] = brightOf(im); } return DI.apply(this, arguments); };      // ctx 用 let：畫底圖的離屏畫布時會暫時換掉
 const { W, H } = CONFIG; let T = CONFIG.types;      // T：這一關的妖怪或垃圾設定（第 1 關的設定再套上這一關的覆寫）
 function stageTypes() { const o = {}, ov = ST().types || {}; for (const k in CONFIG.types) o[k] = Object.assign({}, CONFIG.types[k], ov[k] || {}); for (const k in ov) if (!o[k]) o[k] = Object.assign({}, ov[k]); return o; }
 const PAL = { body: '#A66F45', wing: '#865B3D', cream: '#F5DDB7', gold: '#F4BB42', blush: '#F4AF91', line: '#402B20' };
@@ -1955,7 +1960,7 @@ function partBreak(f, q, x, y) {
 }
 function drawBossParts(f) {      /* 在魔王圖同一個座標系裡畫（已經乘過 bossVis） */
   if (!f.parts) return;
-  for (const q of f.parts) { const k = q.broken ? q.im + '_b' : q.im, im = img[k]; if (!im) continue; ctx.save(); if (q.hitT > 0) { q.hitT -= 1 / 60; if (CANF) ctx.filter = 'brightness(2.0)'; } if (q.broken) ctx.globalAlpha = 0.9; else if (!calm) ctx.translate(0, Math.sin(clock * 3 + q.cx) * 1.2); if (q.sc) { const d = q.D * q.sc, ax = q.ox + q.au * q.D, ay = q.oy + q.av * q.D; ctx.drawImage(im, ax - q.au * d, ay - q.av * d, d, d); } else ctx.drawImage(im, q.ox, q.oy, q.D, q.D); ctx.restore(); }
+  for (const q of f.parts) { const k = q.broken ? q.im + '_b' : q.im, im = img[k]; if (!im) continue; ctx.save(); const fl0 = FL; if (q.hitT > 0) { q.hitT -= 1 / 60; if (CANF) FL = true; } if (q.broken) ctx.globalAlpha = 0.9; else if (!calm) ctx.translate(0, Math.sin(clock * 3 + q.cx) * 1.2); if (q.sc) { const d = q.D * q.sc, ax = q.ox + q.au * q.D, ay = q.oy + q.av * q.D; ctx.drawImage(im, ax - q.au * d, ay - q.av * d, d, d); } else ctx.drawImage(im, q.ox, q.oy, q.D, q.D); FL = fl0; ctx.restore(); }
   if (img.part_burst) for (const e of f.partFx) { const a = (clock - e.at) / 0.45; if (a < 0 || a > 1) continue; const d = e.D * (0.8 + 0.5 * a); ctx.save(); ctx.globalAlpha = 1 - a; ctx.drawImage(img.part_burst, e.x - d / 2, e.y - d / 2, d, d); ctx.restore(); }
 }
 function drawTaotie(f) {
@@ -3044,9 +3049,10 @@ function drawFoeSprite(f) {
   else if (ty === 'boss') {}
   return true;
 }
-function drawFoe(f) {
+function drawFoe(f) { FL = false; try { drawFoe0(f); } finally { FL = false; } }
+function drawFoe0(f) {
   if (f.hidden) return; ctx.save(); ctx.translate(f.x, f.y); ctx.lineWidth = 1.6; ctx.lineJoin = 'round';
-  if (f.hitT > 0) { if (CANF) ctx.filter = 'brightness(2.3) saturate(.6)'; else ctx.globalAlpha = 0.55; } if (f.ghost) ctx.globalAlpha = 0.12;
+  if (f.hitT > 0) { if (CANF) FL = true; else ctx.globalAlpha = 0.55; } if (f.ghost) ctx.globalAlpha = 0.12;
   if (f.elite) { const pu = Math.sin(clock * 6 + f.ph) * 0.1; glow(f.r * 1.9, '255,214,90', 0.55 + pu); if (img.elite_crown) ctx.drawImage(img.elite_crown, -11, -f.r * 1.45 - 16 + Math.sin(clock * 5) * 1.5, 22, 22); ctx.scale(1.35, 1.35); }
   if (f.jit > 0) { f.jit -= 1 / 60; ctx.translate(Math.random() * 5 - 2.5, Math.random() * 4 - 2); }
   const r = f.r, ty = f.type, big = FOE_BIG(ty); if (big) ctx.scale(FOE_VIS, FOE_VIS); if (ty === 'boss') { const bv = bossVis(); ctx.scale(bv, bv); }      /* D351 */      // 素材圖用固定尺寸，整個放大 1.35
@@ -3081,7 +3087,9 @@ function drawFoe(f) {
   ctx.restore();
 }
 const GLOW = { jerky: '255,176,90', power: '255,224,120', gale: '150,225,245' };
-function glow(r, rgb, a) { const g = ctx.createRadialGradient(0, 0, r * 0.15, 0, 0, r); g.addColorStop(0, 'rgba(' + rgb + ',' + a + ')'); g.addColorStop(1, 'rgba(' + rgb + ',0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.2832); ctx.fill(); }      // 一團柔和的光
+const GLOWC = new Map();
+function glowTex(rgb) { let c = GLOWC.get(rgb); if (c === undefined) { if (GLOWC.size > 48) return null; try { c = document.createElement('canvas'); c.width = c.height = 128; const g2 = c.getContext('2d'), g = g2.createRadialGradient(64, 64, 64 * 0.15, 64, 64, 64); g.addColorStop(0, 'rgba(' + rgb + ',1)'); g.addColorStop(1, 'rgba(' + rgb + ',0)'); g2.fillStyle = g; g2.fillRect(0, 0, 128, 128); } catch (e) { c = null; } GLOWC.set(rgb, c); } return c; }
+function glow(r, rgb, a) { if (!(r > 0) || !(a > 0)) return; const c = glowTex(rgb); if (c) { const ga = ctx.globalAlpha; ctx.globalAlpha = ga * Math.min(1, a); DI.call(ctx, c, -r, -r, r * 2, r * 2); ctx.globalAlpha = ga; return; } const g = ctx.createRadialGradient(0, 0, r * 0.15, 0, 0, r); g.addColorStop(0, 'rgba(' + rgb + ',' + a + ')'); g.addColorStop(1, 'rgba(' + rgb + ',0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.2832); ctx.fill(); }      // 一團柔和的光
 function twinkle(x, y, s, a) { ctx.globalAlpha = Math.max(0, a); ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.moveTo(x, y - s); ctx.quadraticCurveTo(x, y, x + s, y); ctx.quadraticCurveTo(x, y, x, y + s); ctx.quadraticCurveTo(x, y, x - s, y); ctx.quadraticCurveTo(x, y, x, y - s); ctx.fill(); ctx.globalAlpha = 1; }      // 一顆四角星光
 function drawShot(s) {
   ctx.save(); ctx.translate(s.x, s.y);
@@ -3230,7 +3238,7 @@ function drawCombo() {
   const col = ['#FFFDF6', '#BFF0D0', '#FFE08A', '#FFB070'][tier], ink = ['#2B3A40', '#1F5A36', '#7A4E12', '#8A3A10'][tier];
   const sc = calm ? 1 : 1 + CB.pop * 0.28, x = 14, y = 50, w = 92, h = 34;
   ctx.save(); ctx.globalAlpha = a; ctx.translate(x + 22, y + h / 2); ctx.scale(sc, sc); ctx.translate(-(x + 22), -(y + h / 2));
-  if (tier >= 2 && !calm) { ctx.shadowColor = tier === 3 ? 'rgba(255,140,40,.9)' : 'rgba(255,210,80,.8)'; ctx.shadowBlur = 10 + Math.sin(clock * 8) * 4; }
+  if (tier >= 2 && !calm) { const gw = w / 2 + 10 + Math.sin(clock * 8) * 4; ctx.save(); ctx.translate(x + w / 2, y + h / 2); ctx.scale(1, (h + 26) / (gw * 2)); glow(gw, tier === 3 ? '255,140,40' : '255,210,80', 0.85); ctx.restore(); }
   const bim = img['cb_' + 'wgyo'[tier]];      /* D454：有 GPT 底圖就用（184×68＝92×34 的兩倍），沒有就照舊畫 */
   if (bim) { ctx.drawImage(bim, x, y, w, h); ctx.shadowBlur = 0; } else { ctx.fillStyle = col; ctx.strokeStyle = '#1E2E3A'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.roundRect(x, y, w, h, 17); ctx.fill(); ctx.shadowBlur = 0; ctx.stroke(); }
   const FF = "'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif";
