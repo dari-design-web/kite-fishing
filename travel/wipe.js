@@ -1,12 +1,25 @@
 /* D449（GPT 1120 Q3「雨後擦窗」）：客廳窗戶的可選小活動。三格玻璃，每格先用刮水器「上下直拖」刮掉水珠，再用軟布來回擦掉霧痕；
    三格都清楚就看到港口（沿用 assets/card_harbor.jpg）。不倒數、不加分、不存檔、不讀天氣，隨時可以重來或離開。
-   D450：換上 GPT 1220 五張圖（窗框 600×720、水珠／霧痕 534×640 鋪滿玻璃、刮水器／軟布 128×128）；沒載到時照舊用程式畫。 */
+   D452：窗外港景每局輪換四張（GPT 1420 Q2 三張新景）。D450：換上 GPT 1220 五張圖（窗框 600×720、水珠／霧痕 534×640 鋪滿玻璃、刮水器／軟布 128×128）；沒載到時照舊用程式畫。 */
 (function () {
   function $(id) { return document.getElementById(id); }
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   var P = 3, COLS = 6, ROWS = 14, DONE = 0.8;
   var IMG = {}, ASSET = { frame: 'assets/wipe/frame.png', drops: 'assets/wipe/drops.png', fog: 'assets/wipe/fog.png', squeegee: 'assets/wipe/squeegee.png', cloth: 'assets/wipe/cloth.png' };
   Object.keys(ASSET).forEach(function (k) { var im = new Image(); im.onload = function () { IMG[k] = im; }; im.src = ASSET[k]; });
+  /* D452（GPT 1420 Q2）：窗外港景每開一局換一張（白天＋傍晚／夜燈／清晨霧散），本局三格同一張；只是插畫主題，不讀時間天氣、不存看過哪張。載不到就用白天港景 */
+  var SCENES = [
+    { src: 'assets/card_harbor.jpg', name: '白天的港口' },
+    { src: 'assets/wipe/harbor_sunset.jpg', name: '傍晚的港口' },
+    { src: 'assets/wipe/harbor_lights.jpg', name: '夜裡亮燈的港口' },
+    { src: 'assets/wipe/harbor_morning.jpg', name: '清晨霧散的港口' }
+  ], sceneOk = [true, false, false, false], lastScene = -1;
+  SCENES.forEach(function (sc, i) { if (!i) return; var im = new Image(); im.onload = function () { sceneOk[i] = true; }; im.src = sc.src; });
+  function pickScene() {
+    var c = []; SCENES.forEach(function (sc, i) { if (sceneOk[i] && i !== lastScene) c.push(i); });
+    if (!c.length) c = [0];
+    lastScene = c[Math.floor(Math.random() * c.length)]; return lastScene;
+  }
   var SVG = {
     squeegee: '<svg viewBox="0 0 64 64"><rect x="6" y="10" width="52" height="9" rx="3" fill="#3B4A57"/><rect x="8" y="17" width="48" height="5" rx="2" fill="#1F2A33"/><rect x="28" y="22" width="8" height="34" rx="4" fill="#E9A23B" stroke="#9A6417" stroke-width="2"/></svg>',
     cloth: '<svg viewBox="0 0 64 64"><path d="M10 20 Q32 8 54 20 L50 50 Q32 58 14 50 Z" fill="#7EC4E6" stroke="#3E87AE" stroke-width="3"/><path d="M16 28 Q32 20 48 28 M17 38 Q32 31 47 38" fill="none" stroke="#B9E2F5" stroke-width="3" stroke-linecap="round"/></svg>'
@@ -67,7 +80,7 @@
     document.body.appendChild(w);
     var win = $('wpWin'), gl = $('wpGl'), cD = $('wpDrop'), cF = $('wpFog'), cur = $('wpCur'), tip = $('wpTip');
     if (IMG.frame) { win.classList.add('img'); var fi = el('img', 'frImg'); fi.src = ASSET.frame; fi.alt = ''; win.appendChild(fi); }
-    var tool = 'squeegee', W = 0, H = 0, S = 1, fogTex = null, mask = document.createElement('canvas'), panes, strokes = { sq: 0, cl: 0 }, finished = false, warnT = 0, fogDirty = false;
+    var scene = 0, tool = 'squeegee', W = 0, H = 0, S = 1, fogTex = null, mask = document.createElement('canvas'), panes, strokes = { sq: 0, cl: 0 }, finished = false, warnT = 0, fogDirty = false;
     mask.width = P * COLS; mask.height = ROWS;
     for (var i = 0; i < P; i++) {
       var ok = el('div', 'ok', '✓'); ok.id = 'wpOk' + i; ok.style.left = (100 / P * (i + .5)) + '%'; gl.appendChild(ok);
@@ -80,6 +93,7 @@
       panes = []; for (var p = 0; p < P; p++) { var d = [], f = []; for (var k = 0; k < COLS * ROWS; k++) { d.push(1); f.push(1); } panes.push({ d: d, f: f, dOk: false, done: false }); }
       for (p = 0; p < P; p++) { $('wpOk' + p).classList.remove('on'); $('wpSg' + p).innerHTML = '<i>💧 水珠</i>'; }
       $('wpBow').classList.remove('on'); var y = w.querySelector('.yay'); if (y) y.remove();
+      scene = pickScene(); gl.style.backgroundImage = 'url(' + SCENES[scene].src + ')'; gl.dataset.scene = scene;
       strokes = { sq: 0, cl: 0 }; finished = false; setTool('squeegee'); drawFog(); count();
       tip.classList.remove('warn'); tip.textContent = '剛下過雨，窗戶濕濕的。先拿刮水器上下拖，把水珠刮掉';
     }
@@ -134,7 +148,7 @@
       if (finished) return; finished = true; $('wpBow').classList.add('on'); tip.classList.remove('warn');
       tip.textContent = '三格都清楚了！';
       w.querySelectorAll('.tl').forEach(function (b) { b.classList.remove('hint'); });
-      var y = el('div', 'yay', '<b>🌈 雨停了，港口看得好清楚！</b><p>刮了 ' + strokes.sq + ' 下、擦了 ' + strokes.cl + ' 下。想再擦一次按「重新來」。</p>');
+      var y = el('div', 'yay', '<b>🌈 雨停了，' + SCENES[scene].name + '看得好清楚！</b><p>刮了 ' + strokes.sq + ' 下、擦了 ' + strokes.cl + ' 下。想再擦一次按「重新來」。</p>');
       gl.appendChild(y);
     }
     var drag = null;
@@ -161,7 +175,7 @@
     $('wpX').onclick = function () { w.remove(); window.__wipe = null; opt.onClose && opt.onClose(); };
     requestAnimationFrame(reset);
     window.__wipe = {
-      st: function () { return { tool: tool, drops: panes.map(function (q) { return Math.round(ratio(q.d) * 100); }), fog: panes.map(function (q) { return Math.round(ratio(q.f) * 100); }), done: panes.map(function (q) { return q.done; }), finished: finished, strokes: strokes }; },
+      st: function () { return { scene: scene, tool: tool, drops: panes.map(function (q) { return Math.round(ratio(q.d) * 100); }), fog: panes.map(function (q) { return Math.round(ratio(q.f) * 100); }), done: panes.map(function (q) { return q.done; }), finished: finished, strokes: strokes }; },
       box: function () { var r = gl.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; }
     };
   }
