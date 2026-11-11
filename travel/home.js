@@ -686,11 +686,18 @@
     else if (rid === 'garden' || rid === 'ranch') btn = (rid === 'garden' && ripe ? '<button type="button" id="hmHA" class="allB">🧺 全部收成<em>' + ripe + '</em></button>' : '') + (rid === 'ranch' && penReady ? '<button type="button" id="hmCA" class="allB">🧺 全部收<em>' + penReady + '</em></button>' : '') + (rid === 'ranch' ? '<button type="button" id="hmAd">💌 委託' + (cc ? '<em>' + cc + '</em>' : '') + '</button>' : '') + (rid === 'garden' && window.BOAT ? '<button type="button" id="hmBt">⛵ 送菜</button>' : '') + '<button type="button" id="hmF">' + img('icon_fridge', 'bi') + '冰箱</button>';
     a.innerHTML = btn;
     if ($('hmBt')) $('hmBt').onclick = boatSheet;
+    winSpot(rid);
     if ($('hmB')) $('hmB').onclick = book;
     if ($('hmAd')) $('hmAd').onclick = adoptSheet; if ($('hmHA')) $('hmHA').onclick = harvestAll; if ($('hmCA')) $('hmCA').onclick = collectAll;
     if ($('hmO')) $('hmO').onclick = ordersSheet; if ($('hmV')) $('hmV').onclick = visitSheet; if ($('hmDc')) $('hmDc').onclick = decoSheet; if ($('hmVb')) $('hmVb').onclick = bookSheet;
     if ($('hmF')) $('hmF').onclick = function () { modal('<h3>冰箱</h3><p>' + fridgeLine() + '</p><p class="mu sm">收成和收集一共 ' + h.xp + ' 次。次數越多，可以開墾的菜圃越多，也能領養更多動物。</p><div class="row"><button class="btn" id="hmK2">去廚房</button><button class="btn ghost" id="hmX">關閉</button></div>'); $('hmK2').onclick = function () { setRoom('kitchen'); kitchen(); }; $('hmX').onclick = close; };
     if ($('hmL')) $('hmL').onclick = function () { setRoom(!ripe && penReady ? 'ranch' : 'garden'); };
+  }
+  /* D449（GPT 1120 Q3）：客廳窗戶上的小牌子「🪟 擦窗」，點了開雨後擦窗（wipe.js）；不存檔、不加分，隨時可以玩或略過 */
+  function winSpot(rid) {
+    var room = $('room'), b = $('hmWin'); if (!room) return;
+    if (rid !== 'living' || !window.WIPE) { if (b) b.remove(); return; }
+    if (!b) { b = document.createElement('button'); b.type = 'button'; b.id = 'hmWin'; b.innerHTML = '<span>🪟 擦窗</span>'; b.setAttribute('aria-label', '雨後擦窗'); room.appendChild(b); b.onclick = function () { WIPE.start({ onClose: render }); }; }
   }
   var css = document.createElement('style');
   /* D276：花園菜圃／鎖頭層（z 200）蓋住小鳶說話泡泡 → 泡泡 z 205（不擋點擊） */
@@ -748,6 +755,7 @@
     '.pot{display:block;margin:6px auto;padding:0;background:none;border:0;cursor:pointer;min-height:96px}.pot.stir{animation:hmS .3s}@keyframes hmS{50%{transform:rotate(-14deg) scale(1.05)}}' +
     '.bar{height:12px;border-radius:6px;background:#EADFCB;overflow:hidden}.bar i{display:block;height:100%;width:0;background:#E39A1F;transition:width .2s}' +
     '.dish{width:160px;height:160px;margin:0 auto;animation:hmD .6s}@keyframes hmD{0%{transform:scale(.3)}70%{transform:scale(1.15)}}' +
+    '#hmWin{position:absolute;left:3.7%;top:13.6%;width:32.4%;height:27.6%;z-index:3;border:0;padding:0;background:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}#hmWin span{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);white-space:nowrap;padding:4px 9px;border-radius:999px;background:rgba(255,253,248,.93);color:#2B6E8F;font:800 12px/1 sans-serif;box-shadow:0 2px 6px rgba(0,0,0,.2)}#hmWin:active span{background:#FFE7A8}' +
     '#hmDecoL{position:absolute;inset:0;pointer-events:none;z-index:1}#hmDecoL .hmDeco{position:absolute;aspect-ratio:1;object-fit:contain;animation:hmD .5s}' +
     '.hmDoor{position:absolute;left:83%;top:50%;width:24%;aspect-ratio:1;transform:translate(-50%,-100%);border:3px solid #F4BB42;border-radius:50%;background:#FFFDF8;padding:4%;box-shadow:0 4px 12px rgba(0,0,0,.3);cursor:pointer;-webkit-tap-highlight-color:transparent;animation:hmK 1.4s ease-in-out infinite}.hmDoor .vi{width:100%;height:100%;object-fit:contain;display:block}.hmDoor .lb{position:absolute;left:50%;top:-4%;transform:translateX(-50%);white-space:nowrap;font-size:12px;font-weight:800;background:#FFFDF8;color:#4A3426;border-radius:10px;padding:3px 8px;box-shadow:0 2px 6px rgba(0,0,0,.25)}.hmDoor.press{filter:brightness(1.12)}' +
     '@keyframes hmK{0%,100%{rotate:0deg}10%{rotate:-4deg}20%{rotate:4deg}30%{rotate:0deg}}' +
