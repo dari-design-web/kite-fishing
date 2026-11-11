@@ -69,6 +69,7 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
 .hf{position:absolute;left:0;top:0;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:#FFE08A;border:1.2px solid #7A4E12;box-shadow:0 0 10px 4px rgba(255,214,90,.75);pointer-events:none;z-index:6}
 .hf b{position:absolute;left:15px;top:-5px;font:700 13px/1 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif;color:#FFF8EA;-webkit-text-stroke:3px #10293D;paint-order:stroke fill;white-space:nowrap}
 .hs{position:absolute;left:0;top:0;width:24px;height:24px;margin:-12px 0 0 -12px;pointer-events:none;z-index:6}
+.sprout{position:absolute;pointer-events:none;transform:translate(-50%,-50%);z-index:4}.sprout b{display:block;font-size:34px;animation:spU .9s ease-out forwards}.sprout s{position:absolute;left:50%;top:50%;width:9px;height:9px;margin:-4px;border-radius:50%;background:#7CF09A;box-shadow:0 0 6px #B8F5C8;animation:spS .8s ease-out forwards}.sprout s:nth-child(2){--a:-60deg}.sprout s:nth-child(3){--a:-20deg}.sprout s:nth-child(4){--a:20deg}.sprout s:nth-child(5){--a:60deg}.sprout s:nth-child(6){--a:-100deg}.sprout s:nth-child(7){--a:100deg}@keyframes spU{0%{transform:scale(.3) translateY(10px);opacity:0}25%{opacity:1;transform:scale(1.3)}100%{transform:scale(1) translateY(-30px);opacity:0}}@keyframes spS{0%{transform:rotate(var(--a)) translateY(0);opacity:1}100%{transform:rotate(var(--a)) translateY(-46px);opacity:0}}
 .pop.still{animation:none}.pop.amu{color:#FFD23A}.pop.bad{color:#FF8A73}.pop.pw{color:#9CF0FF;font-size:20px}.pop.gold{color:#FFD23A;font-size:20px}
 @keyframes pop{to{transform:translate(-50%,-170%);opacity:0}}
 .flash{position:absolute;inset:0;background:rgba(255,80,60,.35);pointer-events:none;opacity:0;transition:opacity .25s}
@@ -138,6 +139,13 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
 .stage.curOn::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:3;box-shadow:inset 0 0 46px 10px rgba(110,235,255,.55);animation:curP .6s ease-in-out infinite alternate}
 @keyframes curP{to{box-shadow:inset 0 0 30px 6px rgba(110,235,255,.35)}}
 @media (prefers-reduced-motion:reduce){.stage.curOn::before{animation:none}}
+/* D444：短航段（試玩）——開場次要鈕、結算完成章 */
+#shBtn small{display:block;font-size:12px;font-weight:700;opacity:.75;line-height:1.2}#shBtn{line-height:1.25;padding:6px 10px}
+.shres{display:flex;align-items:center;justify-content:center;gap:8px;margin:6px 0 2px;font-size:22px;font-weight:900}.shres img{width:48px;height:48px}
+.shbar{height:10px;border:2px solid var(--ink);border-radius:999px;background:#fff;overflow:hidden;margin:6px 4px 8px}.shbar i{display:block;height:100%;background:#4FBF88}
+#endCard .go2{flex:0 0 auto}
+.fcs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0 4px}.fcs button{position:relative;border:2px solid var(--ink);border-radius:14px;background:#fff;color:var(--ink);font:inherit;font-weight:800;font-size:13px;padding:6px 2px 6px;line-height:1.2;min-height:118px}.fcs button .ic{position:relative;display:block;width:64px;height:64px;margin:0 auto 2px}.fcs button .ic img{position:absolute;inset:0;width:100%;height:100%}.fcs button .ic .fr{display:none}.fcs button[aria-pressed=true]{background:#FFF4CC;transform:translateY(-2px);box-shadow:0 3px 0 var(--ink)}.fcs button[aria-pressed=true] .ic .fr{display:block}.fcs button small{display:block;font-size:11px;font-weight:700;opacity:.75;margin-top:2px}.fcd{min-height:2.6em;font-size:13px;margin:4px 0 0}.fcd b{color:#0E6B8C}      /* D446 短航段焦點卡 */
+.gobar{position:sticky;bottom:-16px;z-index:2;background:var(--paper);margin:0 -4px -16px;padding:0 4px 16px}.gobar .go{position:static}.gobar .go2{margin-top:6px;min-height:40px}
 </style></head><body>
 <div class="top"><a class="back" href="../../line/index.html?p=park" id="backBtn">← 小鳶樂園</a><b>鯨鯊快游</b><span id="lbSlot"></span><button class="snd" id="sndBtn" type="button" aria-pressed="true" aria-label="音效開關">音效</button></div>
 <div class="stage" id="stage">
@@ -160,13 +168,15 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
     <div class="lg bad"><b>⚠️ 撞到扣血</b><img src="assets/ob_net.webp" alt="漁網"><img src="assets/ob_reef_pillar.webp" alt="礁石"><img src="assets/ob_bottle.webp" alt="垃圾"><img src="assets/ob_harpoon.webp" alt="魚叉"><img src="assets/ob_jellyfish_group.webp" alt="水母"><span>紅圈、紅黃條紋要閃</span></div>
     <div class="book" id="bookStart"></div>
     <span class="mis" id="misStart"></span>
-    <button class="go" id="goBtn" type="button">開始</button>
+    <div class="gobar"><button class="go" id="goBtn" type="button">開始</button>
+    <button class="go2" id="shBtn" type="button">短航段（試玩）<small>游滿 60 秒就到港・不計分</small></button></div>
   </div>
+  <div class="card" id="focusCard" hidden><h2 style="margin:0">短航段・選一個焦點</h2><p style="margin:4px 0 0;font-size:13px">游滿 60 秒到港，這趟只看你選的那件事</p><div class="fcs" id="fcs"></div><p class="fcd" id="fcd"></p><p style="margin:2px 0 0;font-size:12px;opacity:.7">沒遇到就不算失敗・試玩不計分、不記錄</p><div class="gobar"><button class="go" id="fcGo" type="button">出發 60 秒</button><button class="go2" id="fcBack" type="button">回快游開場</button></div></div>
   <div class="card" id="endCard" hidden></div>
   <div class="card" id="pauseCard" hidden><h2>暫停</h2><p id="pauseMis"></p><button class="go" id="resumeBtn" type="button">繼續</button><a class="go2" href="../../line/index.html?p=park" style="text-decoration:none;line-height:40px">回小鳶樂園</a></div>
   <span class="tag3d">試玩版</span>
 </div>
-<p class="how"><span style="white-space:nowrap"><b>左右滑</b>換水道・<b>上下滑</b>換高度（一次一層、會停住）</span><br><b>金圈</b>加速・<b>藍色洋流</b>也會變快</p><!-- D228：手機上「速」不再單獨掉到第二行，改成兩行整齊斷開 -->
+<p class="how"><span style="white-space:nowrap"><b>左右滑</b>換水道・<b>上下滑</b>換高度（一次一層、會停住）</span><br><b>金圈</b>加速・<b>藍色洋流</b>也會變快<br><b>💧水幕</b>：先游高，再往下滑破開</p><!-- D228：手機上「速」不再單獨掉到第二行，改成兩行整齊斷開 -->
 
 <script src="../../shared/kite_core.js"></script>
 <script src="../../shared/kite_lb.js"></script>
@@ -175,7 +185,7 @@ body{background:#0A2236;color:var(--paper);font-family:var(--round);display:flex
 <script src="../../shared/bgm.js"></script>
 <script type="module">
 import * as THREE from '../../shared/vendor/three.module.min.js';
-import { makeWorld } from './world.js?v=229';
+import { makeWorld } from './world.js?v=230';
 const $ = (id) => document.getElementById(id), stage = $('stage'), cv = $('gl');
 const rnd = (a, b) => a + Math.random() * (b - a), clamp = (v, a, b) => Math.max(a, Math.min(b, v)), lerp = (a, b, k) => a + (b - a) * k, pick = (a) => a[Math.floor(Math.random() * a.length)];
 /* G97 每日挑戰：?daily=official／practice → 出場、彎道都用當天固定亂數（大家同一條海路） */
@@ -275,7 +285,7 @@ const heartTex = W.tex(128, 128, (c) => { c.translate(64, 70); c.beginPath(); c.
 W.TX.heart = heartTex; W.AR.heart = 1;
 const FOOD = { plank: [5, 'food_plankton', 1.1], krill: [15, 'food_krill', 1.2], roe: [20, 'food_roe', 1.0], fish: [30, 'food_small_fish', 1.5] };
 function food(kind, x, y, z) { const f = FOOD[kind], s = W.spr(f[1], f[2]); s.position.set(x, y, z); const b = addObj(s, 'food', { food: kind, r: 1.0, ph: rnd(0, 6), sy: s.scale.y, sx: s.scale.x }); glowFor(b, f[2] * 1.7); return b; }
-function ring(ln, y, z) { const s = W.spr('item_speed_ring', 2.4); s.position.set(CFG.lanes[ln], y, z); return addObj(s, 'ring', { lane: ln, ry: y }); }
+function ring(ln, y, z) { ringN++; const s = W.spr('item_speed_ring', 2.4); s.position.set(CFG.lanes[ln], y, z); return addObj(s, 'ring', { lane: ln, ry: y }); }
 const PW = { shield: { img: 'item_bubble_shield', name: '泡泡盾' }, magnet: { img: 'kite_dive_v1', name: '小鳶幫手' }, dash: { img: 'item_dash_lightning', name: '衝刺' } };
 function powerup(kind, x, y, z) { const s = W.spr(kind === 'heal' ? 'heart' : PW[kind].img, kind === 'heal' ? 1.4 : 1.6); s.position.set(x, y, z); const b = addObj(s, 'pw', { pw: kind, r: 1.2, ph: rnd(0, 6), sy: s.scale.y, sx: s.scale.x }); glowFor(b, 2.6); return b; }
 function obstacle(name, arg) { const d = W.O[name](arg); d.g.position.z = CFG.spawnZ; const b = addObj(d.g, 'ob', Object.assign({ name }, d)); dangerFor(b); return b; }
@@ -293,6 +303,58 @@ function current(ln) { const g = new THREE.Group(), band = new THREE.Mesh(curBan
   const st = []; for (let k = 0; k < 22; k++) { const m = new THREE.Mesh(curStG, curStM); m.rotation.x = -Math.PI / 2; m.position.set(L[ln] + grnd(-0.95, 0.95), grnd(0.1, 4.1), -grnd(0, CUR_LEN)); g.add(m); st.push(m); } g.userData.st = st;
   const sg = new THREE.Sprite(curSignM); sg.scale.set(2.2, 1.1, 1); sg.position.set(L[ln], 5.0, 0); sg.renderOrder = 5; g.add(sg);
   g.position.z = CFG.spawnZ; curLane = ln; return addObj(g, 'cur', { lane: ln, len: CUR_LEN }); }
+/* D436 急潛破幕（GPT 1420 Q3 推薦 A、1520 三圖與節奏）：偶爾一條水道的低層有泡泡水幕，後面藏一串食物。
+   在那條水道先游到高層，水幕靠近時往下滑＝「急潛」：直接從高層衝到低層、水幕破開，穿過去吃到後面那串；沒急潛就被水幕擋住（不扣命），那串食物退去。
+   其他兩條水道一直是普通旁路；每局最多 3 次、最早第 15 秒、跟上次結束隔 25 秒；洋流／狂歡中不出。急潛本身不加分、不給無敵，分數只來自吃到的食物。 */
+const DIVE = { max: 3, first: 15, cd: 25, zone: 46 };
+let diveN = 0, diveOpen = 0, diveEndT = -99, diveLane = -1, diveObj = null, diveRush = 0;
+const diveTex = W.tex(64, 128, (c, w, h) => { c.clearRect(0, 0, w, h); const g = c.createLinearGradient(0, 0, w, 0); g.addColorStop(0, 'rgba(125,235,255,0)'); g.addColorStop(0.25, 'rgba(125,235,255,.55)'); g.addColorStop(0.75, 'rgba(125,235,255,.55)'); g.addColorStop(1, 'rgba(125,235,255,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h); c.strokeStyle = 'rgba(255,214,60,.95)'; c.lineWidth = 7; c.lineCap = 'round'; c.lineJoin = 'round'; c.beginPath(); c.moveTo(16, 40); c.lineTo(32, 62); c.lineTo(48, 40); c.stroke(); });
+diveTex.wrapT = THREE.RepeatWrapping; diveTex.repeat.set(1, 30 / 3.2);
+const diveBandM = W.keep(new THREE.MeshBasicMaterial({ map: diveTex, transparent: true, depthWrite: false })), diveBandG = W.keep(new THREE.PlaneGeometry(2.3, 30));
+function diveEv(ln) { const g = new THREE.Group(), x = L[ln], full = W.spr('dive_curtain_full', 1.75), open = W.spr('dive_curtain_open', 1.75), mk = W.spr('dive_zone_marker', 1.6), band = new THREE.Mesh(diveBandG, diveBandM);
+  full.position.set(x, 0.72, 0); open.position.set(x, 0.72, 0); open.visible = false; mk.position.set(x, CFG.yUp + 2.1, 0); mk.material = mk.material.clone(); band.rotation.x = -Math.PI / 2; band.position.set(x, -0.6, 15); g.add(band, full, open, mk);
+  g.position.z = CFG.spawnZ; const b = addObj(g, 'dive', { lane: ln, full, open, mk, foods: [] });
+  for (let i = 0; i < 7; i++) { const f = food(i % 3 === 2 ? 'roe' : 'fish', x, CFG.yDown, CFG.spawnZ - 3.5 - i * 2.4); f.diveFood = 1; b.foods.push(f); }
+  diveN++; diveLane = ln; diveObj = b; return b; }
+function diveOK() { const tq = Q.get('dive'), fd = foc('dive'); return diveLane < 0 && curLane < 0 && P.fever <= 0 && diveN < DIVE.max && playT >= (tq ? 3 : fd ? 10 : DIVE.first) && playT - diveEndT >= (tq ? 5 : fd ? 12 : DIVE.cd) && (tq || fd || gR() < 0.45); }
+function diveTry() { const b = diveObj; if (!b || b.opened || b.done || vstate !== 'up' || lane !== b.lane) return false; const z = b.o.position.z; if (z < -DIVE.zone || z > -0.6) return false;
+  b.opened = true; diveOpen++; misSet('dive', 1, true); b.full.visible = false; b.open.visible = true; vstate = 'down'; diveRush = 0.45; pop('💧 急潛破幕！', pos.x, pos.y + 1.2, 0, 'pw'); beep([880, 660, 440, 330], 45, 'triangle', 0.07); buzz(35);
+  if (KB()) KiteBoard.ev('swim_lane'); return true; }
+
+/* D452（GPT 1420 Q1 推薦 A「種子接力送達」）：短航段裡偶爾漂來一個透明種子包（不是食物）。游過去就「收下」，種子包跟在鯨鯊側後方；
+   之後前方海床出現一個種植點（綠色地帶＋🌱 牌），游到那條水道、往下滑到低層經過它，就把種子交出去、空床冒出海草芽。
+   每趟最多一次；沒收、沒對到都只是收起來，不扣心、不加分、不算任務、不存檔；碰撞與到港照原本，收局一併清掉。洋流／急潛／狂歡中不出。 */
+const SEED = { first: 16, last: 34, bedAfter: 2.6 };
+let seedN = 0, seedSt = 0, seedObj = null, seedBed = null, seedLane = -1, seedT = 0, seedCarry = null, seedDone = 0;      /* seedSt：0 沒有、1 種子包漂來、2 帶著走、3 種植點來了 */
+const seedTex = W.tex(128, 128, (c) => { c.translate(64, 64); c.fillStyle = 'rgba(210,245,255,.55)'; c.strokeStyle = '#10293D'; c.lineWidth = 6; c.beginPath(); c.roundRect(-40, -46, 80, 92, 22); c.fill(); c.stroke();
+  c.strokeStyle = '#FFFFFF'; c.lineWidth = 4; c.beginPath(); c.moveTo(-26, -34); c.quadraticCurveTo(-32, -10, -26, 14); c.stroke();
+  c.fillStyle = '#C98A3E'; c.strokeStyle = '#6B4426'; c.lineWidth = 3; c.beginPath(); c.ellipse(0, 22, 15, 11, 0, 0, 7); c.fill(); c.stroke();
+  c.strokeStyle = '#2F9E4F'; c.lineWidth = 6; c.lineCap = 'round'; c.beginPath(); c.moveTo(0, 14); c.quadraticCurveTo(2, -6, 0, -22); c.stroke();
+  c.fillStyle = '#5BD17A'; c.strokeStyle = '#1F6E35'; c.lineWidth = 3; [[-1, -14], [1, -26]].forEach(([sd, y]) => { c.beginPath(); c.ellipse(sd * 12, y, 12, 6, sd * -0.5, 0, 7); c.fill(); c.stroke(); });
+  c.fillStyle = '#E9A23B'; c.strokeStyle = '#10293D'; c.lineWidth = 4; c.beginPath(); c.roundRect(-18, -54, 36, 14, 6); c.fill(); c.stroke(); });
+function bedDraw(c, w, h, grown) { c.clearRect(0, 0, w, h); c.translate(w / 2, h * 0.72);
+  c.fillStyle = 'rgba(120,80,40,.35)'; c.beginPath(); c.ellipse(0, 10, 104, 26, 0, 0, 7); c.fill();
+  c.fillStyle = '#D9B57A'; c.strokeStyle = '#6B4426'; c.lineWidth = 5; c.beginPath(); c.ellipse(0, 0, 92, 22, 0, 0, 7); c.fill(); c.stroke();
+  c.fillStyle = '#8A5A33'; c.beginPath(); c.ellipse(0, -2, 52, 11, 0, 0, 7); c.fill();
+  if (!grown) { c.setLineDash([12, 9]); c.strokeStyle = '#5BD17A'; c.lineWidth = 6; c.beginPath(); c.ellipse(0, -2, 66, 16, 0, 0, 7); c.stroke(); c.setLineDash([]); return; }
+  c.lineCap = 'round'; [[-34, -58, '#3FB463'], [-12, -78, '#2F9E4F'], [10, -70, '#5BD17A'], [32, -54, '#3FB463']].forEach(([x, y, col]) => { c.strokeStyle = '#1F6E35'; c.lineWidth = 12; c.beginPath(); c.moveTo(x * 0.5, -6); c.quadraticCurveTo(x + 8, y * 0.5, x, y); c.stroke(); c.strokeStyle = col; c.lineWidth = 7; c.stroke(); }); }
+const bedTexE = W.tex(256, 128, (c, w, h) => bedDraw(c, w, h, false)), bedTexS = W.tex(256, 128, (c, w, h) => bedDraw(c, w, h, true));
+const seedSignT = W.tex(256, 128, (c) => { c.fillStyle = '#B8F5C8'; c.strokeStyle = '#10293D'; c.lineWidth = 10; c.beginPath(); c.roundRect(8, 8, 240, 112, 30); c.fill(); c.stroke(); c.fillStyle = '#10293D'; c.font = '900 50px system-ui,sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('🌱 種這裡', 128, 68); });
+const seedBandT = W.tex(64, 128, (c, w, h) => { c.clearRect(0, 0, w, h); const g = c.createLinearGradient(0, 0, w, 0); g.addColorStop(0, 'rgba(91,209,122,0)'); g.addColorStop(0.25, 'rgba(91,209,122,.5)'); g.addColorStop(0.75, 'rgba(91,209,122,.5)'); g.addColorStop(1, 'rgba(91,209,122,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h); c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = 6; c.lineCap = 'round'; c.beginPath(); c.moveTo(18, 40); c.lineTo(32, 26); c.lineTo(46, 40); c.moveTo(18, 100); c.lineTo(32, 86); c.lineTo(46, 100); c.stroke(); });
+seedBandT.wrapT = THREE.RepeatWrapping; seedBandT.repeat.set(1, 18 / 3.2);
+const seedPkM = W.keep(new THREE.SpriteMaterial({ map: seedTex, transparent: true, depthWrite: false })), seedCarryM = W.keep(new THREE.SpriteMaterial({ map: seedTex, transparent: true, depthWrite: false, depthTest: false }));
+const seedSignM = W.keep(new THREE.SpriteMaterial({ map: seedSignT, fog: false, depthTest: false, transparent: true })), seedBandM = W.keep(new THREE.MeshBasicMaterial({ map: seedBandT, transparent: true, depthWrite: false })), seedBandG = W.keep(new THREE.PlaneGeometry(2.3, 18));
+const seedGlowM = W.keep(new THREE.SpriteMaterial({ map: W.tex(128, 128, (c) => { const g = c.createRadialGradient(64, 64, 6, 64, 64, 62); g.addColorStop(0, 'rgba(170,255,190,.9)'); g.addColorStop(1, 'rgba(120,240,160,0)'); c.fillStyle = g; c.fillRect(0, 0, 128, 128); }), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+function seedOK() { const tq = Q.get('seed'); return SH && seedN < 1 && seedSt === 0 && curLane < 0 && diveLane < 0 && P.fever <= 0 && playT >= (tq ? 3 : SEED.first) && playT <= SEED.last && !(foc('dive') && !misDone) && (tq || gR() < 0.5); }
+function seedEv(ln) { const g = new THREE.Group(), gl = new THREE.Sprite(seedGlowM), pk = new THREE.Sprite(seedPkM); gl.scale.set(2.6, 2.6, 1); pk.scale.set(1.5, 1.5, 1); gl.position.set(L[ln], CFG.yMid, -0.05); pk.position.set(L[ln], CFG.yMid, 0); g.add(gl, pk); g.position.z = CFG.spawnZ; W.bendAll(g);
+  seedN++; seedSt = 1; seedLane = ln; seedObj = addObj(g, 'seed', { lane: ln, pk, gl }); return seedObj; }
+function bedEv(ln) { const g = new THREE.Group(), band = new THREE.Mesh(seedBandG, seedBandM), bed = new THREE.Sprite(new THREE.SpriteMaterial({ map: bedTexE, transparent: true, depthWrite: false })), sg = new THREE.Sprite(seedSignM);
+  band.rotation.x = -Math.PI / 2; band.position.set(L[ln], -0.6, 9); bed.scale.set(2.6, 1.3, 1); bed.center.set(0.5, 0.2); bed.position.set(L[ln], -0.35, 0); sg.scale.set(2.2, 1.1, 1); sg.position.set(L[ln], 4.9, 0); sg.renderOrder = 5; g.add(band, bed, sg); g.position.z = CFG.spawnZ; W.bendAll(g);
+  seedSt = 3; seedLane = ln; seedBed = addObj(g, 'bed', { lane: ln, bed, sg }); tip('🌱 前面有種植點！游到那條水道，往下滑到底層交出種子', false, 2.4); return seedBed; }
+function sprout(x, y, z) { if (RM) return; const p = new THREE.Vector3(x, y, z).project(cam), e = document.createElement('div'); e.className = 'sprout'; e.style.left = ((p.x + 1) / 2 * 100) + '%'; e.style.top = ((1 - p.y) / 2 * 100) + '%'; e.innerHTML = '<b>🌱</b>' + '<s></s>'.repeat(6); stage.appendChild(e); setTimeout(() => e.remove(), 900); }
+function seedClear() { if (seedCarry) { drop(seedCarry); seedCarry = null; } seedSt = 0; seedObj = null; seedBed = null; seedLane = -1; seedT = 0; }
+function seedTick(dt) { if (seedCarry) { const k = Math.sin(t * 4) * 0.1; seedCarry.position.set(pos.x + 1.05, pos.y + 0.55 + k, 1.1); }
+  if (seedSt === 2) { seedT += dt; if (seedT >= SEED.bedAfter && nextRow > 4) { const ln = clamp(prevFree + gpick([-1, 1]), 0, 2); bedEv(ln); nextRow = Math.max(nextRow, 16); } } }
 
 /* ---------- 狀態 ---------- */
 /* G98-M1：每局一個小任務（只記在遊戲裡，不給點數） */
@@ -300,18 +362,31 @@ const MIS = [{ id: 'dodge', txt: '安全閃過 3 個漁網或拱門', n: 3 }, { 
 let mis = MIS[Math.floor(Math.random() * MIS.length)], misV = 0, misDone = false, maxCombo = 0, lastHit = null, eaten = 0;
 function misSet(id, val, add) { if (misDone || mis.id !== id) return; misV = add ? misV + val : Math.max(misV, val); if (misV >= mis.n) { misDone = true; misV = mis.n; tip('🎯 任務完成！' + mis.txt, true, 1.8); beep([660, 880, 1100, 1320], 80, 'triangle'); } }
 $('misStart').textContent = '🎯 本局任務：' + mis.txt;
+/* D446（GPT 2320 Q1 推薦 A、0820 Q2 四圖）：短航段開場三選一焦點——選了就是這趟唯一的任務（取代短航段原本的隨機任務），並讓那種機會多出一點：
+   追食＝食物串變長、目標連吃 30；圈門＝金圈串出現約兩倍、目標穿過 8 個；破幕＝水幕最早第 10 秒、隔 12 秒就再來，目標急潛破幕 2 次。
+   本段沒遇到就寫「本段沒有遇到」，不算失敗；選擇只記在這次開頁（重試保留、回開場可換），不存檔、不加分。無盡與每日挑戰不動。 */
+const FOCI = { fish: { img: 'focus_fish', name: '連吃小魚', mis: { id: 'combo', txt: '連吃 30 個', n: 30 }, d: '<b>食物串變長</b>：沿著食物換道換層，別被撞到斷掉連吃。' }, gate: { img: 'focus_buoy_gate', name: '穿過浮標門', mis: { id: 'ring', txt: '穿過 8 個金圈', n: 8 }, d: '<b>金圈門變多</b>：一串四個金圈會換道換層，跟著穿過去。' }, dive: { img: 'focus_dive', name: '急潛破幕', mis: { id: 'dive', txt: '急潛破幕 2 次', n: 2 }, d: '<b>水幕來得早又勤</b>：看到💧先游到高層，靠近時往下滑。' } };
+let FOC = null, focPick = 'fish', ringN = 0; const foc = (k) => SH && FOC === k;
+function focUI() { $('fcs').innerHTML = Object.keys(FOCI).map((k) => '<button type="button" data-k="' + k + '" aria-pressed="' + (k === focPick) + '"><span class="ic"><img src="assets/' + FOCI[k].img + '.png" alt=""><img class="fr" src="assets/focus_selected_frame.png" alt=""></span>' + FOCI[k].name + '<small>' + FOCI[k].mis.txt + '</small></button>').join(''); $('fcd').innerHTML = FOCI[focPick].d; $('fcs').querySelectorAll('button').forEach((b) => (b.onclick = () => { focPick = b.dataset.k; beep([660], 40, 'sine', 0.05); focUI(); })); }
+function misRoll() { mis = MIS[Math.floor(Math.random() * MIS.length)]; $('misStart').textContent = '🎯 本局任務：' + mis.txt; }
+function focMisRow() { const m = mis, none = !misDone && ((FOC === 'gate' && ringN === 0) || (FOC === 'dive' && diveN === 0)); return '<div class="row ms"><span>' + (FOC ? '<img src="assets/' + FOCI[FOC].img + '.png" alt="" style="width:24px;height:24px;vertical-align:-6px;margin-right:4px">' : '🎯 ') + m.txt + '</span><span class="v">' + (misDone ? '✅ 達成' : none ? '本段沒有遇到' : Math.floor(misV) + '/' + m.n + (FOC === 'dive' ? '（遇到 ' + diveN + ' 次）' : '')) + '</span></div>'; }
 function dailyTag() { if (!DS) return; const t = DS.official ? '📅 今日挑戰・正式（今天還有 ' + KiteDaily.left() + ' 次）' : '📅 今日挑戰・練習（不計榜）'; let e = $('dTag'); if (!e) { e = document.createElement('div'); e.id = 'dTag'; e.className = 'kd-banner'; $('startCard').insertBefore(e, $('misStart')); } e.textContent = t + '｜' + DS.td.vary; }
 dailyTag();
 let lastHeal = 0;
 const kill = (b) => { drop(b.o); if (b.glow) drop(b.glow); if (b.mark) drop(b.mark); };
 let state = 'ready', v = CFG.v0, dist = 0, score = 0, bonus = 0, hearts = CFG.hearts, inv = 0, nextRow = 30, combo = 0, t = 0, playT = 0, last = performance.now(), lane = 1, vstate = 'mid', vT = 0, prevFree = 1, step = 0, tipT = 0, seen = {}, feverE = 0;
+/* D444（GPT 2220 A）：短航段（試玩）——有效遊玩 60 秒到港（只算真的在跑的世界更新，暫停、背景、開場、結算不算）；54 秒出終點浮標（純裝飾、沒有碰撞）；碰撞與收局照原本；不寫最佳、點數、排行榜、旅行冊、告示板 */
+let tHold = false, SH = false, shSaid = false; const SHL = 60, SHW = 54, KB = () => !SH && window.KiteBoard;
+const finTex = new THREE.TextureLoader().load('assets/finish_buoys.png'); finTex.colorSpace = THREE.SRGBColorSpace;
+const fin = add(new THREE.Mesh(new THREE.PlaneGeometry(12, 5.33), new THREE.MeshBasicMaterial({ map: finTex, transparent: true, depthWrite: false }))); fin.position.set(0, 2.0, -80); fin.visible = false; fin.renderOrder = 1;
+function shFin() { if (playT < SHW) return; if (!fin.visible) { fin.visible = true; if (!shSaid) { shSaid = true; tip('看到終點浮標了，再游一下就到港！', true, 2.2); beep([660, 880], 70, 'triangle', 0.06); } } fin.position.z = -80 + clamp((playT - SHW) / (SHL - SHW), 0, 1) * 82; }
 const pos = { x: 0, y: CFG.yMid }, P = { shield: 0, magnet: 0, dash: 0, fever: 0 }, curve = { x: 0, y: 0, tx: 0, ty: 0, next: 6 };
 let bestNow = (() => { try { return +localStorage.getItem('kiteSwimBest1') || 0; } catch (e) { return 0; } })();
 function resize() { const w = stage.clientWidth, h = stage.clientHeight; R.setSize(w, h, false); cam.aspect = w / h; cam.fov = w / h < 0.62 ? 64 : 58; cam.updateProjectionMatrix(); } addEventListener('resize', resize); resize();
-function reset() { bookNew = []; objs.splice(0).forEach(kill); lastHeal = 0; v = CFG.v0; dist = 0; score = 0; bonus = 0; hearts = CFG.hearts; inv = 0; nextRow = 22; combo = 0; playT = 0; lane = 1; vstate = 'mid'; vT = 0; prevFree = 1; step = 0; pos.x = 0; pos.y = CFG.yMid; Object.keys(P).forEach((k) => (P[k] = 0)); seen = {}; feverE = 0; misV = 0; misDone = false; maxCombo = 0; lastHit = null; eaten = 0; curve.tx = curve.ty = 0; curve.next = 8; wakeSaid = false; amuSaid = false; wakeT = 0; curOn = false; curSec = 0; curAcc = 0; curLane = -1; stage.classList.remove('curOn'); WAKE.forEach((w) => { w.visible = false; w.userData.life = 0; }); if (zone !== 0) setZone(0, true); hud(); }
+function reset() { bookNew = []; objs.splice(0).forEach(kill); lastHeal = 0; v = CFG.v0; dist = 0; score = 0; bonus = 0; hearts = CFG.hearts; inv = 0; nextRow = 22; combo = 0; playT = 0; lane = 1; vstate = 'mid'; vT = 0; prevFree = 1; step = 0; pos.x = 0; pos.y = CFG.yMid; Object.keys(P).forEach((k) => (P[k] = 0)); seen = {}; feverE = 0; misV = 0; misDone = false; maxCombo = 0; lastHit = null; eaten = 0; curve.tx = curve.ty = 0; curve.next = 8; wakeSaid = false; amuSaid = false; wakeT = 0; curOn = false; curSec = 0; curAcc = 0; curLane = -1; diveN = 0; ringN = 0; diveOpen = 0; diveEndT = -99; diveLane = -1; diveObj = null; diveRush = 0; seedClear(); seedN = 0; seedDone = 0; stage.classList.remove('curOn'); WAKE.forEach((w) => { w.visible = false; w.userData.life = 0; }); if (zone !== 0) setZone(0, true); shSaid = false; fin.visible = false; fin.position.z = -80; hud(); }
 const speedLv = () => Math.min(Math.floor(playT / CFG.vEvery) + 1, Math.floor((CFG.vMax - CFG.v0) / CFG.vStep) + 1);
 const mult = () => Math.min(5, (combo >= 50 ? 4 : combo >= 25 ? 3 : combo >= 10 ? 2 : 1) * (P.dash > 0 ? 2 : 1) * (P.fever > 0 ? 3 : 1));
-function hud() { $('sc').textContent = score.toLocaleString(); $('dist').textContent = Math.floor(dist) + ' 公尺'; $('spd').textContent = '速度 ' + speedLv(); $('hp').textContent = '💙'.repeat(Math.max(0, hearts)) + '🤍'.repeat(Math.max(0, CFG.hearts - hearts)); const m = mult(); $('cb').hidden = combo < 3 && m < 2; $('cb').textContent = (combo >= 3 ? '連吃 ' + combo : '') + (m > 1 ? '・×' + m : '');
+function hud() { $('sc').textContent = score.toLocaleString(); $('dist').textContent = SH ? '航程 ' + Math.min(SHL, Math.floor(playT)) + '／' + SHL + ' 秒' : Math.floor(dist) + ' 公尺'; $('spd').textContent = '速度 ' + speedLv(); $('hp').textContent = '💙'.repeat(Math.max(0, hearts)) + '🤍'.repeat(Math.max(0, CFG.hearts - hearts)); const m = mult(); $('cb').hidden = combo < 3 && m < 2; $('cb').textContent = (combo >= 3 ? '連吃 ' + combo : '') + (m > 1 ? '・×' + m : '');
   $('misH').hidden = false; $('misH').textContent = '🎯 ' + mis.txt.replace(/^安全/, '') + ' ' + (misDone ? '✅' : Math.floor(misV) + '/' + mis.n); $('feverI').style.height = (P.fever > 0 ? P.fever / CFG.fever * 100 : feverE / CFG.feverNeed * 100) + '%'; $('fever').classList.toggle('on', P.fever > 0); $('feverfx').classList.toggle('on', P.fever > 0);
   $('pw').innerHTML = ['shield', 'magnet', 'dash'].filter((k) => P[k] > 0).map((k) => '<span><img src="assets/' + PW[k].img + '.webp" alt="">' + PW[k].name + '<b><em style="width:' + Math.round(P[k] / CFG[k] * 100) + '%"></em></b></span>').join('') + (P.fever > 0 ? '<span><img src="assets/item_frenzy_flame.webp" alt="">鯨鯊狂歡<b><em style="width:' + Math.round(P.fever / CFG.fever * 100) + '%"></em></b></span>' : '') + (curOn ? '<span><i>🌊</i>洋流加速</span>' : ''); }
 /* D377（主動待辦①快游，GPT 0845 選 A：只飛分數）：拿到分數時，一顆金色小光點從那裡直線約 0.5 秒飛到左上分數框上緣，到達時 GPT 單星亮一次 16→24px；
@@ -339,17 +414,21 @@ const buzz = (ms) => { try { navigator.vibrate && navigator.vibrate(ms); } catch
 
 /* ---------- 出場：前 5 排是教學；之後照目前場景的障礙比重抽；永遠留活路 ---------- */
 const L = CFG.lanes;
-function trail(ln, z, n, kind, yy) { if (DS && DS.td.key === 'food') n = Math.round(n * 1.8); for (let i = 0; i < n; i++) food(kind || 'plank', L[ln], yy == null ? CFG.yMid : yy, z - i * 2.4); }
+function trail(ln, z, n, kind, yy) { if (DS && DS.td.key === 'food') n = Math.round(n * 1.8); if (foc('fish')) n += 3; for (let i = 0; i < n; i++) food(kind || 'plank', L[ln], yy == null ? CFG.yMid : yy, z - i * 2.4); }
 function ringRow(z) { let ln = Math.floor(gR() * 3), y = CFG.yMid; for (let i = 0; i < 4; i++) { ring(ln, y, z - i * 6); if (gR() < 0.5) ln = clamp(ln + gpick([-1, 1]), 0, 2); else y = gpick([CFG.yMid, CFG.yUp, CFG.yDown]); } }
 const TUT = [() => { trail(1, CFG.spawnZ, 6); }, () => { obstacle('trash', 1); trail(0, CFG.spawnZ, 5, 'krill'); }, () => { ringRow(CFG.spawnZ); }, () => { obstacle('arch'); trail(1, CFG.spawnZ + 3, 3, 'roe', CFG.yMid); }, () => { obstacle('harpoon'); trail(2, CFG.spawnZ, 4, 'fish', CFG.yUp); }];
 function row() {
   if (step < TUT.length) { TUT[step++](); return; }
-  const d = smooth(300, 2400, dist), z = CFG.spawnZ, free = curLane >= 0 ? curLane : clamp(prevFree + gpick([-1, 0, 0, 1]), 0, 2), W0 = theme.obst; prevFree = free;
-  if (curLane < 0 && dist > (Q.get('cur') ? 30 : 220) && gR() < (Q.get('cur') ? 1 : 0.07)) { current(free); trail(free, z - 4, 10, gpick(['plank', 'krill'])); nextRow += 6; return; }      /* D417 洋流（?cur=1 測試用：一直出） */      /* D170：活路離上一排的活路最多一條水道 */
-  if (gR() < (DS && DS.td.key === 'rings' ? 0.32 : 0.16)) { ringRow(z); return; }
+  const d = smooth(300, 2400, dist), z = CFG.spawnZ, free = curLane >= 0 ? curLane : diveLane >= 0 ? diveLane : seedSt === 3 ? seedLane : clamp(prevFree + gpick([-1, 0, 0, 1]), 0, 2), W0 = theme.obst; prevFree = free;
+  if (seedOK()) { seedEv(free); trail(gpick([0, 1, 2].filter((i) => i !== free)), z - 4, 4, 'krill'); nextRow += 6; return; }      /* D452 種子包：另兩條是普通旁路 */
+  if (seedSt < 2 && diveOK()) { diveEv(free); trail(gpick([0, 1, 2].filter((i) => i !== free)), z - 6, 4, 'krill'); nextRow += 10; return; }
+  if (curLane < 0 && diveLane < 0 && seedSt === 0 && dist > (Q.get('cur') ? 30 : 220) && gR() < (Q.get('cur') ? 1 : 0.07)) { current(free); trail(free, z - 4, 10, gpick(['plank', 'krill'])); nextRow += 6; return; }      /* D417 洋流（?cur=1 測試用：一直出） */      /* D170：活路離上一排的活路最多一條水道 */
+  if (gR() < (DS && DS.td.key === 'rings' ? 0.32 : foc('gate') ? 0.3 : 0.16)) { ringRow(z); return; }
   const names = Object.keys(W0), tot = names.reduce((s, n) => s + W0[n], 0); let r = gR() * tot, nm = names[0]; for (const n of names) { r -= W0[n]; if (r <= 0) { nm = n; break; } }
   if (nm === 'net') nm = gpick(['netTop', 'netLow', 'netWall']);
-  if (curLane >= 0 && curLane !== 1 && nm === 'arch') nm = 'netLow';      /* D417：拱門只留中間，洋流在旁邊時換成要往上游的網 */
+  if (curLane >= 0 && curLane !== 1 && nm === 'arch') nm = 'netLow';
+  if ((diveLane >= 0 || seedSt === 3) && (nm === 'arch' || nm === 'netLow')) nm = 'netTop';      /* D452：種植點在低層，那段整排網只出要往下潛的 */
+  if (seedSt === 3 && nm === 'harpoon') nm = 'netTop';      /* D436：水幕後面那串在低層，接著的整排網只出要往下潛的 */      /* D417：拱門只留中間，洋流在旁邊時換成要往上游的網 */
   if (['netWall', 'kelpwall'].includes(nm)) { obstacle(nm, free); trail(free, z - 1, 4, gpick(['plank', 'krill', 'roe'])); }
   else if (['trash', 'tire', 'drum', 'pillar', 'container'].includes(nm)) { const busy = [0, 1, 2].filter((i) => i !== free); const n = d > 0.35 && gR() < 0.6 ? 2 : 1; busy.slice(0, n).forEach((i, j) => { const b = obstacle(j ? gpick(['trash', 'tire', 'drum', 'pillar'].filter((x) => W0[x])) : nm, i); b.o.position.z -= j * 3; }); if (n > 1) nextRow += 3; trail(free, z, 5, gpick(['plank', 'krill', 'fish'])); }
   else if (nm === 'jelly') { const ls = [0, 1, 2].filter((i) => i !== free); obstacle('jelly', d > 0.3 ? ls : [gpick(ls)]); trail(free, z, 4, 'krill'); }
@@ -373,11 +452,11 @@ function update(dt) {
   const vt = Math.min(CFG.vMax, CFG.v0 + (speedLv() - 1) * CFG.vStep); v = lerp(v, vt * (P.dash > 0 ? 1.5 : 1) * (P.fever > 0 ? 1.25 : 1) * (curOn ? 1.3 : 1), 1 - Math.exp(-dt * 2.5));
   if (Math.floor(playT / CFG.vEvery) !== Math.floor((playT - dt) / CFG.vEvery) && playT > 1) { pop('加速！速度 ' + speedLv(), 0, 4.5, -6, 'gold'); beep([700, 900], 60, 'triangle', 0.06); }
   const dz = v * dt; dist += dz; score = Math.floor(dist) + bonus; if (mis.id === 'dist' && !misDone) misSet('dist', dist);
-  const zi = Math.max(0, Math.floor(dist / CFG.zoneLen)); if (zi !== zone) setZone(zi); bookCheck();
+  const zi = Math.max(0, Math.floor(dist / CFG.zoneLen)); if (zi !== zone) setZone(zi); if (!SH) bookCheck();
   curve.next -= dt; if (curve.next <= 0) { curve.next = grnd(6, 10); const k = smooth(15, 120, playT); curve.tx = playT < 15 ? 0 : gpick([-1, 1]) * grnd(0.35, 1) * 0.0018 * (0.5 + k * 0.5); curve.ty = playT < 15 ? 0 : grnd(-1, 1) * 0.0005 * k;      /* D203：彎道變緩（Dari 10/28：後面場景有點飄忽） */ }
   curve.x = lerp(curve.x, curve.tx, 1 - Math.exp(-dt * 0.8)); curve.y = lerp(curve.y, curve.ty, 1 - Math.exp(-dt * 0.8)); W.bend.value.set(curve.x, curve.y);
   const ty = vstate === 'up' ? CFG.yUp : vstate === 'down' ? CFG.yDown : CFG.yMid;
-  pos.x = lerp(pos.x, L[lane], 1 - Math.exp(-dt * 11)); pos.y = lerp(pos.y, ty, 1 - Math.exp(-dt * 9));
+  pos.x = lerp(pos.x, L[lane], 1 - Math.exp(-dt * 11)); if (diveRush > 0) diveRush -= dt; pos.y = lerp(pos.y, ty, 1 - Math.exp(-dt * (diveRush > 0 ? 20 : 9)));
   wakeUpd(dt, dz);
   nextRow -= dz; if (nextRow <= 0) { row(); nextRow += Math.max(lerp(CFG.gap0, CFG.gap1, smooth(150, 2000, dist)) * grnd(0.9, 1.15), v * 0.75); }      /* QA：最快時每排至少間隔 0.75 秒（D170 由 0.62 加長：上下一次一層，要多滑一下） */
   if (tipT > 0) { tipT -= dt; if (tipT <= 0) $('tip').hidden = true; }
@@ -386,6 +465,18 @@ function update(dt) {
     if (b.kind === 'cur') { const bk = z1 - b.len; if (z1 > -0.6 && bk < 0.6 && Math.abs(pos.x - L[b.lane]) < 1.1) curNow = true; b.o.userData.st.forEach((m) => { m.position.z += dt * v * 0.8; if (m.position.z > 0) m.position.z -= b.len; });
       if (!b.tipped && z1 > -32) { b.tipped = true; if (!seen.cur) { seen.cur = 1; tip('🌊 藍色洋流！游進去會變快', false, 1.8); } }
       if (curLane === b.lane && bk > CFG.spawnZ + 2) curLane = -1; if (bk > 12) { kill(b); objs.splice(i, 1); } continue; }
+    if (b.kind === 'dive') { const u = b.mk; u.material.opacity = b.opened ? Math.max(0, u.material.opacity - dt * 4) : 1 - smooth(-6, -2, z1); u.position.y = CFG.yUp + 2.1 + Math.sin(t * 5) * 0.12;
+      if (!b.tipped && z1 > -44) { b.tipped = true; const n = (seen.dive = (seen.dive || 0) + 1); tip(n === 1 ? '💧 急潛區！先游到高層，再往下滑破水幕' : '💧 急潛區！高層往下滑', false, n === 1 ? 2.4 : 1.4); }
+      if (!b.done && z0 < -0.2 && z1 >= -0.2) { b.done = true; if (!b.opened) { b.foods.forEach((f) => { const j = objs.indexOf(f); if (j > i) { kill(f); objs.splice(j, 1); } }); if (Math.abs(pos.x - L[b.lane]) < 1.1 && pos.y < 1.7) pop('水幕擋住了', pos.x, pos.y + 1.1, 0, 'bad'); } }
+      if (z1 > 22) { if (diveObj === b) { diveObj = null; diveLane = -1; diveEndT = playT; } kill(b); objs.splice(i, 1); } continue; }
+    if (b.kind === 'seed') { b.pk.position.y = CFG.yMid + Math.sin(t * 3) * 0.15; b.gl.scale.setScalar(2.6 * (1 + Math.sin(t * 6) * 0.08));
+      if (!b.tipped && z1 > -40) { b.tipped = true; tip('🌱 漂來一個種子包！游過去收下，帶去種', false, 2.0); }
+      if (!b.done && z1 > -1.6 && z1 < 1.2 && Math.abs(L[b.lane] - pos.x) < 1.2 && Math.abs(b.pk.position.y - pos.y) < 1.2) { b.done = true; seedSt = 2; seedT = 0; seedCarry = add(new THREE.Sprite(seedCarryM)); seedCarry.scale.set(0.95, 0.95, 1); seedCarry.renderOrder = 6; pop('🌱 收下種子包！', pos.x, pos.y + 1.2, 0, 'pw'); beep([660, 880, 1175], 60, 'triangle', 0.06); buzz(20); kill(b); objs.splice(i, 1); seedObj = null; continue; }
+      if (z1 > 2) { if (!b.done && seedSt === 1) seedClear(); kill(b); objs.splice(i, 1); } continue; }
+    if (b.kind === 'bed') { b.sg.material.opacity = b.grown ? Math.max(0, b.sg.material.opacity - dt * 4) : 1 - smooth(-6, -2, z1); b.sg.position.y = 4.9 + Math.sin(t * 5) * 0.12;
+      if (!b.done && z0 < -7 && z1 >= -7) { b.done = true; if (Math.abs(pos.x - L[b.lane]) < 1.1 && pos.y < 1.2) { b.grown = true; seedDone++; b.bed.material.map = bedTexS; b.bed.material.needsUpdate = true; b.bed.scale.set(3.0, 1.5, 1); if (seedCarry) { drop(seedCarry); seedCarry = null; } pop('🌱 種下了！海草發芽', pos.x, pos.y + 1.3, 0, 'gold'); sprout(b.o.position.x + L[b.lane], 0.4, z1); beep([523, 659, 784, 1047], 80, 'triangle', 0.07); buzz(30); }
+        else { if (seedCarry) { drop(seedCarry); seedCarry = null; } pop('種植點過去了', pos.x, pos.y + 1.1, 0, 'bad'); } seedSt = 0; seedLane = -1; }
+      if (z1 > 16) { if (seedBed === b) seedBed = null; kill(b); objs.splice(i, 1); } continue; }
     if (b.glow) { b.glow.position.set(b.o.position.x, b.o.position.y, z1 - 0.08); b.mark.position.set(b.o.position.x, -0.63, z1); const k = 1 + Math.sin(t * 6 + (b.ph || 0)) * 0.07; b.o.scale.set(b.sx * k, b.sy * (2 - k), 1); b.mark.scale.setScalar(1.25 - (b.o.position.y - 0.5) * 0.12); }
     else if (b.kind === 'ob') b.o.children.forEach((c) => { if (c.userData.danger) c.scale.setScalar(c.userData.danger * (1 + Math.sin(t * 8) * 0.08)); });
     if (b.smash) { const m = b.smash; m.t += dt; m.vy -= 14 * dt; b.o.position.x += m.vx * dt; b.o.position.y += m.vy * dt; b.o.position.z -= (v + m.vz) * dt; if (b.o.material) b.o.material.rotation += m.spin * dt; else b.o.rotation.z += m.spin * dt; const k = Math.max(0.05, 1 - m.t * 0.9); b.o.scale.set(m.s.x * k, m.s.y * k, m.s.z * k); if (b.glow) b.glow.visible = false; if (b.mark) b.mark.visible = false; if (m.t > 1.1) { kill(b); objs.splice(i, 1); continue; } }      /* D203：撞飛＝往旁邊＋往上＋往遠處拋、會轉、越來越小（Dari 10/28：真的撞到東西要飛走） */
@@ -409,11 +500,13 @@ function update(dt) {
   if (curNow && !curOn) { pop('🌊 搭上洋流！', pos.x, pos.y + 1.3, 0, 'pw'); beep([523, 698, 880, 1175], 60, 'triangle', 0.07); buzz(25); }
   if (curNow !== curOn) { curOn = curNow; stage.classList.toggle('curOn', curOn); hud(); }
   if (curOn) { curSec += dt; misSet('cur', curSec); curAcc += dt; if (curAcc >= 0.25) { curAcc -= 0.25; bonus += 5 * mult(); if (P.fever <= 0) feverE += 4; } }
-  curTex.offset.y -= dt * 1.6;
+  curTex.offset.y -= dt * 1.6; diveTex.offset.y -= dt * 1.2;
   for (let i = deco.length - 1; i >= 0; i--) { const o = deco[i]; o.position.z += dz; if (o.position.z > 12) { drop(o); deco.splice(i, 1); if (!o.userData.small) decoAt(o.position.z - 136); } }
   sand.offset.y += dz / 170 * 22; caustic.offset.y += dz / 170 * 16; laneTex.offset.y += dz / 170 * 40; caustic.offset.x += dt * 0.02;
   const a = bubG.attributes.position; for (let i = 0; i < NB; i++) { a.array[i * 3 + 1] += dt * 0.6; a.array[i * 3 + 2] += dz * 0.7; if (a.array[i * 3 + 2] > 9) a.array[i * 3 + 2] -= 88; if (a.array[i * 3 + 1] > 9) a.array[i * 3 + 1] = -0.5; } a.needsUpdate = true;
   if (big) { big.position.z += dz * 0.25 + dt * 1.5; big.position.x -= big.userData.side * dt * 2.4; if (big.position.z > 20) { drop(big); big = null; } }
+  seedTick(dt); seedBandT.offset.y -= dt * 1.2;
+  if (SH) shFin();
   if (Math.floor(t * 8) !== Math.floor((t - dt) * 8)) hud();
 }
 const helper = $('helper');
@@ -438,14 +531,14 @@ function pose(dt) {
 }
 function frame(now) {
   const dt = clamp((now - last) / 1000, 0, 0.1); last = now;
-  if (state === 'play') { const TS = +Q.get('ts') || 1; for (let k = 0; k < TS && state === 'play'; k++) { let rem = dt; while (rem > 0 && state === 'play') { const st = Math.min(rem, 0.034); update(st); rem -= st; } } }      // ?ts=4：測試用快轉；手機卡一下也不會變慢（拆成小步算）
+  if (state === 'play' && !tHold) { const TS = +Q.get('ts') || 1; for (let k = 0; k < TS && state === 'play'; k++) { let rem = dt; while (rem > 0 && state === 'play') { const st = Math.min(rem, 0.034); update(st); if (SH && state === 'play' && playT >= SHL) shEnd(true); rem -= st; } } }      // ?ts=4：測試用快轉；手機卡一下也不會變慢（拆成小步算）
   else { t += dt; pos.x = lerp(pos.x, Math.sin(t * 0.5) * 1.4, 0.02); pos.y = lerp(pos.y, CFG.yMid + Math.sin(t * 0.8) * 0.4, 0.02); if (state === 'ready') deco.forEach((o) => { o.position.z += dt * 3; }); }
   pose(dt); R.render(S, cam); requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 
 /* ---------- 操作：滑動；輕點左右三分之一也可換水道；方向鍵 ---------- */
-function move(dir) { if (state !== 'play') return; const pl = lane, pv = vstate; if (dir === 'L') lane = Math.max(0, lane - 1); else if (dir === 'R') lane = Math.min(2, lane + 1); else { const lv = { down: -1, mid: 0, up: 1 }[vstate] + (dir === 'U' ? 1 : -1); vstate = lv > 0 ? 'up' : lv < 0 ? 'down' : 'mid';      /* D170：一次只移一層，停在那層（不再自己掉回中間撞到後面的東西） */ } beep([dir === 'U' ? 700 : dir === 'D' ? 400 : 560], 40, 'sine', 0.05); if (lane !== pl) { wakeT = 0.3; wakeAcc = 1; if (!wakeSaid) { wakeSaid = true; pop('咻，轉過去囉！', pos.x, pos.y + 1.4, 0, 'pw'); } } if (window.KiteBoard && (lane !== pl || vstate !== pv)) KiteBoard.ev('swim_lane'); }
+function move(dir) { if (state !== 'play') return; if (dir === 'D' && diveTry()) return; const pl = lane, pv = vstate; if (dir === 'L') lane = Math.max(0, lane - 1); else if (dir === 'R') lane = Math.min(2, lane + 1); else { const lv = { down: -1, mid: 0, up: 1 }[vstate] + (dir === 'U' ? 1 : -1); vstate = lv > 0 ? 'up' : lv < 0 ? 'down' : 'mid';      /* D170：一次只移一層，停在那層（不再自己掉回中間撞到後面的東西） */ } beep([dir === 'U' ? 700 : dir === 'D' ? 400 : 560], 40, 'sine', 0.05); if (lane !== pl) { wakeT = 0.3; wakeAcc = 1; if (!wakeSaid) { wakeSaid = true; pop('咻，轉過去囉！', pos.x, pos.y + 1.4, 0, 'pw'); } } if (KB() && (lane !== pl || vstate !== pv)) KiteBoard.ev('swim_lane'); }
 let sw = null;
 cv.addEventListener('pointerdown', (e) => { if (state !== 'play') return; sw = { x: e.clientX, y: e.clientY, t: performance.now(), done: false }; cv.setPointerCapture && cv.setPointerCapture(e.pointerId); });
 cv.addEventListener('pointermove', (e) => { if (!sw || sw.done) return; const dx = e.clientX - sw.x, dy = e.clientY - sw.y, ax = Math.abs(dx), ay = Math.abs(dy); if (Math.hypot(dx, dy) < 36) return; if (Math.max(ax, ay) < Math.min(ax, ay) * 1.3 && Math.hypot(dx, dy) < 70) return; sw.done = true; move(ax > ay ? (dx < 0 ? 'L' : 'R') : (dy < 0 ? 'U' : 'D')); });      /* D172：滑動門檻 26→36px；斜斜滑先等方向明確（差 1.3 倍）再判斷，手指一抖不會亂換道 */
@@ -453,8 +546,9 @@ cv.addEventListener('pointerup', (e) => { if (sw && !sw.done && performance.now(
 addEventListener('keydown', (e) => { if (state === 'pause') { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); resume(); } return; } if (state !== 'play') { if ((e.key === 'Enter' || e.key === ' ') && state !== 'end') { e.preventDefault(); start(); } return; } const k = { ArrowLeft: 'L', ArrowRight: 'R', ArrowUp: 'U', ArrowDown: 'D', a: 'L', d: 'R', w: 'U', s: 'D' }[e.key]; if (k) { e.preventDefault(); move(k); } });
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') pause(); });      // 切到背景就暫停，回來按「繼續」
 
-function start() { reset(); if (window.KiteBoard) KiteBoard.start('swim'); if (DS) { gR = KiteDaily.rng(DS.td.seed); if (DS.official && KiteDaily.left() <= 0) { DS.official = false; DS.practice = true; } KiteDaily.begin(DS); if (DS.td.key === 'shield') P.shield = CFG.shield; dailyTag(); } $('startCard').hidden = true; $('endCard').hidden = true; $('pauseCard').hidden = true; $('hud').hidden = false; $('fever').hidden = false; $('lvl').hidden = false; $('pauseBtn').hidden = false; state = 'play'; last = performance.now(); music(); beep([523, 659, 784], 90); tip('左右滑換水道・上下滑一次換一層', true, 2.4); }
+function start() { reset(); if (KB()) KiteBoard.start('swim'); if (DS) { gR = KiteDaily.rng(DS.td.seed); if (DS.official && KiteDaily.left() <= 0) { DS.official = false; DS.practice = true; } KiteDaily.begin(DS); if (DS.td.key === 'shield') P.shield = CFG.shield; dailyTag(); } $('startCard').hidden = true; $('focusCard').hidden = true; $('endCard').hidden = true; $('pauseCard').hidden = true; $('hud').hidden = false; $('fever').hidden = false; $('lvl').hidden = false; $('pauseBtn').hidden = false; state = 'play'; last = performance.now(); music(); beep([523, 659, 784], 90); $('sc').parentElement.style.visibility = SH ? 'hidden' : ''; tip(SH ? (FOC ? FOCI[FOC].name + '：' + FOCI[FOC].mis.txt + '・60 秒到港' : '短航段：游滿 60 秒就到港') : '左右滑換水道・上下滑一次換一層', true, 2.4); }
 function end() {
+  if (SH) { shEnd(false); return; }
   { const zi = Math.max(0, Math.floor(dist / CFG.zoneLen)); if (zi !== zone) setZone(zi, true); bookCheck(); }      /* D312（GPT 1830 B）：結算前先照距離對齊區域與旅行冊，「到了○○」「下一站還差」不會出現負數 */
   if (window.KiteBoard) { KiteBoard.ev('swim_time', { sec: playT }); KiteBoard.ev('run_end', { game: 'swim' }); }      /* D175：告示板委託 */
   snapTake();      /* D380：先抓這一刻（HUD 是網頁元素，不會進縮圖） */
@@ -462,7 +556,7 @@ function end() {
   const s = score, nb = !DS && s > bestNow, db = DS ? KiteDaily.dayBest(DS, s) : null; if (nb) {      /* D265（GPT 2330 A②）：每日挑戰不寫一般最佳、不出一般新紀錄，改記今日正式／練習最佳 */ bestNow = s; try { localStorage.setItem('kiteSwimBest1', String(s)); } catch (e) {} }
   let rk = '', tl = '', rp = null, dr = DS ? KiteDaily.finish(DS, s) : null; try { const K = window.KiteCore; if (!DS && K && K.reportPlay && s > 0) { const rep = () => K.reportPlay({ game: 'swim', level: 'all', score: s, sec: playT, lbAll: true }); const r = K.rankAround ? K.rankAround('swim', 'all', rep) : { res: rep() }; rk = r && K.rankText ? K.rankText(r) : ''; tl = K.tierLine ? K.tierLine(r.res) : ''; rp = r && r.res; } } catch (e) {}      // D141：前 3 局算進今日積分
   const mainOff = !!(DS && DS.official && dr && dr.left > 0);      /* D310（GPT 1630 A②）：正式局主鈕寫明「再正式挑戰（剩 N 次）」（N＝結算後實際剩下），正式面板去掉重複的再正式挑戰；用完照原本「再玩一次」，練習照舊「再練一次」 */
-  const c = $('endCard'); c.innerHTML = '<div class="sc"><img class="hero" src="assets/shark_hit.webp" alt="">' + (nb ? '<span class="nb">新紀錄！</span>' : '') + '<p style="margin:2px 0 0;font-weight:700">游了 ' + Math.floor(dist) + ' 公尺・到了<span style="white-space:nowrap">' + theme.name + '</span></p><div class="big">' + s.toLocaleString() + '</div>' + snapHtml() + postHtml() + (rk ? '<div class="rk">🏆 本月' + rk + '</div>' : '') + ptHtml(tl, rp) + (DS ? KiteDaily.resultHtml(DS, dr, s, { mainOfficial: mainOff }) : '') + whyHtml() + '<div class="row ms"><span>🎯 ' + mis.txt + '</span><span class="v">' + (misDone ? '✅ 完成' : Math.floor(misV) + '/' + mis.n) + '</span></div><div class="row"><span>最高連吃</span><span>' + maxCombo + '</span></div>' + (curSec > 0 ? '<div class="row"><span>🌊 搭洋流</span><span>' + curSec.toFixed(1) + ' 秒</span></div>' : '') + nextZone() + (bookNew.length ? '<div class="book">' + bookHtml() + '</div>' : bookLine()) + '<div class="row"><span>' + (db ? db.label : '最佳') + '</span><span>' + (db ? db.best : bestNow).toLocaleString() + ' 分</span></div></div><i class="scf" aria-hidden="true"></i><button class="go" id="againBtn" type="button">' + (DS && !DS.official ? '再練一次' : mainOff ? '再正式挑戰（剩 ' + dr.left + ' 次）' : '再玩一次') + '</button>';      /* D265 C③ */
+  const c = $('endCard'); c.innerHTML = '<div class="sc"><img class="hero" src="assets/shark_hit.webp" alt="">' + (nb ? '<span class="nb">新紀錄！</span>' : '') + '<p style="margin:2px 0 0;font-weight:700">游了 ' + Math.floor(dist) + ' 公尺・到了<span style="white-space:nowrap">' + theme.name + '</span></p><div class="big">' + s.toLocaleString() + '</div>' + snapHtml() + postHtml() + (rk ? '<div class="rk">🏆 本月' + rk + '</div>' : '') + ptHtml(tl, rp) + (DS ? KiteDaily.resultHtml(DS, dr, s, { mainOfficial: mainOff }) : '') + whyHtml() + '<div class="row ms"><span>🎯 ' + mis.txt + '</span><span class="v">' + (misDone ? '✅ 完成' : Math.floor(misV) + '/' + mis.n) + '</span></div><div class="row"><span>最高連吃</span><span>' + maxCombo + '</span></div>' + (curSec > 0 ? '<div class="row"><span>🌊 搭洋流</span><span>' + curSec.toFixed(1) + ' 秒</span></div>' : '') + (diveN ? '<div class="row"><span>💧 急潛破幕</span><span>' + diveOpen + '／' + diveN + '</span></div>' : '') + nextZone() + (bookNew.length ? '<div class="book">' + bookHtml() + '</div>' : bookLine()) + '<div class="row"><span>' + (db ? db.label : '最佳') + '</span><span>' + (db ? db.best : bestNow).toLocaleString() + ' 分</span></div></div><i class="scf" aria-hidden="true"></i><button class="go" id="againBtn" type="button">' + (DS && !DS.official ? '再練一次' : mainOff ? '再正式挑戰（剩 ' + dr.left + ' 次）' : '再玩一次') + '</button>';      /* D265 C③ */
   if (DS) KiteDaily.wire(c, s);
   ptWire(c);
   c.hidden = false; scFade(c); $('againBtn').onclick = () => { mis = MIS[Math.floor(Math.random() * MIS.length)]; start(); }; $('againBtn').disabled = true; setTimeout(() => { const b = $('againBtn'); if (b) b.disabled = false; }, 700); /* G98：結算先擋 0.7 秒，避免最後一下滑動誤按再玩；QA：結束音效原本被註解吃掉 */ beep(nb ? [523, 659, 784, 1047] : [392, 330], 110);
@@ -494,8 +588,21 @@ function nextZone() { const nz = W.THEMES[(zone + 1) % W.THEMES.length], left = 
 function pause() { if (state !== 'play') return; state = 'pause'; music(); $('pauseMis').textContent = '🎯 ' + mis.txt + '（' + (misDone ? '完成' : Math.floor(misV) + '/' + mis.n) + '）'; $('pauseCard').hidden = false; }
 function resume() { if (state !== 'pause') return; $('pauseCard').hidden = true; last = performance.now(); state = 'play'; inv = Math.max(inv, 1.2); music(); }      /* QA：繼續後 1.2 秒無敵，不會一回來就撞 */
 $('pauseBtn').onclick = pause; $('resumeBtn').onclick = resume;
-goBtn.onclick = start;
+goBtn.onclick = () => { SH = false; if (FOC) { FOC = null; misRoll(); } start(); };
+const shBtn = $('shBtn'); if (DS) shBtn.hidden = true; shBtn.onclick = () => { if (goBtn.disabled) return; focUI(); $('startCard').hidden = true; $('focusCard').hidden = false; $('focusCard').scrollTop = 0; };
+$('fcBack').onclick = () => { $('focusCard').hidden = true; $('startCard').hidden = false; };
+$('fcGo').onclick = () => { SH = true; FOC = focPick; mis = FOCI[FOC].mis; $('focusCard').hidden = true; start(); };
+function shEnd(ok) {
+  if (state !== 'play' && state !== 'pause') return; state = 'end';      /* 先鎖住：之後的碰撞、回呼都改不了結果 */
+  const sec = ok ? SHL : Math.min(SHL - 1, Math.floor(playT)); music(); fin.visible = false;
+  $('hud').hidden = true; $('fever').hidden = true; $('lvl').hidden = true; $('pauseBtn').hidden = true; $('tip').hidden = true; $('pauseCard').hidden = true; $('pw').innerHTML = ''; helper.style.display = 'none'; $('feverfx').classList.remove('on'); stage.querySelectorAll('.pop,.zone,.hf,.hs').forEach((e) => e.remove()); stage.classList.remove('curOn');
+  const c = $('endCard'); c.innerHTML = '<div class="sc"><img class="hero" src="assets/' + (ok ? 'shark_1' : 'shark_hit') + '.webp" alt="">' + (ok ? '<div class="shres"><img src="assets/short_finish_stamp.png" alt="">短航段完成</div>' : '<div class="shres">這趟先到這裡</div>') + '<div class="shbar"><i style="width:' + (sec / SHL * 100) + '%"></i></div><div class="row"><span>航程</span><span>' + sec + '／' + SHL + ' 秒</span></div>' + focMisRow() + '<div class="row"><span>游了</span><span>' + Math.floor(dist) + ' 公尺・' + theme.name + '</span></div><div class="row"><span>最高連吃</span><span>' + maxCombo + '</span></div>' + (diveN ? '<div class="row"><span>💧 急潛破幕</span><span>' + diveOpen + '／' + diveN + '</span></div>' : '') + '<p style="margin:8px 0 0;font-size:13px;opacity:.75">試玩：不計分、不進排行榜，也不記錄。</p></div><i class="scf" aria-hidden="true"></i><button class="go" id="againBtn" type="button">再試 60 秒</button><button class="go2" id="shBack" type="button">回快游開場</button>';
+  c.hidden = false; scFade(c); $('againBtn').onclick = () => { if (FOC) mis = FOCI[FOC].mis; else misRoll(); start(); }; $('shBack').onclick = shBack; $('againBtn').disabled = true; setTimeout(() => { const b = $('againBtn'); if (b) b.disabled = false; }, 700);
+  beep(ok ? [523, 659, 784, 1047] : [392, 330], 110); if (ok) buzz(60);
+}
+function shBack() { SH = false; FOC = null; misRoll(); reset(); $('endCard').hidden = true; $('startCard').hidden = false; state = 'ready'; music(); }
 if (window.KiteLB) KiteLB.button($('lbSlot'), () => Object.assign({ cat: 'swim' }, (KiteLB.CATS.filter((c) => c[0] === 'swim')[0] || [])[2] || {}));
-window.__swim = { get glow() { return seaGlow; }, get sea() { return '#' + seaC.getHexString(); }, hf: () => hfList.filter((f) => f.el.isConnected).map((f) => f.n), hfSend: (x, y, z) => hfSend(x, y, z), set combo(x) { combo = x; },      /* D378 測試掛勾 */      /* D377 測試掛勾 */ get wake() { return WAKE.filter((w) => w.visible).length; }, ob: (n, l) => obstacle(n, l), get state() { return state; }, get score() { return score; }, get dist() { return dist; }, set dist(x) { dist = x; }, get hearts() { return hearts; }, set hearts(x) { hearts = x; }, get lane() { return lane; }, get pos() { return pos; }, get theme() { return theme && theme.id; }, regen() { deco.splice(0).forEach((o) => drop(o)); for (let z = 6; z > -130; z -= 2.6) decoAt(z); }, get speed() { return speedLv(); }, set playT(x) { playT = x; }, P, objs, start, end, move, L, setZone, get cur() { return { on: curOn, sec: curSec, lane: curLane, v }; }, set hit(x) { inv = x ? 0 : 999; } };      /* D417 測試掛勾 */
+window.__swim = { set hold(x) { tHold = !!x; }, step: (d) => { for (let k = 0; k < d / 0.02; k++) update(0.02); },      /* D452 測試掛勾：停住世界、手動走幾步 */
+  get seed() { return { n: seedN, st: seedSt, lane: seedLane, done: seedDone, carry: !!seedCarry, bedZ: seedBed ? seedBed.o.position.z : null, pkZ: seedObj ? seedObj.o.position.z : null }; }, short: (k) => { SH = true; FOC = k || null; if (k) mis = FOCI[k].mis; start(); }, get foc() { return { foc: FOC, pick: focPick, mis: mis.id, v: misV, done: misDone, ringN, diveN, maxCombo }; }, get sh() { return { on: SH, t: playT, fin: fin.visible, z: fin.position.z }; }, end: () => end(), get dive() { return { n: diveN, open: diveOpen, lane: diveLane, z: diveObj ? diveObj.o.position.z : null, opened: !!(diveObj && diveObj.opened) }; }, move: (d) => move(d), get vstate() { return vstate; }, get playT() { return playT; }, get glow() { return seaGlow; }, get sea() { return '#' + seaC.getHexString(); }, hf: () => hfList.filter((f) => f.el.isConnected).map((f) => f.n), hfSend: (x, y, z) => hfSend(x, y, z), set combo(x) { combo = x; },      /* D378 測試掛勾 */      /* D377 測試掛勾 */ get wake() { return WAKE.filter((w) => w.visible).length; }, ob: (n, l) => obstacle(n, l), get state() { return state; }, get score() { return score; }, get dist() { return dist; }, set dist(x) { dist = x; }, get hearts() { return hearts; }, set hearts(x) { hearts = x; }, get lane() { return lane; }, get pos() { return pos; }, get theme() { return theme && theme.id; }, regen() { deco.splice(0).forEach((o) => drop(o)); for (let z = 6; z > -130; z -= 2.6) decoAt(z); }, get speed() { return speedLv(); }, set playT(x) { playT = x; }, P, objs, start, end, move, L, setZone, get cur() { return { on: curOn, sec: curSec, lane: curLane, v }; }, set hit(x) { inv = x ? 0 : 999; } };      /* D417 測試掛勾 */
 </script>
 </body></html>
