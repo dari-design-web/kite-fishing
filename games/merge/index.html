@@ -404,6 +404,7 @@ function makeMerge() {
     const warnA = g.over > 0 ? 0.6 + 0.4 * Math.sin(tt * 20) : 0.55;
     if (g.over > 0) { ctx.fillStyle = 'rgba(232,103,74,' + (0.10 + 0.08 * Math.sin(tt * 20)) + ')'; ctx.fillRect(BOX.l, BOX.line - 30, BOX.r - BOX.l, 30); }
     ctx.strokeStyle = 'rgba(232,103,74,' + warnA + ')'; ctx.lineWidth = 2.5; ctx.setLineDash([9, 6]); ctx.beginPath(); ctx.moveTo(BOX.l, BOX.line); ctx.lineTo(BOX.r, BOX.line); ctx.stroke(); ctx.setLineDash([]);
+    drawNearFull(g);
     if (g.ferry) drawDock(g, dockBox(), tt);      /* D424：碼頭畫在海鮮和小鳶下面 */
     if (g.net) for (const n of g.nets) drawNet(n, tt, g.netAim === n);
     if (g.dual) drawDual(g);
@@ -526,6 +527,23 @@ function drawFound(fd) {      // 玩家角度：新發現要有「抽到新角�
 }
 
 /* ================= B. 疊貨櫃 ================= */
+/* D461（GPT 2230 Q2 木框兩窄帶慢呼吸，Claude 加「接近」階段）：堆到紅線下 70px 內，池子左右木框內側亮暖琥珀窄帶、1.8 秒慢呼吸，越近越亮；
+   真的過線（原本 g.over）時窄帶轉紅、加快到 0.6 秒。只畫，不改危險累積、回落、紅線、失敗計時；跟遊戲時鐘走（暫停凍住）；減少動態用靜態窄帶 */
+function drawNearFull(g) {
+  let top = 1e9; for (const b of g.balls) if (b.age > 1.2 && Math.abs(b.vy) < 80) top = Math.min(top, b.y - b.r);
+  const near = g.done ? 0 : clamp((BOX.line + 70 - top) / 70, 0, 1), hot = g.over > 0 && !g.done;
+  g.nearT = clamp((g.nearT || 0) + ((near > 0 || hot) ? 1 : -1) * 0.05, 0, 1); g.nearK = near;
+  if (g.nearT <= 0) return;
+  const per = hot ? 0.6 : 1.8, ph = RM ? 0.5 : 0.5 + 0.5 * Math.sin(g.t * 6.2832 / per);
+  const a = g.nearT * (hot ? 0.34 + 0.22 * ph : (0.26 + 0.24 * near) + 0.16 * ph * near), col = hot ? '232,90,60' : '255,146,30';
+  const y0 = BOX.line - 34, w = 14;
+  for (const side of [0, 1]) {
+    const x0 = side ? BOX.r - w : BOX.l;
+    for (let k = 0; k < 19; k++) { const yy = y0 + k * 10, fall = k < 10 ? 1 : 1 - (k - 9) / 10, aa = a * fall;
+      const gr = ctx.createLinearGradient(side ? BOX.r : BOX.l, 0, side ? BOX.r - w : BOX.l + w, 0); gr.addColorStop(0, 'rgba(' + col + ',' + aa.toFixed(3) + ')'); gr.addColorStop(1, 'rgba(' + col + ',0)');
+      ctx.fillStyle = gr; ctx.fillRect(x0, yy, w, 10); }
+  }
+}
 const BOXC = ['#D6604A', '#3F7FBF', '#4FA36A', '#E8A33A', '#8A6AC0', '#2F9BA6'];
 const ST = { perfect: 9, perfectEasy: 16, easyN: 8, spd0: 150, spdUp: 4, spdMax: 330, layerPts: 5, perfectPts: 10, comboPts: 3, comboFrom: 2, comboGrow: 8,
   goldEvery: 5, goldBonus: 30, goldGrow: 24, goldGrowOk: 10, shipEvery: 10, shipBonus: 50, evFrom: 12, evChance: 0.4, rushN: 5, rushK: 1.3, rushBonus: 15,
