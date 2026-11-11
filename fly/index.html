@@ -169,7 +169,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .pick button{flex:1;border:2px solid var(--ink);border-radius:999px;background:transparent;padding:5px 8px;font-size:13px;font-weight:700}
 .pick button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
 #hearts{font-family:var(--body);font-size:15px;letter-spacing:1px;color:var(--coral);padding:4px 10px}
-#hearts .hf{position:relative;display:inline-block}#hearts .hf b{position:absolute;left:0;top:0;font-weight:inherit;clip-path:inset(100% 0 0 0);animation:hfill .35s linear forwards}@keyframes hfill{to{clip-path:inset(0 0 0 0)}}      /* D211 補回愛心由下往上填 */
+#hearts .hf{position:relative;display:inline-block}#hearts .hf b{position:absolute;left:0;top:0;font-weight:inherit;clip-path:inset(100% 0 0 0);animation:hfill .35s linear forwards}@keyframes hfill{to{clip-path:inset(0 0 0 0)}}#hearts .hl{position:relative;display:inline-block}#hearts .hl b{position:absolute;left:0;top:0;font-weight:inherit;pointer-events:none;animation:hlose .25s ease-in forwards}@keyframes hlose{0%{transform:translateY(0) scale(1.25);opacity:1}100%{transform:translateY(6px) scale(.9);opacity:0;color:#8C9AA6}}      /* D211 補回愛心由下往上填 */
 @media (prefers-reduced-motion:reduce){.ult.ready .ring{animation:none}}
 
 /* UX 走查（10/17）：可以點的地方至少 44px、字至少 12px */
@@ -509,7 +509,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '1.21',
+  version: '1.22',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -760,6 +760,9 @@ let heartShown = null, heartFillT = 0;      /* D211：GPT 1930 A——體力實�
 function drawHearts() {
   const el = $('hearts'), n = Math.max(0, kite.hearts), m = LV().hearts, prev = heartShown;
   clearTimeout(heartFillT); heartShown = n;
+  if (prev !== null && n < prev && !calm) {      /* D457（GPT 1930 Q2）：真的扣心時，被扣那格立刻變空心，原本的紅心往下掉 6px、變灰淡出 0.25 秒；不慢動、不停控制 */
+    el.textContent = ''; el.append('♥'.repeat(n)); const s = document.createElement('span'); s.className = 'hl'; s.textContent = '♡'; const b = document.createElement('b'); b.textContent = '♥'; s.append(b); el.append(s); el.append('♡'.repeat(Math.max(0, m - n - 1)));
+    heartFillT = setTimeout(() => { if (heartShown === n) el.textContent = '♥'.repeat(n) + '♡'.repeat(Math.max(0, m - n)); }, 280); return; }
   if (prev === null || n <= prev || calm) { el.textContent = '♥'.repeat(n) + '♡'.repeat(Math.max(0, m - n)); return; }
   el.textContent = ''; el.append('♥'.repeat(prev));
   for (let i = prev; i < n; i++) { const s = document.createElement('span'); s.className = 'hf'; s.textContent = '♡'; const b = document.createElement('b'); b.textContent = '♥'; s.append(b); el.append(s); }
