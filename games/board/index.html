@@ -32,7 +32,7 @@ body{background:linear-gradient(#0E2232,#123B52);color:var(--ink);font-family:va
 @keyframes bump{40%{transform:scale(1.07)}}
 .board{position:relative;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(5,minmax(0,1fr));gap:3px;aspect-ratio:6/5;background:#6DB7CB url(../assets/board/board_base.jpg) center/cover no-repeat;border-radius:16px;padding:4px;box-shadow:0 5px 0 rgba(0,0,0,.25);overflow:hidden}
 .tile{position:relative;border-radius:10px;border:0;box-shadow:0 2px 0 rgba(16,41,61,.35);background-image:url(../assets/board/tile_base.png);background-size:116% 116%;background-position:center;background-repeat:no-repeat;background-blend-mode:multiply;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:2px 1px 0;overflow:hidden;font-size:10px;line-height:1.1;font-weight:700;text-align:center}
-.tile .ic{font-size:17px;line-height:1.15;margin-top:1px}
+.tile .ic{font-size:17px;line-height:1;margin-top:1px;height:44%;aspect-ratio:1;display:block}.tile .ic img{width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 1px 0 rgba(16,41,61,.3))}
 .tile .tn{font-size:9.5px;letter-spacing:-.02em;white-space:nowrap}
 .tile .no{position:absolute;left:2px;top:1px;font-size:8px;opacity:.55}
 .tile.land{background-color:var(--land)}.tile.chance{background-color:var(--chance)}.tile.fate{background-color:var(--fate)}.tile.mini{background-color:var(--mini)}.tile.rest{background-color:var(--rest)}.tile.start{background-color:var(--start)}
@@ -49,7 +49,7 @@ body{background:linear-gradient(#0E2232,#123B52);color:var(--ink);font-family:va
 .over .msg{font-size:16px;font-weight:900}
 .center .msg{font-size:14px;font-weight:900;line-height:1.35;min-height:1.3em}
 .center .sub{font-size:12px;font-weight:700;color:#3A5466;line-height:1.35}
-.dice{width:48px;height:48px;border-radius:12px;background:#fff;border:3px solid var(--ink);display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:5px;box-shadow:0 3px 0 rgba(0,0,0,.25)}
+.dice{width:56px;height:56px;background:url(../assets/board/dice_body.png) center/100% 100% no-repeat;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:13px;filter:drop-shadow(0 3px 1px rgba(0,0,0,.25))}
 .dice i{width:8px;height:8px;border-radius:50%;background:var(--ink);place-self:center;visibility:hidden}
 .dice.roll{animation:roll .5s}
 @keyframes roll{0%{transform:rotate(0)}100%{transform:rotate(720deg)}}
@@ -96,7 +96,7 @@ body{background:linear-gradient(#0E2232,#123B52);color:var(--ink);font-family:va
 </div>
 <script>
 'use strict';
-const VER = '0.2';
+const VER = '0.3';
 const A = '../assets/board/';
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TEST = /[?&]test=1/.test(location.search);
@@ -110,6 +110,7 @@ const CELLS = [
 ].map(([id, name, type, r, c, mini]) => ({ id, name, type, r, c, mini }));
 const BR = { 0: '集合|碼頭', 1: '新朋友|角', 2: '入口|好消息', 3: '看船前|抓魚', 4: '看船|小站', 5: '碼頭|小插曲', 6: '幫忙|落貨櫃', 7: '鯨鯊|朋友角', 8: '鯨鯊|好消息', 9: '小吃|休息站', 10: '港邊|小吃攤', 11: '小吃街|插曲', 12: '清出|飛行路', 13: '躲雨|小屋', 14: '雨都|好消息', 15: '回家|小插曲', 16: '再見|小車站', 17: '再玩|一小段' };
 const ICON = { start: '⚓', land: '🏠', chance: '✨', fate: '🌊', mini: '🎮', rest: '🍵' };
+const ICON_IMG = { start: 'icon_start.png', land: 'icon_landmark.png', chance: 'icon_chance.png', fate: 'icon_fate.png', mini: 'icon_challenge.png', rest: 'icon_rest.png' };      /* D456：GPT 1830 六類格子圖示取代 emoji（文字說明裡的 emoji 不動） */
 const KIND = { land: '小站', chance: '機會', fate: '命運', mini: '短挑戰', rest: '休息', start: '起點' };
 const CHANCE = [
   ['C01', '港邊導覽完成，拿1顆星。', { type: 'star', d: 1 }], ['C02', '補給船到了，拿2個貝殼。', { type: 'shell', d: 2 }],
@@ -148,9 +149,9 @@ function newGame() {
   G = {
     id: Date.now(), round: 0, done: new Set(),
     P: [
-      { id: 0, name: '小鳶', short: '你', img: 'pawn_kite.png', col: 'var(--p0)', human: true, faces },
-      { id: 1, name: '鯨鯊夥伴', short: '鯨鯊', img: 'pawn_shark.png', col: 'var(--p1)', ai: 'shark' },
-      { id: 2, name: '小卷夥伴', short: '小卷', img: 'pawn_squid.png', col: 'var(--p2)', ai: 'squid' }
+      { id: 0, name: '小鳶', short: '你', img: 'pawn_player.png', col: 'var(--p0)', human: true, faces },
+      { id: 1, name: '鯨鯊夥伴', short: '鯨鯊', img: 'pawn_cpu_1.png', col: 'var(--p1)', ai: 'shark' },
+      { id: 2, name: '小卷夥伴', short: '小卷', img: 'pawn_cpu_2.png', col: 'var(--p2)', ai: 'squid' }
     ].map(p => Object.assign(p, { pos: 0, shell: 6, star: 0, evStar: 0, cards: 2, coupon: false, turn: 0, minis: 0, lands: [] })),
     owner: Array(18).fill(-1),
     deck: { C: shuffle(CHANCE.slice()), F: shuffle(FATE.slice()) }, disc: { C: [], F: [] },
@@ -174,7 +175,7 @@ function drawBoard() {
   const b = $('board'); b.querySelectorAll('.tile').forEach(e => e.remove());
   for (const c of CELLS) {
     const t = document.createElement('div'); t.className = 'tile ' + c.type; t.id = 'tile' + c.id; t.style.gridRow = c.r + 1; t.style.gridColumn = c.c + 1;
-    t.innerHTML = '<span class="no">' + c.id + '</span><span class="ic">' + ICON[c.type] + '</span><span class="tn">' + (BR[c.id] || c.name).replace('|', '<br>') + '</span><span class="own"></span>';
+    t.innerHTML = '<span class="no">' + c.id + '</span><span class="ic"><img alt="' + ICON[c.type] + '" src="' + A + ICON_IMG[c.type] + '"></span><span class="tn">' + (BR[c.id] || c.name).replace('|', '<br>') + '</span><span class="own"></span>';
     b.appendChild(t);
   }
   drawOwners(); drawPawns();
