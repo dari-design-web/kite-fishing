@@ -1,6 +1,6 @@
 /* D449（GPT 1120 Q3「雨後擦窗」）：客廳窗戶的可選小活動。三格玻璃，每格先用刮水器「上下直拖」刮掉水珠，再用軟布來回擦掉霧痕；
    三格都清楚就看到港口（沿用 assets/card_harbor.jpg）。不倒數、不加分、不存檔、不讀天氣，隨時可以重來或離開。
-   GPT 五張圖（窗框／水珠／霧痕 600×720、刮水器／軟布 128×128）還沒畫，先用程式畫；之後放 assets/wipe/ 同名檔就自動換上。 */
+   D450：換上 GPT 1220 五張圖（窗框 600×720、水珠／霧痕 534×640 鋪滿玻璃、刮水器／軟布 128×128）；沒載到時照舊用程式畫。 */
 (function () {
   function $(id) { return document.getElementById(id); }
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
@@ -43,7 +43,7 @@
     '.wp .tip{margin:0 10px 6px;padding:8px 12px;border-radius:12px;background:rgba(255,241,204,.97);color:#5B4A3A;text-align:center;font-weight:800;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,.12);min-height:22px}.wp .tip.warn{background:#FFE1D6;color:#8A3B1E}' +
     '.wp .sp{flex:1;min-height:4px}.wp .win{position:relative;margin:0 auto;width:min(88vw,370px,calc((100vh - 270px) * .8333));aspect-ratio:5/6;padding:5.5%;box-sizing:border-box;border-radius:10px;background:linear-gradient(135deg,#B27A49,#8A5A33);box-shadow:inset 0 0 0 3px #6B4426,0 6px 16px rgba(60,35,15,.35)}.wp .win.img{background:transparent;box-shadow:none;padding:0}' +
     '.wp .gl{position:relative;width:100%;height:100%;overflow:hidden;border-radius:4px;background:#BFD9E6 url(assets/card_harbor.jpg) center/cover no-repeat;box-shadow:inset 0 0 0 2px #6B4426;touch-action:none}.wp .win.img .gl{position:absolute;left:5.5%;top:5.5%;width:89%;height:89%}' +
-    '.wp canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.wp .mn{position:absolute;top:0;bottom:0;width:4%;margin-left:-2%;background:linear-gradient(90deg,#8A5A33,#B27A49 50%,#8A5A33);box-shadow:0 0 0 1px #6B4426;pointer-events:none;z-index:3}.wp .frImg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4}' +
+    '.wp canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.wp .mn{position:absolute;top:0;bottom:0;width:4%;margin-left:-2%;background:linear-gradient(90deg,#8A5A33,#B27A49 50%,#8A5A33);box-shadow:0 0 0 1px #6B4426;pointer-events:none;z-index:3}.wp .frImg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4}.wp .win.img .mn{display:none}.wp .cur.sq img{transform:translateY(12.5%)}' +
     '.wp .ok{position:absolute;top:8px;width:26px;height:26px;margin-left:-13px;border-radius:50%;background:#3E9B4F;color:#fff;font:900 16px/26px sans-serif;text-align:center;z-index:5;opacity:0;transform:scale(.4);transition:all .3s;pointer-events:none}.wp .ok.on{opacity:1;transform:none}' +
     '.wp .stg{position:absolute;bottom:8px;width:30%;margin-left:-15%;text-align:center;font:800 11px/1.2 sans-serif;color:#4A3426;z-index:5;pointer-events:none}.wp .stg i{display:inline-block;padding:2px 6px;border-radius:8px;background:rgba(255,253,248,.88);font-style:normal}' +
     '.wp .cur{position:absolute;width:56px;height:56px;margin:-28px 0 0 -28px;pointer-events:none;z-index:6;display:none;filter:drop-shadow(0 3px 3px rgba(0,0,0,.3))}.wp .cur svg,.wp .cur img,.wp .tl svg,.wp .tl img{width:100%;height:100%;display:block}' +
@@ -107,7 +107,7 @@
       w.querySelector('[data-t=squeegee]').classList.toggle('hint', tool === 'cloth' && needD > 0 && !needF);
     }
     function count() { var n = panes.filter(function (q) { return q.done; }).length; $('wpN').textContent = '清楚 ' + n + '／3 格'; return n; }
-    function setTool(t) { tool = t; w.querySelectorAll('.tl').forEach(function (b) { b.classList.toggle('on', b.dataset.t === t); }); cur.innerHTML = toolHTML(t); hint(); }
+    function setTool(t) { tool = t; w.querySelectorAll('.tl').forEach(function (b) { b.classList.toggle('on', b.dataset.t === t); }); cur.innerHTML = toolHTML(t); cur.classList.toggle('sq', t === 'squeegee'); hint(); }
     /* 刮水器：只吃「上下」的拖；刀片約半格寬，所以每格要刮兩三下 */
     function squeegee(p, x0, y0, x1, y1) {
       var bw = pw() * .3, cx = (x0 + x1) / 2, ya = Math.min(y0, y1) - 3, yb = Math.max(y0, y1) + 3, left = p * pw(), q = panes[p];
