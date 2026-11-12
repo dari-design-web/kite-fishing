@@ -1,11 +1,13 @@
 /* D449（GPT 1120 Q3「雨後擦窗」）：客廳窗戶的可選小活動。三格玻璃，每格先用刮水器「上下直拖」刮掉水珠，再用軟布來回擦掉霧痕；
    三格都清楚就看到港口（沿用 assets/card_harbor.jpg）。不倒數、不加分、不存檔、不讀天氣，隨時可以重來或離開。
+   D477（GPT 2130 Q1／Q2「先拾黏葉」）：每次開卡的第 1、3、5…輪，左邊那格玻璃上黏一片葉子（stuck_leaf.png，顯示 34px、觸區 44px）；
+   要先點一下把葉子拿掉，那一格才刮得動，另外兩格可以先擦。葉圖沒載到就照原本流程。離開再開重新從第 1 輪算，不存檔。
    D452：窗外港景每局輪換四張（GPT 1420 Q2 三張新景）。D450：換上 GPT 1220 五張圖（窗框 600×720、水珠／霧痕 534×640 鋪滿玻璃、刮水器／軟布 128×128）；沒載到時照舊用程式畫。 */
 (function () {
   function $(id) { return document.getElementById(id); }
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   var P = 3, COLS = 6, ROWS = 14, DONE = 0.8;
-  var IMG = {}, ASSET = { frame: 'assets/wipe/frame.png', drops: 'assets/wipe/drops.png', fog: 'assets/wipe/fog.png', squeegee: 'assets/wipe/squeegee.png', cloth: 'assets/wipe/cloth.png' };
+  var IMG = {}, ASSET = { frame: 'assets/wipe/frame.png', drops: 'assets/wipe/drops.png', fog: 'assets/wipe/fog.png', squeegee: 'assets/wipe/squeegee.png', cloth: 'assets/wipe/cloth.png', leaf: 'assets/wipe/stuck_leaf.png' };
   Object.keys(ASSET).forEach(function (k) { var im = new Image(); im.onload = function () { IMG[k] = im; }; im.src = ASSET[k]; });
   /* D452（GPT 1420 Q2）：窗外港景每開一局換一張（白天＋傍晚／夜燈／清晨霧散），本局三格同一張；只是插畫主題，不讀時間天氣、不存看過哪張。載不到就用白天港景 */
   var SCENES = [
@@ -66,8 +68,10 @@
     '.wp .tools{display:flex;justify-content:center;gap:12px;margin:8px 10px 6px}.wp .tl{display:flex;align-items:center;gap:6px;min-height:52px;padding:4px 14px 4px 6px;border:0;border-radius:16px;background:#FFFDF8;color:#4A3426;font:800 14px/1.1 inherit;font-family:inherit;box-shadow:0 2px 8px rgba(0,0,0,.18);cursor:pointer;-webkit-tap-highlight-color:transparent}.wp .tl span{width:44px;height:44px;flex:none}.wp .tl.on{background:#FFE7A8;box-shadow:0 0 0 3px #E9A23B,0 2px 8px rgba(0,0,0,.18)}.wp .tl.hint{animation:wpH 1s ease-in-out infinite}@keyframes wpH{50%{box-shadow:0 0 0 5px rgba(62,155,79,.6),0 2px 8px rgba(0,0,0,.18)}}' +
     '.wp .row{display:flex;gap:8px;padding:8px 12px calc(10px + env(safe-area-inset-bottom,0px));background:#6B4A2E}.wp .row .btn{flex:1}.wp .row .btn.ghost{color:#FFF4D6}' +
     '.wp .yay{position:absolute;left:6%;right:6%;bottom:12%;padding:12px;border-radius:14px;background:rgba(255,253,248,.95);color:#4A3426;text-align:center;z-index:7;box-shadow:0 4px 14px rgba(0,0,0,.25);animation:wpY .5s ease-out}.wp .yay b{display:block;font-size:17px;margin-bottom:4px}.wp .yay p{margin:0;font-size:13px}@keyframes wpY{from{opacity:0;transform:translateY(12px)}}' +
+    '.wp .lf{position:absolute;left:20%;top:30%;width:44px;height:44px;margin:-22px 0 0 -22px;padding:0;border:0;background:none;z-index:5;cursor:pointer;touch-action:none;-webkit-tap-highlight-color:transparent;animation:wpL 2.4s ease-in-out infinite}.wp .lf img{display:block;width:34px;height:34px;margin:5px;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.28))}.wp .lf:focus-visible{outline:3px solid #E9A23B;border-radius:12px}' +
+    '.wp .lf.nudge{animation:wpLn .4s}.wp .lf.off{pointer-events:none;animation:wpLo .45s ease-in forwards}@keyframes wpL{50%{transform:rotate(-5deg)}}@keyframes wpLn{25%{transform:rotate(-14deg) scale(1.18)}60%{transform:rotate(10deg) scale(1.12)}}@keyframes wpLo{to{opacity:0;transform:translate(-10px,46px) rotate(-70deg)}}' +
     '.wp .gl.shake{animation:wpK .3s}@keyframes wpK{30%{transform:translateX(-3px)}70%{transform:translateX(3px)}}' +
-    '@media (prefers-reduced-motion:reduce){.wp .tl.hint,.wp .spk,.wp .yay{animation:none}.wp .bow,.wp .nite{transition:none}}';
+    '@media (prefers-reduced-motion:reduce){.wp .tl.hint,.wp .spk,.wp .yay,.wp .lf{animation:none}.wp .lf.off{display:none}.wp .bow,.wp .nite{transition:none}}';
   document.head.appendChild(css);
 
   /* opt：{ onClose() } */
@@ -81,13 +85,34 @@
     document.body.appendChild(w);
     var win = $('wpWin'), gl = $('wpGl'), cD = $('wpDrop'), cF = $('wpFog'), cur = $('wpCur'), tip = $('wpTip');
     if (IMG.frame) { win.classList.add('img'); var fi = el('img', 'frImg'); fi.src = ASSET.frame; fi.alt = ''; win.appendChild(fi); }
-    var scene = 0, tool = 'squeegee', W = 0, H = 0, S = 1, fogTex = null, mask = document.createElement('canvas'), panes, strokes = { sq: 0, cl: 0 }, finished = false, warnT = 0, fogDirty = false;
+    var scene = 0, tool = 'squeegee', W = 0, H = 0, S = 1, fogTex = null, mask = document.createElement('canvas'), panes, strokes = { sq: 0, cl: 0 }, finished = false, warnT = 0, fogDirty = false, round = 0, leaf = null, leafGot = false, LEAF_P = 0;
     mask.width = P * COLS; mask.height = ROWS;
     for (var i = 0; i < P; i++) {
       var ok = el('div', 'ok', '✓'); ok.id = 'wpOk' + i; ok.style.left = (100 / P * (i + .5)) + '%'; gl.appendChild(ok);
       var sg = el('div', 'stg', '<i>💧 水珠</i>'); sg.id = 'wpSg' + i; sg.style.left = (100 / P * (i + .5)) + '%'; gl.appendChild(sg);
     }
+    var TIP0 = '剛下過雨，窗戶濕濕的。先拿刮水器上下拖，把水珠刮掉', TIP_LEAF = '剛下過雨，左邊玻璃還黏了一片葉子。點一下把它拿掉，再拿刮水器上下拖';
+    /* D477：黏葉。按下和放開都在葉子上、手指沒拖超過 8px 才算拿掉；鍵盤 Enter／空白也可以 */
+    function putLeaf() {
+      if (leaf) { leaf.remove(); leaf = null; }
+      leafGot = false; if (!IMG.leaf || round % 2 !== 1) return;
+      var b = el('button', 'lf', '<img src="' + ASSET.leaf + '" alt="" draggable="false">'), dn = null, far = false;
+      b.type = 'button'; b.id = 'wpLeaf'; b.setAttribute('aria-label', '拿掉葉子');
+      b.addEventListener('pointerdown', function (e) { e.stopPropagation(); dn = [e.clientX, e.clientY]; far = false; });
+      b.addEventListener('pointermove', function (e) { if (dn && Math.hypot(e.clientX - dn[0], e.clientY - dn[1]) > 8) far = true; });
+      b.addEventListener('pointerup', function (e) { e.stopPropagation(); if (dn && Math.hypot(e.clientX - dn[0], e.clientY - dn[1]) > 8) far = true; dn = null; });
+      b.addEventListener('pointercancel', function () { dn = null; far = true; });
+      b.addEventListener('click', function (e) { e.stopPropagation(); if (far && e.detail) { far = false; return; } takeLeaf(); });
+      gl.appendChild(b); leaf = b;
+    }
+    function takeLeaf() {
+      if (!leaf || finished) return; var b = leaf; leaf = null; leafGot = true;
+      b.classList.remove('nudge'); b.classList.add('off'); b.disabled = true; setTimeout(function () { b.remove(); }, 480);
+      spark(W * .2 + 8, H * .3 - 6, '🍃'); tip.classList.remove('warn'); clearTimeout(warnT); hint();
+    }
+    function leafWarn() { warn('這一格黏了葉子，先點一下把葉子拿掉'); if (leaf) { leaf.classList.remove('nudge'); void leaf.offsetWidth; leaf.classList.add('nudge'); } }
     function reset() {
+      round++;
       var r = gl.getBoundingClientRect(); W = r.width; H = r.height; S = Math.min(2, window.devicePixelRatio || 1);
       [cD, cF].forEach(function (c) { c.width = Math.round(W * S); c.height = Math.round(H * S); });
       paintDrops(cD, W, H, S); fogTex = makeFog(W, H, S);
@@ -96,7 +121,8 @@
       $('wpBow').classList.remove('on'); $('wpNite').classList.remove('on'); var y = w.querySelector('.yay'); if (y) y.remove();
       scene = pickScene(); gl.style.backgroundImage = 'url(' + SCENES[scene].src + ')'; gl.dataset.scene = scene;
       strokes = { sq: 0, cl: 0 }; finished = false; setTool('squeegee'); drawFog(); count();
-      tip.classList.remove('warn'); tip.textContent = '剛下過雨，窗戶濕濕的。先拿刮水器上下拖，把水珠刮掉';
+      putLeaf();
+      tip.classList.remove('warn'); clearTimeout(warnT); tip.textContent = leaf ? TIP_LEAF : TIP0;
     }
     function pw() { return W / P; }
     function cellOf(x, y) { var p = Math.max(0, Math.min(P - 1, Math.floor(x / pw()))), lx = x - p * pw(); return { p: p, c: Math.max(0, Math.min(COLS - 1, Math.floor(lx / pw() * COLS))), r: Math.max(0, Math.min(ROWS - 1, Math.floor(y / H * ROWS))) }; }
@@ -116,6 +142,7 @@
     function warn(t) { tip.textContent = t; tip.classList.add('warn'); clearTimeout(warnT); warnT = setTimeout(function () { tip.classList.remove('warn'); hint(); }, 1600); }
     function hint() {
       if (finished) return;
+      if (leaf && !panes.some(function (q, i) { return i !== LEAF_P && !q.done; })) { tip.textContent = '剩左邊這一格了，先點一下把葉子拿掉'; w.querySelectorAll('.tl').forEach(function (b) { b.classList.remove('hint'); }); return; }
       var needD = panes.filter(function (q) { return !q.dOk; }).length, needF = panes.filter(function (q) { return q.dOk && !q.done; }).length;
       tip.textContent = tool === 'squeegee' ? (needD ? '刮水器：上下直直拖，水珠就刮掉了' : '水珠都刮好了！換軟布擦霧') : (needF ? '軟布：在刮乾淨的地方來回擦，把霧擦掉' : '還有水珠的格子，先用刮水器刮');
       w.querySelector('[data-t=cloth]').classList.toggle('hint', tool === 'squeegee' && needF > 0 && !needD);
@@ -138,7 +165,7 @@
     /* 軟布：圓形來回擦，只擦得到已經沒有水珠的地方；同一處要擦兩三回才會乾淨 */
     function cloth(x0, y0, x1, y1) {
       var rad = pw() * .3, dist = Math.hypot(x1 - x0, y1 - y0), amt = Math.min(.5, dist / (pw() * .9)), wet = false, changed = false;
-      for (var p = 0; p < P; p++) { var q = panes[p], left = p * pw(); if (q.done) continue;
+      for (var p = 0; p < P; p++) { var q = panes[p], left = p * pw(); if (q.done || (leaf && p === LEAF_P)) continue;
         for (var r = 0; r < ROWS; r++) for (var c = 0; c < COLS; c++) { var mx = left + (c + .5) / COLS * pw(), my = (r + .5) / ROWS * H; if (Math.hypot(mx - x1, my - y1) > rad) continue; var k = r * COLS + c; if (q.d[k] > 0) { wet = true; continue; } if (q.f[k] > 0) { q.f[k] = Math.max(0, q.f[k] - amt); changed = true; } }
         if (changed && ratio(q.f) >= DONE) { q.done = true; for (var j = 0; j < q.f.length; j++) q.f[j] = 0; $('wpOk' + p).classList.add('on'); $('wpSg' + p).innerHTML = '<i>✨ 清楚</i>'; spark(left + pw() * .3, H * .35); spark(left + pw() * .7, H * .55); if (count() >= P) setTimeout(finish, 350); else hint(); }
       }
@@ -150,20 +177,21 @@
       tip.classList.remove('warn');
       tip.textContent = '三格都清楚了！';
       w.querySelectorAll('.tl').forEach(function (b) { b.classList.remove('hint'); });
-      var y = el('div', 'yay', '<b>' + (scene === 2 ? '✨' : '🌈') + ' 雨停了，' + SCENES[scene].name + '看得好清楚！</b><p>刮了 ' + strokes.sq + ' 下、擦了 ' + strokes.cl + ' 下。想再擦一次按「重新來」。</p>');
+      var y = el('div', 'yay', '<b>' + (scene === 2 ? '✨' : '🌈') + ' 雨停了，' + SCENES[scene].name + '看得好清楚！</b><p>' + (leafGot ? '拿掉 1 片葉子、' : '') + '刮了 ' + strokes.sq + ' 下、擦了 ' + strokes.cl + ' 下。想再擦一次按「重新來」。</p>');
       gl.appendChild(y);
     }
     var drag = null;
     function at(e) { var r = gl.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
     gl.addEventListener('pointerdown', function (e) {
-      if (finished) return; e.preventDefault(); try { gl.setPointerCapture(e.pointerId); } catch (_) {}
-      var a = at(e); drag = { x: a[0], y: a[1], p: cellOf(a[0], a[1]).p, side: 0, vert: 0, wetN: 0 };
+      if (finished || (leaf && leaf.contains(e.target))) return; e.preventDefault(); try { gl.setPointerCapture(e.pointerId); } catch (_) {}
+      var a = at(e); drag = { x: a[0], y: a[1], p: cellOf(a[0], a[1]).p, side: 0, vert: 0, wetN: 0, lfN: 0 };
       cur.style.display = 'block'; cur.style.left = a[0] + 'px'; cur.style.top = a[1] + 'px';
     });
     gl.addEventListener('pointermove', function (e) {
       if (!drag) return; var a = at(e), dx = a[0] - drag.x, dy = a[1] - drag.y;
       cur.style.left = a[0] + 'px'; cur.style.top = a[1] + 'px';
       if (Math.hypot(dx, dy) < 4) return;
+      if (leaf && (tool === 'squeegee' ? drag.p : cellOf(a[0], a[1]).p) === LEAF_P) { if (++drag.lfN === 5) leafWarn(); if (tool === 'squeegee') { drag.x = a[0]; drag.y = a[1]; return; } }
       if (tool === 'squeegee') {
         if (Math.abs(dx) > Math.abs(dy) * 1.2) { drag.side += Math.hypot(dx, dy); if (drag.side > 40) { drag.side = -999; warn('刮水器要上下直直拖喔，不是左右刷'); } }
         else if (!panes[drag.p].dOk) { squeegee(drag.p, drag.x, drag.y, a[0], a[1]); drag.vert += Math.abs(dy); }
@@ -177,7 +205,7 @@
     $('wpX').onclick = function () { w.remove(); window.__wipe = null; opt.onClose && opt.onClose(); };
     requestAnimationFrame(reset);
     window.__wipe = {
-      st: function () { return { scene: scene, tool: tool, drops: panes.map(function (q) { return Math.round(ratio(q.d) * 100); }), fog: panes.map(function (q) { return Math.round(ratio(q.f) * 100); }), done: panes.map(function (q) { return q.done; }), finished: finished, strokes: strokes }; },
+      st: function () { return { scene: scene, tool: tool, drops: panes.map(function (q) { return Math.round(ratio(q.d) * 100); }), fog: panes.map(function (q) { return Math.round(ratio(q.f) * 100); }), done: panes.map(function (q) { return q.done; }), finished: finished, strokes: strokes, round: round, leaf: !!leaf, leafGot: leafGot }; },
       box: function () { var r = gl.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; }
     };
   }
