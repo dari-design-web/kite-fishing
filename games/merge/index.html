@@ -181,6 +181,7 @@ const SEAF = [      // 名字、半徑、顏色、分數、一句小知識（圖
   ['鯨鯊', 76, '#3A6E9E', 55, '鯨鯊是世界上最大的魚，只吃小小的浮游生物，是我們的好朋友。']
 ];
 const BOX = { l: 20, r: 340, floor: 556, line: 158 };
+const LEAN = { dur: 0.3, ang: 0.105 }; function leanOf(g, b) { const L = g.lean; if (!L) return 0; for (const c of L.it) if (c.b === b) return c.dir * LEAN.ang * Math.sin(Math.PI * clamp(L.t / LEAN.dur, 0, 1)); return 0; }      /* D474：連鎖 ×3 旁觀成品歪頭 */
 const HALO = { minLv: 5, dur: 0.5, a: 0.9, s0: 1.55, s1: 2.1 };      /* D457：高階＝海龜（第 5 階）起，與金色得分字同門檻；圖 256²，虛線在半徑約 0.66，貼成品外緣 */
 function drawHalo(h) { const im = ready('merge_high_reveal_halo'), b = h.b, k = clamp(h.t / HALO.dur, 0, 1); if (!im) return; const s = Math.min(b.r * (HALO.s0 + (HALO.s1 - HALO.s0) * k), (BOX.r - BOX.l) * 0.5); ctx.globalAlpha = HALO.a * (k < 0.5 ? 1 : 1 - (k - 0.5) * 2); ctx.drawImage(im, b.x - s, b.y - s, s * 2, s * 2); ctx.globalAlpha = 1; }
 let mdex = store.get('kiteMiniDex1', {}) || {};
@@ -312,7 +313,7 @@ function makeMerge() {
     g.mergedNow = false; let thudB = null; const thudOk = (b) => b.thud === 1 && b.age >= 0.58 && b.vy >= THUD.minVy && !b.dead;      /* D464：剛合出來 0.08 秒內的接觸不算，等它往下落再撞 */
     const thudHit = (b) => { if (!thudOk(b)) return; b.thud = 2; if (!thudB || b.lv > thudB.lv) thudB = b; };
     if (g.halo) { g.halo.t += dt; if (g.halo.t >= HALO.dur || g.halo.b.dead || g.balls.indexOf(g.halo.b) < 0) g.halo = null; }      /* D457：高階登場短芒只跟遊戲時間走（暫停凍結），成品被再合／移走就丟 */
-    g.t += dt; if (g.swapFx > 0) g.swapFx -= dt; if (g.sayT > 0) g.sayT -= dt; if (g.bannerT > 0) g.bannerT -= dt; if (g.newT > 0) g.newT -= dt; if (g.found) { g.found.t -= dt; if (g.found.t <= 0) g.found = null; }
+    g.t += dt; if (g.lean) { g.lean.t += dt; if (g.lean.t >= LEAN.dur || g.done || g.nearK > 0 || g.over > 0 || g.bannerT > 0 || g.found) g.lean = null; } if (g.swapFx > 0) g.swapFx -= dt; if (g.sayT > 0) g.sayT -= dt; if (g.bannerT > 0) g.bannerT -= dt; if (g.newT > 0) g.newT -= dt; if (g.found) { g.found.t -= dt; if (g.found.t <= 0) g.found = null; }
     if (g.chainT > 0) { g.chainT -= dt; if (g.chainT <= 0) g.chain = 0; }
     if (g.wantT > 0) { g.wantT -= dt; if (g.wantT <= 0 || g.q[0] !== g.wantLv) g.wantT = 0; }      /* D207（GPT 1525 B）：每局第一次普通合成，下一個預覽輕歪＋「我也要！」最多 0.6 秒；預覽換圖就收 */
     if (!g.fall && !g.done) { g.wait -= dt; if (g.wait <= 0) g.spawn(); }
@@ -378,6 +379,12 @@ function makeMerge() {
   g.merge = (a, b) => {
     const lv = a.lv + 1, x = (a.x + b.x) / 2, y = (a.y + b.y) / 2;
     g.chain = g.chainT > 0 ? g.chain + 1 : 1; g.chainT = 1.3; g.bestChain = Math.max(g.bestChain, g.chain); const mul = g.chain >= 2 ? Math.min(5, g.chain) : 1; if (window.KiteBoard && !g.ferry && !g.net && !g.swp && !g.dual) KiteBoard.ev('merge', { chain: g.chain });      // QA：連鎖倍數最多 ×5，亂丟快丟不會比用心放分數高
+    /* D474（GPT 1730 Q2 推薦 B）：一般玩法裡，同一組連鎖第一次到 ×3 的那一下，合成點旁邊最多兩隻已經落穩、沒參與合成的成品朝合成點歪一下頭再回正（0.3 秒、最多 6 度，只改畫的角度）。
+       快滿警示、解圍收光、升關橫幅、新發現卡、鯨鯊慶典、收局時不播；每日、試玩、減少動態不播；不動物理、分數、連鎖、紅線 */
+    if (g.chain === 3 && lv < 9 && !RM && !DS && !g.ferry && !g.net && !g.dual && !g.swp && !g.done && !(g.nearT > 0) && !(g.nearK > 0) && !(g.over > 0) && !g.rlArm && g.rlT0 == null && !(g.bannerT > 0) && !g.found) {
+      const c = g.balls.filter((q) => q !== a && q !== b && q !== g.fall && q.age > 0.9 && Math.abs(q.vx) < 14 && Math.abs(q.vy) < 30 && q.y - q.r > BOX.line + 76 && Math.abs(q.x - x) > q.r * 0.35 && Math.hypot(q.x - x, q.y - y) < 190)
+        .map((q, i) => ({ b: q, i, d: Math.hypot(q.x - x, q.y - y), dir: q.x < x ? 1 : -1 })).sort((p, q) => p.d - q.d || p.i - q.i).slice(0, 2);
+      if (c.length) { g.lean = { it: c, t: 0 }; g.leanN = (g.leanN || 0) + 1; } }
     burst(x, y, 8 + lv * 2, SEAF[Math.min(9, lv)][2]); burst(x, y, 4 + lv, '#FFFFFF', 'star'); ring(x, y, SEAF[Math.min(9, lv)][1], '#FFFFFF');
     if (g.net) g.netHit(x, y, SEAF[Math.min(9, lv)][1]);
     g.mergedNow = true; g.mergesAll++; beep(440 + lv * 70, 0.12, 'triangle', 0.07, 120); buzz(lv >= 6 ? 30 : 12);
@@ -421,7 +428,7 @@ function makeMerge() {
     if (g.net) for (const n of g.nets) drawNet(n, tt, g.netAim === n);
     if (g.dual) drawDual(g);
     if (g.halo) drawHalo(g.halo);
-    for (const b of g.balls) drawSea(b.lv, b.x, b.y, b.r, b.rot * 0.3, b.sq, seaFace(b, tt));
+    for (const b of g.balls) drawSea(b.lv, b.x, b.y, b.r, b.rot * 0.3 + leanOf(g, b), b.sq, seaFace(b, tt));
     const f = g.fall;
     if (f) {
       let gy = BOX.floor - f.r, hit = null; for (const b of g.balls) { const dx = Math.abs(b.x - f.x), rr = b.r + f.r - 1; if (dx < rr && b.y > f.y) { const yy = b.y - Math.sqrt(rr * rr - dx * dx); if (yy < gy) { gy = yy; hit = b; } } }
@@ -1000,7 +1007,7 @@ const AQ = (() => {
   return { add, save, ui, open, data: d };
 })();
 window.__aq = AQ;
-window.__mini = { get G() { return G; }, plain: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = false; dualMode = false; newGame(); state = 'play'; }, THUD,      /* D464 測試掛勾 */ pop, get floats() { return floats; }, mixHex,      /* D462 測試掛勾 */ get state() { return state; }, FY, DV, dual: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = false; dualMode = true; newGame(); state = 'play'; dualHow(); }, swap: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = true; dualMode = false; newGame(); state = 'play'; swapHow(); }, ferry: () => { mode = 'merge'; ferryMode = true; netMode = false; swapMode = false; dualMode = false; newGame(); state = 'play'; }, net: (pi) => { mode = 'merge'; ferryMode = false; netMode = true; swapMode = false; dualMode = false; if (pi != null) netStore.set({ ...netStore.get(), c: pi }); newGame(); state = 'play'; netHow(); }, NETR, netStore, setMode, seaFace, finish, IMG, SEAF, get fest() { return { pf: festPF(), n: fests.length, txt: !!festTxt, y: festTxt && festTxt.y, k: festTxt && festTxt.k }; }, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; }, get hudChip() { return hudChip; } };      /* D263：測試掛勾加 pop／floats；D306 加 finish */      /* D254：測試掛勾，固定亂數 */
+window.__mini = { get G() { return G; }, plain: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = false; dualMode = false; newGame(); state = 'play'; }, THUD, LEAN,      /* D474、D464 測試掛勾 */ pop, get floats() { return floats; }, mixHex,      /* D462 測試掛勾 */ get state() { return state; }, FY, DV, dual: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = false; dualMode = true; newGame(); state = 'play'; dualHow(); }, swap: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = true; dualMode = false; newGame(); state = 'play'; swapHow(); }, ferry: () => { mode = 'merge'; ferryMode = true; netMode = false; swapMode = false; dualMode = false; newGame(); state = 'play'; }, net: (pi) => { mode = 'merge'; ferryMode = false; netMode = true; swapMode = false; dualMode = false; if (pi != null) netStore.set({ ...netStore.get(), c: pi }); newGame(); state = 'play'; netHow(); }, NETR, netStore, setMode, seaFace, finish, IMG, SEAF, get fest() { return { pf: festPF(), n: fests.length, txt: !!festTxt, y: festTxt && festTxt.y, k: festTxt && festTxt.k }; }, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; }, get hudChip() { return hudChip; } };      /* D263：測試掛勾加 pop／floats；D306 加 finish */      /* D254：測試掛勾，固定亂數 */
 })();
 </script>
 <script>(function () { var b = document.getElementById('backBtn'); b.addEventListener('click', function (e) { if (window.__mini && window.__mini.state === 'play' && !confirm('這局還在進行，確定要離開嗎？（分數不會記錄）')) e.preventDefault(); }); /* QA：遊戲中按返回先確認 */ /* D161：一律回小鳶樂園（遊戲大廳），不再回舊版測試首頁 */ })();</script>
