@@ -509,7 +509,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '1.26',
+  version: '1.27',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -628,7 +628,7 @@ const ASSET_FILES = { cb_w: 'combo_badge_w.png', cb_g: 'combo_badge_g.png', cb_y
   // G-35 A（ChatGPT，暫用）：八斗子站月台、紅蟹鐵道車（俯視朝上、按鈕、地圖小車）、咖啡色白帽山野君、三種綁繩
   bg_rail_s: 'bg_rail_s.jpg', rail_car_crab_top: 'rail_car_crab_top.png', ult_icon_rail: 'ult_icon_rail.png', map_crab_car: 'map_crab_car.png', m_forest: 'm_forest.png', bind_cable: 'bind_cable.png', bind_vine: 'bind_vine.png', bind_rail: 'bind_rail.png',
   // G-35 B（ChatGPT，暫用）：第 4 關怪獸狀態與巨岩怪四態、第 1 關大垃圾團核心與小團
-  r_hedge_open: 'r_hedge_open.png', r_crab_shell: 'r_crab_shell.png', fx_coal_smoke: 'fx_coal_smoke.png', r_shriek_rest: 'r_shriek_rest.png', r_boss_armL: 'r_boss_armL.png', r_boss_armR: 'r_boss_armR.png', r_boss_arms: 'r_boss_arms.png', r_boss_core: 'r_boss_core.png', boss_core: 'boss_core.png', boss_mini: 'boss_mini.png',
+  r_hedge_open: 'r_hedge_open.png', r_crab_shell: 'r_crab_shell.png', fx_coal_smoke: 'fx_coal_smoke.png', r_shriek_rest: 'r_shriek_rest.png', r_boss_armL: 'r_boss_armL.png', r_boss_armR: 'r_boss_armR.png', r_boss_arms: 'r_boss_arms.png', r_boss_core: 'r_boss_core.png', boss_jianji_half_coal: 'boss_jianji_half_coal.png', boss_core: 'boss_core.png', boss_mini: 'boss_mini.png',
   bg_harbor: 'bg_harbor.jpg', bg_sea: 'bg_sea.jpg', bg_mkt_a: 'bg_mkt_a.jpg', bg_mkt_b: 'bg_mkt_b.jpg', bg_mkt_c: 'bg_mkt_c.jpg' };
 // 每種垃圾用哪張圖、畫多大（邏輯像素）。碎片沿用保麗龍、小油滴沿用油污、追人的污水泡沿用污水泡
 const SPR = { can: ['can', 26, 26], bag: ['bag', 32, 32], butt: ['butt', 10, 24], foam: ['foam', 40, 36], chip: ['foam', 19, 17], barrel: ['barrel', 38, 38], tire: ['tire', 44, 44], oil: ['oil', 54, 54], drop: ['oil', 23, 23],
@@ -2397,10 +2397,17 @@ function drawRailFoe(f) {
   if (ty === 'boss') { drawJianji(f); return true; }
   return false;
 }
+/* D462（GPT 2330 Q1）：第 4 關巨岩怪總血量一半以下，肩背冒暖橘煤光（同 408 畫布同變換，只疊不重畫本體）；讀各血池合計，死亡殘血、藏身時不亮；0.3 秒淡入淡出，煤光輕輕明滅；減少動態直接切、不閃 */
+function drawJianjiCoal(f) {
+  const hr = f.dying === undefined && !f.hidden && f.hp > 0.01 && rageRatio(f) <= 0.5;
+  f.coalA = calm ? (hr ? 1 : 0) : Math.max(0, Math.min(1, (f.coalA || 0) + (hr ? 1 : -1) / 18));
+  if (!(f.coalA > 0) || !img.boss_jianji_half_coal) return;
+  ctx.save(); ctx.globalAlpha = 0.95 * f.coalA; sprite('boss_jianji_half_coal', 136, 136); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = (calm ? 0.35 : 0.3 + Math.sin(clock * 5) * 0.12 + Math.sin(clock * 13) * 0.05) * f.coalA; sprite('boss_jianji_half_coal', 136, 136); ctx.restore();
+}
 /* 不沉煤艦・建基巨岩怪（佔位圖） */
 function drawJianji(f) {
   const r = f.r; glow(r + 34, f.atk ? '255,170,90' : '120,140,200', 0.45);
-  if (img.r_boss) { sprite(jianjiKey(f), 136, 136); 0; return; }
+  if (img.r_boss) { sprite(jianjiKey(f), 136, 136); drawJianjiCoal(f); return; }
   ctx.save(); ctx.rotate(Math.sin(clock * 1.2) * 0.03); ctx.lineWidth = 2;
   const up = f.atk === 'storm' ? -26 : 0;
   for (const sx of [-1, 1]) { ctx.save(); ctx.translate(sx * 40, -6); ctx.rotate(sx * (0.5 + (up ? 0.9 : 0))); rrect(-6, -46, 12, 60, 2, '#7A6A5E', PAL.line, 2); ctx.strokeStyle = '#6E8A58'; ctx.beginPath(); ctx.moveTo(-6, -30); ctx.lineTo(6, -10); ctx.stroke(); ctx.restore(); }      // 鋼梁手臂與纏著的藤
