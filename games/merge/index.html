@@ -181,6 +181,7 @@ const SEAF = [      // 名字、半徑、顏色、分數、一句小知識（圖
   ['鯨鯊', 76, '#3A6E9E', 55, '鯨鯊是世界上最大的魚，只吃小小的浮游生物，是我們的好朋友。']
 ];
 const BOX = { l: 20, r: 340, floor: 556, line: 158 };
+const AIMCALM = { a: 0.22, top: 8, fade: 48 };      /* D478：瞄準時池水壓淡 */
 const LEAN = { dur: 0.3, ang: 0.105 }; function leanOf(g, b) { const L = g.lean; if (!L) return 0; for (const c of L.it) if (c.b === b) return c.dir * LEAN.ang * Math.sin(Math.PI * clamp(L.t / LEAN.dur, 0, 1)); return 0; }      /* D474：連鎖 ×3 旁觀成品歪頭 */
 const HALO = { minLv: 5, dur: 0.5, a: 0.9, s0: 1.55, s1: 2.1 };      /* D457：高階＝海龜（第 5 階）起，與金色得分字同門檻；圖 256²，虛線在半徑約 0.66，貼成品外緣 */
 /* D476（GPT 2030 Q1／Q2）：一般玩法本局第一次合出海龜，左邊港內多一艘小船靠岸；第一次合出海豚，右邊再來一艘（同一張圖左右翻）。停到這一局結束。
@@ -439,6 +440,13 @@ function makeMerge() {
     { const TS = ['bg_merge', 'bg_merge_dusk', 'bg_merge_night'], ti = tsIdx(g.lv); if (g.tsI == null) { g.tsI = ti; g.tsP = ti; g.tsT0 = -9; } if (ti !== g.tsI) { g.tsP = g.tsI; g.tsI = ti; g.tsT0 = RM ? -9 : g.t; }      /* D458（GPT 2030 Q2）：升關時段輪替 L1～5 白天、6～10 傍晚、11～15 夜港，15 關循環；只換底圖，1.2 秒淡入 */
       const bgOf = (i) => ready(TS[i]) || ready('bg_merge'), k = clamp((g.t - g.tsT0) / 1.2, 0, 1), b1 = bgOf(g.tsI);
       if (!b1) { mergeBG = mergeBG || buildMergeBG(); ctx.drawImage(mergeBG, 0, 0, W, H); } else { if (k < 1) { const b0 = bgOf(g.tsP); if (b0) ctx.drawImage(b0, 0, 0, W, H); ctx.globalAlpha = k; } ctx.drawImage(b1, 0, 0, W, H); ctx.globalAlpha = 1; } }
+    /* D478（GPT 2230 Q1）：一般玩法白天／傍晚，小鳶抓著海鮮瞄準時，紅線下 8px 起往下 48px 由透明漸到 0.22 的水藍灰（#294C5D），以下維持 0.22 到池底，把亮水紋壓淡，讓虛線、落點影子、淺色海鮮好讀。
+       0.25 秒淡入淡出（減少動態直接到位）；夜港不畫，時段交接跟著底圖混合比例；每日與試玩模式沒有；只畫在底圖上、小船和紅線下面，不動玩法 */
+    { const on = !!(g.fall && g.fall.held) && !DS && !g.ferry && !g.net && !g.swp && !g.dual && !g.done, dtv = Math.min(0.1, Math.max(0, g.t - (g.calmT == null ? g.t : g.calmT))); g.calmT = g.t;
+      g.calmA = RM ? (on ? 1 : 0) : clamp((g.calmA || 0) + (on ? 1 : -1) * dtv / 0.25, 0, 1);
+      const kk = clamp((g.t - g.tsT0) / 1.2, 0, 1), dayW = (g.tsI === 2 ? 0 : 1) * kk + (g.tsP === 2 ? 0 : 1) * (1 - kk), a = AIMCALM.a * g.calmA * dayW; g.calmV = a;
+      if (a > 0.004) { const y0 = BOX.line + AIMCALM.top, y1 = y0 + AIMCALM.fade, gr = ctx.createLinearGradient(0, y0, 0, y1); gr.addColorStop(0, 'rgba(41,76,93,0)'); gr.addColorStop(1, 'rgba(41,76,93,' + a.toFixed(3) + ')');
+        ctx.fillStyle = gr; ctx.fillRect(BOX.l, y0, BOX.r - BOX.l, AIMCALM.fade); ctx.fillStyle = 'rgba(41,76,93,' + a.toFixed(3) + ')'; ctx.fillRect(BOX.l, y1, BOX.r - BOX.l, BOX.floor - y1); } }
     drawBoats(g);
     // 紅線
     const warnA = g.over > 0 ? 0.6 + 0.4 * Math.sin(tt * 20) : 0.55;
@@ -1028,7 +1036,7 @@ const AQ = (() => {
   return { add, save, ui, open, data: d };
 })();
 window.__aq = AQ;
-window.__mini = { get G() { return G; }, plain: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = false; dualMode = false; newGame(); state = 'play'; }, THUD, LEAN, BOAT,      /* D476、D474、D464 測試掛勾 */ pop, get floats() { return floats; }, mixHex,      /* D462 測試掛勾 */ get state() { return state; }, FY, DV, dual: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = false; dualMode = true; newGame(); state = 'play'; dualHow(); }, swap: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = true; dualMode = false; newGame(); state = 'play'; swapHow(); }, ferry: () => { mode = 'merge'; ferryMode = true; netMode = false; swapMode = false; dualMode = false; newGame(); state = 'play'; }, net: (pi) => { mode = 'merge'; ferryMode = false; netMode = true; swapMode = false; dualMode = false; if (pi != null) netStore.set({ ...netStore.get(), c: pi }); newGame(); state = 'play'; netHow(); }, NETR, netStore, setMode, seaFace, finish, IMG, SEAF, get fest() { return { pf: festPF(), n: fests.length, txt: !!festTxt, y: festTxt && festTxt.y, k: festTxt && festTxt.k }; }, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; }, get hudChip() { return hudChip; } };      /* D263：測試掛勾加 pop／floats；D306 加 finish */      /* D254：測試掛勾，固定亂數 */
+window.__mini = { get G() { return G; }, AIMCALM, plain: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = false; dualMode = false; newGame(); state = 'play'; }, THUD, LEAN, BOAT,      /* D476、D474、D464 測試掛勾 */ pop, get floats() { return floats; }, mixHex,      /* D462 測試掛勾 */ get state() { return state; }, FY, DV, dual: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = false; dualMode = true; newGame(); state = 'play'; dualHow(); }, swap: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = true; dualMode = false; newGame(); state = 'play'; swapHow(); }, ferry: () => { mode = 'merge'; ferryMode = true; netMode = false; swapMode = false; dualMode = false; newGame(); state = 'play'; }, net: (pi) => { mode = 'merge'; ferryMode = false; netMode = true; swapMode = false; dualMode = false; if (pi != null) netStore.set({ ...netStore.get(), c: pi }); newGame(); state = 'play'; netHow(); }, NETR, netStore, setMode, seaFace, finish, IMG, SEAF, get fest() { return { pf: festPF(), n: fests.length, txt: !!festTxt, y: festTxt && festTxt.y, k: festTxt && festTxt.k }; }, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; }, get hudChip() { return hudChip; } };      /* D263：測試掛勾加 pop／floats；D306 加 finish */      /* D254：測試掛勾，固定亂數 */
 })();
 </script>
 <script>(function () { var b = document.getElementById('backBtn'); b.addEventListener('click', function (e) { if (window.__mini && window.__mini.state === 'play' && !confirm('這局還在進行，確定要離開嗎？（分數不會記錄）')) e.preventDefault(); }); /* QA：遊戲中按返回先確認 */ /* D161：一律回小鳶樂園（遊戲大廳），不再回舊版測試首頁 */ })();</script>
