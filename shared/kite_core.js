@@ -103,6 +103,7 @@
     merge: { name: '小鳶合成港', levels: { all: '合成港' } },      // D119 放進遊戲大廳；D141（Dari 10/21）：能產生分數的都計入每日累計、可換點
     stack: { name: '小鳶疊貨櫃', levels: { all: '疊貨櫃' } },
     swim: { name: '鯨鯊快游', levels: { all: '鯨鯊快游' } },
+    board: { name: '港口大富翁', levels: {} },      /* D471：小鳶樂園入口（單機骰子短局，不計分） */
     daily: { name: '今日挑戰', levels: {} }      // G97：每日挑戰；D141：正式局也算今日積分
   };
 
