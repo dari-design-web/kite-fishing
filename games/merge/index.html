@@ -390,7 +390,7 @@ function makeMerge() {
         mul > 1 || lv >= 5 ? C.gold : C.paper, mul > 1 || lv >= 5);
       const sd = a.side || 0; if (g.dual) { if (lv > g.topS[sd]) g.topS[sd] = lv; } g.balls.push({ side: sd, lv, x: g.dual ? dvX(sd, x, SEAF[lv][1]) : x, y, vx: 0, vy: -80, r: SEAF[lv][1], age: 0.5, rot: 0, sq: -0.2, sd: Math.random() * 10, hap: 1.2, thud: lv >= THUD.minLv && !g.ferry && !g.net && !g.swp && !g.dual ? 1 : 0 });      /* D464：高階成品留一次首撞低音 */
       if (lv >= HALO.minLv && !RM && !g.ferry && !g.net && !g.swp && !g.dual) g.halo = { b: g.balls[g.balls.length - 1], t: 0 };      /* D457（GPT 1930 Q1）：合出海龜以上，成品背後一次短芒漣漪；同幀多次只留最後一次；不動計分／物理 */
-      if (lv > g.top) { g.top = lv; if (lv === 9) festStart(x, y, SEAF[lv][1], true); if (lv >= 4) { g.newT = 1; g.say = ['', '', '', '', '章魚出現了！', '海龜來了！', '鬼頭刀好帥！', '是海豚耶！', '翻車魚！快到了！', '鯨鯊！！我們合出鯨鯊了！'][lv]; g.sayT = 2; } }
+      if (lv > g.top) { g.top = lv; if (lv === 9) festStart(x, y, SEAF[lv][1], true); if (lv >= 4) { g.newT = 1; g.say = ['', '', '', '', '章魚出現了！', '海龜來了！', '鬼頭刀好帥！', '是海豚耶！', '翻車魚！快到了！', '最高階達成！我們合出鯨鯊了！'][lv]; g.sayT = 2; } }      /* D466（GPT 1230 Q2）：本局第一次合出最高階鯨鯊，原本的煙火＋「完成！」照舊，小鳶那句改成直接說「最高階達成」，不加新字層 */
       g.discover(lv);
     }
     if (mul === 3 && !(g.newT > 0)) { g.say = '連鎖三次！'; g.sayT = 1.4; }      /* D262：新海鮮那句（鬼頭刀好帥！／鯨鯊！！…）講的 1 秒內不被「連鎖三次！」蓋掉，右上角連鎖 ×3 照樣顯示 */
