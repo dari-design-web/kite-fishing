@@ -545,6 +545,17 @@ function drawNearFull(g) {
   let top = 1e9; for (const b of g.balls) if (b.age > 1.2 && Math.abs(b.vy) < 80) top = Math.min(top, b.y - b.r);
   const near = g.done ? 0 : clamp((BOX.line + 70 - top) / 70, 0, 1), hot = g.over > 0 && !g.done;
   g.nearT = clamp((g.nearT || 0) + ((near > 0 || hot) ? 1 : -1) * 0.05, 0, 1); g.nearK = near;
+  /* D468（GPT 1430 Q2 推薦 b「解圍收光」）：一般玩法裡，暖琥珀／紅色警示完全解除並維持 0.25 秒後，左右木框上段各閃一道海水綠的光、由上往下收掉（0.5 秒，只一次）；
+     警示又出現就取消，下一輪警示解除才再播。只畫，不改危險累積、紅線、失敗計時、分數；跟遊戲時鐘走；每日、試玩、收局、減少動態都不播 */
+  { const warnOn = near > 0 || hot, plain = !DS && !g.ferry && !g.net && !g.dual && !g.swp;
+    if (g.done || !plain || RM) { g.rlArm = false; g.rlC = null; g.rlT0 = null; }
+    else if (warnOn) { g.rlArm = true; g.rlC = null; g.rlT0 = null; }
+    else if (g.rlArm) { if (g.rlC == null) g.rlC = g.t; if (g.t - g.rlC >= 0.25) { g.rlArm = false; g.rlC = null; g.rlT0 = g.t; g.rlN = (g.rlN || 0) + 1; } }
+    if (g.rlT0 != null) { const e = (g.t - g.rlT0) / 0.5;
+      if (e >= 1 || e < 0) g.rlT0 = null;
+      else { const yT = BOX.line - 34, L = 96, ww = 18, aa = 0.9 * (1 - e);
+        for (const side of [0, 1]) { const gr = ctx.createLinearGradient(side ? BOX.r : BOX.l, 0, side ? BOX.r - ww : BOX.l + ww, 0); gr.addColorStop(0, 'rgba(64,200,172,' + aa.toFixed(3) + ')'); gr.addColorStop(1, 'rgba(64,200,172,0)');
+          ctx.fillStyle = gr; ctx.fillRect(side ? BOX.r - ww : BOX.l, yT + L * e, ww, L * (1 - e)); } } } }
   if (g.nearT <= 0) return;
   const per = hot ? 0.6 : 1.8, ph = RM ? 0.5 : 0.5 + 0.5 * Math.sin(g.t * 6.2832 / per);
   const a = g.nearT * (hot ? 0.34 + 0.22 * ph : (0.26 + 0.24 * near) + 0.16 * ph * near), col = hot ? '232,90,60' : '255,146,30';
