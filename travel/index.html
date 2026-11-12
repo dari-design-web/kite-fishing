@@ -60,7 +60,19 @@ header h1{font-size:20px;margin:0;flex:1}
 .wallcards span{position:absolute;top:25.5%;width:9.4%;height:4.4%;border-radius:2px;background-size:cover;background-position:center;box-shadow:0 1px 3px rgba(0,0,0,.3);border:1.5px solid #FFFDF8;transform:rotate(-3deg)}
 .wallcards span:nth-child(2){transform:rotate(2deg)}
 .shelfhit{position:absolute;left:1.4%;top:45%;width:30%;height:18.5%;cursor:pointer}
-.shelfitems img{position:absolute;width:5.93%;height:4.74%;object-fit:contain;transform:translate(-50%,-50%)}      /* 三格改成左邊上下排（G-47） */
+.shelfitems img{position:absolute;width:5.93%;height:4.74%;object-fit:contain;transform:translate(-50%,-50%)}
+/* D469（GPT 1530 Q2 推薦 b）：客廳架上每一件紀念品可以直接點開看是從哪裡帶回來的；一天內剛帶回來的那件會輕輕發亮 */
+.svhit{position:absolute;left:1.4%;width:30%;height:6%;z-index:1;border:0;padding:0;background:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.shelfitems img.new{animation:svnew 1.8s ease-in-out infinite}
+@keyframes svnew{0%,100%{filter:drop-shadow(0 0 0 rgba(255,214,110,0))}50%{filter:drop-shadow(0 0 5px rgba(255,214,110,.95)) brightness(1.12)}}
+.svcard{width:min(320px,86vw);background:#FFFDF8;border-radius:18px;padding:18px 18px 16px;text-align:center;color:var(--ink);box-shadow:0 10px 30px rgba(0,0,0,.4);animation:svpop .28s cubic-bezier(.3,1.5,.5,1)}
+.svcard img{width:132px;height:132px;object-fit:contain;display:block;margin:0 auto 6px}
+.svcard h2{margin:0;font-size:20px}
+.svcard .from{display:inline-block;margin:8px 0 0;padding:4px 12px;border-radius:999px;background:#E6F3F1;color:#1F5A5F;font-size:14px;font-weight:700}
+.svcard .when{margin:6px 0 0;font-size:12px;color:#7A8A8C}
+.svcard .q{margin:10px 0 0;font-size:15px;line-height:1.6}
+@keyframes svpop{from{transform:scale(.86);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.svcard,.shelfitems img.new{animation:none}}      /* 三格改成左邊上下排（G-47） */
 .bird{position:absolute;left:35.2%;top:55.6%;width:34%;aspect-ratio:1;background:center/contain no-repeat;cursor:pointer;z-index:2;transform-origin:50% 92%;will-change:left,top,transform}
 /* v0.7：小鳶在屋裡生活。位置與動作由程式（PET）每一格更新 */
 .emote{position:absolute;width:10.5%;aspect-ratio:1;z-index:120;pointer-events:none;transform:translate(-50%,-100%);animation:pop .35s ease-out}
@@ -351,7 +363,7 @@ header .back,.letter .skip{min-height:44px;min-width:44px;display:inline-flex;al
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.94',
+  version: '0.95',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 0,      // D80：遠行便當改用點數換，不再每 3 趟送 1 份（0＝關閉）
@@ -628,7 +640,8 @@ function renderHome() {
   $('wall').innerHTML = ''; recent.forEach(([id], n) => { const s = document.createElement('span'); const [loc, i] = id.split('-'); const l = LOCS.find((x) => x.id === loc), c = l.cards[+i]; s.style.left = WALL_X[n] + '%'; s.style.backgroundImage = c[2] ? 'url(assets/' + c[2] + ')' : 'linear-gradient(' + l.tone[0] + ',' + l.tone[1] + ')'; $('wall').appendChild(s); });
   $('wallHit').onclick = () => go('album');
   const SHELF_Y = [48.3, 54.3, 60.1];      // v0.15：架上三格改成上下排，中心 x 16%（G-47 JSON）
-  $('miniShelf').innerHTML = Object.entries(S.souvenirs).sort((a, b2) => b2[1] - a[1]).slice(0, 3).map(([k], n) => '<img src="assets/sv_' + k + '.png" alt="' + LOCS.find((l) => l.id === k).souvenir + '" style="left:16%;top:' + SHELF_Y[n] + '%">').join('');
+  $('miniShelf').innerHTML = Object.entries(S.souvenirs).sort((a, b2) => b2[1] - a[1]).slice(0, 3).map(([k], n) => '<img src="assets/sv_' + k + '.png" alt="' + LOCS.find((l) => l.id === k).souvenir + '" class="' + (Date.now() - S.souvenirs[k] < 864e5 ? 'new' : '') + '" style="left:16%;top:' + SHELF_Y[n] + '%"><button class="svhit" type="button" data-sv="' + k + '" aria-label="' + LOCS.find((l) => l.id === k).souvenir + '，從' + LOCS.find((l) => l.id === k).name + '帶回來的，點開看" style="top:' + (SHELF_Y[n] - (n ? 3 : 5.5)) + '%;height:' + (n === 1 ? 6 : 8.5) + '%"></button>').join('');
+  $('miniShelf').querySelectorAll('.svhit').forEach((b) => (b.onclick = () => showSvModal(b.dataset.sv, 'home', b)));
   $('shelfHit').onclick = () => go('shelf');
   const nb = (S.bento.far || 0) + (S.bento.squid || 0) + (S.bento.hair || 0) + (S.bento.special || 0) + riceLeft();
   $('hCards').textContent = ownedCount() + '/24'; $('hBento').textContent = nb;
@@ -1059,9 +1072,21 @@ function showCardModal(l, i, lim) {
   $('mf').onclick = () => { const p = $('pc'); p.classList.toggle('flip'); $('mf').textContent = p.classList.contains('flip') ? '看正面' : '看背面'; };
   $('mc').onclick = () => m.classList.remove('on');
 }
+/* D469：紀念品詳情卡——大圖、名字、從哪裡帶回來、哪一天、小鳶的話。來源直接用紀念品的鍵（＝目的地 id，只有那一趟旅行會入帳），不推定 */
+function showSvModal(id, from, back) {
+  const l = LOCS.find((x) => x.id === id), ts = S.souvenirs[id]; if (!l || !ts) return;
+  const d = new Date(ts), when = ts > 16e11 ? (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日帶回來' : '';
+  const m = $('modal');
+  m.innerHTML = '<div class="svcard" role="dialog" aria-modal="true" aria-label="' + l.souvenir + '"><img src="assets/sv_' + id + '.png" alt=""><h2>' + l.souvenir + '</h2><div class="from">從「' + l.name + '」帶回來的</div>' + (when ? '<p class="when">' + when + '</p>' : '') + '<p class="q">「' + l.sv + '」</p></div><div class="row" style="width:min(320px,86vw);margin-top:14px">' + (from === 'home' ? '<button class="btn ghost" id="mAll" type="button" style="color:#fff;border-color:#fff">看全部紀念品</button>' : '') + '<button class="btn gold" id="mc" type="button">' + (from === 'home' ? '回到客廳' : '回紀念品櫃') + '</button></div>';
+  m.classList.add('on');
+  const close = () => { m.classList.remove('on'); m.onclick = null; try { if (back && back.isConnected) back.focus({ preventScroll: true }); } catch (e) {} };
+  $('mc').onclick = close; m.onclick = (e) => { if (e.target === m) close(); };
+  if ($('mAll')) $('mAll').onclick = () => { close(); go('shelf'); };
+  try { $('mc').focus({ preventScroll: true }); } catch (e) {}
+}
 function renderShelf() {
   const g = $('shelfGrid'); g.innerHTML = '';
-  for (const l of LOCS) { const own = S.souvenirs[l.id], b = document.createElement('button'); b.className = 'sv' + (own ? '' : ' no'); b.type = 'button'; b.innerHTML = '<img src="assets/sv_' + l.id + '.png" alt="">' + (own ? l.souvenir : '？？'); b.onclick = () => toast(own ? '「' + l.sv + '」' : '去' + l.name + '有機會帶回來'); g.appendChild(b); }
+  for (const l of LOCS) { const own = S.souvenirs[l.id], b = document.createElement('button'); b.className = 'sv' + (own ? '' : ' no'); b.type = 'button'; b.innerHTML = '<img src="assets/sv_' + l.id + '.png" alt="">' + (own ? l.souvenir : '？？'); b.onclick = () => { if (own) showSvModal(l.id, 'shelf', b); else toast('去' + l.name + '有機會帶回來'); }; g.appendChild(b); }
   const t = Object.values(calcTitles()); $('titles').innerHTML = t.length ? t.map((x) => '<span class="chip" style="display:inline-block;margin:0 6px 6px 0">' + x + '</span>').join('') : '<p class="muted">集滿一個地點的 3 張，就會得到稱號。九份以外 21 張「港灣旅行家」、全部 24 張「小鳶的好朋友」。</p>';
 }
 
@@ -1286,10 +1311,10 @@ function travelBgmSync() { if (travelBgmOn) BGM.play('travel_' + ({ ranch: 'scho
   document.addEventListener('pointerdown', () => { if (travelBgmOn) travelBgmSync(); }, { passive: true });
 })();
 </script>
-<script src="cook.js?v=0.94"></script>
+<script src="cook.js?v=0.95"></script>
 <script src="boat.js?v=0.90"></script>
 <script src="wipe.js?v=0.93"></script>
-<script src="home.js?v=0.94"></script>
+<script src="home.js?v=0.95"></script>
 <script src="../shared/back_line.js?v=2"></script>
 <script>/* D104：旅行排行榜（明信片收藏數） */ if (window.KiteLB) { KiteLB.button(document.getElementById('lbSlot'), { title: '小鳶旅行收藏排行', travel: true }); setTimeout(function () { try { pushTravelStat(); } catch (e) {} }, 1500); }</script>
 </body>
