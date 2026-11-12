@@ -509,7 +509,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '1.37',
+  version: '1.38',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -809,6 +809,27 @@ function drawTireRollTell(f) {
   for (const pass of [[4.6, '#1F3A4D'], [2.4, '#FFF3D6']]) { ctx.lineWidth = pass[0]; ctx.strokeStyle = pass[1]; for (let i = 0; i < 2; i++) { const x = bx + g.dir * i * 7; ctx.beginPath(); ctx.moveTo(x, f.y - 6); ctx.lineTo(x + g.dir * 5, f.y); ctx.lineTo(x, f.y + 6); ctx.stroke(); } }
   ctx.restore();
 }
+/* D478（GPT 2030 Q3，數值 Claude 定）：第 2 關一般玩法的泡泡冰怪，被普通風之羽打傷還沒清掉時，先壓扁 0.07 秒、再彈開晃 0.24 秒；每隻第一次被打還會被彈回上方約 30px（之後照原速落下）。兩次壓扁至少隔 0.3 秒。光羽、墨汁、大招不觸發；破掉時三顆小冰泡先往上彈開（最高約 29px，0.35 秒，由小彈到 1.3 倍再回正常）才照原速落下，左右散開速度不變。魔王在場、每日與試玩模式、其他關、減少動態（小冰泡）不動；傷害、血量、分數不動。 */
+const FPOP = { sq: 0.07, out: 0.24, up: 30, gap: 0.3, hop: 0.35, hopV: 520 };
+function foamPop(f) {
+  if (f.type !== 'foam' || daily || !NM() || boss || f.sucked || f.arc || f.split) return;
+  if (f.pop && f.pop.t < FPOP.gap) return;
+  const first = !f.pop; f.pop = { t: 0, up: first ? Math.max(0, Math.min(FPOP.up, f.y - f.r - 24)) : 0, e: 0, n: (f.pop ? f.pop.n : 0) + 1 };
+  beep(first ? 520 : 600, 0.09, 'sine', 0.045, 260); if (!calm) for (let i = 0; i < 4; i++) part('bubble', f.x + rand(-14, 14), f.y + rand(-6, 10), { vx: rand(-45, 45), vy: rand(-70, -25), fade: 2.2, size: rand(2, 4) });
+  if (first && !stats.toldPop) { stats.toldPop = true; say('泡泡冰怪被彈回去了！', f.x, f.y - 34, '#FFFFFF', false, '#1F3A4D'); }
+}
+function foamPopStep(f, dt) {
+  const g = f.pop; g.t += dt; if (!g.up) return;
+  const u = Math.min(1, g.t / (FPOP.sq + FPOP.out)), e = 1 - (1 - u) * (1 - u) * (1 - u);
+  f.y -= g.up * (e - g.e); g.e = e; if (u >= 1) g.up = 0;
+}
+function chipHopStep(f, dt) { const g = f.hop, u = g.t / FPOP.hop; if (u >= 1) { f.hop = null; return; } f.y -= FPOP.hopV * (1 - u) * (1 - u) * dt; g.t += dt; }
+function chipHopK(f) { const g = f.hop; if (!g) return 1; const u = Math.min(1, g.t / FPOP.hop); return u < 0.4 ? 0.5 + 0.8 * (u / 0.4) : 1.3 - 0.3 * ((u - 0.4) / 0.6); }
+function foamPopK(f) {      /* 回傳 [橫向, 縱向] 縮放；減少動態不變形 */
+  const g = f.pop; if (!g || calm || g.t >= FPOP.sq + FPOP.out) return null;
+  if (g.t < FPOP.sq) { const p = g.t / FPOP.sq; return [1 + 0.3 * p, 1 - 0.32 * p]; }
+  const q = (g.t - FPOP.sq) / FPOP.out, d = Math.cos(q * 7.854) * (1 - q) * (1 - q); return [1 + 0.3 * d, 1 - 0.32 * d];
+}
 function mk(type, x, y, o) {
   const d = T[type], f = Object.assign({ type, x, y, x0: x, vx: 0, vy: R(d.speed[0], d.speed[1]) * SPD() * (type === 'can' && E2() ? 0.8 : 1), hp: d.hp, r: d.r * (FOE_BIG(type) ? 1.18 : 1), ph: R(0, 6.28), give: '', rot: R(-0.5, 0.5), age: 0, zapAcc: R(0, 1) }, o);
   if (!(o && (o.noCount || o.fill))) eliteMaybe(f);
@@ -942,7 +963,7 @@ function clearFoe(f, how) {      // how：'' 羽毛或墨汁、'blast' 被炸到
   if (how === 'ult') { if (ult) ult.count++; beep(520 + Math.min(18, ult ? ult.count : 0) * 40, 0.1, 'triangle', 0.05, 200); }
   else if (how !== 'sweep') beep(Math.min(1300, 600 + Math.min(stats.combo, 14) * 45), 0.1, 'triangle', 0.055, 180);
   if (d.split && !calmClear) for (let k = 0; k < d.split; k++) mk('drop', f.x + (k ? 16 : -16), f.y, { x0: f.x + (k ? 44 : -44) });
-  if (d.shatter && !calmClear) for (let k = 0; k < d.shatter; k++) mk('chip', f.x, f.y, { vx: (k - 1) * 75 });
+  if (d.shatter && !calmClear) { const hop = f.type === 'foam' && !daily && NM() && !boss && !calm; for (let k = 0; k < d.shatter; k++) mk('chip', f.x, f.y, hop ? { vx: (k - 1) * 75, hop: { t: 0 } } : { vx: (k - 1) * 75 }); }      /* D478：第 2 關泡泡冰怪破掉時，三顆小冰泡先往上彈開再落下 */
   if (d.blast && !calmClear) explode(f.x, f.y, d);
   if (d.rescue) rescue(d.rescue, f.x, f.y, f);
   menuHit(f, how);
@@ -1322,6 +1343,8 @@ function update(dt) {
     if (f.split && !f.split.go && f.y >= f.split.y) { f.split.t = (f.split.t || 0) + dt; f.y += f.vy * 0.2 * dt; if (f.split.t > 0.6) { f.split.go = true; f.vx = f.split.dir * 115 * SPD(); } continue; }
     f.y += f.vy * dt; f.x += f.vx * dt;
     if (f.roll && !f.roll.done) tireRollStep(f, dt);
+    if (f.pop) foamPopStep(f, dt);
+    if (f.hop) chipHopStep(f, dt);
     if (f.tellLog && f.y > 70) { f.tellLog = false; say('小心纜繩，繞過去！', f.x, f.y + 170, '#FFFFFF', false, '#1F3A4D'); }      /* D240：纜繩看得到時，在它下方提醒一次 */
     if (f.ringHint && f.y > 90) { f.ringHint = false; f.hintT = 3.2; banner(NM() ? '瞄準中間的爆米香，一次炸掉一圈' : '瞄準中間的油桶，一次炸掉一圈'); }
     if (f.hintT > 0) f.hintT -= dt;
@@ -1340,7 +1363,7 @@ function update(dt) {
     if (RM() && f.rail && f.noCount && (f.type === 'can' || f.type === 'butt')) continue;      // D112：刺蝟列車是鐵軌危險，不是目標，羽毛直接穿過（不再出現「打了沒反應」）
     if (f.bar) { if (f.hp > 0 && Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { f.hp = 0; part('star', s.x, s.y, { size: 3, fade: 4, color: '#fff' }); } continue; }      // D112：暴走連射的子彈一碰就散，羽毛繼續往前飛（不然子彈會變成魔王的盾）
     if (f === boss && f.parts && partShot(f, s)) continue;      /* D367：先看有沒有打到魔王零件 */
-    if (Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { s.dead = true; if (f === boss && f.phased) { if (!bossShot(f, s)) s.dead = false; continue; } if (RM() && railBlocks(f)) { blockPing(f, s.x, s.y); if (!stats.toldBlock && !newHold()) { stats.toldBlock = true; say(f.type === 'tire' ? '灰盾＝躲殼打不動，等綠圈' : f.type === 'battery' ? '灰盾＝大叫打不動，等綠圈' : '灰盾＝縮成球打不動，等綠圈', f.x, f.y - 34, '#FFFFFF', false, '#1F3A4D'); } continue; } const x2 = f === boss && f.atk === 'devour' && f.mouth >= 1, bk = TH() === 'beam' ? beamK(f, s) : NEWT() && f === boss ? shellK(f, s) : 1; if (bk < 0) continue; f.hp -= f.type === 'boss' ? bossTake(f, (x2 ? 2 : 1) * bk) : (x2 ? 2 : 1) * bk; if (x2 && !stats.toldX2) { stats.toldX2 = true; say('打嘴巴 傷害 ×2', f.x, f.y + 84, '#FFE08A'); } f.hitT = 0.08; hitAt = [s.x, s.y]; hitFx(f, (x2 ? 2 : 1) * bk); if (f.type !== 'boss' && f.type !== 'minib' && f.hp > 0) f.y -= 2.5; if (f.hp > 0 && !s.ink && !s.lit) tireRoll(f); part('star', s.x, s.y, { size: 3, fade: 4, color: s.ink ? '#C9B6F2' : '#fff' }); if (f.hp > 0 && rings.length < 40) rings.push({ x: s.x, y: s.y, r: 2, max: W * 0.025, life: 1, color: s.ink ? '201,182,242' : s.lit ? '255,255,255' : s.pw === 2 ? '150,235,250' : s.pw === 3 ? '255,214,130' : '255,255,255', clr: 0.12, age: 0, lw: s.pw > 1 && !s.lit ? 2.6 : 2 }); }      /* D343：受擊只出小亮點（直徑約 0.05W），跟清掉的大圈分得出來 */
+    if (Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { s.dead = true; if (f === boss && f.phased) { if (!bossShot(f, s)) s.dead = false; continue; } if (RM() && railBlocks(f)) { blockPing(f, s.x, s.y); if (!stats.toldBlock && !newHold()) { stats.toldBlock = true; say(f.type === 'tire' ? '灰盾＝躲殼打不動，等綠圈' : f.type === 'battery' ? '灰盾＝大叫打不動，等綠圈' : '灰盾＝縮成球打不動，等綠圈', f.x, f.y - 34, '#FFFFFF', false, '#1F3A4D'); } continue; } const x2 = f === boss && f.atk === 'devour' && f.mouth >= 1, bk = TH() === 'beam' ? beamK(f, s) : NEWT() && f === boss ? shellK(f, s) : 1; if (bk < 0) continue; f.hp -= f.type === 'boss' ? bossTake(f, (x2 ? 2 : 1) * bk) : (x2 ? 2 : 1) * bk; if (x2 && !stats.toldX2) { stats.toldX2 = true; say('打嘴巴 傷害 ×2', f.x, f.y + 84, '#FFE08A'); } f.hitT = 0.08; hitAt = [s.x, s.y]; hitFx(f, (x2 ? 2 : 1) * bk); if (f.type !== 'boss' && f.type !== 'minib' && f.hp > 0) f.y -= 2.5; if (f.hp > 0 && !s.ink && !s.lit) { tireRoll(f); foamPop(f); } part('star', s.x, s.y, { size: 3, fade: 4, color: s.ink ? '#C9B6F2' : '#fff' }); if (f.hp > 0 && rings.length < 40) rings.push({ x: s.x, y: s.y, r: 2, max: W * 0.025, life: 1, color: s.ink ? '201,182,242' : s.lit ? '255,255,255' : s.pw === 2 ? '150,235,250' : s.pw === 3 ? '255,214,130' : '255,255,255', clr: 0.12, age: 0, lw: s.pw > 1 && !s.lit ? 2.6 : 2 }); }      /* D343：受擊只出小亮點（直徑約 0.05W），跟清掉的大圈分得出來 */
   }
   shots = shots.filter((s) => !s.dead && s.y > -20 && s.x > -20 && s.x < W + 20);
   updateRing(dt); bossFinalCheck(real);
@@ -1538,7 +1561,7 @@ function drawNightFoeOld(f) {
     ctx.globalAlpha *= 0.92; ell(0, 0, r, r * 0.9, '#F6F0E2', PAL.line); ctx.globalAlpha = 1; ell(-5, -4, 4, 3, 'rgba(255,255,255,.8)');
     for (const p of [[6, -5], [-7, 4], [8, 5]]) ell(p[0], p[1], 1.6, 1.6, '#6FA85A'); eyes(3, 3.2, true);
   } else if (ty === 'foam' || ty === 'chip') {      // 泡泡冰怪與打散的小冰泡
-    const k = ty === 'foam' ? 1 : 0.5; ctx.scale(k * (1 + wob * 0.04), k * (1 - wob * 0.04));
+    const k = ty === 'foam' ? 1 : 0.5 * chipHopK(f), pk = ty === 'foam' && foamPopK(f); ctx.scale(k * (1 + wob * 0.04) * (pk ? pk[0] : 1), k * (1 - wob * 0.04) * (pk ? pk[1] : 1));
     ell(-7, -4, 10, 10, '#F7C6D3', PAL.line); ell(7, -5, 10, 10, '#CDEBC4', PAL.line); ell(0, 4, 13, 11, '#FBE3B0', PAL.line); ell(-3, -10, 3, 3, '#E8674A', PAL.line); ell(-4, 0, 3, 2, 'rgba(255,255,255,.75)');
     eyes(5, 3.4, true);
   } else if (ty === 'barrel') {      // 爆米香：一塊米香，快炸開時會閃
@@ -1945,7 +1968,7 @@ function drawNightFoe(f) {
   else if (ty === 'can') ctx.rotate(f.cross ? (f.vx > 0 ? -1.57 : 1.57) : wob * 0.15);
   else if (ty === 'butt') ctx.rotate(Math.cos(f.y / 46 + f.ph) * 0.6);
   else if (ty === 'bag') ctx.rotate(Math.sin(clock * 3 + f.ph) * 0.1);
-  else if (ty === 'foam' || ty === 'chip') ctx.scale(1 + wob * 0.04, 1 - wob * 0.04);
+  else if (ty === 'foam' || ty === 'chip') { const pk = ty === 'foam' && foamPopK(f), hk = ty === 'chip' ? chipHopK(f) : 1; ctx.scale((1 + wob * 0.04) * (pk ? pk[0] : hk), (1 - wob * 0.04) * (pk ? pk[1] : hk)); }
   else if (ty === 'barrel') { const k = 1 + Math.sin(clock * 9) * 0.05; ctx.scale(k, k); }
   else if (ty === 'tire') ctx.rotate(wob * 0.06);
   else if (ty === 'oil') ctx.rotate(wob * 0.05);
@@ -4189,6 +4212,8 @@ $('copyBtn').onclick = () => {
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
 };
 window.__flyGame = { CONFIG, winPose: () => !!(img.kite_win && clock - kite.winAt < 1), shotImg: () => shots.filter((q) => !q.ink && !q.lit).map((q) => (q.pw > 1 && img['feather_power' + q.pw] ? 'feather_power' + q.pw : 'feather')), shotPw: () => shots.filter((q) => !q.ink).map((q) => q.pw), hitRings: () => rings.filter((q) => q.clr === 0.12).map((q) => q.color), shards: () => parts.filter((q) => q.shard).length, kill1: (how) => { const f = foes.find((o) => o.type !== 'boss' && o.type !== 'minib' && !T[o.type].solid); if (!f) return null; clearFoe(f, how || ''); return f.type; }, rope: () => (boss ? +(boss.ropeA || 0).toFixed(2) : -1), sail: () => (boss ? +(boss.sailA || 0).toFixed(2) : -1), glint: () => (boss ? +(boss.glintA || 0).toFixed(2) : -1), nglow: () => (boss ? +(boss.nglowA || 0).toFixed(2) : -1), dawn: () => (boss ? +(boss.dawnA || 0).toFixed(2) : -1), hurtV: () => !!(kite.hurtV && kite.safe > 0), powPose: () => !!(img.kite_power && clock - kite.powAt < 0.3 && !(kite.hurtV && kite.safe > 0 && kite.hearts > 0 && img.kite_hit && clock - (kite.hurtAt || 0) < 0.25)), hitPose: () => !!(kite.hurtV && kite.safe > 0 && kite.hearts > 0 && img.kite_hit && clock - (kite.hurtAt || 0) < 0.25),      /* D468 測試掛勾 */      /* D466 測試掛勾 */ windIn: () => ({ n: stats.windIn || 0, fx: +(kite.windFx || 0).toFixed(2), snd: kite.windSnd === undefined ? -1 : +kite.windSnd.toFixed(2) }), addRoute: (x) => { addRoute(x); }, routes: () => routes.map((r) => ({ x: r.x, t: +r.t.toFixed(2), warn: r.warn, on: r.on })),      /* D465 測試掛勾 */      /* D463 測試掛勾 */ team: () => ({ perfect: stats.perfect || 0, left: foes.filter((f) => f.team).map((f) => f.team.n - f.team.hit) }), teamClear: () => { const L = foes.filter((f) => f.team); for (const f of L) clearFoe(f, ''); return L.length; }, hud: () => ({ fly: hudFly.map((f) => ({ n: f.n, t: +f.t.toFixed(2) })), pops: hudPops.length, tg: hudTarget(), gauge }), clearN: (k) => { const L = foes.filter((f) => f.type !== 'boss').slice(0, k); for (const f of L) clearFoe(f, ''); return L.length; },      /* D376 測試掛勾 */ daily: { route: () => dailyRoute(), state: () => daily, open: () => dailyOpen(), skip: (sec) => { if (daily) daily.rt += sec; } }, live: () => ({ foes, kite, stats, T, floats, pops }), hz: () => ({ vents: vents.map((v) => ({ y: v.y, w: v.w, fromLeft: v.fromLeft, t: v.t, warn: v.warn, on: v.on })), boats: boats.map((b) => ({ x: b.x, y: b.y, t: b.t, warn: b.warn })) }), state: () => ({ mode, t, control, level, kite, gauge, foes: foes.map((f) => ({ type: f.type, x: f.x, y: f.y, r: f.r, hp: f.hp, vx: f.vx, w: f.w || 0, cross: !!f.cross, tired: !!f.tired, aimed: !!f.aimed })), warns: warns.map((w) => ({ y: w.y, t: w.t })), slam: boss && boss.slam ? { s: boss.slam, x: boss.slamX } : null, picks: picks.map((p) => ({ kind: p.kind, x: p.x, y: p.y })), pals: pals.length, stats, boss: !!boss, ult: ult ? ult.t : -1 }), fillGauge: () => { gauge = CONFIG.ult.need; }, record, skipTo: (sec) => { t = sec; while (si < script.length && script[si].t < sec) si++; }, hurtOff: () => { kite.safe = 1e9; }, testLose: (by, n, cl) => { if (by) stats.hitBy[by] = n || 3; if (cl) stats.cleared = cl; kite.hearts = 0; finish(); }, setStage: (n) => { stageNo = n; }, progress: () => progress, stage: () => stageNo, test: { parts: () => (boss && boss.parts ? { parts: boss.parts.map((q) => ({ id: q.id, hp: q.hp, broken: q.broken, x: boss.x + q.cx * bossVis(), y: boss.y + q.cy * bossVis() })), stop: boss.stopAtk, hp: boss.hp } : null), breakPart: (i) => { const q = boss && boss.parts && boss.parts[i]; if (q && !q.broken) partBreak(boss, q, boss.x + q.cx * bossVis(), boss.y + q.cy * bossVis()); }, fx351: (k) => { if (!boss) return null; if (k === 'rage') boss.rage = 2; if (k === 'frag') { fragBurst(boss.x, boss.y); frag.life = 0.12; } return { vis: bossVis(), wp: weakPoints(boss), r: boss.r, x: boss.x, y: boss.y }; }, sparks: () => sparks.length, toldDot: () => toldDot, pick: (kind, x, y) => { addPick(kind, x, y); }, rush: (n) => { addRush(n || 4); }, railX: () => RAIL_X(), hzN: () => hzRects.length, resetSeen: () => { for (const k in seenPick) delete seenPick[k]; }, buff: () => { kite.power = 3; kite.powerT = CONFIG.feather.powerTime * 0.7; kite.galeT = CONFIG.feather.galeTime * 0.5; kite.shield = true; }, spawn: (type, x, y) => { const f = mk(type, x, y); f.vy = CONFIG.scroll; return true; }, hearts: (n) => { kite.hearts = n; kite.safe = 0; drawHearts(); }, warn: (sec) => { warns.push({ y: kite.y, fromLeft: true, n: 3, t: sec }); }, friends: () => friends.map((c) => ({ kind: c.kind, x: Math.round(c.x), y: Math.round(c.y) })), won: () => won, nets: () => netg.filter((g) => g.ring).map((g) => ({ x: g.ring.x, y: g.y + g.ring.dy, acc: g.ring.acc || 0, slowK: g.slowK || 1, done: g.ring.done, lost: g.ring.lost, warn: g.warn })),      /* D411 測試 */ logs: () => foes.filter((f) => f.type === 'log').map((f) => ({ x: Math.round(f.x), y: Math.round(f.y), w: Math.round(f.w) })) }, bossAtk: (a) => { if (boss) { boss.atk = a; boss.atkT = 0; boss.vol = 0; boss.rocks = []; boss.cables = []; boss.wave = 0; boss.stars = []; boss.beams = []; boss.lanes = []; boss.starAcc = 0; if (a === 'ram') { boss.ramX = kite.x; boss.ramT = 0; boss.ramS = 'warn'; } if (a === 'corridor') { boss.gx = W / 2; boss.rows = 0; } if (a === 'cross') { boss.cx = kite.x; boss.cy = kite.y; } } }, pierFriend: (id) => { pierGift(id, kite.x, kite.y); }, jiao: (r) => { jiaoForce = r; }, vents: () => vents.length, friend: (id, x, y) => { const f = mk('tangle', x, y); f.friend = id; f.vy = 30; }, floats: () => floats.map((f) => f.text), banner: () => $('banner').textContent, clouds: () => clouds.length, ring: () => kite.ringT, testWin: (sq, tu) => { stats.rescuedBy.squid = sq; stats.rescuedBy.turtle = tu; stats.rescued = sq + tu; stats.trapped = Math.max(stats.trapped, sq + tu); if (boss) { if (boss.phased) { for (const k in boss.pools) boss.pools[k] = 0; foes = foes.filter((o) => o.type !== 'minib'); boss.hidden = false; boss.phase = 3; cine = 0; } boss.hp = 0; } }, bossPhase: (n) => { const f = boss; if (!f || !f.phased) return; cine = 0; if (RM()) { if (n >= 2) { f.pools.armL = f.pools.armR = 0; f.phase = 2; } if (n >= 3) { f.pools.head = 0; f.phase = 3; } } else { if (n >= 2) { f.pools.shell = 0; f.layers = 0; f.phase = 2; } if (n >= 3) { f.pools.core = 0; splitBlob(f); cine = 0; } } syncHp(f); }, phaseUpT: () => { if (boss && boss.phased) phaseUp(boss, '測試換階段', ''); }, bossInfo: () => (boss ? { arc: boss.arcFx ? +boss.arcFx.a.toFixed(2) : -1, phase: boss.phase, hp: boss.hp, pools: boss.pools, hidden: !!boss.hidden, dying: boss.dying, cine } : null), setControl: (c) => { control = c; } };
+window.__flyGame.hop = () => foes.filter((q) => q.type === 'chip').map((q) => ({ x: +q.x.toFixed(1), y: +q.y.toFixed(1), k: +chipHopK(q).toFixed(2), t: q.hop ? +q.hop.t.toFixed(2) : null }));
+window.__flyGame.pop = () => foes.filter((q) => q.type === 'foam').map((q) => ({ x: +q.x.toFixed(1), y: +q.y.toFixed(1), hp: q.hp, k: foamPopK(q), p: q.pop ? { t: +q.pop.t.toFixed(2), n: q.pop.n, up: +q.pop.up.toFixed(1) } : null }));      /* D478 測試掛勾 */
 window.__flyGame.roll = () => foes.filter((q) => q.type === 'tire').map((q) => ({ x: +q.x.toFixed(1), y: +q.y.toFixed(1), hp: q.hp, r: q.roll ? { t: +(q.roll.t || 0).toFixed(2), e: +q.roll.e.toFixed(2), dir: q.roll.dir, done: q.roll.done } : null }));      /* D475 測試掛勾 */
 window.__flyGame.salv = { open: salvOpen, st: () => ({ mode, daily, kite, stats }) };      /* D432 測試掛勾 */
 window.__flyGame.fork = { open: forkOpen, map: toMap, st: () => ({ mode, t, daily, kite, foes, stats, sc: scoreFinal(), pings: pings.length }), ping: (x, y) => { pings.push({ x, y, life: 0.12, max: 0.12 }); return !!img.fx_blocked_ping; } };      /* D451：測試掛勾加 ping */      /* D421 測試掛勾 */
