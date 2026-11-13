@@ -26,7 +26,13 @@
      疊貨櫃（#6）、飛行（#12）兩款還沒做，照舊直接 1⭐。資料只存在這一局。
    ②山路兩格換成 GPT 1345 的圖示 icon_path.png／icon_view.png。
    ③骰點卡（GPT 1345 Q3）——每人整局 1 張：擲完 2 顆後，可以把其中一顆 −1 或 ＋1（限 1～6 步）；先看每個選項會停哪、拿不拿得到旗，確認才扣卡，
-     選「不用卡」就留著。跟章支援卡（骰前 ＋1🐚）各用各的。電腦只在「原本搶不到旗、調整後搶得到」或停的格子明顯比較好時才用。 */
+     選「不用卡」就留著。跟章支援卡（骰前 ＋1🐚）各用各的。電腦只在「原本搶不到旗、調整後搶得到」或停的格子明顯比較好時才用。
+   D486（v2 P2 第四段；GPT 1445 Q1 疊貨櫃切片數值、Q2 捕魚平衡、Q3 骰點卡圖示）：
+   ①短挑戰切片第二款「疊貨櫃 8 秒」（#6 幫忙落貨櫃）——小鳶抓著貨櫃左右飛過，飛到光柱上方時點一下放下；6 個貨櫃、每 1.25 秒一個、
+     中心差 16 以內才疊得上去，歪了掉進海裡不扣分。三人比疊好的個數（電腦 0／1～3／4～6 個＝20%／60%／20%），最多的 ＋2⭐。
+   ②#17「再玩一小段」：玩家踩到可以自己選捕魚或疊貨櫃；電腦踩到抽一款。
+   ③捕魚的電腦等級機率改成 20%／50%／30%。
+   ④骰點卡的 🎴 換成 GPT 1445 的 card_adjust.png。 */
 :root{--ink:#10293D;--paper:#FFF8EA;--sea:#7FC4D6;--deep:#0E2232;--leaf:#4FBF88;--sun:#F2B544;--coral:#E8795A;
   --land:#F6D7A7;--chance:#9ED3F0;--fate:#C9B6F2;--mini:#BFE8C4;--rest:#FFE6A8;--start:#FFD0B5;
   --p0:#E39A1F;--p1:#3D7FB8;--p2:#C0569A;
@@ -183,6 +189,15 @@ body{background:#0E2232;color:var(--ink);font-family:var(--round);-webkit-user-s
 .fgame::after{content:'';position:absolute;left:-10%;right:-10%;bottom:-5%;height:12%;border-radius:50% 50% 0 0;background:#E9D3A0;opacity:.55}
 .mres .r img{width:28px;height:28px;object-fit:contain}
 .mres .r.win{background:#FFF1C2;box-shadow:0 0 0 3px var(--sun)}
+.fgame.stk{background:linear-gradient(#BDE8F6 0,#E9F8F4 62%,#58B9D2 62%,#2F8FB4 100%)}
+.fgame.stk::before{top:62%}.fgame.stk::after{display:none}
+.fgame .scol{position:absolute;top:0;background:linear-gradient(rgba(255,255,255,0) 0,rgba(255,236,150,.55) 30%,rgba(255,236,150,.55) 100%);border-left:2px dashed rgba(16,41,61,.45);border-right:2px dashed rgba(16,41,61,.45);box-sizing:border-box;pointer-events:none}
+.fgame .scol.ok{animation:scok .35s ease-out}
+@keyframes scok{0%{background-color:rgba(255,255,255,.95)}100%{background-color:rgba(255,255,255,0)}}
+.fgame .sbase{position:absolute;bottom:0;border-radius:8px 8px 0 0;background:repeating-linear-gradient(90deg,#B98552 0 12px,#A8733F 12px 14px);box-shadow:0 0 0 3px var(--ink);pointer-events:none}
+.fgame .sbase::before{content:'';position:absolute;left:-6px;right:-6px;top:-3px;height:8px;border-radius:5px;background:#E0B27A;box-shadow:0 0 0 3px var(--ink)}
+.fgame .pls.bad{color:#FFD9CF;font-size:16px}
+.aic{width:26px;height:26px;object-fit:contain;vertical-align:-7px;margin-right:2px}
 .supp{display:flex;gap:6px;justify-content:center}
 .supp img{width:40px;height:40px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px var(--ink)}
 @media (max-height:600px){.sub.opt{display:none}.dimg{width:36px;height:36px}.tile.mt{min-height:31px}.tile.mt .em{font-size:14px}.tile.mt .tn{font-size:8.5px}.log{height:3.1em}.dice{width:64px;height:64px;padding:14px}.dice i{width:9px;height:9px}.btns button{min-height:44px}.btns button.big{min-height:48px;font-size:17px}.btns.g2 button{min-height:40px}.btns.g2 .wide,.btns button.slim{min-height:32px}}
@@ -195,7 +210,7 @@ body{background:#0E2232;color:var(--ink);font-family:var(--round);-webkit-user-s
 </div>
 <script>
 'use strict';
-const VER = '0.8';
+const VER = '0.9';
 const A = '../assets/board/';
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TEST = /[?&]test=1/.test(location.search);
@@ -241,9 +256,9 @@ const FATE = [
 /* 章支援卡：讀既有蓋章（只讀，開局快照）；效果全部一樣＝骰前 +1 殼，每人 2 張 */
 const STAMP = { 1: ['kite', '港口新朋友'], 2: ['ship', '數船小達人'], 3: ['shark', '鯨鯊的好朋友'], 4: ['bowl', '港邊小吃家'], 5: ['chair', '躲雨小專家'], 6: ['car', '下次見大使'] };
 function myStamps() { try { const q = JSON.parse(localStorage.getItem('kiteStamp1') || 'null'); return q && q.spots ? Object.keys(q.spots).map(Number).filter(k => STAMP[k]).sort() : []; } catch (e) { return []; } }
-/* 短挑戰可用性：D485 捕魚切片就緒；疊貨櫃、飛行還沒做 → 照舊 FALLBACK（踩到的人 1 星） */
-const MINI_READY = { fish12: true, stack15: false, fly15: false };
-const MINI_NAME = { fish12: '港口捕魚 8 秒', stack15: '疊貨櫃', fly15: '飛行清障' };
+/* 短挑戰可用性：D485 捕魚、D486 疊貨櫃切片就緒；飛行還沒做 → 照舊 FALLBACK（踩到的人 1 星） */
+const MINI_READY = { fish12: true, stack15: true, fly15: false };
+const MINI_NAME = { fish12: '港口捕魚 8 秒', stack15: '疊貨櫃 8 秒', fly15: '飛行清障' };
 
 const $ = id => document.getElementById(id);
 const rnd = n => { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n; };
@@ -467,13 +482,13 @@ async function playTurn(p) {
     const adjs = []; for (const d of dice) for (const k of [-1, 1]) { const m = d + k; if (m >= 1 && m <= 6 && !dice.includes(m) && !adjs.some(a => a.m === m)) adjs.push({ m, d, k }); }
     for (;;) {
       const os = dice.map(d => opt(d, DIE[d] + ' ' + d + ' 點'));
-      if (p.adj > 0 && adjs.length) os.push({ t: '🎴 骰點卡 ±1 步', v: 'adj', alt: true, slim: true });
+      if (p.adj > 0 && adjs.length) os.push({ t: '<img class="aic" alt="" src="' + A + 'card_adjust.png">骰點卡 ±1 步', v: 'adj', alt: true, slim: true });
       if (os.length === 1) { uncand(); $('dmsg').textContent = '兩顆都是 ' + d1 + ' 點！'; await wait(RM ? 150 : 420); break; }
       const v = await ask(d1 === d2 ? '兩顆都是 ' + d1 + ' 點！' : '選 1 顆骰子走', os); uncand();
       if (v !== 'adj') { n = v; break; }
       const as = adjs.map(a => opt(a.m, '走 ' + a.m + ' 步')); as.forEach((o, i) => { o.adj = adjs[i]; });
       as.push({ t: '不用卡', v: 0, alt: true, wide: true });
-      const m = await ask('🎴 改成走幾步？', as, '', 'g2'); uncand();
+      const m = await ask('<img class="aic" alt="" src="' + A + 'card_adjust.png">改成走幾步？', as, '', 'g2'); uncand();
       if (m && once(tk + ':adj')) { const a = adjs.find(x => x.m === m); p.adj--; n = m; base = a.d; G.lastAdj = [p.id, a.d, m]; log(p.name + ' 用骰點卡，' + a.d + ' 點改走 ' + m + ' 步'); break; }
       center('<div class="dpair">' + diceHtml(d1, 'dice', 'sm') + diceHtml(d2, 'dice2', 'sm') + '</div><div class="msg" id="dmsg"></div>');
     }
@@ -486,7 +501,7 @@ async function playTurn(p) {
       for (const d of dice) for (const k of [-1, 1]) { const m = d + k; if (m < 1 || m > 6 || dice.includes(m)) continue; const q = bestPlan(p, [m]); q.d = d; if (!b || q.s > b.s) b = q; }
       if (b && ((!reach0 && willReach(p, b.n, b.r)) || pure(b) - pure(plan) >= 2.5) && once(tk + ':adj')) {
         p.adj--; base = b.d; plan = b; n = b.n; G.lastAdj = [p.id, b.d, b.n]; log(p.name + ' 用骰點卡，' + b.d + ' 點改走 ' + b.n + ' 步');
-        center(diceHtml(b.d) + '<div class="msg">🎴 ' + p.name + '用了骰點卡</div><div class="sub">' + b.d + ' 點 → 走 ' + b.n + ' 步</div>'); await wait(RM ? 300 : 750);
+        center(diceHtml(b.d) + '<div class="msg"><img class="aic" alt="" src="' + A + 'card_adjust.png">' + p.name + '用了骰點卡</div><div class="sub">' + b.d + ' 點 → 走 ' + b.n + ' 步</div>'); await wait(RM ? 300 : 750);
       }
     }
   }
@@ -587,7 +602,7 @@ async function cardTile(p, k, tk) {
 const FISH = { T: 8, tail: .35, first: .35, gap: 1.05, n: 7, lanes: [145, 193, 241], v: 68, x0: -18, x1: 188, in0: 18, in1: 152, r: 22, dive: .28, cd: .4 };
 const fishLv = n => n >= 4 ? 2 : n >= 1 ? 1 : 0;
 function fishMini() {
-  if (TEST) return Promise.resolve(window.__miniAuto ? window.__miniAuto() : [0, 1, 2, 3, 4, 4, 5, 5, 6, 7][rnd(10)]);
+  if (TEST) return Promise.resolve(window.__miniAuto ? window.__miniAuto('fish12') : [0, 1, 2, 3, 4, 4, 5, 5, 6, 7][rnd(10)]);
   return new Promise(res => {
     const ov = document.createElement('div'); ov.className = 'fgame'; ov.setAttribute('role', 'application'); ov.setAttribute('aria-label', '港口捕魚：點魚讓小鳶俯衝去抓');
     ov.innerHTML = '<div class="mhud"><span class="mbar" id="mbar"><i></i></span><span class="mcnt" id="mcnt">🐟 0</span></div><div class="mtip" id="mtip">點魚！</div><img id="mkite" alt="" src="' + A + 'mini_kite_glide.webp">';
@@ -639,17 +654,84 @@ function fishMini() {
     requestAnimationFrame(frame);
   });
 }
+/* ===== D486：短挑戰切片「疊貨櫃 8 秒」（GPT 1445 Q1 數值；座標以 170×330 為基準） ===== */
+const STK = { T: 8, tail: .35, first: .3, gap: 1.25, n: 6, y: 76, v: 100, x0: 42, x1: 128, ax: 85, tol: 16, bw: 42, bh: 18, base: 278, drop: .3 };
+function stackMini() {
+  if (TEST) return Promise.resolve(window.__miniAuto ? window.__miniAuto('stack15') : [0, 1, 2, 3, 3, 4, 4, 5, 5, 6][rnd(10)]);
+  return new Promise(res => {
+    const ov = document.createElement('div'); ov.className = 'fgame stk'; ov.setAttribute('role', 'application'); ov.setAttribute('aria-label', '疊貨櫃：貨櫃飛到光柱上方時點一下放下');
+    ov.innerHTML = '<div class="scol" id="scol"></div><div class="sbase" id="sbase"></div><div class="mhud"><span class="mbar" id="mbar"><i></i></span><span class="mcnt" id="mcnt">📦 0</span></div><div class="mtip" id="mtip">飛到光柱上，點一下放！</div><img id="mkite" alt="" src="' + A + 'mini_kite_carry.webp">';
+    $('center').appendChild(ov); $('board').classList.add('playing');
+    const W = ov.clientWidth, H = ov.clientHeight, sx = W / 170, sy = H / 330, S = STK;
+    const bw = S.bw * sx, bh = S.bh * sy, kEl = $('mkite'), kw = 50 * Math.min(sx, sy), kh = kw * 123 / 140, col = $('scol'), base = $('sbase'); kEl.style.width = kw + 'px'; kEl.style.height = kh + 'px';
+    col.style.left = ((S.ax - S.bw / 2) * sx) + 'px'; col.style.width = bw + 'px'; col.style.height = (S.base * sy) + 'px';
+    base.style.left = ((S.ax - 38) * sx) + 'px'; base.style.width = (76 * sx) + 'px'; base.style.height = (H - S.base * sy) + 'px';
+    const lead = .45;      /* 進到可放範圍前先飛 0.45 秒，讓玩家看到貨櫃過來 */
+    const box = Array.from({ length: S.n }, (_, i) => ({ i, t0: S.first + i * S.gap, dir: i % 2 ? -1 : 1, x: 0, y: S.y, st: 'wait', el: null, p: 0, ty: 0, ok: false }));
+    let t = 0, last = performance.now(), cnt = 0, ended = false, over = false, cur = null, kx = -40, kdir = 1;
+    const put = (el, x, y, w, h, rot) => { el.style.transform = 'translate(' + (x * sx - w / 2).toFixed(1) + 'px,' + (y * sy - h / 2).toFixed(1) + 'px)' + (rot ? ' rotate(' + rot + 'deg)' : ''); };
+    const fx = (cls, x, y, txt) => { const e = document.createElement('span'); e.className = cls; if (txt) e.textContent = txt; e.style.left = (x * sx) + 'px'; e.style.top = (y * sy) + 'px'; ov.appendChild(e); setTimeout(() => e.remove(), 720); };
+    function tap(e) {
+      e.preventDefault(); if (ended || !cur || cur.st !== 'carry') return;      /* 每櫃只能放一次 */
+      const b = cur; b.st = 'drop'; b.p = 0; b.ok = Math.abs(b.x - S.ax) <= S.tol; b.ty = b.ok ? S.base - S.bh / 2 - cnt_stack() * S.bh : 318; cur = null; sfx('dive');
+      const tip = $('mtip'); if (tip) tip.remove();
+    }
+    const cnt_stack = () => box.filter(b => b.st === 'set' || (b.st === 'drop' && b.ok)).length;
+    ov.addEventListener('pointerdown', tap);
+    window.__mini = { kind: 'stack15', get t() { return t; }, get cnt() { return cnt; }, box: () => cur && cur.st === 'carry' ? { dx: cur.x - S.ax, dir: cur.dir } : null, pt: () => { const r = ov.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height * .6 }; } };
+    function finish() {
+      if (over) return; over = true; ov.removeEventListener('pointerdown', tap); delete window.__mini;
+      const m = document.createElement('div'); m.className = 'mend'; m.innerHTML = '時間到！<small>疊好 ' + cnt + ' 個</small>'; ov.appendChild(m); sfx('land');
+      waitRaw(850).then(() => { ov.remove(); $('board').classList.remove('playing'); res(cnt); });
+    }
+    function frame(now) {
+      if (over) return;
+      const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now; if (!document.hidden) t += dt;
+      for (const b of box) {
+        if (b.st === 'wait' && t >= b.t0 - lead && !ended) {
+          b.st = 'carry'; cur = b; kdir = b.dir; b.el = document.createElement('img'); b.el.alt = ''; b.el.src = A + 'mini_box_' + b.i + '.webp'; b.el.style.width = bw + 'px'; b.el.style.height = bh + 'px'; ov.insertBefore(b.el, kEl);
+        }
+        if (b.st === 'carry') {
+          b.x = (b.dir > 0 ? S.x0 : S.x1) + b.dir * S.v * (t - b.t0); kx = b.x;
+          if (b.dir > 0 ? b.x > S.x1 + 34 : b.x < S.x0 - 34) { b.st = 'gone'; b.el.remove(); if (cur === b) cur = null; }      /* 沒點就被帶走，直接換下一櫃 */
+        } else if (b.st === 'drop') {
+          b.p = Math.min(1, b.p + dt / (b.ok ? S.drop : S.drop * 1.5)); b.y = S.y + (b.ty - S.y) * b.p * b.p;
+          if (b.p >= 1) {
+            if (b.ok) { b.st = 'set'; cnt++; const c = $('mcnt'); c.textContent = '📦 ' + cnt; c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); const pf = Math.abs(b.x - S.ax) <= 5; fx('pls', b.x, b.y - 16, pf ? '剛剛好！' : '＋1'); col.classList.remove('ok'); void col.offsetWidth; col.classList.add('ok'); sfx('catch', cnt); if (!RM) { b.el.animate([{ scale: '1.12 .8' }, { scale: '1 1' }], { duration: 220, easing: 'cubic-bezier(.3,1.7,.5,1)' }); } }
+            else { b.st = 'gone'; b.el.remove(); fx('rip', b.x, 306); fx('pls bad', b.x, 292, '歪了'); sfx('miss'); }
+          }
+        }
+        if (b.el && b.st !== 'gone') put(b.el, b.x, b.y, bw, bh, b.st === 'drop' && !b.ok ? (b.x < S.ax ? -1 : 1) * 28 * b.p : 0);
+      }
+      if (!cur) kx += kdir * S.v * dt;      /* 放掉以後小鳶照原方向飛出去 */
+      put(kEl, kx, S.y - S.bh / 2 - kh / sy / 2 + 5 + Math.sin(t * 9) * 1.5, kw, kh); kEl.style.opacity = kx < -30 || kx > 200 ? 0 : 1;
+      const left = Math.max(0, 1 - t / S.T), bar = $('mbar'); bar.firstChild.style.transform = 'scaleX(' + left.toFixed(3) + ')'; bar.classList.toggle('low', left < .26);
+      if (t >= S.T) ended = true;      /* 滿 8 秒不再接受輸入；已經放下的讓它落完（最多 0.35 秒收尾） */
+      if (ended && (!box.some(b => b.st === 'drop') || t >= S.T + S.tail)) return finish();
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  });
+}
+/* 短挑戰共用設定：odds＝電腦抽 0／1／2 級的籤（捕魚 20／50／30＝GPT 1445 Q2；疊貨櫃 20／60／20），hi＝2 級的個數範圍 */
+const MINI = {
+  fish12: { ic: '🎣', em: '🐟', unit: '條', how: '點魚，小鳶就俯衝去抓', odds: [0, 0, 1, 1, 1, 1, 1, 2, 2, 2], hi: [4, 4], play: () => fishMini(), word: '捕魚', none: '這次沒有人抓到魚' },
+  stack15: { ic: '🏗️', em: '📦', unit: '個', how: '貨櫃飛到光柱上，點一下放下', odds: [0, 1, 1, 1, 2], hi: [4, 3], play: () => stackMini(), word: '疊貨櫃', none: '這次沒有人疊好' }
+};
 async function miniTile(p, c, tk) {
   const who = p.human ? '你' : p.name;
   if (p.minis >= 3) { addShell(p, 1); log(p.name + ' 短挑戰已滿 3 次，改拿 1🐚'); center('<div class="msg">🎮 短挑戰已經玩滿 3 次</div><div class="sub">' + who + '改拿 1🐚</div>'); await nw(p, 1300, 850); return; }
   p.minis++;
-  let kind = c.mini;
-  if (kind === 'pick') kind = 'fish12';      /* D485：三選一目前只有捕魚做好了，先固定捕魚；另外兩款做好再開選單 */
-  const ready = MINI_READY[kind];
-  let go = false;
-  if (ready) {
+  let kind = c.mini, go = false, asked = false;
+  if (kind === 'pick') {      /* D486：捕魚、疊貨櫃都做好了 → 玩家踩到自己選，電腦踩到抽一款 */
+    if (p.human) { const v = await ask('🎮 選一個玩', [{ t: '🎣 捕魚 8 秒', v: 'fish12' }, { t: '🏗️ 疊貨櫃 8 秒', v: 'stack15' }, { t: '略過，你拿 1⭐', v: '', alt: true, slim: true }], '<div class="sub">第一名 ＋2⭐</div>'); asked = true; if (v) { kind = v; go = true; } else kind = 'fish12'; }
+    else kind = ['fish12', 'stack15'][rnd(2)];
+  }
+  const ready = MINI_READY[kind], M = MINI[kind];
+  if (asked) { /* 已經在選單選好了 */ }
+  else if (ready) {
     /* GPT 1235 Q2：不管誰踩到，都由真人玩一次，三人比 */
-    go = await ask('🎣 港口捕魚 8 秒', [{ t: '開始！', v: true, big: true }, { t: '略過，' + (p.human ? '你' : p.short) + '拿 1⭐', v: false, alt: true }], '<div class="sub">' + (p.human ? '' : '<span class="sub opt">' + p.short + '踩到短挑戰，大家一起比<br></span>') + '點魚，小鳶就俯衝去抓<br>抓最多的 ＋2⭐</div>');
+    go = await ask(M.ic + ' ' + MINI_NAME[kind], [{ t: '開始！', v: true, big: true }, { t: '略過，' + (p.human ? '你' : p.short) + '拿 1⭐', v: false, alt: true }], '<div class="sub">' + (p.human ? '' : '<span class="sub opt">' + p.short + '踩到短挑戰，大家一起比<br></span>') + M.how + '<br>' + M.word + '最多的 ＋2⭐</div>');
   } else if (p.human) {
     await ask('🎮 ' + c.name, [{ t: '拿 1⭐', v: 'skip' }], '<div class="sub">' + MINI_NAME[kind] + '還在準備中<br>先直接拿 1⭐</div>');
   } else { center('<div class="msg">🎮 ' + p.name + '來到「' + c.name + '」</div>'); await wait(550); }
@@ -658,14 +740,14 @@ async function miniTile(p, c, tk) {
     addStar(p, 1); log(p.name + ' 在「' + c.name + '」拿到 1⭐'); toast('＋1⭐');
     center('<div class="msg">⭐ ' + who + '拿到 1 顆星</div><div class="sub">短挑戰第 ' + p.minis + '／3 次</div>'); await nw(p, 1100, 800); return;
   }
-  const R = G.P.map(q => q.human ? { q } : { q, lv: [0, 1, 1, 1, 2][rnd(5)] });      /* 電腦開始時就抽好：0／1／2 級＝20%／60%／20% */
-  for (const r of R) if (!r.q.human) r.n = r.lv === 2 ? 4 + rnd(4) : r.lv === 1 ? 1 + rnd(3) : 0;      /* 等級換成條數（0／1～3／4～7），畫面上比條數，小朋友一看就懂 */
+  const R = G.P.map(q => q.human ? { q } : { q, lv: M.odds[rnd(M.odds.length)] });      /* 電腦開始時就抽好等級 */
+  for (const r of R) if (!r.q.human) r.n = r.lv === 2 ? M.hi[0] + rnd(M.hi[1]) : r.lv === 1 ? 1 + rnd(3) : 0;      /* 等級換成個數（0／1～3／4 以上），畫面上比個數，小朋友一看就懂 */
   center('');
-  const me = R.find(r => r.q.human); me.n = await fishMini(); me.lv = fishLv(me.n);
-  const top = Math.max(...R.map(r => r.n)), tie = R.filter(r => r.n === top), w = top > 0 ? tie[rnd(tie.length)] : null;      /* 抓最多的人 ＋2⭐；一樣多就抽籤；都 0 條就沒有人拿 */
-  G.lastMini = { by: p.id, n: R.map(r => r.n), lv: R.map(r => r.lv), win: w ? w.q.id : -1 };
-  log('🎣 捕魚：' + R.map(r => r.q.short + ' ' + r.n + ' 條').join('、') + (w ? '；' + w.q.name + ' ＋2⭐' : '；沒有人抓到'));
-  center('<div class="msg">🎣 捕魚結果</div><div class="mres">' + R.map(r => '<div class="r' + (r === w ? ' win' : '') + '"><img alt="" src="' + A + r.q.img + '"><span>' + (r.q.human ? '你' : r.q.short) + '</span><span>🐟 ' + r.n + (r === w ? ' <b>＋2⭐</b>' : '') + '</span></div>').join('') + '</div><div class="sub">' + (w ? (tie.length > 1 ? '一樣多，抽籤決定<br>' : '') + (w.q.human ? '你' : w.q.name) + '第一名！' : '這次沒有人抓到魚') + '</div>');
+  const me = R.find(r => r.q.human); me.n = await M.play(); me.lv = fishLv(me.n);
+  const top = Math.max(...R.map(r => r.n)), tie = R.filter(r => r.n === top), w = top > 0 ? tie[rnd(tie.length)] : null;      /* 最多的人 ＋2⭐；一樣多就抽籤；都 0 就沒有人拿 */
+  G.lastMini = { by: p.id, kind, n: R.map(r => r.n), lv: R.map(r => r.lv), win: w ? w.q.id : -1 };
+  log(M.ic + ' ' + M.word + '：' + R.map(r => r.q.short + ' ' + r.n + ' ' + M.unit).join('、') + (w ? '；' + w.q.name + ' ＋2⭐' : '；' + M.none));
+  center('<div class="msg">' + M.ic + ' ' + M.word + '結果</div><div class="mres">' + R.map(r => '<div class="r' + (r === w ? ' win' : '') + '"><img alt="" src="' + A + r.q.img + '"><span>' + (r.q.human ? '你' : r.q.short) + '</span><span>' + M.em + ' ' + r.n + (r === w ? ' <b>＋2⭐</b>' : '') + '</span></div>').join('') + '</div><div class="sub">' + (w ? (tie.length > 1 ? '一樣多，抽籤決定<br>' : '') + (w.q.human ? '你' : w.q.name) + '第一名！' : M.none) + '</div>');
   if (w) { await wait(RM ? 200 : 500); addStar(w.q, 2); toast((w.q.human ? '你' : w.q.short) + ' ＋2⭐'); }
   await wait(1900);
 }
@@ -677,7 +759,7 @@ async function intro() {
     $('go').onclick = res;
     $('how').onclick = () => {
       center('<div class="intro"><ul>'
-        + '<li>每人 6 回合，擲 2 顆骰子選 1 顆走</li><li>🚩 先到目的地 ＋3⭐（第 1、3、5 輪換）</li><li>⛰️ 岔路可走山路，少走 1 格</li><li>🏠 花 3🐚 蓋小站（最多 2 處），結算各 ＋2⭐</li><li>✨ 機會 🌊 命運 抽卡立刻生效</li><li>🎮 短挑戰：捕魚比賽，第一名 ＋2⭐</li><li>⚓ 過起點 ＋2🐚</li><li>🎫 章卡：骰前 ＋1🐚，每人 2 張</li><li>🎴 骰點卡：整局 1 張，骰子 ±1 步</li></ul></div><div class="btns"><button type="button" id="go2">開始一局</button></div>');
+        + '<li>每人 6 回合，擲 2 顆骰子選 1 顆走</li><li>🚩 先到目的地 ＋3⭐（第 1、3、5 輪換）</li><li>⛰️ 岔路可走山路，少走 1 格</li><li>🏠 花 3🐚 蓋小站（最多 2 處），結算各 ＋2⭐</li><li>✨ 機會 🌊 命運 抽卡立刻生效</li><li>🎮 短挑戰：捕魚、疊貨櫃比賽，第一名 ＋2⭐</li><li>⚓ 過起點 ＋2🐚</li><li>🎫 章卡：骰前 ＋1🐚，每人 2 張</li><li><img class="aic" alt="" src="../assets/board/card_adjust.png">骰點卡：整局 1 張，骰子 ±1 步</li></ul></div><div class="btns"><button type="button" id="go2">開始一局</button></div>');
       $('go2').onclick = res;
     };
     if (window.__autoHuman) setTimeout(res, 5);
