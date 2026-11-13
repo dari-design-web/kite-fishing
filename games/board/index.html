@@ -103,6 +103,8 @@ body{background:#0E2232;color:var(--ink);font-family:var(--round);-webkit-user-s
 .route .ar{fill:#F2B544;stroke:#10293D;stroke-width:1.5;stroke-linejoin:round}
 .turn{align-self:center;max-width:100%;display:flex;align-items:center;gap:5px;font-size:13px;font-weight:900;background:var(--paper);border:3px solid var(--ink);border-radius:99px;padding:2px 12px 2px 4px;min-height:34px;box-shadow:0 3px 0 rgba(16,41,61,.35);white-space:nowrap}
 .turn img{width:28px;height:28px;object-fit:contain}
+.turn .why{color:#C2410C;animation:dpop .32s cubic-bezier(.3,1.7,.5,1)}
+.stage .sub.why2{color:#C2410C;font-size:13.5px;font-weight:900}
 .turn:empty{visibility:hidden}
 .stage{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;text-align:center;background:rgba(255,248,234,.74);box-shadow:0 0 16px 5px rgba(255,248,234,.5);border-radius:16px;padding:8px 6px}
 .over{position:absolute;inset:0;z-index:6;background:rgba(255,248,234,.97);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:14px 16px;text-align:center;animation:flip .35s;overflow:hidden}
@@ -214,7 +216,7 @@ body{background:#0E2232;color:var(--ink);font-family:var(--round);-webkit-user-s
 .supp{display:flex;gap:6px;justify-content:center}
 .supp img{width:40px;height:40px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px var(--ink)}
 @media (max-height:600px){.sub.opt{display:none}.dimg{width:36px;height:36px}.tile.mt{min-height:31px}.tile.mt .em{font-size:14px}.tile.mt .tn{font-size:8.5px}.log{height:3.1em}.dice{width:64px;height:64px;padding:14px}.dice i{width:9px;height:9px}.btns button{min-height:44px}.btns button.big{min-height:48px;font-size:17px}.btns.g2 button{min-height:40px}.btns.g2 .wide,.btns button.slim{min-height:32px}}
-@media (prefers-reduced-motion:reduce){.pawn{transition:none}.dice.roll,.dice.pop,.dnum,.card,.pl.bump,.cc.in,.tile.step,.tile.hl,.tile.built,.tile .flag.new,.tile .dflag,.btns button.big,.res .row,.pl .st .pop b{animation:none}.tile.hl{box-shadow:0 0 0 3px #fff,0 0 12px 4px #FFE08A}.cc,.cc.face{transition:none}}
+@media (prefers-reduced-motion:reduce){.pawn{transition:none}.dice.roll,.dice.pop,.dnum,.turn .why,.card,.pl.bump,.cc.in,.tile.step,.tile.hl,.tile.built,.tile .flag.new,.tile .dflag,.btns button.big,.res .row,.pl .st .pop b{animation:none}.tile.hl{box-shadow:0 0 0 3px #fff,0 0 12px 4px #FFE08A}.cc,.cc.face{transition:none}}
 .rcap{width:100%;flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
 .rh{font-size:13px;font-weight:900;color:#3A5466;background:#fff;border-radius:99px;padding:2px 12px}.rh b{color:#C2410C}
 .rbody{width:100%;min-height:128px;display:flex;align-items:center;justify-content:center}
@@ -238,7 +240,7 @@ body{background:#0E2232;color:var(--ink);font-family:var(--round);-webkit-user-s
 </div>
 <script>
 'use strict';
-const VER = '1.1';
+const VER = '1.2';
 const A = '../assets/board/';
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TEST = /[?&]test=1/.test(location.search);
@@ -413,7 +415,19 @@ function dieScore(p, n, route) {
   else if (c.type === 'chance' || c.type === 'rest') s += 1;
   return s;
 }
-function bestPlan(p, dice) { let b = null; for (const n of dice) for (const r of routesOf(p.pos, n)) { const s = dieScore(p, n, r); if (!b || s > b.s) b = { n, r, s }; } return b; }
+/* D489：電腦夥伴選路個性（GPT 1735 Q1）。公開分數照舊；鯨鯊停在現在蓋得起的空地 ＋1.25，小卷每靠近旗子 1 格 ＋0.25（上限 1.25，沿有向格線算）。能搶旗的 ＋10 還是最大 */
+const PREF = { land: 1.25, step: .25, cap: 1.25 };
+const WHY = { shark: '想蓋小站', squid: '想靠近旗子' }, WHY_S = { shark: '蓋小站', squid: '追旗子' };      /* WHY_S：回合牌上的短版（320 寬放不下整句） */
+function pref(p, n, route) {
+  const q = seqOf(p.pos, n, route), end = q[q.length - 1];
+  if (p.ai === 'shark') return CELLS[end].type === 'land' && G.owner[end] < 0 && p.lands.length < 2 && p.shell - price(p) >= reserve(p) ? PREF.land : 0;
+  if (p.ai === 'squid' && G.dest >= 0) return Math.max(0, Math.min(PREF.cap, ((dist(p.pos, G.dest) || 18) - dist(end, G.dest)) * PREF.step));
+  return 0;
+}
+function plansOf(p, dice) { const a = []; for (const n of dice) for (const r of routesOf(p.pos, n)) { const s = dieScore(p, n, r), pf = pref(p, n, r); a.push({ n, r, s, pf, f: s + pf }); } return a; }
+const whyOf = (p, b, a, b0) => { if (b) { b.chg = b !== b0; if (!willReach(p, b.n, b.r) && (b.chg || (b.pf > 0 && a.some(q => q.pf < b.pf)))) b.why = WHY[p.ai]; } return b; };      /* 有得選、而且選的是個性喜歡的那個才說；搶旗那一步不說 */
+const topBy = (a, k) => a.reduce((b, q) => !b || q[k] > b[k] ? q : b, null);      /* 平手留先出現的（原本的順序） */
+function bestPlan(p, dice) { const a = plansOf(p, dice); return whyOf(p, topBy(a, 'f'), a, topBy(a, 's')); }
 /* D484：選路按鈕上寫的「停在哪、會怎樣」，全部用現在的公開狀態算，不預抽牌 */
 function effText(p, id) {
   const c = CELLS[id], o = G.owner[id];
@@ -526,15 +540,21 @@ async function playTurn(p) {
     /* 電腦用卡（GPT 1345 Q3）：原本搶不到旗、調整後搶得到；或停的格子明顯比較好（公開分數差 2.5 以上，不算純步數）才用 */
     if (p.adj > 0) {
       const pure = q => q.s - q.n * .01, reach0 = dice.some(d => routesOf(p.pos, d).some(r => willReach(p, d, r))); let b = null;
-      for (const d of dice) for (const k of [-1, 1]) { const m = d + k; if (m < 1 || m > 6 || dice.includes(m)) continue; const q = bestPlan(p, [m]); q.d = d; if (!b || q.s > b.s) b = q; }
-      if (b && ((!reach0 && willReach(p, b.n, b.r)) || pure(b) - pure(plan) >= 2.5) && once(tk + ':adj')) {
+      /* D489：值不值得用卡照原本的公開分數判斷（跟不用卡時公開分最高的比）；過了門檻的方案之間才看個性偏好 */
+      const p0 = topBy(plansOf(p, dice), 's'), ok = [], seen = [];
+      for (const d of dice) for (const k of [-1, 1]) { const m = d + k; if (m < 1 || m > 6 || dice.includes(m) || seen.includes(m)) continue; seen.push(m); for (const q of plansOf(p, [m])) { q.d = d; if ((!reach0 && willReach(p, q.n, q.r)) || pure(q) - pure(p0) >= 2.5) ok.push(q); } }
+      b = whyOf(p, topBy(ok, 'f'), ok, topBy(ok, 's'));
+      if (b && once(tk + ':adj')) {
         p.adj--; base = b.d; plan = b; n = b.n; G.lastAdj = [p.id, b.d, b.n]; log(p.name + ' 用骰點卡，' + b.d + ' 點改走 ' + b.n + ' 步');
         center(diceHtml(b.d) + '<div class="msg"><img class="aic" alt="" src="' + A + 'card_adjust.png">' + p.name + '用了骰點卡</div><div class="sub">' + b.d + ' 點 → 走 ' + b.n + ' 步</div>'); await wait(RM ? 300 : 750);
       }
     }
   }
   G.lastRoll = [d1, d2, n];
-  center(diceHtml(base || n) + '<div class="dnum">' + n + (base ? ' 步' : ' 點') + '</div><div class="msg">' + who + (base ? '用骰點卡走 ' + n + ' 步' : (d1 !== d2 ? '選了 ' : '擲出 ') + n + ' 點') + '</div>');
+  const why = plan && plan.why ? p.short + plan.why : '';      /* D489：個性偏好真的改變了選擇才說 */
+  if (plan && plan.chg) G.pfChg = (G.pfChg || 0) + 1;
+  if (why) { G.pf = (G.pf || 0) + 1; G.lastWhy = [p.id, why, n, plan.r]; log('💭 ' + why); $('turn').innerHTML = '<img alt="" src="' + A + p.img + '"><span class="why">💭 ' + WHY_S[p.ai] + '</span>'; }
+  center(diceHtml(base || n) + '<div class="dnum">' + n + (base ? ' 步' : ' 點') + '</div><div class="msg">' + who + (base ? '用骰點卡走 ' + n + ' 步' : (d1 !== d2 ? '選了 ' : '擲出 ') + n + ' 點') + '</div>' + (why ? '<div class="sub why2">💭 ' + why + '</div>' : ''));
   if (!RM && !TEST) $('dice').classList.add('pop');
   await wait(RM ? 200 : p.human ? 480 : 330);
   for (let s = 0; s < n; s++) {
@@ -846,7 +866,7 @@ async function intro() {
     $('go').onclick = res;
     $('how').onclick = () => {
       center('<div class="intro"><ul>'
-        + '<li>每人 6 回合，擲 2 顆骰子選 1 顆走</li><li>🚩 先到目的地 ＋3⭐（第 1、3、5 輪換）</li><li>⛰️ 岔路可走山路，少走 1 格</li><li>🏠 花 3🐚 蓋小站（最多 2 處），結算各 ＋2⭐</li><li>✨ 機會 🌊 命運 抽卡立刻生效</li><li>🎮 短挑戰：捕魚、疊貨櫃、飛行，第一名 ＋2⭐</li><li>⚓ 過起點 ＋2🐚</li><li>🎫 章卡：骰前 ＋1🐚，每人 2 張</li><li><img class="aic" alt="" src="../assets/board/card_adjust.png">骰點卡：整局 1 張，骰子 ±1 步</li></ul></div><div class="btns"><button type="button" id="go2">開始一局</button></div>');
+        + '<li>每人 6 回合，擲 2 顆骰子選 1 顆走</li><li>🚩 先到目的地 ＋3⭐（第 1、3、5 輪換）</li><li>⛰️ 岔路可走山路，少走 1 格</li><li>🏠 花 3🐚 蓋小站（最多 2 處），結算各 ＋2⭐</li><li>✨ 機會 🌊 命運 抽卡立刻生效</li><li>🎮 短挑戰：捕魚、疊貨櫃、飛行，第一名 ＋2⭐</li><li>⚓ 過起點 ＋2🐚</li><li>🎫 章卡：骰前 ＋1🐚，每人 2 張</li><li>💭 鯨鯊愛蓋小站，小卷愛追旗子</li><li><img class="aic" alt="" src="../assets/board/card_adjust.png">骰點卡：整局 1 張，骰子 ±1 步</li></ul></div><div class="btns"><button type="button" id="go2">開始一局</button></div>');
       $('go2').onclick = res;
     };
     if (window.__autoHuman) setTimeout(res, 5);
@@ -937,7 +957,7 @@ $('snd').onclick = () => { SND = !SND; $('snd').textContent = SND ? '🔊' : '�
 $('fast').onclick = () => { FAST = !FAST; $('fast').classList.toggle('on', FAST); $('fast').setAttribute('aria-pressed', FAST); sfx('tap'); };
 addEventListener('resize', () => { if (G) { drawPawns(); drawRoute(); } });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (G) { drawPawns(); drawRoute(); } });
-window.__board = { get G() { return G; }, VER, get FAST() { return FAST; }, seqOf, routesOf, dist, CELLS, miniTile, fishLv };
+window.__board = { get G() { return G; }, VER, get FAST() { return FAST; }, seqOf, routesOf, dist, CELLS, miniTile, fishLv, pref, plansOf, bestPlan, dieScore, PREF };
 game();
 </script>
 </body></html>
