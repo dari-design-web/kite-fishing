@@ -13,7 +13,12 @@
    ①目的地港口——第 1、3、5 輪各公布一個小站當目的地（插旗），正常擲骰走路時第一個走到或經過的人 ＋3⭐，旗子收走；
      兩輪內沒人走到就換下一個。卡片移位不算（跟「卡片移位不觸發格子」一致）。
    ②選骰子——每次擲 2 顆，自己選 1 顆走（按鈕直接寫會停在哪一格、會不會拿到旗子）；兩顆一樣就直接走。
-     電腦用固定分數挑（先搶旗，再看停的格子）。岔路、小遊戲格是下一段。 */
+     電腦用固定分數挑（先搶旗，再看停的格子）。
+   D484（v2 P2 第二段；GPT 港口大富翁A岔路_1830設計＋1235 岔路取捨）：
+   ①岔路——「看船前抓魚」(#3) 分岔：港邊照原路 #4→#5→#6→#7；山路走舞台左上的窄軌「山城階梯」(18，沒有事件)→「虎仔山看港」(19，停下 ＋1🐚)→#7，少走 1 格。
+     走到 #3 還有步數才選路（正好停在 #3 下一回合再選）；選骰子時的落點、搶旗、電腦判斷都照實際路線算。卡片移位照舊只走外環。
+     有人在山路上時，新目的地不選 #4（兩輪內走不到）。
+   ②目的地旗子換成 GPT 1235 的 dest_flag.png（格子左上 24px、公布畫面 64px）。小遊戲格、±1 卡是下一段。 */
 :root{--ink:#10293D;--paper:#FFF8EA;--sea:#7FC4D6;--deep:#0E2232;--leaf:#4FBF88;--sun:#F2B544;--coral:#E8795A;
   --land:#F6D7A7;--chance:#9ED3F0;--fate:#C9B6F2;--mini:#BFE8C4;--rest:#FFE6A8;--start:#FFD0B5;
   --p0:#E39A1F;--p1:#3D7FB8;--p2:#C0569A;
@@ -66,10 +71,21 @@ body{background:#0E2232;color:var(--ink);font-family:var(--round);-webkit-user-s
 .puff{position:absolute;width:26px;height:10px;margin:-3px 0 0 -13px;border-radius:50%;background:rgba(255,255,255,.85);pointer-events:none;animation:puff .32s ease-out forwards}
 @keyframes puff{0%{transform:scale(.3);opacity:.9}100%{transform:scale(1.7,1.2);opacity:0}}
 .center{grid-column:2/4;grid-row:2/7;display:flex;flex-direction:column;align-items:stretch;gap:5px;padding:2px;position:relative;z-index:3;min-height:0}
-.turn{align-self:center;display:flex;align-items:center;gap:5px;font-size:13px;font-weight:900;background:var(--paper);border:3px solid var(--ink);border-radius:99px;padding:2px 12px 2px 4px;min-height:34px;box-shadow:0 3px 0 rgba(16,41,61,.35);white-space:nowrap}
+.head{display:flex;gap:5px;align-items:stretch;min-height:0}
+.headR{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.track{width:42px;flex:none;display:flex;flex-direction:column;gap:4px}
+.tile.mt{flex:1;min-height:44px;border-radius:9px;box-shadow:0 2px 0 rgba(16,41,61,.4);gap:0}
+.tile.mt .ic{height:50%}.tile.mt .em{font-size:17px;line-height:1.1}.tile.mt .tn{font-size:9.5px}.tile.mt .no{display:none}
+.tile.path{background-color:#D9E6C3}
+.tile .fk{position:absolute;right:1px;bottom:1px;font-size:9px;font-weight:900;line-height:13px;padding:0 3px;border-radius:6px;background:var(--ink);color:#fff}
+.route{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3;overflow:visible}
+.route .o{fill:none;stroke:#10293D;stroke-width:6;stroke-linecap:round;stroke-linejoin:round}
+.route .i{fill:none;stroke:#FFF8EA;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:5 5}
+.route .ar{fill:#F2B544;stroke:#10293D;stroke-width:1.5;stroke-linejoin:round}
+.turn{align-self:center;max-width:100%;display:flex;align-items:center;gap:5px;font-size:13px;font-weight:900;background:var(--paper);border:3px solid var(--ink);border-radius:99px;padding:2px 12px 2px 4px;min-height:34px;box-shadow:0 3px 0 rgba(16,41,61,.35);white-space:nowrap}
 .turn img{width:28px;height:28px;object-fit:contain}
 .turn:empty{visibility:hidden}
-.stage{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;text-align:center;background:rgba(255,248,234,.74);box-shadow:0 0 16px 5px rgba(255,248,234,.5);border-radius:16px;padding:8px 6px}
+.stage{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;text-align:center;background:rgba(255,248,234,.74);box-shadow:0 0 16px 5px rgba(255,248,234,.5);border-radius:16px;padding:8px 6px}
 .over{position:absolute;inset:0;z-index:6;background:rgba(255,248,234,.97);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:14px 16px;text-align:center;animation:flip .35s;overflow:hidden}
 .over .msg{font-size:22px;font-weight:900}
 .stage .msg{font-size:15px;font-weight:900;line-height:1.35;min-height:1.3em}
@@ -112,11 +128,11 @@ body{background:#0E2232;color:var(--ink);font-family:var(--round);-webkit-user-s
 .res .row img{width:40px;height:40px;object-fit:contain}
 .res .row .big{font-size:24px;font-weight:900}
 .res .row.win{background:#FFF1C2;box-shadow:0 0 0 3px var(--sun)}
-.goal{align-self:center;max-width:100%;font-size:12px;font-weight:900;background:#C2410C;color:#fff;border-radius:99px;padding:2px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 0 rgba(16,41,61,.35)}
+.goal{align-self:center;max-width:100%;font-size:12px;font-weight:900;background:#C2410C;color:#fff;border-radius:12px;padding:2px 9px;line-height:1.25;text-align:center;box-shadow:0 2px 0 rgba(16,41,61,.35)}
 .goal.wait{background:rgba(16,41,61,.62)}
 .goal:empty{display:none}
 .tile.dest{z-index:1;box-shadow:0 0 0 3px #fff,0 0 0 6px #C2410C}
-.tile .dflag{position:absolute;left:1px;top:-1px;font-size:20px;line-height:1;transform-origin:15% 100%;animation:wave .7s ease-in-out infinite alternate;filter:drop-shadow(0 1px 0 #fff) drop-shadow(0 0 2px #fff);z-index:1}
+.tile .dflag{position:absolute;left:0;top:-2px;width:24px;height:24px;transform-origin:30% 95%;animation:wave .7s ease-in-out infinite alternate;filter:drop-shadow(0 1px 0 #fff) drop-shadow(0 0 2px #fff);z-index:1}
 @keyframes wave{0%{transform:rotate(-9deg)}100%{transform:rotate(9deg) scale(1.08)}}
 .tile.cand{z-index:2;outline:3px dashed #fff;outline-offset:-3px;filter:brightness(1.12)}
 .dpair{display:flex;gap:12px;justify-content:center}
@@ -130,22 +146,23 @@ body{background:#0E2232;color:var(--ink);font-family:var(--round);-webkit-user-s
 .conf{position:absolute;top:-30px;font-size:22px;pointer-events:none;animation:conf 2.4s linear forwards}
 @keyframes conf{100%{transform:translateY(110vh) rotate(540deg)}}
 .intro{max-height:100%;overflow:auto;min-height:0}
-.goal i{font-style:normal}
+.goal .nb{white-space:nowrap}
+.dimg{width:64px;height:64px;flex:none}
 .intro ul{margin:0;padding-left:16px;text-align:left;font-size:12px;line-height:1.55;font-weight:700}
-@media (max-width:360px){.goal{font-size:11px;padding:2px 7px}.goal i{display:none}.intro ul{font-size:10.5px;line-height:1.38;padding-left:14px}}
+@media (max-width:360px){.goal{font-size:10.5px;padding:2px 6px}.turn{font-size:11.5px;min-height:30px;padding-right:8px}.turn img{width:22px;height:22px}.track{width:38px}.intro ul{font-size:10.5px;line-height:1.38;padding-left:14px}}
 .supp{display:flex;gap:6px;justify-content:center}
 .supp img{width:40px;height:40px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px var(--ink)}
-@media (max-height:600px){.log{height:3.1em}.dice{width:64px;height:64px;padding:14px}.dice i{width:9px;height:9px}.btns button{min-height:44px}.btns button.big{min-height:48px;font-size:17px}}
+@media (max-height:600px){.sub.opt{display:none}.dimg{width:36px;height:36px}.tile.mt{min-height:31px}.tile.mt .em{font-size:14px}.tile.mt .tn{font-size:8.5px}.log{height:3.1em}.dice{width:64px;height:64px;padding:14px}.dice i{width:9px;height:9px}.btns button{min-height:44px}.btns button.big{min-height:48px;font-size:17px}}
 @media (prefers-reduced-motion:reduce){.pawn{transition:none}.dice.roll,.dice.pop,.dnum,.card,.pl.bump,.cc.in,.tile.step,.tile.hl,.tile.built,.tile .flag.new,.tile .dflag,.btns button.big,.res .row,.pl .st .pop b{animation:none}.tile.hl{box-shadow:0 0 0 3px #fff,0 0 12px 4px #FFE08A}.cc,.cc.face{transition:none}}
 </style></head><body>
 <div class="app">
   <div class="top"><h1>港口大富翁</h1><span class="rd" id="rd">準備</span><span class="sp"></span><button id="snd" type="button" aria-label="音效開關" aria-pressed="true">🔊</button><button id="fast" type="button" aria-label="電腦回合快轉" aria-pressed="false">⏩</button><button id="back" type="button">離開</button></div>
   <div class="players" id="players"></div>
-  <div class="board" id="board"><div class="center" id="center"><div class="turn" id="turn"></div><div class="goal" id="goal" aria-live="polite"></div><div class="stage" id="stage"></div><div class="log" id="log" aria-live="polite"></div></div><div class="pawns" id="pawns"></div></div>
+  <div class="board" id="board"><div class="center" id="center"><div class="head"><div class="track" id="track"></div><div class="headR"><div class="turn" id="turn"></div><div class="goal" id="goal" aria-live="polite"></div></div></div><div class="stage" id="stage"></div><div class="log" id="log" aria-live="polite"></div></div><svg class="route" id="route" aria-hidden="true"></svg><div class="pawns" id="pawns"></div></div>
 </div>
 <script>
 'use strict';
-const VER = '0.6';
+const VER = '0.7';
 const A = '../assets/board/';
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TEST = /[?&]test=1/.test(location.search);
@@ -156,12 +173,21 @@ const CELLS = [
   [0, '集合碼頭', 'start', 6, 0], [1, '新朋友角', 'land', 5, 0], [2, '入口好消息', 'chance', 4, 0], [3, '看船前抓魚', 'mini', 3, 0, 'fish12'], [4, '看船小站', 'land', 2, 0],
   [5, '碼頭小插曲', 'fate', 1, 0], [6, '幫忙落貨櫃', 'mini', 0, 0, 'stack15'], [7, '鯨鯊朋友角', 'land', 0, 1], [8, '鯨鯊好消息', 'chance', 0, 2], [9, '小吃休息站', 'rest', 0, 3],
   [10, '港邊小吃攤', 'land', 1, 3], [11, '小吃街插曲', 'fate', 2, 3], [12, '清出飛行路', 'mini', 3, 3, 'fly15'], [13, '躲雨小屋', 'land', 4, 3], [14, '雨都好消息', 'chance', 5, 3],
-  [15, '回家小插曲', 'fate', 6, 3], [16, '再見小車站', 'land', 6, 2], [17, '再玩一小段', 'mini', 6, 1, 'pick']
+  [15, '回家小插曲', 'fate', 6, 3], [16, '再見小車站', 'land', 6, 2], [17, '再玩一小段', 'mini', 6, 1, 'pick'],
+  [18, '山城階梯', 'path', -1, -1], [19, '虎仔山看港', 'rest', -1, -1]      /* D484：山路窄軌（畫在舞台左上，不在外環） */
 ].map(([id, name, type, r, c, mini]) => ({ id, name, type, r, c, mini }));
-const BR = { 0: '集合|碼頭', 1: '新朋友|角', 2: '入口|好消息', 3: '看船前|抓魚', 4: '看船|小站', 5: '碼頭|小插曲', 6: '幫忙|落貨櫃', 7: '鯨鯊|朋友角', 8: '鯨鯊|好消息', 9: '小吃|休息站', 10: '港邊|小吃攤', 11: '小吃街|插曲', 12: '清出|飛行路', 13: '躲雨|小屋', 14: '雨都|好消息', 15: '回家|小插曲', 16: '再見|小車站', 17: '再玩|一小段' };
-const ICON = { start: '⚓', land: '🏠', chance: '✨', fate: '🌊', mini: '🎮', rest: '🍵' };
+/* D484：有向格線。外環 0→1→…→17→0；#3 是岔口：港邊 →4，山路 →18→19→7 */
+const FORK = 3, HILL = 18;
+const NEXT = CELLS.map(c => c.id === 18 ? 19 : c.id === 19 ? 7 : (c.id + 1) % 18);
+const step1 = (c, route) => c === FORK && route === 'hill' ? HILL : NEXT[c];
+function seqOf(pos, n, route) { const s = []; let c = pos; for (let i = 0; i < n; i++) { c = step1(c, route); s.push(c); } return s; }
+function crossFork(pos, n) { let c = pos; for (let i = 0; i < n; i++) { if (c === FORK) return true; c = NEXT[c]; } return false; }      /* 這一步會不會從岔口走出去 */
+const routesOf = (pos, n) => crossFork(pos, n) ? ['port', 'hill'] : ['port'];
+function dist(from, to) { const d = { [from]: 0 }, q = [from]; while (q.length) { const c = q.shift(); for (const x of c === FORK ? [4, HILL] : [NEXT[c]]) if (!(x in d)) { d[x] = d[c] + 1; q.push(x); } } return d[to] || 0; }      /* 最短要走幾格（自己＝0） */
+const BR = { 0: '集合|碼頭', 1: '新朋友|角', 2: '入口|好消息', 3: '看船前|抓魚', 4: '看船|小站', 5: '碼頭|小插曲', 6: '幫忙|落貨櫃', 7: '鯨鯊|朋友角', 8: '鯨鯊|好消息', 9: '小吃|休息站', 10: '港邊|小吃攤', 11: '小吃街|插曲', 12: '清出|飛行路', 13: '躲雨|小屋', 14: '雨都|好消息', 15: '回家|小插曲', 16: '再見|小車站', 17: '再玩|一小段', 18: '階梯', 19: '看港' };
+const ICON = { start: '⚓', land: '🏠', chance: '✨', fate: '🌊', mini: '🎮', rest: '🍵', path: '⛰️' };
 const ICON_IMG = { start: 'icon_start.png', land: 'icon_landmark.png', chance: 'icon_chance.png', fate: 'icon_fate.png', mini: 'icon_challenge.png', rest: 'icon_rest.png' };      /* D456：GPT 1830 六類格子圖示取代 emoji（文字說明裡的 emoji 不動） */
-const KIND = { land: '小站', chance: '機會', fate: '命運', mini: '短挑戰', rest: '休息', start: '起點' };
+const KIND = { land: '小站', chance: '機會', fate: '命運', mini: '短挑戰', rest: '休息', start: '起點', path: '山路' };
 const CHANCE = [
   ['C01', '港邊導覽完成，拿1顆星。', { type: 'star', d: 1 }], ['C02', '補給船到了，拿2個貝殼。', { type: 'shell', d: 2 }],
   ['C03', '選1顆星，或拿2個貝殼。', { type: 'choose' }], ['C04', '想換星嗎？付2個貝殼拿1顆星。', { type: 'trade', payShell: 2, star: 1 }],
@@ -205,7 +231,7 @@ function newGame() {
       { id: 2, name: '小卷夥伴', short: '小卷', img: 'pawn_cpu_2.png', col: 'var(--p2)', ai: 'squid' }
     ].map(p => Object.assign(p, { pos: 0, shell: 6, star: 0, evStar: 0, cards: 2, coupon: false, turn: 0, minis: 0, dests: 0, lands: [] })),
     dest: -1, destN: 0, lastDest: -1,
-    owner: Array(18).fill(-1),
+    owner: Array(CELLS.length).fill(-1),
     deck: { C: shuffle(CHANCE.slice()), F: shuffle(FATE.slice()) }, disc: { C: [], F: [] },
     order: shuffle([0, 1, 2]), log: []
   };
@@ -263,18 +289,27 @@ const reserve = p => p.ai === 'shark' && p.turn <= 4 ? 2 : 0;
 function drawBoard() {
   const b = $('board'); b.querySelectorAll('.tile').forEach(e => e.remove());
   for (const c of CELLS) {
-    const t = document.createElement('div'); t.className = 'tile ' + c.type; t.id = 'tile' + c.id; t.style.gridRow = c.r + 1; t.style.gridColumn = c.c + 1;
-    t.innerHTML = '<span class="no">' + c.id + '</span><span class="ic"><img alt="' + ICON[c.type] + '" src="' + A + ICON_IMG[c.type] + '"></span><span class="tn">' + (BR[c.id] || c.name).replace('|', '<br>') + '</span><span class="own"></span>';
-    b.appendChild(t);
+    const mt = c.r < 0, t = document.createElement('div'); t.className = 'tile ' + c.type + (mt ? ' mt' : ''); t.id = 'tile' + c.id; if (!mt) { t.style.gridRow = c.r + 1; t.style.gridColumn = c.c + 1; }
+    t.innerHTML = '<span class="no">' + c.id + '</span>' + (ICON_IMG[c.type] ? '<span class="ic"><img alt="' + ICON[c.type] + '" src="' + A + ICON_IMG[c.type] + '"></span>' : '<span class="em">' + ICON[c.type] + '</span>') + '<span class="tn">' + (BR[c.id] || c.name).replace('|', '<br>') + '</span><span class="own"></span>' + (c.id === FORK ? '<span class="fk" aria-label="岔路">岔路</span>' : '');
+    if (mt) { t.setAttribute('aria-label', c.name); $('track').prepend(t); } else b.appendChild(t);      /* 窄軌由下往上：18 在下、19 在上 */
   }
-  drawOwners(); drawPawns(); drawDest();
+  drawOwners(); drawPawns(); drawDest(); drawRoute();
+}
+/* D484：山路的虛線（#3 右邊 → 沿格縫往上 → 山城階梯；虎仔山 → #7） */
+function box(el) { const b = $('board').getBoundingClientRect(), r = el.getBoundingClientRect(); return { l: r.left - b.left, t: r.top - b.top, w: r.width, h: r.height, r: r.right - b.left, b: r.bottom - b.top, cx: r.left - b.left + r.width / 2, cy: r.top - b.top + r.height / 2 }; }
+function drawRoute() {
+  const sv = $('route'), a = $('tile' + FORK), m = $('tile18'), k = $('tile19'), e = $('tile7'); if (!sv || !a || !m || !k || !e) return;
+  const A3 = box(a), M = box(m), K = box(k), E = box(e), gx = (A3.r + M.l) / 2, y0 = A3.t + A3.h * .3, f = v => v.toFixed(1);
+  const d = 'M' + f(A3.r - 5) + ' ' + f(y0) + ' Q' + f(gx) + ' ' + f(y0) + ' ' + f(gx) + ' ' + f(y0 - 9) + ' L' + f(gx) + ' ' + f(M.cy + 7) + ' Q' + f(gx) + ' ' + f(M.cy) + ' ' + f(M.l + 3) + ' ' + f(M.cy) + ' M' + f(K.cx) + ' ' + f(K.t + 2) + ' L' + f(K.cx) + ' ' + f(E.b - 2);
+  const ay = (y0 + M.cy) / 2;
+  sv.innerHTML = '<path class="o" d="' + d + '"/><path class="i" d="' + d + '"/><path class="ar" d="M' + f(gx) + ' ' + f(ay - 7) + ' l6 10 h-12 z"/>';
 }
 /* ===== D483：目的地港口 ===== */
 const DEST_STAR = 3;
-const fwd = (from, to) => (to - from + 18) % 18;
 function newDest() {
-  const lands = CELLS.filter(c => c.type === 'land').map(c => c.id).filter(id => id !== G.lastDest);
-  const near = id => Math.min(...G.P.map(p => fwd(p.pos, id) || 18));      /* 最近的人還要走幾格（站在上面的算一整圈） */
+  const onHill = G.P.some(p => p.pos >= HILL);      /* D484：有人在山路上，這一檔不選 #4（GPT 1235：回到 #4 要 16～17 步，兩輪內走不到） */
+  const lands = CELLS.filter(c => c.type === 'land').map(c => c.id).filter(id => id !== G.lastDest && !(onHill && id === 4));
+  const near = id => Math.min(...G.P.map(p => dist(p.pos, id) || 18));      /* 最近的人還要走幾格（站在上面的算一整圈） */
   let cand = lands.filter(id => near(id) >= 4 && near(id) <= 9);
   if (!cand.length) cand = lands.filter(id => near(id) >= 2 && near(id) <= 12);
   if (!cand.length) cand = lands;
@@ -283,20 +318,27 @@ function newDest() {
 function drawDest() {
   document.querySelectorAll('.tile .dflag').forEach(e => e.remove()); document.querySelectorAll('.tile.dest').forEach(e => e.classList.remove('dest'));
   const g = $('goal'); if (!g || !G) return;
-  if (G.dest >= 0) { const t = $('tile' + G.dest); if (t) { t.classList.add('dest'); const f = document.createElement('span'); f.className = 'dflag'; f.textContent = '🚩'; f.setAttribute('aria-label', '目的地'); t.appendChild(f); } g.className = 'goal'; g.innerHTML = '🚩 <i>先到</i>「' + CELLS[G.dest].name + '」＋' + DEST_STAR + '⭐'; }
+  if (G.dest >= 0) { const t = $('tile' + G.dest); if (t) { t.classList.add('dest'); const f = document.createElement('span'); f.className = 'dflag'; f.innerHTML = '<img alt="目的地" src="' + A + 'dest_flag.png" style="width:100%;height:100%;display:block">'; t.appendChild(f); } g.className = 'goal'; g.innerHTML = '<span class="nb">🚩 ' + CELLS[G.dest].name + '</span> <span class="nb">先到 ＋' + DEST_STAR + '⭐</span>'; }
   else if (G.round >= 1 && G.round <= 4) { g.className = 'goal wait'; g.textContent = '🚩 第 ' + (G.round % 2 ? G.round + 2 : G.round + 1) + ' 輪有新目的地'; }
   else { g.className = 'goal'; g.textContent = ''; }
 }
-const willReach = (p, n) => G.dest >= 0 && fwd(p.pos, G.dest) >= 1 && fwd(p.pos, G.dest) <= n;
-/* 電腦選骰子：先搶旗，再看停的格子；一樣就走遠的 */
-function dieScore(p, n) {
-  const c = CELLS[(p.pos + n) % 18], o = G.owner[c.id]; let s = n * .01;
-  if (willReach(p, n)) s += 10;
-  if (p.pos + n >= 18) s += 1;
+const willReach = (p, n, route) => G.dest >= 0 && seqOf(p.pos, n, route).includes(G.dest);
+/* 電腦選骰子（D484：連同走哪條路）：先搶旗，再看停的格子；一樣就走遠的、走港邊 */
+function dieScore(p, n, route) {
+  const q = seqOf(p.pos, n, route), c = CELLS[q[q.length - 1]], o = G.owner[c.id]; let s = n * .01;
+  if (willReach(p, n, route)) s += 10;
+  if (q.includes(0)) s += 1;
   if (c.type === 'land') s += o === p.id ? 1 : o >= 0 ? -1 : (p.lands.length < 2 && p.shell - price(p) >= reserve(p) ? 3 : 0);
   else if (c.type === 'mini') s += p.minis < 3 ? 2.5 : .5;
   else if (c.type === 'chance' || c.type === 'rest') s += 1;
   return s;
+}
+function bestPlan(p, dice) { let b = null; for (const n of dice) for (const r of routesOf(p.pos, n)) { const s = dieScore(p, n, r); if (!b || s > b.s) b = { n, r, s }; } return b; }
+/* D484：選路按鈕上寫的「停在哪、會怎樣」，全部用現在的公開狀態算，不預抽牌 */
+function effText(p, id) {
+  const c = CELLS[id], o = G.owner[id];
+  if (c.type === 'land') return o === p.id ? '自己的小站 ＋1🐚' : o >= 0 ? '拜訪' + G.P[o].short + '的小站' : p.lands.length >= 2 ? '小站（已有 2 處）' : p.shell >= price(p) ? '可蓋小站 ' + price(p) + '🐚' : '小站（貝殼不夠）';
+  return c.type === 'rest' ? (p.shell >= 12 ? '貝殼已滿' : '＋1🐚') : c.type === 'chance' ? '抽機會' : c.type === 'fate' ? '抽命運' : c.type === 'mini' ? (p.minis < 3 ? '短挑戰' : '＋1🐚') : c.type === 'start' ? '回起點' : '沒有事件';
 }
 const DIE = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 function drawOwners() {
@@ -309,7 +351,7 @@ function drawOwners() {
 function drawPawns() {
   const layer = $('pawns'); if (!layer.children.length) for (const p of G.P) { const d = document.createElement('div'); d.className = 'pawn'; d.innerHTML = '<img alt="' + p.name + '" src="' + A + p.img + '">'; layer.appendChild(d); }
   const off = [[-.2, -.03], [.2, -.03], [0, .1]];      /* 三顆棋子錯開，都靠上半（圖示那半） */
-  for (const p of G.P) { const t = $('tile' + p.pos), d = layer.children[p.id], w = t.offsetWidth, h = t.offsetHeight, z = Math.min(w * .56, h * .56); d.style.width = d.style.height = z + 'px'; d.style.left = (t.offsetLeft + w * (.5 + off[p.id][0])) + 'px'; d.style.top = (t.offsetTop + h * (.42 + off[p.id][1])) + 'px'; d.classList.toggle('cur', G.cur === p); }
+  for (const p of G.P) { const t = $('tile' + p.pos), d = layer.children[p.id], B = box(t), w = B.w, h = B.h, z = Math.max(26, Math.min(w * .56, h * .56)); d.style.width = d.style.height = z + 'px'; d.style.left = (B.l + w * (.5 + off[p.id][0])) + 'px'; d.style.top = (B.t + h * (.42 + off[p.id][1])) + 'px'; d.classList.toggle('cur', G.cur === p); }      /* D484：用畫面位置算，窄軌上的格子也能站 */
 }
 /* D473：棋子跳一格（拋物線＋落地壓扁）、落地煙塵、格子被踩一下 */
 function hop(p, ms, i) {
@@ -354,7 +396,7 @@ function ask(msg, opts, extra) {
 /* ===== 回合 ===== */
 async function playTurn(p) {
   p.turn++; const tk = G.id + ':' + G.round + ':' + p.id; G.cur = p; drawPawns();
-  $('turn').innerHTML = '<img alt="" src="' + A + p.img + '">' + (p.human ? '換你了！' : p.name + '的回合');
+  $('turn').innerHTML = '<img alt="" src="' + A + p.img + '">' + (p.human ? '換你了！' : p.short + '的回合');
   document.querySelectorAll('.pl').forEach((e, i) => e.classList.toggle('on', i === p.id)); hl(p.pos);
   /* 章支援卡：骰前用 1 張 +1 殼 */
   if (p.cards > 0) {
@@ -377,22 +419,35 @@ async function playTurn(p) {
     for (const [id, v] of [['dice', d1], ['dice2', d2]]) { $(id).classList.remove('roll'); $(id).style.animationDelay = ''; setPips(v, id); void $(id).offsetWidth; $(id).classList.add('pop'); }
     sfx('land');
   }
-  let n = d1;
+  let n = d1, plan = null;
   if (d1 !== d2) {
     if (p.human) {
       await wait(RM ? 0 : 260);
-      const opt = d => { const c = CELLS[(p.pos + d) % 18]; $('tile' + c.id).classList.add('cand'); return { t: DIE[d] + ' ' + d + ' 點<small>→ ' + c.name + (willReach(p, d) ? ' 🚩＋' + DEST_STAR + '⭐' : '') + '</small>', v: d, d, reach: willReach(p, d), cell: c.id }; };
+      /* D484：這顆骰子會走過岔口 → 兩條路的落點都框起來，按鈕寫「到岔路再選」；有任一條路能拿旗就標出來 */
+      const opt = d => { const rs = routesOf(p.pos, d), ends = rs.map(r => seqOf(p.pos, d, r).pop()), reach = rs.some(r => willReach(p, d, r)); ends.forEach(id => $('tile' + id).classList.add('cand')); return { t: DIE[d] + ' ' + d + ' 點<small>→ ' + (rs.length > 1 ? '到岔路再選路' : CELLS[ends[0]].name) + (reach ? (rs.length > 1 && !rs.every(r => willReach(p, d, r)) ? ' 🚩可搶' : ' 🚩＋' + DEST_STAR + '⭐') : '') + '</small>', v: d, d, reach, cell: ends[0], cells: ends }; };
       n = await ask('選 1 顆骰子走', [opt(d1), opt(d2)]);
       document.querySelectorAll('.tile.cand').forEach(e => e.classList.remove('cand'));
-    } else { n = dieScore(p, d2) > dieScore(p, d1) ? d2 : d1; $('dmsg').textContent = p.name + '擲出 ' + d1 + ' 和 ' + d2; await wait(RM ? 150 : 380); }
+    } else { plan = bestPlan(p, [d1, d2]); n = plan.n; $('dmsg').textContent = p.name + '擲出 ' + d1 + ' 和 ' + d2; await wait(RM ? 150 : 380); }
   } else if (p.human) { $('dmsg').textContent = '兩顆都是 ' + d1 + ' 點！'; await wait(RM ? 150 : 420); }
+  if (!p.human && !plan) plan = bestPlan(p, [n]);
   G.lastRoll = [d1, d2, n];
   center(diceHtml(n) + '<div class="dnum">' + n + ' 點</div><div class="msg">' + who + (d1 !== d2 ? '選了 ' : '擲出 ') + n + ' 點</div>');
   if (!RM && !TEST) $('dice').classList.add('pop');
   await wait(RM ? 200 : p.human ? 480 : 330);
   for (let s = 0; s < n; s++) {
     const ms = (RM ? 40 : p.human ? 230 : 170) * spd();
-    p.pos = (p.pos + 1) % 18; drawPawns(); hop(p, ms, s); hl(-1);
+    let route = 'port';
+    if (p.pos === FORK) {      /* D484：站在岔口而且還有步數 → 選路 */
+      const left = n - s;
+      if (p.human) {
+        const o = r => { const q = seqOf(p.pos, left, r), id = q[q.length - 1]; $('tile' + id).classList.add('cand'); return { t: (r === 'hill' ? '⛰️ 走山路' : '🌊 走港邊') + '<small>→ ' + CELLS[id].name + '・' + effText(p, id) + (G.dest >= 0 && q.includes(G.dest) ? ' 🚩＋' + DEST_STAR + '⭐' : '') + '</small>', v: r, route: r, cell: id, reach: G.dest >= 0 && q.includes(G.dest) }; };
+        hl(FORK); route = await ask('岔路！還要走 ' + left + ' 格', [o('port'), o('hill')], '<div class="sub opt">山路少走 1 格</div>');
+        document.querySelectorAll('.tile.cand').forEach(e => e.classList.remove('cand'));
+        center(diceHtml(n) + '<div class="msg">' + (route === 'hill' ? '⛰️ 走山路！' : '🌊 走港邊！') + '</div>');
+      } else { route = plan && plan.r || 'port'; center('<div class="msg">' + (route === 'hill' ? '⛰️ ' + p.name + '走山路' : '🌊 ' + p.name + '走港邊') + '</div>'); await wait(RM ? 150 : 380); }
+      G.lastFork = [p.id, route, left]; if (route === 'hill') log(p.name + ' 在岔路走山路');
+    }
+    p.pos = step1(p.pos, route); drawPawns(); hop(p, ms, s); hl(-1);
     if (p.pos === 0 && once(tk + ':pass')) { addShell(p, 2); log(p.name + ' 經過集合碼頭，＋2🐚'); toast('＋2🐚'); }
     await waitRaw(ms);
     if (p.pos === G.dest && once('dest:' + G.destN)) {      /* D483：第一個走到（或經過）目的地 */
@@ -412,7 +467,8 @@ async function land(p, tk) {
   const c = CELLS[p.pos], who = p.human ? '你' : p.name;
   if (!once(tk + ':land')) return;
   if (c.type === 'start') { center('<div class="msg">' + who + '回到集合碼頭</div>'); await nw(p, 900, 600); return; }
-  if (c.type === 'rest') { addShell(p, 1); log(p.name + ' 在小吃休息站，＋1🐚'); center('<div class="msg">🍵 ' + who + '在休息站喝口茶</div><div class="sub">＋1🐚，繼續前進</div>'); toast('＋1🐚'); await nw(p, 1300, 850); return; }
+  if (c.type === 'path') { log(p.name + ' 停在「' + c.name + '」'); center('<div class="msg">⛰️ ' + who + '爬上' + c.name + '</div><div class="sub">沒有事件，下一回合繼續往上</div>'); await nw(p, 1000, 700); return; }
+  if (c.type === 'rest') { const hill = c.id === 19, got = addShell(p, 1); log(p.name + ' 在' + c.name + '，' + (got ? '＋1🐚' : '貝殼已滿')); center('<div class="msg">' + (hill ? '⛰️ ' + who + '在虎仔山看港' : '🍵 ' + who + '在休息站喝口茶') + '</div><div class="sub">' + (got ? '＋1🐚' : '貝殼已滿') + '，繼續前進</div>'); if (got) toast('＋1🐚'); await nw(p, 1300, 850); return; }
   if (c.type === 'land') return landTile(p, c);
   if (c.type === 'chance' || c.type === 'fate') return cardTile(p, c.type === 'chance' ? 'C' : 'F', tk);
   if (c.type === 'mini') return miniTile(p, c, tk);
@@ -490,7 +546,7 @@ async function intro() {
     $('go').onclick = res;
     $('how').onclick = () => {
       center('<div class="intro"><ul>'
-        + '<li>每人 6 回合，擲 2 顆骰子選 1 顆走</li><li>🚩 先到目的地 ＋3⭐（第 1、3、5 輪換）</li><li>🏠 花 3🐚 蓋小站（最多 2 處），結算各 ＋2⭐</li><li>✨ 機會 🌊 命運 抽卡立刻生效</li><li>🎮 短挑戰拿星，⚓ 過起點 ＋2🐚</li><li>🎫 章卡：骰前 ＋1🐚，每人 2 張</li></ul></div><div class="btns"><button type="button" id="go2">開始一局</button></div>');
+        + '<li>每人 6 回合，擲 2 顆骰子選 1 顆走</li><li>🚩 先到目的地 ＋3⭐（第 1、3、5 輪換）</li><li>⛰️ 岔路可走山路，少走 1 格</li><li>🏠 花 3🐚 蓋小站（最多 2 處），結算各 ＋2⭐</li><li>✨ 機會 🌊 命運 抽卡立刻生效</li><li>🎮 短挑戰拿星，⚓ 過起點 ＋2🐚</li><li>🎫 章卡：骰前 ＋1🐚，每人 2 張</li></ul></div><div class="btns"><button type="button" id="go2">開始一局</button></div>');
       $('go2').onclick = res;
     };
     if (window.__autoHuman) setTimeout(res, 5);
@@ -508,7 +564,7 @@ async function game() {
     if (r % 2 === 0) {      /* D483：第 1、3、5 輪公布新目的地 */
       if (G.dest >= 0) log('沒有人走到「' + CELLS[G.dest].name + '」，換新的目的地');
       newDest(); drawDest(); hl(G.dest); sfx('flag'); log('🚩 新目的地：「' + CELLS[G.dest].name + '」，先到 ＋' + DEST_STAR + '⭐');
-      center('<div class="msg" style="font-size:20px">第 ' + G.round + ' 輪</div><div class="msg">🚩 新目的地<br>「' + CELLS[G.dest].name + '」</div><div class="sub">第一個走到的人 ＋' + DEST_STAR + '⭐<br>' + os + '</div>'); await wait(RM ? 1500 : 1900); hl(-1);
+      center('<div class="msg" style="font-size:20px">第 ' + G.round + ' 輪</div><img alt="" class="dimg" src="' + A + 'dest_flag.png"><div class="msg">新目的地<br>「' + CELLS[G.dest].name + '」</div><div class="sub">第一個走到的人 ＋' + DEST_STAR + '⭐<br>' + os + '</div>'); await wait(RM ? 1500 : 1900); hl(-1);
     } else { drawDest(); center('<div class="msg" style="font-size:20px">第 ' + G.round + ' 輪</div><div class="sub">' + os + '</div>'); await wait(900); }
     for (const i of ord) await playTurn(G.P[i]);
     G.cur = null;
@@ -534,9 +590,9 @@ $('back').onclick = () => { if (!G || !G.round || confirmLeave()) leave(); };
 function confirmLeave() { return window.confirm ? confirm('離開就結束這一局（不會存檔），確定嗎？') : true; }
 $('snd').onclick = () => { SND = !SND; $('snd').textContent = SND ? '🔊' : '🔇'; $('snd').setAttribute('aria-pressed', SND); sfx('tap'); };
 $('fast').onclick = () => { FAST = !FAST; $('fast').classList.toggle('on', FAST); $('fast').setAttribute('aria-pressed', FAST); sfx('tap'); };
-addEventListener('resize', () => { if (G) drawPawns(); });
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (G) drawPawns(); });
-window.__board = { get G() { return G; }, VER, get FAST() { return FAST; } };
+addEventListener('resize', () => { if (G) { drawPawns(); drawRoute(); } });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (G) { drawPawns(); drawRoute(); } });
+window.__board = { get G() { return G; }, VER, get FAST() { return FAST; }, seqOf, routesOf, dist, CELLS };
 game();
 </script>
 </body></html>
