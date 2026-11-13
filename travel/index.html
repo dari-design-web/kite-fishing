@@ -364,7 +364,7 @@ header .back,.letter .skip{min-height:44px;min-width:44px;display:inline-flex;al
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.97',
+  version: '0.98',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 0,      // D80：遠行便當改用點數換，不再每 3 趟送 1 份（0＝關閉）
@@ -728,6 +728,7 @@ const PET = (() => {
      0.3 秒回正 → 展翅抖一下＋愛心＋回一句。沒滑夠、滑出去、被其他動作接手就還原，不回話。短點照原本跳一下回話；
      橫滑交給房間捲動（touch-action:pan-x）。這一次開啟期間第二次短點會提示一次「順著翅膀往下滑」。減少動態不傾身、只回話。不存檔、不加分。 */
   const PREEN = { start: 12, done: 24, ratio: 1.25, deg: 8, back: 0.3, flap: 1.1 };
+  const preenImg = new Image(); preenImg.onload = () => { preenImg.ok = true; }; preenImg.src = 'assets/kite_home_preen.png';      /* D480：GPT 0830 Q1 順羽表情（彎彎眼＋紅臉頰），跟手傾身那段換上；沒載到照原圖 */
   let pr = null, prEat = 0, prTold = false, prTaps = 0, prN = 0;
   function preenOk() { return S.state === 'home' && S.firstDone && ROOM().id === 'living' && p.act !== 'nap'; }
   function preenEnd(ok) {
@@ -817,7 +818,7 @@ const PET = (() => {
       { const ok = preenOk(); if (b.classList.contains('pre') !== ok) b.classList.toggle('pre', ok); }
       if (calm) { bob = 0; rot = 0; sq = 1; }
       const scale = 0.86 + (p.y - AREA.y0) / (AREA.y1 - AREA.y0) * 0.16, w = 34 * scale;
-      const rid = ROOM().pet || ROOM().id, key = rid !== 'living' ? 'kite_' + rid + '_' + (p.act === 'nap' ? 'nap' : p.pose === 'wave' ? 'wave' : 'home') : p.act === 'nap' ? 'kite_nap' : p.pose === 'wave' ? 'kite_wave' : p.pose === 'pack' ? 'kite_pack' : p.pose === 'back' ? 'kite_back' : 'kite_home';      // v0.16：其他四間用 G-47 第二批換裝圖      // v0.14：打瞌睡換閉眼圖
+      const rid = ROOM().pet || ROOM().id, key = rid !== 'living' ? 'kite_' + rid + '_' + (p.act === 'nap' ? 'nap' : p.pose === 'wave' ? 'wave' : 'home') : p.act === 'nap' ? 'kite_nap' : p.act === 'preen' && preenImg.ok ? 'kite_home_preen' : p.pose === 'wave' ? 'kite_wave' : p.pose === 'pack' ? 'kite_pack' : p.pose === 'back' ? 'kite_back' : 'kite_home';      // v0.16：其他四間用 G-47 第二批換裝圖      // v0.14：打瞌睡換閉眼圖
       if (b.dataset.k !== key) { b.style.backgroundImage = 'url(assets/' + key + '.png)'; b.dataset.k = key; }
       const hPct = w * ROOMDIM.w / ROOMDIM.h;      // 舞台實際寬高（fitRoom 算的），換算成高度的百分比
       b.style.width = w + '%'; b.style.left = (p.x - w / 2) + '%'; b.style.top = (p.y - hPct * 0.92) + '%';
@@ -837,7 +838,7 @@ const PET = (() => {
   }
   requestAnimationFrame(frame);
   return {
-    preen() { return { ok: preenOk(), on: !!(pr && pr.on), k: pr ? pr.k : 0, lean: p.lean || 0, act: p.act, pose: p.pose, n: prN, told: prTold, say: p.say, x: p.x, y: p.y }; },      /* D479 測試掛勾 */
+    preen() { return { img: $('bird').dataset.k, ok: preenOk(), on: !!(pr && pr.on), k: pr ? pr.k : 0, lean: p.lean || 0, act: p.act, pose: p.pose, n: prN, told: prTold, say: p.say, x: p.x, y: p.y }; },      /* D479 測試掛勾 */
     freeze(sec) { p.act = 'idle'; p.t = 0; p.dur = sec || 30; p.then = null; },
     hide() { $('sayBox').classList.add('off'); $('emote').hidden = true; p.sayT = 0; p.emoT = 0; },
     center() { const v = $('roomview'); v.scrollLeft = Math.max(0, p.x / 100 * ROOMDIM.w - v.clientWidth / 2); v.dispatchEvent(new Event('scroll')); },
@@ -1363,10 +1364,10 @@ function travelBgmSync() { if (travelBgmOn) BGM.play('travel_' + ({ ranch: 'scho
   document.addEventListener('pointerdown', () => { if (travelBgmOn) travelBgmSync(); }, { passive: true });
 })();
 </script>
-<script src="cook.js?v=0.97"></script>
+<script src="cook.js?v=0.98"></script>
 <script src="boat.js?v=0.90"></script>
-<script src="wipe.js?v=0.97"></script>
-<script src="home.js?v=0.97"></script>
+<script src="wipe.js?v=0.98"></script>
+<script src="home.js?v=0.98"></script>
 <script src="../shared/back_line.js?v=2"></script>
 <script>/* D104：旅行排行榜（明信片收藏數） */ if (window.KiteLB) { KiteLB.button(document.getElementById('lbSlot'), { title: '小鳶旅行收藏排行', travel: true }); setTimeout(function () { try { pushTravelStat(); } catch (e) {} }, 1500); }</script>
 </body>
