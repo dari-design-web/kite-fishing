@@ -215,6 +215,21 @@ body{background:#0E2232;color:var(--ink);font-family:var(--round);-webkit-user-s
 .supp img{width:40px;height:40px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px var(--ink)}
 @media (max-height:600px){.sub.opt{display:none}.dimg{width:36px;height:36px}.tile.mt{min-height:31px}.tile.mt .em{font-size:14px}.tile.mt .tn{font-size:8.5px}.log{height:3.1em}.dice{width:64px;height:64px;padding:14px}.dice i{width:9px;height:9px}.btns button{min-height:44px}.btns button.big{min-height:48px;font-size:17px}.btns.g2 button{min-height:40px}.btns.g2 .wide,.btns button.slim{min-height:32px}}
 @media (prefers-reduced-motion:reduce){.pawn{transition:none}.dice.roll,.dice.pop,.dnum,.card,.pl.bump,.cc.in,.tile.step,.tile.hl,.tile.built,.tile .flag.new,.tile .dflag,.btns button.big,.res .row,.pl .st .pop b{animation:none}.tile.hl{box-shadow:0 0 0 3px #fff,0 0 12px 4px #FFE08A}.cc,.cc.face{transition:none}}
+.rcap{width:100%;flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.rh{font-size:13px;font-weight:900;color:#3A5466;background:#fff;border-radius:99px;padding:2px 12px}.rh b{color:#C2410C}
+.rbody{width:100%;min-height:128px;display:flex;align-items:center;justify-content:center}
+.ritem{width:100%;display:flex;flex-direction:column;align-items:center;gap:8px;animation:rcin .32s cubic-bezier(.2,1.5,.5,1)}
+@keyframes rcin{0%{transform:translateY(18px) scale(.8);opacity:0}}
+.rimg{position:relative;width:74px;height:74px;border-radius:50%;background:#FFF1C2;box-shadow:0 0 0 3px var(--sun),0 3px 0 3px var(--ink);display:flex;align-items:center;justify-content:center}
+.rimg .ric{width:50px;height:50px;object-fit:contain}.rimg .rpw{position:absolute;right:-12px;bottom:-8px;width:38px;height:38px;object-fit:contain;filter:drop-shadow(0 1px 1px rgba(16,41,61,.4))}
+.rt{font-size:15px;font-weight:900;line-height:1.4;padding:0 4px}
+.rdots{display:flex;gap:6px}.rdots i{width:8px;height:8px;border-radius:50%;background:#C9D6DE}.rdots i.on{background:var(--sun);box-shadow:0 0 0 1.5px var(--ink)}
+.rrow{position:relative;width:100%;display:grid;grid-template-columns:26px 1fr;align-items:center;gap:7px;background:#fff;border-radius:10px;padding:4px 5px;font-size:12.5px;font-weight:900;line-height:1.3;text-align:left}
+.rrow .ric{width:24px;height:24px;object-fit:contain}.rrow .rpw{position:absolute;left:19px;bottom:1px;width:17px;height:17px;object-fit:contain}
+.rcap.st{gap:4px}
+.btns.rb{flex:none}
+@media (max-height:600px){.rcap.st .rh{display:none}.rcap.st{gap:3px}.rrow{font-size:11.5px;line-height:1.25;padding:2px 4px}.rbody{min-height:92px}.rimg{width:54px;height:54px}.rimg .ric{width:36px;height:36px}.rimg .rpw{width:28px;height:28px;right:-9px;bottom:-6px}.rt{font-size:14px}.rcap{gap:5px}.ritem{gap:5px}}
+@media (prefers-reduced-motion:reduce){.ritem{animation:none}}
 </style></head><body>
 <div class="app">
   <div class="top"><h1>港口大富翁</h1><span class="rd" id="rd">準備</span><span class="sp"></span><button id="snd" type="button" aria-label="音效開關" aria-pressed="true">🔊</button><button id="fast" type="button" aria-label="電腦回合快轉" aria-pressed="false">⏩</button><button id="back" type="button">離開</button></div>
@@ -223,7 +238,7 @@ body{background:#0E2232;color:var(--ink);font-family:var(--round);-webkit-user-s
 </div>
 <script>
 'use strict';
-const VER = '1.0';
+const VER = '1.1';
 const A = '../assets/board/';
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TEST = /[?&]test=1/.test(location.search);
@@ -292,7 +307,7 @@ function newGame() {
       { id: 1, name: '鯨鯊夥伴', short: '鯨鯊', img: 'pawn_cpu_1.png', col: 'var(--p1)', ai: 'shark' },
       { id: 2, name: '小卷夥伴', short: '小卷', img: 'pawn_cpu_2.png', col: 'var(--p2)', ai: 'squid' }
     ].map(p => Object.assign(p, { pos: 0, shell: 6, star: 0, evStar: 0, cards: 2, adj: 1, coupon: false, turn: 0, minis: 0, dests: 0, lands: [] })),
-    dest: -1, destN: 0, lastDest: -1,
+    dest: -1, destN: 0, lastDest: -1, ev: [],
     owner: Array(CELLS.length).fill(-1),
     deck: { C: shuffle(CHANCE.slice()), F: shuffle(FATE.slice()) }, disc: { C: [], F: [] },
     order: shuffle([0, 1, 2]), log: []
@@ -539,7 +554,7 @@ async function playTurn(p) {
     if (p.pos === 0 && once(tk + ':pass')) { addShell(p, 2); log(p.name + ' 經過集合碼頭，＋2🐚'); toast('＋2🐚'); }
     await waitRaw(ms);
     if (p.pos === G.dest && once('dest:' + G.destN)) {      /* D483：第一個走到（或經過）目的地 */
-      const nm = CELLS[G.dest].name; G.dest = -1; p.dests++; drawDest(); addStar(p, DEST_STAR); sfx('flag');
+      const nm = CELLS[G.dest].name; G.ev.push({ t: 'flag', pid: p.id, cell: G.dest }); G.dest = -1; p.dests++; drawDest(); addStar(p, DEST_STAR); sfx('flag');
       log('🚩 ' + p.name + ' 先到目的地「' + nm + '」，＋' + DEST_STAR + '⭐'); toast('🚩 ＋' + DEST_STAR + '⭐');
       if (s < n - 1) { center('<div class="msg" style="font-size:18px">🚩 ' + who + '先到目的地！</div><div class="sub">「' + nm + '」＋' + DEST_STAR + '⭐<br>還要再走 ' + (n - 1 - s) + ' 格</div>'); await wait(RM ? 300 : p.human ? 900 : 650); }
       else { center('<div class="msg" style="font-size:18px">🚩 ' + who + '先到目的地！</div><div class="sub">「' + nm + '」＋' + DEST_STAR + '⭐</div>'); await wait(RM ? 300 : p.human ? 900 : 650); }
@@ -574,7 +589,7 @@ async function landTile(p, c) {
   if (p.human) buy = await ask('「' + c.name + '」還沒有人蓋', [{ t: '花 ' + pr + '🐚 蓋小站', v: true, off: !can }, { t: '先不要', v: false, alt: true }], '<div class="sub">蓋了結算時 ＋2⭐（最多 2 處）' + (p.lands.length >= 2 ? '<br>你已經有 2 處小站了' : p.shell < pr ? '<br>貝殼不夠' : '') + '</div>');
   else buy = can && p.shell - pr >= reserve(p);
   if (buy && can) {
-    p.shell -= pr; if (p.coupon) p.coupon = false; p.lands.push(c.id); G.owner[c.id] = p.id; drawOwners(); drawPlayers(); bump(p, '.sH'); built(c.id);
+    p.shell -= pr; if (p.coupon) p.coupon = false; p.lands.push(c.id); G.owner[c.id] = p.id; G.ev.push({ t: 'land', pid: p.id, cell: c.id }); drawOwners(); drawPlayers(); bump(p, '.sH'); built(c.id);
     log(p.name + ' 花 ' + pr + '🐚 蓋了「' + c.name + '」（結算 ＋2⭐）'); center('<div class="msg">🏠 ' + who + '蓋了「' + c.name + '」</div><div class="sub">結算時 ＋2⭐</div>'); toast('🏠 蓋好了！'); await nw(p, 1400, 1050);
   } else if (!p.human) { center('<div class="msg">' + p.name + ' 先不蓋</div>'); await wait(650); }
 }
@@ -820,7 +835,7 @@ async function miniTile(p, c, tk) {
   G.lastMini = { by: p.id, kind, n: R.map(r => r.n), lv: R.map(r => r.lv), win: w ? w.q.id : -1 };
   log(M.ic + ' ' + M.word + '：' + R.map(r => r.q.short + ' ' + r.n + ' ' + M.unit).join('、') + (w ? '；' + w.q.name + ' ＋2⭐' : '；' + M.none));
   center('<div class="msg">' + M.ic + ' ' + M.word + '結果</div><div class="mres">' + R.map(r => '<div class="r' + (r === w ? ' win' : '') + '"><img alt="" src="' + A + r.q.img + '"><span>' + (r.q.human ? '你' : r.q.short) + '</span><span>' + M.em + ' ' + r.n + (r === w ? ' <b>＋2⭐</b>' : '') + '</span></div>').join('') + '</div><div class="sub">' + (w ? (tie.length > 1 ? '一樣多，抽籤決定<br>' : '') + (w.q.human ? '你' : w.q.name) + '第一名！' : M.none) + '</div>');
-  if (w) { await wait(RM ? 200 : 500); addStar(w.q, 2); toast((w.q.human ? '你' : w.q.short) + ' ＋2⭐'); }
+  if (w) { G.ev.push({ t: 'mini', pid: w.q.id, cell: c.id, kind, n: top }); await wait(RM ? 200 : 500); addStar(w.q, 2); toast((w.q.human ? '你' : w.q.short) + ' ＋2⭐'); }
   await wait(1900);
 }
 
@@ -854,7 +869,52 @@ async function game() {
     for (const i of ord) await playTurn(G.P[i]);
     G.cur = null;
   }
+  await recap();
   settle();
+}
+/* ===== D488：局末回顧（GPT 1640 Q1）：最多 3 則，旗子／短挑戰勝出／建站各取最新 1 則，不足依旗子 → 短挑戰 → 建站補較新的，再照發生順序播 ===== */
+const RECAP = { max: 3, each: 1100, cap: 3500 };
+const RC_IC = { flag: 'dest_flag.png', mini: 'icon_challenge.png', land: 'icon_landmark.png' };
+const RC_VERB = { fish12: n => '抓到 ' + n + ' 條魚', stack15: n => '疊好 ' + n + ' 個貨櫃', fly15: n => '清掉 ' + n + ' 件垃圾' };
+function recapPick() {
+  const E = G.ev.map((e, i) => Object.assign({ i }, e)), by = t => E.filter(e => e.t === t).reverse(), L = { flag: by('flag'), mini: by('mini'), land: by('land') }, out = [];
+  for (const t of ['flag', 'mini', 'land']) if (L[t].length) out.push(L[t].shift());
+  for (const t of ['flag', 'mini', 'land']) while (out.length < RECAP.max && L[t].length) out.push(L[t].shift());
+  return out.slice(0, RECAP.max).sort((a, b) => a.i - b.i);
+}
+function recapText(e) {
+  const p = G.P[e.pid], who = p.human ? '你' : p.short, nm = CELLS[e.cell].name;
+  if (e.t === 'flag') return who + '先到' + nm + '，拿到 ' + DEST_STAR + ' 顆星！';
+  if (e.t === 'mini') return who + RC_VERB[e.kind](e.n) + '，拿到 2 顆星！';
+  return who + '在' + nm + '蓋好一座小站！';
+}
+const recapIcons = e => '<img alt="" class="ric" src="' + A + RC_IC[e.t] + '"><img alt="" class="rpw" src="' + A + G.P[e.pid].img + '">';
+async function recap() {
+  const L = recapPick(); window.__recap = L.map(e => ({ t: e.t, pid: e.pid, text: recapText(e) }));
+  if (!L.length) return;
+  $('rd').textContent = '回顧'; document.querySelectorAll('.pl').forEach(e => e.classList.remove('on')); $('turn').textContent = ''; G.dest = -1; drawDest();
+  if (RM) {      /* 減少動態：同一份靜態清單，玩家自己按「看結果」 */
+    await new Promise(res => {
+      center('<div class="rcap st"><div class="rh">這局回顧</div>' + L.map(e => '<div class="rrow">' + recapIcons(e) + '<span>' + recapText(e) + '</span></div>').join('') + '</div><div class="btns rb"><button type="button" id="rgo">看結果</button></div>');
+      $('rgo').onclick = () => { sfx('tap'); res(); };
+      if (window.__autoHuman || TEST) setTimeout(res, 5);
+    });
+    return;
+  }
+  let skip = false, wake = null;
+  const t0 = performance.now(), each = Math.min(RECAP.each, (RECAP.cap - 150) / L.length);
+  center('<div class="rcap"><div class="rh">這局回顧 <b id="rn"></b></div><div id="rbody" class="rbody"></div><div class="rdots">' + L.map(() => '<i></i>').join('') + '</div></div><div class="btns rb"><button type="button" class="alt slim" id="rskip">跳過回顧</button></div>');
+  $('rskip').onclick = () => { skip = true; sfx('tap'); if (wake) wake(); };
+  for (let k = 0; k < L.length && !skip; k++) {
+    const e = L[k];
+    $('rn').textContent = (k + 1) + '／' + L.length;
+    $('rbody').innerHTML = '<div class="ritem"><div class="rimg">' + recapIcons(e) + '</div><div class="rt">' + recapText(e).replace('，', '，<br>') + '</div></div>';
+    document.querySelectorAll('.rdots i').forEach((d, j) => d.classList.toggle('on', j <= k));
+    hl(e.cell); sfx(e.t === 'flag' ? 'flag' : e.t === 'land' ? 'build' : 'star');
+    await Promise.race([wait(each), new Promise(r => { wake = r; })]);
+  }
+  window.__recapMs = Math.round(performance.now() - t0);
+  hl(-1);
 }
 function settle() {
   $('rd').textContent = '結算'; document.querySelectorAll('.pl').forEach(e => e.classList.remove('on')); G.cur = null; $('turn').textContent = ''; G.P.forEach(p => { p.hold = null; }); drawPlayers(); G.dest = -1; drawDest();
