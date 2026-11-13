@@ -47,6 +47,7 @@ header h1{font-size:20px;margin:0;flex:1}
 .room .props{position:absolute;inset:0;pointer-events:none}
 .room .props i{position:absolute;font-style:normal;line-height:1;transform:translate(-50%,-100%);filter:drop-shadow(0 2px 2px rgba(0,0,0,.18))}
 .room .phtag{position:absolute;right:8px;bottom:8px;z-index:140;font-size:11px;color:#fff;background:rgba(43,58,64,.7);border-radius:999px;padding:2px 9px;pointer-events:none}
+.bird.pre{touch-action:pan-x}
 .bird .acc{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
 .scenes{display:flex;gap:6px}
 .scenes button{flex:1;min-width:0;border:0;border-radius:12px;padding:5px 0 4px;background:rgba(255,247,234,.16);color:#FFF4E2;font:inherit;font-size:12px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2}
@@ -363,7 +364,7 @@ header .back,.letter .skip{min-height:44px;min-width:44px;display:inline-flex;al
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '0.96',
+  version: '0.97',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 0,      // D80：遠行便當改用點數換，不再每 3 趟送 1 份（0＝關閉）
@@ -722,8 +723,54 @@ const PET = (() => {
     let tot = acts.reduce((s, a) => s + a[0], 0), k = Math.random() * tot;
     for (const a of acts) { k -= a[0]; if (k <= 0) { a[1](); return; } }
   }
+  /* D479（GPT 2330 Q2，數值 Claude 定）：客廳「順順小鳶的翅羽」。小鳶在家、醒著、在客廳時，從小鳶身上往下滑一筆：
+     滑過 12px（且往下的距離 ≥ 橫向 1.25 倍）開始跟手往摸的那一側傾身（最多 8°、微微蹲低），滑到 24px 並在小鳶身上放開才算完成：
+     0.3 秒回正 → 展翅抖一下＋愛心＋回一句。沒滑夠、滑出去、被其他動作接手就還原，不回話。短點照原本跳一下回話；
+     橫滑交給房間捲動（touch-action:pan-x）。這一次開啟期間第二次短點會提示一次「順著翅膀往下滑」。減少動態不傾身、只回話。不存檔、不加分。 */
+  const PREEN = { start: 12, done: 24, ratio: 1.25, deg: 8, back: 0.3, flap: 1.1 };
+  let pr = null, prEat = 0, prTold = false, prTaps = 0, prN = 0;
+  function preenOk() { return S.state === 'home' && S.firstDone && ROOM().id === 'living' && p.act !== 'nap'; }
+  function preenEnd(ok) {
+    const d = pr; pr = null; if (!d) return;
+    window.removeEventListener('pointermove', preenMove); window.removeEventListener('pointerup', preenUp); window.removeEventListener('pointercancel', preenCancel);
+    if (!d.on) return;
+    prEat = performance.now() + 400;
+    if (p.act !== 'preen') return;
+    if (!ok) { p.act = 'idle'; p.t = 0; p.dur = 0.6; p.lean0 = p.lean; p.leanT = PREEN.back; return; }
+    prN++; prTold = true; p.lean0 = p.lean; p.leanT = PREEN.back; p.act = 'flap'; p.pose = 'wave'; p.t = 0; p.dur = PREEN.flap; p.then = null;
+    emote('heart', true); say(pick(['舒服多了～', '羽毛順順的，好舒服～', '嘿嘿，再摸一下嘛～']), 2.4);
+    if (typeof travelBgmOn !== 'undefined' && travelBgmOn) BGM.sfx('pop');
+  }
+  function preenMove(e) {
+    const d = pr; if (!d || e.pointerId !== d.id) return;
+    const dx = e.clientX - d.x, dy = e.clientY - d.y;
+    if (!d.on) {
+      if (Math.abs(dx) > 10 && Math.abs(dx) > dy) return preenEnd(false);
+      if (dy < PREEN.start || dy < Math.abs(dx) * PREEN.ratio) return;
+      if (!preenOk()) return preenEnd(false);
+      d.on = true; p.act = 'preen'; p.t = 0; p.dur = 99; p.then = null; p.pose = 'home'; p.leanT = 0; roomUserT = performance.now();
+    }
+    if (p.act !== 'preen') return preenEnd(false);
+    d.k = Math.max(0, Math.min(1, dy / PREEN.done)); d.dy = dy; p.lean = d.side * PREEN.deg * d.k; p.leanK = d.k; roomUserT = performance.now();
+    if (e.cancelable) e.preventDefault();
+  }
+  function preenUp(e) {
+    const d = pr; if (!d || e.pointerId !== d.id) return;
+    const r = $('bird').getBoundingClientRect(), m = 12, inside = e.clientX >= r.left - m && e.clientX <= r.right + m && e.clientY >= r.top - m && e.clientY <= r.bottom + m;
+    preenEnd(d.on && d.dy >= PREEN.done && inside);
+  }
+  function preenCancel(e) { if (pr && e.pointerId === pr.id) preenEnd(false); }
+  function preenDown(e) {
+    if (pr || !preenOk() || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    const r = $('bird').getBoundingClientRect(); if (!r.width) return;
+    const rx = (e.clientX - r.left) / r.width;
+    pr = { id: e.pointerId, x: e.clientX, y: e.clientY, side: rx < 0.5 ? -1 : 1, on: false, k: 0, dy: 0 };
+    window.addEventListener('pointermove', preenMove, { passive: false }); window.addEventListener('pointerup', preenUp); window.addEventListener('pointercancel', preenCancel);
+  }
   function tap() {
     if (S.state === 'away') return;
+    if (performance.now() < prEat) { prEat = 0; return; }
+    if (preenOk() && !prTold && ++prTaps === 2) { prTold = true; p.act = 'jump'; p.dur = 0.75; p.t = 0; p.then = null; emote('spark'); say('順著我的翅膀往下滑滑看～', 3.2); return; }
     p.act = 'jump'; p.dur = 0.75; p.t = 0; p.then = null; emote('heart', true);
     say(pick(S.state === 'back' ? ['我回來了！', '快看信嘛～', '好想你喔！'] : ['嘿！', '摸摸頭～', '好癢！', '我在這裡！', '早安呀，一起玩！', '耶！我好開心喔！']), 2.2);
   }
@@ -762,9 +809,12 @@ const PET = (() => {
       else if (p.act === 'flap') { bob = Math.abs(Math.sin(p.t * 7)) * 5; rot = Math.sin(p.t * 14) * 3; }
       else if (p.act === 'nap') { sq = 0.93 + Math.sin(p.t * 1.6) * 0.02; rot = -6; }
       else if (p.act === 'sing') { rot = Math.sin(p.t * 5) * 8; bob = Math.abs(Math.sin(p.t * 5)) * 1.5; }
+      else if (p.act === 'preen') { if (!pr || !pr.on) { p.act = 'idle'; p.t = 0; p.dur = 0.6; p.lean0 = p.lean; p.leanT = PREEN.back; } else { rot = p.lean; sq = 1 - 0.04 * (p.leanK || 0); } }
       else if (p.act === 'busy') { p.x += Math.sin(p.t * 10) * 0.08; bob = Math.abs(Math.sin(p.t * 12)) * 1.2; if (Math.random() < dt * 1.2) p.face *= -1; }
       else { sq = 1 + Math.sin(p.t * 2.2) * 0.015; rot = Math.sin(p.t * 1.3) * 2; }      // v0.18：站著時輕輕左右晃
       if (p.act !== 'walk' && p.t >= p.dur) next();
+      if (p.leanT > 0 && p.act !== 'preen') { p.leanT = Math.max(0, p.leanT - dt); const u = p.leanT / PREEN.back; rot += (p.lean0 || 0) * u * u; if (!p.leanT) p.lean = 0; }      /* D479：順完羽毛 0.3 秒回正 */
+      { const ok = preenOk(); if (b.classList.contains('pre') !== ok) b.classList.toggle('pre', ok); }
       if (calm) { bob = 0; rot = 0; sq = 1; }
       const scale = 0.86 + (p.y - AREA.y0) / (AREA.y1 - AREA.y0) * 0.16, w = 34 * scale;
       const rid = ROOM().pet || ROOM().id, key = rid !== 'living' ? 'kite_' + rid + '_' + (p.act === 'nap' ? 'nap' : p.pose === 'wave' ? 'wave' : 'home') : p.act === 'nap' ? 'kite_nap' : p.pose === 'wave' ? 'kite_wave' : p.pose === 'pack' ? 'kite_pack' : p.pose === 'back' ? 'kite_back' : 'kite_home';      // v0.16：其他四間用 G-47 第二批換裝圖      // v0.14：打瞌睡換閉眼圖
@@ -787,6 +837,8 @@ const PET = (() => {
   }
   requestAnimationFrame(frame);
   return {
+    preen() { return { ok: preenOk(), on: !!(pr && pr.on), k: pr ? pr.k : 0, lean: p.lean || 0, act: p.act, pose: p.pose, n: prN, told: prTold, say: p.say, x: p.x, y: p.y }; },      /* D479 測試掛勾 */
+    freeze(sec) { p.act = 'idle'; p.t = 0; p.dur = sec || 30; p.then = null; },
     hide() { $('sayBox').classList.add('off'); $('emote').hidden = true; p.sayT = 0; p.emoT = 0; },
     center() { const v = $('roomview'); v.scrollLeft = Math.max(0, p.x / 100 * ROOMDIM.w - v.clientWidth / 2); v.dispatchEvent(new Event('scroll')); },
     enter() {      // 換房間：小鳶從房間中間出來，說一句這個房間的話
@@ -795,7 +847,7 @@ const PET = (() => {
       this.center();
     },
     reset(line) {      // renderHome 呼叫：換狀態時重新開始
-      const b = $('bird'); b.onclick = tap; p.then = null; b.dataset.k = ''; Object.assign(AREA, ROOM().area); p.x = Math.max(AREA.x0, Math.min(AREA.x1, p.x)); p.y = Math.max(AREA.y0, Math.min(AREA.y1, p.y));
+      const b = $('bird'); b.onclick = tap; b.onpointerdown = preenDown; if (pr) preenEnd(false); p.then = null; b.dataset.k = ''; Object.assign(AREA, ROOM().area); p.x = Math.max(AREA.x0, Math.min(AREA.x1, p.x)); p.y = Math.max(AREA.y0, Math.min(AREA.y1, p.y));
       if (line) say(line, 3.2); else $('sayBox').classList.add('off');
       next();
     }
@@ -1311,10 +1363,10 @@ function travelBgmSync() { if (travelBgmOn) BGM.play('travel_' + ({ ranch: 'scho
   document.addEventListener('pointerdown', () => { if (travelBgmOn) travelBgmSync(); }, { passive: true });
 })();
 </script>
-<script src="cook.js?v=0.96"></script>
+<script src="cook.js?v=0.97"></script>
 <script src="boat.js?v=0.90"></script>
-<script src="wipe.js?v=0.96"></script>
-<script src="home.js?v=0.96"></script>
+<script src="wipe.js?v=0.97"></script>
+<script src="home.js?v=0.97"></script>
 <script src="../shared/back_line.js?v=2"></script>
 <script>/* D104：旅行排行榜（明信片收藏數） */ if (window.KiteLB) { KiteLB.button(document.getElementById('lbSlot'), { title: '小鳶旅行收藏排行', travel: true }); setTimeout(function () { try { pushTravelStat(); } catch (e) {} }, 1500); }</script>
 </body>
