@@ -509,7 +509,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '1.40',
+  version: '1.41',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -618,7 +618,7 @@ const ASSET_FILES = { cb_w: 'combo_badge_w.png', cb_g: 'combo_badge_g.png', cb_y
   ui_menu_card: 'ui_menu_card.png', ui_beat_lamp: 'ui_beat_lamp.png', p_escort: 'p_escort.png', p_boss_stun: 'p_boss_stun.png',      // G-35 B（v0.25 起接上）
   jerky: 'pick_jerky_v2.png', power: 'pick_power_v2.png', gale: 'pick_gale_v2.png', m_tofu: /[?&]helmet=1/.test(location.search) ? 'm_tofu_helmet.png' : 'm_tofu.png', m_ele: 'm_ele.png',      // 網址加 ?helmet=1 換成戴礦工帽的豆腐君（給 Dari 比較，U-24）
   // G-31 第 2 關角色（ChatGPT，暫用）與兩關整張底圖（ChatGPT，暫用）
-  n_shark: 'n_shark.png', n_sausage: 'n_sausage.png', n_head: 'n_head.png', n_dragon: 'n_dragon.png', n_jelly: 'n_jelly.png', n_ice: 'n_ice.png', n_ice_hit: 'n_ice_hit.png', n_ice_s: 'n_ice_s.png', n_puff: 'n_puff.png', n_crab: 'n_crab.png', n_sand: 'n_sand.png', n_sand_h: 'n_sand_h.png',
+  n_shark: 'n_shark.png', n_sausage: 'n_sausage.png', n_head: 'n_head.png', n_dragon: 'n_dragon.png', n_jelly: 'n_jelly.png', n_ice: 'n_ice.png', n_ice_hit: 'n_ice_hit.png', rail_signal: 'rail_switch_signal_lit.png', n_ice_s: 'n_ice_s.png', n_puff: 'n_puff.png', n_crab: 'n_crab.png', n_sand: 'n_sand.png', n_sand_h: 'n_sand_h.png',
   n_guard: 'n_guard.png', n_lamp_s: 'n_lamp_s.png', fx_lamp: 'fx_lamp.png', fx_fire: 'fx_fire.png', f_oden: 'f_oden.png', f_jelly: 'f_jelly.png', f_rice: 'f_rice.png', f_ring: 'f_ring.png', boss_idle: 'boss_idle.png', boss_open: 'boss_open.png', boss_rage_steam: 'boss_rage_steam.png',
   // G-33 第 3 關正濱漁港（ChatGPT，暫用）
   p_snake_head: 'p_snake_head.png', p_snake: 'p_snake_body.png', p_crab: 'p_crab.png', p_ray: 'p_ray.png', p_ghost: 'p_ghost.png', p_snail: 'p_snail.png', p_shell: 'p_shell.png', p_oil: 'p_oil.png', p_cat: 'p_cat.png', p_bird: 'p_bird.png', p_otter: 'p_otter.png', p_boss: 'p_boss.png', p_boss_ram: 'p_boss_ram.png', boss_pier_half_bubbles: 'boss_pier_half_bubbles.png', p_boat: 'p_boat.png', p_rope: 'p_rope.png', bg_pier_a: 'bg_pier_a.jpg', bg_pier_b: 'bg_pier_b.jpg', bg_pier_c: 'bg_pier_c.jpg',
@@ -2550,7 +2550,7 @@ function updateJianji(f, dt) {
 /* D480：第 4 關巨岩怪第二階段「煤車中途換軌」（GPT 0830 Q2，G-79 B4-2）。每局一次：第 3 班煤車在預告前就鎖定往左或往右的岔線，
    整條路線（進場直線、岔口、支線）連同箭頭先亮紅，煤車照這條路線走；岔口以下的中間鐵軌是空的，站進去可以繼續打頭。
    預告、畫面與判定共用 cswX 同一條路線；每日路線沒有；速度、判定大小、傷害、車數都不動。 */
-const CSW = { nth: 3, warn: 1.25, y0: 236, dy: 78, dx: 66, gap: 0.35 };
+const CSW = { nth: 3, warn: 1.25, y0: 236, dy: 78, dx: 66, gap: 0.35, sig: { dx: 36, dy: 6, w: 28 } };
 function cswX(s, y) { const u = Math.max(0, Math.min(1, (y - s.y0) / CSW.dy)); return RAIL_X() + s.dir * CSW.dx * u * u * (3 - 2 * u); }
 function cswTry(f, l) {
   if (daily || !RM() || f.phase !== 2 || f.cswUsed || f.cartN < CSW.nth || rushes.length || f.lanes.some((q) => q.sw || q.t < CONFIG.jianji.cartWarn || q.y < 320)) return;
@@ -2581,7 +2581,11 @@ function cswDraw(l, C) {
   { const ax = cswX(s, y1) , ay = y1 + 26, k = calm ? 1 : 1 + 0.08 * Math.sin(clock * 10);      /* 岔口的折箭頭：先往下、再折向支線 */
     if (warn || l.y < ay) { ctx.save(); ctx.translate(RAIL_X() + s.dir * CSW.dx * 0.5, s.y0 + CSW.dy * 0.5); ctx.scale(s.dir * k, k); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
       const arrow = () => { ctx.beginPath(); ctx.moveTo(-20, -24); ctx.lineTo(-20, -6); ctx.lineTo(10, 16); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-3, 19); ctx.lineTo(13, 19); ctx.lineTo(11, 3); ctx.stroke(); };
-      ctx.strokeStyle = '#1F3A4D'; ctx.lineWidth = 9; arrow(); ctx.strokeStyle = '#FFE9A8'; ctx.lineWidth = 4.5; arrow(); ctx.restore(); }
+      ctx.strokeStyle = '#1F3A4D'; ctx.lineWidth = 9; arrow(); ctx.strokeStyle = '#FFE9A8'; ctx.lineWidth = 4.5; arrow(); ctx.restore();
+      /* D481（GPT 0940 Q1）：岔口另一側放一個亮暖黃燈的小號誌（28×28），預告時燈暈慢慢呼吸；車過岔口就收掉。圖沒載到照原本只有折箭頭；減少動態燈暈不動 */
+      if (img.rail_signal) { const sx = RAIL_X() - s.dir * CSW.sig.dx, sy = s.y0 + CSW.sig.dy, ga = warn ? (calm ? 0.42 : 0.3 + 0.2 * Math.sin(clock * 7)) : 0.22;
+        ctx.save(); const gr = ctx.createRadialGradient(sx, sy, 2, sx, sy, 24); gr.addColorStop(0, 'rgba(255,214,107,' + ga.toFixed(3) + ')'); gr.addColorStop(1, 'rgba(255,214,107,0)'); ctx.fillStyle = gr; ctx.fillRect(sx - 24, sy - 24, 48, 48);
+        ctx.drawImage(img.rail_signal, sx - CSW.sig.w / 2, sy - CSW.sig.w / 2, CSW.sig.w, CSW.sig.w); ctx.restore(); } }
   }
   if (warn) return;
   ctx.strokeStyle = 'rgba(80,70,60,.6)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(RAIL_X(), 0); if (l.y - 20 > s.y0) { ctx.lineTo(RAIL_X(), s.y0); for (let y = s.y0; y < Math.min(l.y - 20, y1); y += 6) ctx.lineTo(cswX(s, y), y); } ctx.lineTo(cswX(s, l.y - 20), l.y - 20); ctx.stroke();
