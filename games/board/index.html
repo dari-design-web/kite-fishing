@@ -37,7 +37,10 @@
      7 個海上垃圾依序從上面漂下來，羽毛掃到中心 16 以內就清掉 ＋1，漏掉不扣分。三人比件數（電腦 0／1～3／4～7 件＝20%／60%／20%），最多的 ＋2⭐。
    ②#17「再玩一小段」變成三選一（捕魚／疊貨櫃／飛行）；電腦踩到三款抽一款。P2 四項到這裡做齊。
    ③疊貨櫃的底座換成 GPT 1535 的 mini_dock.png（上緣對齊落點基準 y＝278）。
-   ④骰點卡的 🎴 換成 GPT 1445 的 card_adjust.png。 */
+   ④骰點卡的 🎴 換成 GPT 1445 的 card_adjust.png。
+   D490（小站有人顧）：踩到別人的小站，站主的棋子會從那一格探出來揮手說「歡迎！」，站主的 1🐚 從小站飛進計分、
+   來訪的人付的 1🐚 在計分旁掉「−1」（規則沒動：來訪付 1🐚 給港口、站主由港口拿 1🐚；站主貝殼滿 12 就寫「貝殼已滿」）。
+   回到自己的小站，格子彈一下。上方計分右上角多一張小骰點卡：還沒用是彩色，用掉變淡。 */
 :root{--ink:#10293D;--paper:#FFF8EA;--sea:#7FC4D6;--deep:#0E2232;--leaf:#4FBF88;--sun:#F2B544;--coral:#E8795A;
   --land:#F6D7A7;--chance:#9ED3F0;--fate:#C9B6F2;--mini:#BFE8C4;--rest:#FFE6A8;--start:#FFD0B5;
   --p0:#E39A1F;--p1:#3D7FB8;--p2:#C0569A;
@@ -87,6 +90,13 @@ body{background:#0E2232;color:var(--ink);font-family:var(--round);-webkit-user-s
 .pawn{position:absolute;transform:translate(-50%,-62%);transition:left .18s linear,top .18s linear;filter:drop-shadow(0 3px 1px rgba(0,0,0,.35))}
 .pawn img{width:100%;height:100%;object-fit:contain;display:block;transform-origin:50% 90%}
 .pawn.cur{z-index:2}
+.host{position:absolute;z-index:5;pointer-events:none;transform:translate(-50%,-100%)}
+.host img{width:100%;height:100%;object-fit:contain;display:block;transform-origin:50% 95%;filter:drop-shadow(0 0 2px #fff) drop-shadow(0 3px 1px rgba(0,0,0,.35));animation:hostin .3s cubic-bezier(.3,1.6,.5,1),wave .3s .3s ease-in-out 4 alternate}
+.host b{position:absolute;left:86%;bottom:24%;background:#fff;border:2px solid var(--ink);border-radius:10px;padding:0 6px;font-size:11px;line-height:17px;font-weight:900;white-space:nowrap;animation:hostin .3s .12s cubic-bezier(.3,1.6,.5,1) backwards}
+.host.rm img,.host.rm b{animation:none}.host.sm b{font-size:10px;padding:0 3px;line-height:15px;border-width:1.5px}
+@keyframes hostin{0%{transform:translateY(40%) scale(.2);opacity:0}}
+.pl{position:relative}.pl .aj{position:absolute;right:1px;top:1px;width:15px;height:15px;object-fit:contain}.pl .aj.no{filter:grayscale(1);opacity:.28}.pl .nm.cp img{display:none}.pl .nm{min-height:24px}.pl .nm.cp{font-size:10.5px;gap:2px}
+@media (max-width:360px){.pl .aj{width:12px;height:12px;right:0;top:0}.pl .nm{min-height:20px}.pl .nm.cp{font-size:9px}.pl .nm.cp em{font-size:8px;padding:0 2px}}
 .puff{position:absolute;width:26px;height:10px;margin:-3px 0 0 -13px;border-radius:50%;background:rgba(255,255,255,.85);pointer-events:none;animation:puff .32s ease-out forwards}
 @keyframes puff{0%{transform:scale(.3);opacity:.9}100%{transform:scale(1.7,1.2);opacity:0}}
 .center{grid-column:2/4;grid-row:2/7;display:flex;flex-direction:column;align-items:stretch;gap:5px;padding:2px;position:relative;z-index:3;min-height:0}
@@ -240,7 +250,7 @@ body{background:#0E2232;color:var(--ink);font-family:var(--round);-webkit-user-s
 </div>
 <script>
 'use strict';
-const VER = '1.2';
+const VER = '1.3';
 const A = '../assets/board/';
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TEST = /[?&]test=1/.test(location.search);
@@ -328,7 +338,7 @@ function gain(p, sym, k, b0, d) {
   if (TEST || RM) { drawPlayers(); bump(p, k); return; }
   if (d < 0) { drawPlayers(); bump(p, k); const r = $('players').children[p.id].querySelector(k).getBoundingClientRect(), f = document.createElement('span'); f.className = 'fx minus'; f.textContent = d + sym; f.style.left = (r.left + r.width / 2) + 'px'; f.style.top = (r.bottom + 4) + 'px'; document.body.appendChild(f); setTimeout(() => f.remove(), 800); sfx('minus'); return; }
   if (!p.hold) p.hold = { star: p.star, shell: p.shell }; p.hold[k === '.sS' ? 'star' : 'shell'] = b0; p.holdN = (p.holdN || 0) + 1; drawPlayers();
-  const a = $('pawns').children[p.id].getBoundingClientRect(), t = $('players').children[p.id].querySelector(k).getBoundingClientRect();
+  const a = (G.fxEl || $('pawns').children[p.id]).getBoundingClientRect(), t = $('players').children[p.id].querySelector(k).getBoundingClientRect();
   const ax = a.left + a.width / 2, ay = a.top + a.height / 2, dx = t.left + t.width / 2 - ax, dy = t.top + t.height / 2 - ay, n = Math.min(d, 5), dur = 520;
   for (let i = 0; i < n; i++) {
     const f = document.createElement('span'); f.className = 'fx'; f.textContent = sym; f.style.left = ax + 'px'; f.style.top = ay + 'px'; f.style.opacity = 0; document.body.appendChild(f);
@@ -357,6 +367,7 @@ function sfx(k, i) {
     else if (k === 'build') { tone(523, 0, .1, 'triangle', .11); tone(659, .09, .1, 'triangle', .11); tone(784, .18, .22, 'triangle', .11); }
     else if (k === 'win') [523, 659, 784, 1047, 1319].forEach((f, j) => tone(f, j * .12, .28, 'triangle', .11));
     else if (k === 'tap') tone(660, 0, .05, 'triangle', .06);
+    else if (k === 'hello') { tone(784, 0, .09, 'triangle', .1, 1047); tone(1047, .11, .14, 'triangle', .1, 1319); }
     else if (k === 'flag') [784, 988, 1175, 1568].forEach((f, j) => tone(f, j * .09, .22, 'triangle', .12));
     else if (k === 'dive') tone(900, 0, .2, 'sine', .08, 320);
     else if (k === 'catch') { tone(240, 0, .12, 'sine', .16, 120); tone(1175 + Math.min(i || 0, 6) * 110, .05, .16, 'triangle', .1); }
@@ -457,10 +468,19 @@ function hop(p, ms, i) {
 }
 function drawPlayers() {
   const box = $('players'); if (!box.children.length) for (const p of G.P) { const d = document.createElement('div'); d.className = 'pl'; d.style.borderColor = p.col; box.appendChild(d); }
-  for (const p of G.P) { const h = p.hold || p; box.children[p.id].innerHTML = '<span class="nm"><img alt="" src="' + A + p.img + '">' + p.name + (p.coupon ? '<em>折建券</em>' : '') + '</span><span class="st"><span class="sS">⭐<b>' + h.star + '</b></span><span class="sH">🐚<b>' + h.shell + '</b></span><span>🏠<b>' + p.lands.length + '</b></span><span title="章支援卡">🎫<b>' + p.cards + '</b></span></span>'; }
+  for (const p of G.P) { const h = p.hold || p; box.children[p.id].innerHTML = '<span class="nm' + (p.coupon ? ' cp' : '') + '"><img alt="" src="' + A + p.img + '">' + p.name + (p.coupon ? '<em>折建券</em>' : '') + '</span><span class="st"><span class="sS">⭐<b>' + h.star + '</b></span><span class="sH">🐚<b>' + h.shell + '</b></span><span>🏠<b>' + p.lands.length + '</b></span><span title="章支援卡">🎫<b>' + p.cards + '</b></span></span><img class="aj' + (p.adj ? '' : ' no') + '" alt="' + (p.adj ? '骰點卡還在' : '骰點卡用掉了') + '" src="' + A + 'card_adjust.png">'; }
 }
 function slide(p) { $('pawns').children[p.id].style.transitionDuration = '420ms'; drawPawns(); hl(p.pos); sfx('hop', 3); }      /* 卡片移位：滑過去，不觸發格子 */
 function built(id) { const t = $('tile' + id); if (TEST || RM || !t) return; t.classList.remove('built'); void t.offsetWidth; t.classList.add('built'); const f = t.querySelector('.flag'); if (f) f.classList.add('new'); sfx('build'); }
+/* D490：站主從自己的小站探出來揮手（站主棋子剛好也在這格就直接讓棋子揮手）。測試不顯示；減少動態只顯示不動 */
+function host(ow, id, ms) {
+  const t = $('tile' + id); if (TEST || !t) return;
+  if (ow.pos === id) { if (!RM) $('pawns').children[ow.id].firstChild.animate([{ transform: 'rotate(-10deg)' }, { transform: 'rotate(10deg) scale(1.08)' }], { duration: 300, iterations: 4, direction: 'alternate', easing: 'ease-in-out' }); sfx('hello'); return; }
+  const B = box(t), z = Math.max(24, Math.min(B.w, B.h) * .5), d = document.createElement('div'); d.className = 'host' + (RM ? ' rm' : '');
+  d.style.width = d.style.height = z + 'px'; d.style.left = (B.l + B.w * .27) + 'px'; d.style.top = (B.t + B.h * .98) + 'px'; if (B.w < 80) d.classList.add('sm');
+  d.innerHTML = '<img alt="" src="' + A + ow.img + '"><b style="color:' + ow.col + '">歡迎！</b>'; $('pawns').appendChild(d); sfx('hello');
+  setTimeout(() => d.remove(), ms);
+}
 function hl(id) { document.querySelectorAll('.tile.hl').forEach(e => e.classList.remove('hl')); if (id >= 0) $('tile' + id).classList.add('hl'); }
 function center(html) { $('stage').innerHTML = html; }
 const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
@@ -598,11 +618,13 @@ async function land(p, tk) {
 }
 async function landTile(p, c) {
   const o = G.owner[c.id], who = p.human ? '你' : p.name;
-  if (o === p.id) { addShell(p, 1); log(p.name + ' 回到自己的「' + c.name + '」，＋1🐚'); center('<div class="msg">🏠 回到自己的小站</div><div class="sub">' + who + '＋1🐚</div>'); toast('＋1🐚'); await nw(p, 1300, 850); return; }
+  if (o === p.id) { addShell(p, 1); if (!TEST && !RM) { const t = $('tile' + c.id); t.classList.remove('built'); void t.offsetWidth; t.classList.add('built'); } log(p.name + ' 回到自己的「' + c.name + '」，＋1🐚'); center('<div class="msg">🏠 回到自己的小站</div><div class="sub">' + who + '＋1🐚</div>'); toast('＋1🐚'); await nw(p, 1300, 850); return; }
   if (o >= 0) {
-    const ow = G.P[o], pay = Math.min(1, p.shell); p.shell -= pay; addShell(ow, 1);
-    log(p.name + ' 拜訪' + ow.name + '的「' + c.name + '」' + (pay ? '，付 1🐚 給港口' : '') + '；' + ow.name + ' 由港口拿 1🐚');
-    center('<div class="msg">👋 拜訪' + (ow.human ? '你' : ow.name) + '的小站</div><div class="sub">' + who + (pay ? '付 1🐚 給港口' : '沒有貝殼也沒關係') + '<br>' + (ow.human ? '你' : ow.name) + '從港口拿到 1🐚</div>'); drawPlayers(); await nw(p, 1600, 1150); return;
+    const ow = G.P[o], pay = Math.min(1, p.shell); if (pay) addShell(p, -1);
+    G.fxEl = $('tile' + c.id); const got = addShell(ow, 1); G.fxEl = null; host(ow, c.id, Math.max(1100, (p.human ? 1600 : 1150) * spd()));
+    const on = ow.human ? '你' : ow.name;
+    log(p.name + ' 拜訪' + ow.name + '的「' + c.name + '」' + (pay ? '，付 1🐚 給港口' : '') + '；' + ow.name + (got ? ' 由港口拿 1🐚' : ' 貝殼已滿'));
+    center('<div class="msg">' + (ow.human ? '你的小站有客人！' : ow.short + '：歡迎來玩！') + '</div><div class="sub">' + who + (pay ? '付 1🐚 給港口' : '沒有貝殼也沒關係') + '<br>' + on + (got ? '從港口拿 1🐚' : '的貝殼已滿') + '</div>'); drawPlayers(); await nw(p, 1600, 1150); return;
   }
   const pr = price(p), can = p.shell >= pr && p.lands.length < 2;
   let buy;
@@ -866,7 +888,7 @@ async function intro() {
     $('go').onclick = res;
     $('how').onclick = () => {
       center('<div class="intro"><ul>'
-        + '<li>每人 6 回合，擲 2 顆骰子選 1 顆走</li><li>🚩 先到目的地 ＋3⭐（第 1、3、5 輪換）</li><li>⛰️ 岔路可走山路，少走 1 格</li><li>🏠 花 3🐚 蓋小站（最多 2 處），結算各 ＋2⭐</li><li>✨ 機會 🌊 命運 抽卡立刻生效</li><li>🎮 短挑戰：捕魚、疊貨櫃、飛行，第一名 ＋2⭐</li><li>⚓ 過起點 ＋2🐚</li><li>🎫 章卡：骰前 ＋1🐚，每人 2 張</li><li>💭 鯨鯊愛蓋小站，小卷愛追旗子</li><li><img class="aic" alt="" src="../assets/board/card_adjust.png">骰點卡：整局 1 張，骰子 ±1 步</li></ul></div><div class="btns"><button type="button" id="go2">開始一局</button></div>');
+        + '<li>每人 6 回合，擲 2 顆骰子選 1 顆走</li><li>🚩 先到目的地 ＋3⭐（第 1、3、5 輪換）</li><li>⛰️ 岔路可走山路，少走 1 格</li><li>🏠 花 3🐚 蓋小站（最多 2 處），結算各 ＋2⭐；有人來拜訪 ＋1🐚</li><li>✨ 機會 🌊 命運 抽卡立刻生效</li><li>🎮 短挑戰：捕魚、疊貨櫃、飛行，第一名 ＋2⭐</li><li>⚓ 過起點 ＋2🐚</li><li>🎫 章卡：骰前 ＋1🐚，每人 2 張</li><li>💭 鯨鯊愛蓋小站，小卷愛追旗子</li><li><img class="aic" alt="" src="../assets/board/card_adjust.png">骰點卡：整局 1 張，骰子 ±1 步</li></ul></div><div class="btns"><button type="button" id="go2">開始一局</button></div>');
       $('go2').onclick = res;
     };
     if (window.__autoHuman) setTimeout(res, 5);
