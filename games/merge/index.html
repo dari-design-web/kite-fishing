@@ -286,6 +286,7 @@ function drawDual(g) {      /* D447：GPT 0920 固定隔板（64×512，木身 x
 function makeMerge() {
   const g = { balls: [], fall: null, q: [], score: 0, done: false, over: 0, say: '', sayT: 0, top: 0, t: 0, lv: 1, merges: 0, mergesAll: 0, need: MF.needBase + MF.needStep, chain: 0, chainT: 0, bestChain: 0, tx: W / 2, wait: 0.5, banner: '', bannerT: 0, tap: null, found: null, newFound: [] };
   g.ferry = ferryMode && !DS; g.net = netMode && !DS && !g.ferry;
+  if (!IMG.relief_puff) want('relief_puff', '../assets/merge/merge_relief_puff.png');      /* D482 */
   /* D437（GPT 1520 Q2 推薦 A「待放交換」）：換序海港試玩——一般玩法規則不變，小鳶抓著海鮮時可以按一次「換」，把手上這顆跟下一顆互換；放下去之後才能再換。不重抽、不推進序列、不加分；不算點數、不進排行榜 */
   g.dual = dualMode && !DS && !g.ferry && !g.net; if (g.dual) { g.drops = DV.drops; g.outT = 0; g.fEnd = ''; g.topS = [-1, -1]; if (!IMG.fixed_divider) for (const k of ['fixed_divider', 'chamber_left', 'chamber_right']) want(k, '../assets/merge/' + k + '.png'); }
   g.swp = swapMode && !DS && !g.ferry && !g.net && !g.dual; g.swapUsed = false; g.swaps = 0; g.swapFx = 0; g.swapR = null;
@@ -458,7 +459,7 @@ function makeMerge() {
     if (g.dual) drawDual(g);
     if (g.halo) drawHalo(g.halo);
     for (const b of g.balls) drawSea(b.lv, b.x, b.y, b.r, b.rot * 0.3 + leanOf(g, b), b.sq, seaFace(b, tt));
-    drawSweat(g);
+    drawSweat(g); drawPuff(g);
     const f = g.fall;
     if (f) {
       let gy = BOX.floor - f.r, hit = null; for (const b of g.balls) { const dx = Math.abs(b.x - f.x), rr = b.r + f.r - 1; if (dx < rr && b.y > f.y) { const yy = b.y - Math.sqrt(rr * rr - dx * dx); if (yy < gy) { gy = yy; hit = b; } } }
@@ -586,13 +587,13 @@ function sweatSpot(g, b, side) { const x = b.x + side * (b.r * 0.74 + 2), y = b.
   for (const o of g.balls) if (o !== b && Math.hypot(o.x - x, o.y - y) < o.r + 3) return null; return { x, y }; }
 function sweatStep(g, near, hot, topB) {
   const plain = !DS && !g.ferry && !g.net && !g.dual && !g.swp, warnOn = near > 0 || hot;
-  if (g.done || !plain) { g.sweat = null; g.swArm = false; g.swC = null; return; }
+  if (g.done || !plain) { g.sweat = null; g.swArm = false; g.swC = null; g.swWho = null; g.puff = null; return; }
   if (g.swArm == null) g.swArm = true;
   const busy = g.bannerT > 0 || !!g.found || fests.length > 0;
   if (warnOn) { g.swC = null;
     if (g.swArm) { g.swArm = false;
       if (!hot && topB && !busy) { const s0 = topB.x > (BOX.l + BOX.r) / 2 ? -1 : 1, side = sweatSpot(g, topB, s0) ? s0 : sweatSpot(g, topB, -s0) ? -s0 : 0;
-        if (side) { g.sweat = { b: topB, t0: g.t, side }; g.swN = (g.swN || 0) + 1; } } } }
+        if (side) { g.sweat = { b: topB, t0: g.t, side }; g.swN = (g.swN || 0) + 1; g.swWho = { b: topB, x: topB.x }; } } } }
   else if (!g.swArm) { if (g.swC == null) g.swC = g.t; if (g.t - g.swC >= SWEAT.calm) { g.swArm = true; g.swC = null; } }
   const w = g.sweat; if (w && (hot || !warnOn || busy || g.balls.indexOf(w.b) < 0 || (topB !== w.b && (!topB || (w.b.y - w.b.r) - (topB.y - topB.r) > 4)) || g.t - w.t0 >= SWEAT.dur || g.t < w.t0)) g.sweat = null;
 }
@@ -604,6 +605,27 @@ function drawSweat(g) {
   ctx.fillStyle = '#BFF0FA'; ctx.fill(); ctx.strokeStyle = '#1F5E86'; ctx.lineWidth = 1.8; ctx.lineJoin = 'round'; ctx.stroke();
   ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(x - 0.6, y + hh * 0.42, hw * 0.52, Math.PI * 0.62, Math.PI * 0.98); ctx.stroke(); ctx.restore();
 }
+/* D482（GPT 1030 Q2「鬆一口氣」）：警示解除、D468 收光那一刻，這段警示裡冒過汗的那一堆最上面那隻旁邊冒一朵「呼～」小氣團（GPT 1030 的 merge_relief_puff.png，畫 38×28、加一圈淡藍影子在淺色池水上才看得清楚，0.9 秒：往上飄 5px、最後 0.25 秒淡出）。
+   原本冒汗那隻還在就找牠；被合掉就找牠原位置左右 46px 內、已落穩、最高的那一隻；找不到、放不下（會壓紅線、木框或別隻海鮮，兩側都試）、圖沒載到、有橫幅／新發現／慶典就不畫。
+   氣尾朝海鮮（圖的氣尾在左，放海鮮左邊時鏡像）。警示又出現、那隻被合掉、收局就收掉。只畫，不改任何判定；每日與試玩模式沒有；減少動態畫靜態氣團 */
+const PUFF = { dur: 0.9, rise: 5, fade: 0.25, w: 38, h: 28, near: 46 };
+function puffSpot(g, b, side) { const x = b.x + side * (b.r * 0.78 + PUFF.w / 2 - 2), y = b.y - b.r * 0.5; if (y - PUFF.h / 2 - PUFF.rise < BOX.line + 4 || x - PUFF.w / 2 < BOX.l + 4 || x + PUFF.w / 2 > BOX.r - 4) return null;
+  for (const o of g.balls) if (o !== b && Math.hypot(o.x - x, o.y - y) < o.r + 8) return null; return { x, y }; }
+function puffStart(g) {
+  const who = g.swWho; g.swWho = null; if (!who || !ready('relief_puff') || g.bannerT > 0 || g.found || fests.length > 0) return;
+  let b = g.balls.indexOf(who.b) >= 0 ? who.b : null;
+  if (!b) { let top = 1e9; for (const o of g.balls) if (o.age > 1.2 && Math.abs(o.vy) < 80 && Math.abs(o.x - who.x) <= PUFF.near && o.y - o.r < top) { top = o.y - o.r; b = o; } }
+  if (!b) return;
+  const s0 = b.x > (BOX.l + BOX.r) / 2 ? -1 : 1, side = puffSpot(g, b, s0) ? s0 : puffSpot(g, b, -s0) ? -s0 : 0;
+  if (side) { g.puff = { b, t0: g.t, side }; g.pfN = (g.pfN || 0) + 1; }
+}
+function drawPuff(g) {
+  const w = g.puff; if (!w) return; const e = g.t - w.t0, im = ready('relief_puff');
+  if (!im || e >= PUFF.dur || e < 0 || g.done || g.balls.indexOf(w.b) < 0) { g.puff = null; return; }
+  const p = puffSpot(g, w.b, w.side); if (!p) return;
+  const k = RM ? 0 : e / PUFF.dur, a = RM ? 1 : clamp((PUFF.dur - e) / PUFF.fade, 0, 1), sc = RM ? 1 : 0.7 + 0.3 * clamp(e / 0.14, 0, 1);
+  ctx.save(); ctx.globalAlpha = a; ctx.translate(p.x, p.y - PUFF.rise * k * (2 - k)); ctx.scale(w.side * sc, sc); ctx.shadowColor = 'rgba(31,94,134,.6)'; ctx.shadowBlur = 4; ctx.drawImage(im, -PUFF.w / 2, -PUFF.h / 2, PUFF.w, PUFF.h); ctx.restore();
+}
 function drawNearFull(g) {
   let top = 1e9, topB = null; for (const b of g.balls) if (b.age > 1.2 && Math.abs(b.vy) < 80 && b.y - b.r < top) { top = b.y - b.r; topB = b; }
   const near = g.done ? 0 : clamp((BOX.line + 70 - top) / 70, 0, 1), hot = g.over > 0 && !g.done;
@@ -611,12 +633,12 @@ function drawNearFull(g) {
   /* D468（GPT 1430 Q2 推薦 b「解圍收光」）：一般玩法裡，暖琥珀／紅色警示完全解除並維持 0.25 秒後，左右木框上段各閃一道海水綠的光、由上往下收掉（0.5 秒，只一次）；
      警示又出現就取消，下一輪警示解除才再播。只畫，不改危險累積、紅線、失敗計時、分數；跟遊戲時鐘走；每日、試玩、收局、減少動態都不播 */
   { const warnOn = near > 0 || hot, plain = !DS && !g.ferry && !g.net && !g.dual && !g.swp;
-    if (g.done || !plain || RM) { g.rlArm = false; g.rlC = null; g.rlT0 = null; }
-    else if (warnOn) { g.rlArm = true; g.rlC = null; g.rlT0 = null; }
-    else if (g.rlArm) { if (g.rlC == null) g.rlC = g.t; if (g.t - g.rlC >= 0.25) { g.rlArm = false; g.rlC = null; g.rlT0 = g.t; g.rlN = (g.rlN || 0) + 1; } }
+    if (g.done || !plain) { g.rlArm = false; g.rlC = null; g.rlT0 = null; }
+    else if (warnOn) { g.rlArm = true; g.rlC = null; g.rlT0 = null; g.puff = null; }
+    else if (g.rlArm) { if (g.rlC == null) g.rlC = g.t; if (g.t - g.rlC >= 0.25) { g.rlArm = false; g.rlC = null; g.rlT0 = g.t; g.rlN = (g.rlN || 0) + 1; puffStart(g); } }
     if (g.rlT0 != null) { const e = (g.t - g.rlT0) / 0.5;
       if (e >= 1 || e < 0) g.rlT0 = null;
-      else { const yT = BOX.line - 34, L = 96, ww = 18, aa = 0.9 * (1 - e);
+      else if (!RM) { const yT = BOX.line - 34, L = 96, ww = 18, aa = 0.9 * (1 - e);
         for (const side of [0, 1]) { const gr = ctx.createLinearGradient(side ? BOX.r : BOX.l, 0, side ? BOX.r - ww : BOX.l + ww, 0); gr.addColorStop(0, 'rgba(64,200,172,' + aa.toFixed(3) + ')'); gr.addColorStop(1, 'rgba(64,200,172,0)');
           ctx.fillStyle = gr; ctx.fillRect(side ? BOX.r - ww : BOX.l, yT + L * e, ww, L * (1 - e)); } } } }
   sweatStep(g, near, hot, topB);
@@ -1064,7 +1086,7 @@ const AQ = (() => {
   return { add, save, ui, open, data: d };
 })();
 window.__aq = AQ;
-window.__mini = { get G() { return G; }, AIMCALM, SWEAT, plain: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = false; dualMode = false; newGame(); state = 'play'; }, THUD, LEAN, BOAT,      /* D476、D474、D464 測試掛勾 */ pop, get floats() { return floats; }, mixHex,      /* D462 測試掛勾 */ get state() { return state; }, FY, DV, dual: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = false; dualMode = true; newGame(); state = 'play'; dualHow(); }, swap: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = true; dualMode = false; newGame(); state = 'play'; swapHow(); }, ferry: () => { mode = 'merge'; ferryMode = true; netMode = false; swapMode = false; dualMode = false; newGame(); state = 'play'; }, net: (pi) => { mode = 'merge'; ferryMode = false; netMode = true; swapMode = false; dualMode = false; if (pi != null) netStore.set({ ...netStore.get(), c: pi }); newGame(); state = 'play'; netHow(); }, NETR, netStore, setMode, seaFace, finish, IMG, SEAF, get fest() { return { pf: festPF(), n: fests.length, txt: !!festTxt, y: festTxt && festTxt.y, k: festTxt && festTxt.k }; }, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; }, get hudChip() { return hudChip; } };      /* D263：測試掛勾加 pop／floats；D306 加 finish */      /* D254：測試掛勾，固定亂數 */
+window.__mini = { get G() { return G; }, AIMCALM, SWEAT, PUFF,      /* D482 測試掛勾 */ plain: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = false; dualMode = false; newGame(); state = 'play'; }, THUD, LEAN, BOAT,      /* D476、D474、D464 測試掛勾 */ pop, get floats() { return floats; }, mixHex,      /* D462 測試掛勾 */ get state() { return state; }, FY, DV, dual: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = false; dualMode = true; newGame(); state = 'play'; dualHow(); }, swap: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = true; dualMode = false; newGame(); state = 'play'; swapHow(); }, ferry: () => { mode = 'merge'; ferryMode = true; netMode = false; swapMode = false; dualMode = false; newGame(); state = 'play'; }, net: (pi) => { mode = 'merge'; ferryMode = false; netMode = true; swapMode = false; dualMode = false; if (pi != null) netStore.set({ ...netStore.get(), c: pi }); newGame(); state = 'play'; netHow(); }, NETR, netStore, setMode, seaFace, finish, IMG, SEAF, get fest() { return { pf: festPF(), n: fests.length, txt: !!festTxt, y: festTxt && festTxt.y, k: festTxt && festTxt.k }; }, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; }, get hudChip() { return hudChip; } };      /* D263：測試掛勾加 pop／floats；D306 加 finish */      /* D254：測試掛勾，固定亂數 */
 })();
 </script>
 <script>(function () { var b = document.getElementById('backBtn'); b.addEventListener('click', function (e) { if (window.__mini && window.__mini.state === 'play' && !confirm('這局還在進行，確定要離開嗎？（分數不會記錄）')) e.preventDefault(); }); /* QA：遊戲中按返回先確認 */ /* D161：一律回小鳶樂園（遊戲大廳），不再回舊版測試首頁 */ })();</script>
