@@ -60,6 +60,15 @@ header h1{font-size:20px;margin:0;flex:1}
 .wallhit{position:absolute;left:45.8%;top:24%;width:37.2%;height:6.7%;cursor:pointer}      /* v0.15：位置照 G-47 房間置入位置_G47_v1.json（1080×1350，百分比） */
 .wallcards span{position:absolute;top:25.5%;width:9.4%;height:4.4%;border-radius:2px;background-size:cover;background-position:center;box-shadow:0 1px 3px rgba(0,0,0,.3);border:1.5px solid #FFFDF8;transform:rotate(-3deg)}
 .wallcards span:nth-child(2){transform:rotate(2deg)}
+/* D500（GPT 1325 Q1）：客廳自己挑一張明信片掛在第一個掛位，點它聽小鳶說這張卡。只記本次進家，不存檔 */
+.wallcards span.hung{border-color:#F4BB42;box-shadow:0 0 0 1.5px #B07A1E,0 2px 7px rgba(0,0,0,.4);transform:rotate(-3deg) scale(1.14);animation:hungGlow 2.6s ease-in-out infinite}
+.wallcards span.hung i{position:absolute;right:-8px;top:-9px;width:17px;height:17px;background:url(assets/travel_seen_both_stamp.png) center/contain no-repeat;transform:rotate(-10deg)}
+@keyframes hungGlow{50%{box-shadow:0 0 0 1.5px #B07A1E,0 0 9px 3px rgba(255,214,110,.85)}}
+#hangHit{position:absolute;left:44.2%;top:25%;width:15%;height:11.5%;min-width:44px;min-height:54px;background:none;border:0;padding:0;cursor:pointer}
+#hangHit::after{content:'💬';position:absolute;right:2px;top:calc(4.4vw + 4px);font-size:13px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
+#hangHit:focus-visible{outline:3px solid #2F7F86;outline-offset:1px;border-radius:6px}
+.peek .hgH{margin:4px 0 0;font-size:12.5px;color:#8A6A4A}.peek .hgR{display:flex;gap:8px;margin-top:12px}.peek .hgR .btn{flex:1 1 0;padding:11px 6px}.pkC.full{background-size:100% 100%!important;background-position:center!important}
+@media (prefers-reduced-motion:reduce){.wallcards span.hung{animation:none}}
 .shelfhit{position:absolute;left:1.4%;top:45%;width:30%;height:18.5%;cursor:pointer}
 .shelfitems img{position:absolute;width:5.93%;height:4.74%;object-fit:contain;transform:translate(-50%,-50%)}
 /* D469（GPT 1530 Q2 推薦 b）：客廳架上每一件紀念品可以直接點開看是從哪裡帶回來的；一天內剛帶回來的那件會輕輕發亮 */
@@ -300,6 +309,7 @@ header .back,.letter .skip{min-height:44px;min-width:44px;display:inline-flex;al
         <div class="props" id="props"></div>
         <div class="wallcards" id="wall"></div>
         <div class="wallhit" id="wallHit" role="button" aria-label="明信片牆，打開收藏冊"></div>
+        <button type="button" id="hangHit" hidden></button>
         <div class="shelfitems" id="miniShelf"></div>
         <div class="shelfhit" id="shelfHit" role="button" aria-label="紀念品架，打開紀念品櫃"></div>
         <div class="bird" id="bird"></div>
@@ -366,7 +376,7 @@ header .back,.letter .skip{min-height:44px;min-width:44px;display:inline-flex;al
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '1.00',
+  version: '1.01',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 0,      // D80：遠行便當改用點數換，不再每 3 趟送 1 份（0＝關閉）
@@ -457,6 +467,32 @@ function peekHTML(id) {
   const l = LOCS.find((x) => x.id === id), p = PEEK[id]; if (!l || !p || !l.cards[0][2]) return '';
   const k = peekCrop(p.c); return '<div class="pkC" style="background-image:url(assets/' + l.cards[0][2] + ');background-size:' + k[0] + ';background-position:' + k[1] + '"><span class="pkN">📍' + l.name + '</span><span class="pkK"></span></div>';
 }
+/* D500（GPT 1325 Q1）：客廳自選掛卡。hang 只放在記憶體（重開網頁就回到「最近三張」）；不蓋章、不發獎、不耗便當。
+   點掛著的卡：小鳶說這張卡背面的話；這個地點有「路上看一眼」資料就能再聽主景那句；
+   有「都看到了」圓章（S.seen['pk_'+地點]）才多一顆第二景，圖窗帶原章。這裡只回看，不會新蓋章 */
+let hang = null;
+function hangParts() { if (!hang || !S.cards[hang]) return null; const k = hang.lastIndexOf('-'), l = LOCS.find((x) => x.id === hang.slice(0, k)), i = +hang.slice(k + 1); return l && l.cards[i] ? { id: hang, l, i, c: l.cards[i] } : null; }
+function openHang() {
+  const h = hangParts(); if (!h) return;
+  const p = PEEK[h.l.id], hasP = !!(p && h.l.cards[0][2]), st = !!(hasP && p.v && S.seen['pk_' + h.l.id]);
+  const views = [{ n: '這張卡', t: h.c[1] }]; if (hasP) { views.push({ n: p.n, t: p.t, c: p.c }); if (st) views.push({ n: p.v[0], t: p.v[2], c: p.v[1] }); }
+  const d = document.createElement('div'); d.className = 'peek'; d.id = 'hangBox';
+  d.innerHTML = '<div class="stc" role="dialog" aria-modal="true" aria-label="牆上的明信片"><div class="stT">牆上的明信片</div><div class="pkC" id="hgC"><span class="pkN">📍' + h.l.name + '｜' + h.c[0] + '</span>' + (st ? '<span class="pkSt" role="img" aria-label="兩邊都看到了"></span>' : '') + '</div>'
+    + (views.length > 1 ? '<div class="pkS" role="group" aria-label="想聽哪一段">' + views.map((v, n) => '<button type="button" class="pkB" data-i="' + n + '">' + v.n + '</button>').join('') + '</div>' : '')
+    + '<p aria-live="polite">小鳶說：「<span id="hgT"></span>」</p>' + (hasP && p.v && !st ? '<p class="hgH">出門時「路上看一眼」兩邊都看過，回來能多聽一景。</p>' : '')
+    + '<div class="hgR"><button type="button" class="btn ghost" id="hgSwap">換一張</button><button type="button" class="btn gold" id="hgOk">好</button></div></div>';
+  document.body.appendChild(d);
+  const box = $('hgC'), bs = d.querySelectorAll('.pkB');
+  const show = (n) => { const v = views[n]; box.classList.toggle('full', !v.c);
+    if (v.c) { const k = peekCrop(v.c); box.style.backgroundImage = 'url(assets/' + h.l.cards[0][2] + ')'; box.style.backgroundSize = k[0]; box.style.backgroundPosition = k[1]; }
+    else box.style.backgroundImage = h.c[2] ? 'url(assets/' + h.c[2] + ')' : 'linear-gradient(' + h.l.tone[0] + ',' + h.l.tone[1] + ')';
+    $('hgT').textContent = v.t; bs.forEach((o) => o.setAttribute('aria-pressed', +o.dataset.i === n ? 'true' : 'false')); d.dataset.view = n; };
+  bs.forEach((b) => (b.onclick = () => show(+b.dataset.i))); show(0);
+  const close = () => d.remove(); $('hgOk').onclick = close; d.onclick = (e) => { if (e.target === d) close(); };
+  $('hgSwap').onclick = () => { close(); tab = 'main'; go('album'); toast('點一張收到的明信片，再按「掛到客廳牆上」'); };
+}
+function hangSet(l, i) { hang = cardId(l, i); $('modal').classList.remove('on'); S.room = 'living'; go('home'); if (S.state === 'away') toast('掛好了！點牆上那張就能看'); else PET.tell('掛好了！點牆上這張，我說給你聽。'); }
+window.hangAfterDesk = () => { const h = hangParts(); if (!h || S.room !== 'living' || S.state === 'away' || !$('home').classList.contains('on')) return; PET.tell(h.c[1], 4.6); };      /* 桌面小請託擺好、關掉以後，小鳶走到牆邊接著聊掛著的那張 */
 function openPeek() {
   const tr = S.trip; if (!tr || S.state !== 'away' || !PEEK[tr.dest]) return;
   if (!tr.peek) { tr.peek = tr.dest; save(); }
@@ -601,7 +637,7 @@ function setRoom(id) {
     const rects = star ? [[59.5, 69.5, 14.8, 21.5, 3], [73.2, 77.6, 14.8, 21.5, 2], [83, 85, 14.8, 16.5, 1]] : [[10, 90, 20, 70, 7]];
     for (const [x0, x1, y0, y1, cnt] of rects) for (let i = 0; i < cnt; i++) { const x = x0 + Math.random() * (x1 - x0), y = y0 + Math.random() * (y1 - y0); h += '<i style="left:' + x.toFixed(1) + '%;top:' + y.toFixed(1) + '%;--dx:' + Math.round(Math.random() * 40 - 20) + 'px;animation-duration:' + (star ? 1.6 + Math.random() * 2 : 6 + Math.random() * 6).toFixed(1) + 's;animation-delay:-' + (Math.random() * 6).toFixed(1) + 's"></i>'; }
     M.innerHTML = h; }
-  ['wall', 'wallHit', 'miniShelf', 'shelfHit'].forEach((k) => ($(k).style.display = live ? '' : 'none'));
+  ['wall', 'wallHit', 'hangHit', 'miniShelf', 'shelfHit'].forEach((k) => ($(k).style.display = live ? '' : 'none'));
   $('props').innerHTML = '';
   $('phTag').hidden = true;
   $('scenes').innerHTML = ROOMS.map((x) => '<button type="button" data-room="' + x.id + '" aria-pressed="' + (x.id === r.id) + '"><span>' + x.icon + '</span>' + x.name + '</button>').join('');
@@ -653,10 +689,12 @@ function renderHome() {
   setRoom(S.room);
   PET.reset($('say').textContent);
   // 牆上最近三張、架上的紀念品
-  const recent = Object.entries(S.cards).sort((a, b2) => b2[1] - a[1]).slice(0, 3);
+  const hp = hangParts();      /* D500：自己掛的那張放第一個掛位，其餘兩格照舊放最近的 */
+  const recent = Object.entries(S.cards).sort((a, b2) => b2[1] - a[1]).map((e) => e[0]).filter((id) => !hp || id !== hp.id).slice(0, hp ? 2 : 3); if (hp) recent.unshift(hp.id);
   const WALL_X = [47, 59.7, 72.5];      // 三個空掛位的左緣（%，G-47 JSON）
-  $('wall').innerHTML = ''; recent.forEach(([id], n) => { const s = document.createElement('span'); const [loc, i] = id.split('-'); const l = LOCS.find((x) => x.id === loc), c = l.cards[+i]; s.style.left = WALL_X[n] + '%'; s.style.backgroundImage = c[2] ? 'url(assets/' + c[2] + ')' : 'linear-gradient(' + l.tone[0] + ',' + l.tone[1] + ')'; $('wall').appendChild(s); });
+  $('wall').innerHTML = ''; recent.forEach((id, n) => { const s = document.createElement('span'); if (hp && !n) { s.className = 'hung'; if (S.seen['pk_' + hp.l.id]) s.innerHTML = '<i></i>'; } const [loc, i] = id.split('-'); const l = LOCS.find((x) => x.id === loc), c = l.cards[+i]; s.style.left = WALL_X[n] + '%'; s.style.backgroundImage = c[2] ? 'url(assets/' + c[2] + ')' : 'linear-gradient(' + l.tone[0] + ',' + l.tone[1] + ')'; $('wall').appendChild(s); });
   $('wallHit').onclick = () => go('album');
+  { const hh = $('hangHit'); hh.hidden = !hp; if (hp) { hh.setAttribute('aria-label', '你掛的明信片：' + hp.l.name + '「' + hp.c[0] + '」，點一下聽小鳶說'); hh.onclick = openHang; } }
   const SHELF_Y = [48.3, 54.3, 60.1];      // v0.15：架上三格改成上下排，中心 x 16%（G-47 JSON）
   $('miniShelf').innerHTML = Object.entries(S.souvenirs).sort((a, b2) => b2[1] - a[1]).slice(0, 3).map(([k], n) => '<img src="assets/sv_' + k + '.png" alt="' + LOCS.find((l) => l.id === k).souvenir + '" class="' + (Date.now() - S.souvenirs[k] < 864e5 ? 'new' : '') + '" style="left:16%;top:' + SHELF_Y[n] + '%"><button class="svhit" type="button" data-sv="' + k + '" aria-label="' + LOCS.find((l) => l.id === k).souvenir + '，從' + LOCS.find((l) => l.id === k).name + '帶回來的，點開看" style="top:' + (SHELF_Y[n] - (n ? 3 : 5.5)) + '%;height:' + (n === 1 ? 6 : 8.5) + '%"></button>').join('');
   $('miniShelf').querySelectorAll('.svhit').forEach((b) => (b.onclick = () => showSvModal(b.dataset.sv, 'home', b)));
@@ -857,6 +895,7 @@ const PET = (() => {
   return {
     preen() { return { img: $('bird').dataset.k, ok: preenOk(), on: !!(pr && pr.on), k: pr ? pr.k : 0, lean: p.lean || 0, act: p.act, pose: p.pose, n: prN, told: prTold, say: p.say, x: p.x, y: p.y }; },      /* D479 測試掛勾 */
     freeze(sec) { p.act = 'idle'; p.t = 0; p.dur = sec || 30; p.then = null; },
+    tell(t, sec) { if (pr) preenEnd(false); go(62, 77); p.then = () => { p.face = 1; p.act = 'look'; p.dur = Math.max(2.6, (sec || 3.4) - .4); emote('heart'); say(t, sec || 3.4); }; },      /* D500：走到明信片牆前說一句 */
     hide() { $('sayBox').classList.add('off'); $('emote').hidden = true; p.sayT = 0; p.emoT = 0; },
     center() { const v = $('roomview'); v.scrollLeft = Math.max(0, p.x / 100 * ROOMDIM.w - v.clientWidth / 2); v.dispatchEvent(new Event('scroll')); },
     enter() {      // 換房間：小鳶從房間中間出來，說一句這個房間的話
@@ -1138,7 +1177,9 @@ function renderAlbum() {
   else body.innerHTML = '<p class="pad muted">合照館的照片請先下載到手機保存；收進收藏冊的功能之後再做。</p>';
 }
 function showCardModal(l, i, lim) {
-  const m = $('modal'); m.innerHTML = cardHTML(l, i, { lim }) + '<div class="row" style="width:min(340px,86vw);margin-top:14px"><button class="btn ghost" id="mf" style="color:#fff;border-color:#fff">看背面</button><button class="btn gold" id="mc">回收藏冊</button></div>'; m.classList.add('on');
+  const hid = lim ? '' : cardId(l, i), hung = !!hid && hang === hid;      /* D500：常設卡多一顆「掛到客廳牆上」 */
+  const m = $('modal'); m.innerHTML = cardHTML(l, i, { lim }) + '<div class="row" style="width:min(340px,86vw);margin-top:14px"><button class="btn ghost" id="mf" style="color:#fff;border-color:#fff">看背面</button><button class="btn gold" id="mc">回收藏冊</button></div>' + (hid ? '<div class="row" style="width:min(340px,86vw);margin-top:8px"><button class="btn" id="mh" type="button">' + (hung ? '已掛在客廳・拿下來' : '🖼 掛到客廳牆上') + '</button></div>' : ''); m.classList.add('on');
+  if (hid) $('mh').onclick = () => { if (hung) { hang = null; m.classList.remove('on'); toast('拿下來了，牆上換回最近的三張'); } else hangSet(l, i); };
   $('mf').onclick = () => { const p = $('pc'); p.classList.toggle('flip'); $('mf').textContent = p.classList.contains('flip') ? '看正面' : '看背面'; };
   $('mc').onclick = () => m.classList.remove('on');
 }
@@ -1172,7 +1213,7 @@ function renderDev() {
   d.querySelectorAll('[data-i]').forEach((b) => (b.onclick = () => { S.testItems[b.dataset.i] = !S.testItems[b.dataset.i]; save(); renderHome(); renderDev(); }));
   d.querySelectorAll('[data-x]').forEach((b) => (b.onclick = () => { const x = b.dataset.x; if (x === 'rice') S.riceDay = ''; if (x === 'now' && S.trip) S.trip.end = Date.now(); if (x === 'trips') S.trips += 5; if (x === 'stamps') S.stamps += 5; if (x === 'all') { let n = Date.now(); for (const l of LOCS) for (let i = 0; i < 3; i++) if (!S.cards[l.id + '-' + i]) S.cards[l.id + '-' + i] = n--; } if (x === 'reset') { S = fresh(); } save(); renderHome(); renderDev(); }));
 }
-window.__travel = { S: () => S, CFG, LOCS, rollTrip, setRnd: (f) => { rnd = f; }, go, commitTrip, depart: (k, items, pick) => { pk = { bento: k, items: items || [], pick: pick || '' }; depart(); }, finishNow: () => { if (S.trip) S.trip.end = Date.now(); tick(); }, open: openLetter, peek: openPeek, PEEK      /* D482 測試掛勾 */ };
+window.__travel = { hang: (id) => { if (id !== undefined) { hang = id; renderHome(); } return hang; }, S: () => S, CFG, LOCS, rollTrip, setRnd: (f) => { rnd = f; }, go, commitTrip, depart: (k, items, pick) => { pk = { bento: k, items: items || [], pick: pick || '' }; depart(); }, finishNow: () => { if (S.trip) S.trip.end = Date.now(); tick(); }, open: openLetter, peek: openPeek, PEEK      /* D482 測試掛勾 */ };
 go('home');
 if (S.fishGift) { const n = S.fishGift; S.fishGift = 0; save(); setTimeout(() => toast('捕魚做的便當送到了（' + n + ' 份），打包時可以選'), 600); }      // v0.2：捕魚 v0.7 結算直接給便當
 </script>
@@ -1381,10 +1422,10 @@ function travelBgmSync() { if (travelBgmOn) BGM.play('travel_' + ({ ranch: 'scho
   document.addEventListener('pointerdown', () => { if (travelBgmOn) travelBgmSync(); }, { passive: true });
 })();
 </script>
-<script src="cook.js?v=1.00"></script>
+<script src="cook.js?v=1.01"></script>
 <script src="boat.js?v=0.90"></script>
 <script src="wipe.js?v=0.98"></script>
-<script src="home.js?v=1.00"></script>
+<script src="home.js?v=1.01"></script>
 <script src="../shared/back_line.js?v=2"></script>
 <script>/* D104：旅行排行榜（明信片收藏數） */ if (window.KiteLB) { KiteLB.button(document.getElementById('lbSlot'), { title: '小鳶旅行收藏排行', travel: true }); setTimeout(function () { try { pushTravelStat(); } catch (e) {} }, 1500); }</script>
 </body>
