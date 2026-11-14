@@ -509,7 +509,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '1.47',
+  version: '1.48',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -932,6 +932,25 @@ function hearts(x, y, n) { for (let i = 0; i < n; i++) part('heart', x + rand(-1
 const PICK_NOTE = { jerky: '魚乾：補體力', power: '羽毛：變強', gale: '疾風：加速' };
 function addPick(kind, x, y) { picks.push({ kind, x, y, first: !seenPick[kind] }); seenPick[kind] = true; }      // first：這種道具這一局第一次出現
 /* D346 打擊感：打中閃白、魔王一抖＋傷害數字、短促打擊聲；大的清掉與魔王換階段時畫面停一下 */
+/* D502（GPT 1525 Q1）站穩聚羽：一般玩法第 1～8 關，小鳶穩住 still 秒（位移不超過 inR）後，新射出的普通羽收窄；離開定點超過 outR 就恢復原射法。
+   只在發射當下決定羽距與角度；顆數、射速、單發傷害、光羽、墨汁、大招不變；每日與試玩不用。 */
+const FOCUS = { still: 0.35, inR: 4, outR: 9, p1: 3, p2: 6, p3x: [4, 8], p3v: [20, 45], fade: 0.12 };
+let toldFocus = false;
+function focusTick(dt) {
+  let c = kite.fc; if (!c) c = kite.fc = { ax: kite.x, ay: kite.y, t: 0, on: false, a: 0 };
+  if (daily || endTimer > 0) { c.on = false; c.t = 0; c.a = 0; c.ax = kite.x; c.ay = kite.y; return; }
+  if (Math.hypot(kite.x - c.ax, kite.y - c.ay) > (c.on ? FOCUS.outR : FOCUS.inR)) { c.ax = kite.x; c.ay = kite.y; c.t = 0; c.on = false; }
+  else { c.t += dt; if (!c.on && c.t >= FOCUS.still) { c.on = true; stats.fcN = (stats.fcN || 0) + 1;
+    if (!toldFocus && (firstMove || stats.dragPx > 0) && t > 4 && cine <= 0 && foes.some((f) => f.y > 0 && f.y < kite.y)) { toldFocus = true; say('站穩，羽毛會集中！', kite.x, kite.y - 64, '#FFF4C8', false, '#1F3A4D'); beep(988, 0.07, 'triangle', 0.035, 240); } } }
+  c.a = calm ? (c.on ? 1 : 0) : Math.max(0, Math.min(1, c.a + (c.on ? dt : -dt) / FOCUS.fade));
+}
+function drawFocus() {      /* 小鳶前方一對往內收的短線：已聚羽 */
+  const c = kite.fc; if (!c || c.a <= 0 || mode === 'result') return;
+  const g = kite.power === 1 ? 9 : kite.power === 2 ? 12 : 15;
+  ctx.save(); ctx.translate(kite.x, kite.y); ctx.globalAlpha = 0.85 * c.a; ctx.lineCap = 'round';
+  for (const d of [-1, 1]) { ctx.beginPath(); ctx.moveTo(d * (g + 3), -30); ctx.lineTo(d * g, -43); ctx.strokeStyle = 'rgba(31,58,77,.55)'; ctx.lineWidth = 4; ctx.stroke(); ctx.strokeStyle = '#FFF4C8'; ctx.lineWidth = 2; ctx.stroke(); }
+  ctx.restore();
+}
 let pops = [];      /* D455：小怪被清掉時「白閃放大淡出」0.2 秒（打擊感），最多同時 12 個 */
 let hitStop = 0, hitSndT = 0, hitAt = null, sparks = [], pings = [], blkSndT = 0, bossWarnT = 0, bossWarned = false, toldDot = false;      /* D348：GPT 1920 命中火花、魔王出場預告；toldDot 這次開網頁只提示一次 */
 const CANF = (() => { try { const c = document.createElement('canvas').getContext('2d'); c.filter = 'brightness(2)'; return c.filter === 'brightness(2)'; } catch (e) { return false; } })();
@@ -1379,6 +1398,7 @@ function update(dt) {
   if (control === 'follow' && kite.drag) { const k = Math.min(1, K.followSpeed * slow * real); kite.x += (kite.tx - kite.x) * k; kite.y += (kite.ty - kite.y) * k; }
   kite.x = Math.max(22, Math.min(W - 22, kite.x)); kite.y = Math.max(K.minY, Math.min(K.maxY, kite.y));
   if (daily && daily.fork) forkClamp();      /* D421 */
+  focusTick(dt);      /* D502 */
   if (kite.safe > 0) kite.safe -= dt; else kite.hurtV = false;
   if (kite.galeT > 0) kite.galeT -= dt;
   if (kite.powerT > 0) { kite.powerT -= dt; if (kite.powerT <= 0 && kite.power > 1) { kite.power--; kite.powerT = kite.power > 1 ? CONFIG.feather.powerTime : 0; } }
@@ -1390,7 +1410,11 @@ function update(dt) {
   if (fireAcc >= CONFIG.feather.every * (kite.galeT > 0 ? 0.5 : 1) && endTimer <= 0) {
     fireAcc = 0; const v = CONFIG.feather.speed, p = kite.power;
     /* D341（Dari 11/05：參考噠噠戰機的射擊與飽滿度）：一開始就兩排羽毛；強化 3 排；再強化 5 支扇形 */
-    if (p === 1) { shots.push({ x: kite.x - 7, y: kite.y - 20, vx: 0, vy: -v }); shots.push({ x: kite.x + 7, y: kite.y - 20, vx: 0, vy: -v }); }
+    const fo = kite.fc && kite.fc.on ? FOCUS : null;      /* D502：站穩時收窄，其餘照舊 */
+    if (fo && p === 1) { for (const d of [-1, 1]) shots.push({ x: kite.x + d * fo.p1, y: kite.y - 20, vx: 0, vy: -v, fc: 1 }); }
+    else if (fo && p === 2) { shots.push({ x: kite.x, y: kite.y - 22, vx: 0, vy: -v, fc: 1 }); for (const d of [-1, 1]) shots.push({ x: kite.x + d * fo.p2, y: kite.y - 18, vx: 0, vy: -v, fc: 1 }); }
+    else if (fo) { shots.push({ x: kite.x, y: kite.y - 22, vx: 0, vy: -v, fc: 1 }); for (const d of [-1, 1]) { shots.push({ x: kite.x + d * fo.p3x[0], y: kite.y - 18, vx: d * fo.p3v[0], vy: -v, fc: 1 }); shots.push({ x: kite.x + d * fo.p3x[1], y: kite.y - 16, vx: d * fo.p3v[1], vy: -v, fc: 1 }); } }
+    else if (p === 1) { shots.push({ x: kite.x - 7, y: kite.y - 20, vx: 0, vy: -v }); shots.push({ x: kite.x + 7, y: kite.y - 20, vx: 0, vy: -v }); }
     else if (p === 2) { shots.push({ x: kite.x, y: kite.y - 22, vx: 0, vy: -v }); shots.push({ x: kite.x - 12, y: kite.y - 18, vx: 0, vy: -v }); shots.push({ x: kite.x + 12, y: kite.y - 18, vx: 0, vy: -v }); }
     else { shots.push({ x: kite.x, y: kite.y - 22, vx: 0, vy: -v }); shots.push({ x: kite.x - 8, y: kite.y - 18, vx: -60, vy: -v }); shots.push({ x: kite.x + 8, y: kite.y - 18, vx: 60, vy: -v }); shots.push({ x: kite.x - 12, y: kite.y - 16, vx: -125, vy: -v }); shots.push({ x: kite.x + 12, y: kite.y - 16, vx: 125, vy: -v }); }
     for (const s of shots) if (s.pw === undefined && !s.ink) s.pw = p;      /* D472（GPT 1630 Q2 推薦 b）：記下發射當時的火力，畫羽毛與命中亮點用；已射出的不跟著掉級換樣子 */
@@ -3828,7 +3852,7 @@ function draw() {
   if (ult) { if (ult.t < 0.75) drawUltAura(ult); if (ult.kind) drawUlt2(); else if (ult.jiao) drawJiao(); else drawUlt(); }
   for (const s of shots) drawShot(s);
   for (const p of pals) drawPal(p);
-  drawRing(); if (PM()) drawPierFriendFx(); drawKite(); drawNetOnKite(); drawParts(); if (booms.length) drawBooms();
+  drawRing(); if (PM()) drawPierFriendFx(); drawKite(); drawFocus(); drawNetOnKite(); drawParts(); if (booms.length) drawBooms();
   ctx.restore();
   if (fests.length || festTxt) drawFest();
   if (hudFly.length || hudPops.length) drawHudFly();
@@ -4404,6 +4428,7 @@ window.__flyGame.wb = () => ({ t: +t.toFixed(2), told: !!stats.toldWb, hit: !!st
 window.__flyGame.hop = () => foes.filter((q) => q.type === 'chip').map((q) => ({ x: +q.x.toFixed(1), y: +q.y.toFixed(1), k: +chipHopK(q).toFixed(2), t: q.hop ? +q.hop.t.toFixed(2) : null }));
 window.__flyGame.pop = () => foes.filter((q) => q.type === 'foam').map((q) => ({ x: +q.x.toFixed(1), y: +q.y.toFixed(1), hp: q.hp, k: foamPopK(q), hit: foamHit(q) && !!img.n_ice_hit, p: q.pop ? { t: +q.pop.t.toFixed(2), n: q.pop.n, up: +q.pop.up.toFixed(1) } : null }));      /* D478 測試掛勾 */
 window.__flyGame.roll = () => foes.filter((q) => q.type === 'tire').map((q) => ({ x: +q.x.toFixed(1), y: +q.y.toFixed(1), hp: q.hp, r: q.roll ? { t: +(q.roll.t || 0).toFixed(2), e: +q.roll.e.toFixed(2), dir: q.roll.dir, done: q.roll.done } : null }));      /* D475 測試掛勾 */
+window.__flyGame.fc = () => ({ on: !!(kite.fc && kite.fc.on), t: kite.fc ? +kite.fc.t.toFixed(2) : 0, a: kite.fc ? +kite.fc.a.toFixed(2) : 0, n: stats.fcN || 0, told: toldFocus, xs: shots.filter((q) => q.fc).map((q) => [+(q.x - kite.x).toFixed(1), q.vx]) });      /* D502 測試掛勾 */
 window.__flyGame.salv = { open: salvOpen, st: () => ({ mode, daily, kite, stats }) };      /* D432 測試掛勾 */
 window.__flyGame.fork = { open: forkOpen, map: toMap, st: () => ({ mode, t, daily, kite, foes, stats, sc: scoreFinal(), pings: pings.length }), ping: (x, y) => { pings.push({ x, y, life: 0.12, max: 0.12 }); return !!img.fx_blocked_ping; } };      /* D451：測試掛勾加 ping */      /* D421 測試掛勾 */
 /* C-81／C-82（Dari 10/13 01:03）：音樂開關、暫停鈕改圖示；選單畫面也有音樂，每個場景不同曲子 */
