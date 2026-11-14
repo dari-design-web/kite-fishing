@@ -109,6 +109,9 @@ header h1{font-size:20px;margin:0;flex:1}
 .sayLn{display:block}.sayNm{display:inline-block}
 .say{position:absolute;width:62%;text-align:center;pointer-events:none;z-index:130;transform:translate(-50%,-100%);transition:opacity .25s}
 .say.off{opacity:0}
+.say.ask .bubble{padding:8px 10px 9px}.stayQ{display:block;font-weight:700;margin-bottom:6px}.stayR{display:flex;gap:8px;justify-content:center}
+.stayB{pointer-events:auto;min-height:40px;padding:0 12px;border:2px solid var(--line);border-radius:999px;background:#FFF3DA;color:#4A3426;font:700 14px/1 inherit;font-family:inherit;white-space:nowrap;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.stayB:active{transform:scale(.96)}.stayB:focus-visible{outline:3px solid #2F7F86;outline-offset:2px}
 .say.flo{transform:none;text-align:center}.say.flo .bubble{max-width:100%;box-sizing:border-box;word-break:break-word}
 .say.flo .bubble::after{bottom:auto;top:-14px;left:var(--tx,50%);border-top-color:transparent;border-bottom-color:#fff}
 .say.flo.side .bubble::after{display:none}
@@ -376,7 +379,7 @@ header .back,.letter .skip{min-height:44px;min-width:44px;display:inline-flex;al
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '1.02',
+  version: '1.03',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 0,      // D80：遠行便當改用點數換，不再每 3 趟送 1 份（0＝關閉）
@@ -759,8 +762,52 @@ const PET = (() => {
     const r = ha.getBoundingClientRect(), q = sb.getBoundingClientRect(); if (!r.height || q.right < r.left || q.left > r.right) return;
     const d = r.bottom + 6 - q.top; if (d > 0) sb.style.top = 'calc(' + sb.style.top + ' + ' + Math.ceil(d) + 'px)';
   }
-  function say(t, sec) { p.say = t; p.sayT = sec || 2.8; $('say').textContent = t; $('sayBox').classList.remove('off'); }
+  function say(t, sec) { if (inv) { inv = null; $('sayBox').classList.remove('ask'); } p.say = t; p.sayT = sec || 2.8; $('say').textContent = t; $('sayBox').classList.remove('off'); }
   function emote(k, float) { const e = $('emote'); e.hidden = false; e.innerHTML = EMO[k]; e.className = 'emote' + (float ? ' float' : ''); void e.offsetWidth; p.emoT = float ? 2 : 2.4; }
+  /* D506（GPT 1925 Q1，數值 Claude 定）：客廳「陪小鳶待一會」。每次進客廳最多邀請一次（進來滿 6 秒、原活動做完、泡泡空著才問；兩次邀請至少隔 45 秒）：
+     原泡泡放一句話＋兩個短選項。「窗邊看看」＝走到窗旁空地（37,77）朝窗站 2.6 秒說一句這個時段的窗外；「歇一下」＝原地閉眼 ZZZ 4 秒，輕點叫醒。
+     不選就 4.6 秒後收掉（焦點在選項上時慢慢數）；說別的話、點小鳶、順羽、開面板、拆信、縮景、換房、出門都會收掉邀請並取消還沒做完的動作。
+     只有選項本身收點擊；只存記憶體、不發獎、不存檔。 */
+  const STAY = { wait: 6, gap: 45, ask: 4.6, look: 2.6, nap: 4, x: 37, y: 77, q: '陪我看一下，還是歇一下？' };
+  let inv = null, invDone = false, invIn = 0, invLast = -1e9, invWas = false, invN = 0, invPick = '';
+  function stayOk() {
+    if (S.state !== 'home' || !S.firstDone || ROOM().id !== 'living' || pr || document.hidden || $('keptC')) return false;
+    const b = $('bird'), room = $('room'); if (!b || !b.offsetParent || !room) return false;
+    const r = b.getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    return !!e && room.contains(e);      /* 小鳶上面蓋著面板、信、返家演出、擦窗、縮景時 e 不在房間裡 */
+  }
+  function stayEnd() {
+    if (!inv) return; inv = null;
+    const sb = $('sayBox'); sb.classList.remove('ask'); sb.classList.add('off'); $('say').textContent = ''; p.say = ''; p.sayT = 0;
+    if (p.act === 'idle' && p.dur === 99) { p.t = 0; p.dur = 0.3; }
+  }
+  function stayPick(k) {
+    if (!inv || !stayOk()) return stayEnd();
+    inv = null; invPick = k; const sb = $('sayBox'); sb.classList.remove('ask'); sb.classList.add('off'); $('say').textContent = ''; p.say = ''; roomUserT = 0;
+    if (k === 'win') {
+      go(STAY.x, STAY.y);
+      p.then = () => {
+        if (!stayOk()) return;
+        const hh = new Date().getHours();
+        p.face = -1; p.act = 'look'; p.t = 0; p.dur = STAY.look; emote('heart');
+        say(hh >= 19 || hh < 6 ? pick(['港口的燈一盞一盞亮起來了。', '晚上的船燈，好像星星掉在海上。']) : hh < 9 ? pick(['早上的港口好安靜，海亮亮的。', '漁船要出海了，一路順風～']) : pick(['你看，大船慢慢靠過來了！', '海水亮亮的，好像在對我眨眼睛。', '今天的雲，好像一大球棉花糖。']), STAY.look);
+      };
+    } else { p.act = 'nap'; p.t = 0; p.dur = STAY.nap; p.then = null; p.rest = true; emote('zzz'); say('那我瞇一下下…', 2); }
+    if (typeof travelBgmOn !== 'undefined' && travelBgmOn) BGM.sfx('pop');
+  }
+  function stayAsk(force) {
+    const now = performance.now();
+    if (!force && (invDone || p.sayT > 0 || now - invIn < STAY.wait * 1000 || now - invLast < STAY.gap * 1000)) return false;
+    if (inv || !stayOk()) return false;
+    invDone = true; invLast = now; invN++; invPick = ''; inv = { t: STAY.ask };
+    p.act = 'idle'; p.t = 0; p.dur = 99; p.then = null; p.pose = 'home'; p.sayT = 0; p.say = STAY.q; p.face = 1;
+    const s = $('say'), sb = $('sayBox'); s.textContent = '';
+    const q = document.createElement('span'); q.className = 'stayQ'; q.textContent = STAY.q; s.appendChild(q);
+    const row = document.createElement('span'); row.className = 'stayR'; s.appendChild(row);
+    [['win', '窗邊看看'], ['nap', '歇一下']].forEach(([k, t]) => { const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'stayB'; bt.dataset.stay = k; bt.textContent = t; bt.onclick = (e) => { e.stopPropagation(); stayPick(k); }; bt.onpointerdown = (e) => e.stopPropagation(); row.appendChild(bt); });
+    sb.classList.add('ask'); sb.classList.remove('off'); emote('q');
+    return true;
+  }
   function go(x, y) { p.sx = p.x; p.sy = p.y; p.tx = Math.max(AREA.x0, Math.min(AREA.x1, x)); p.ty = Math.max(AREA.y0, Math.min(AREA.y1, y)); p.face = p.tx >= p.x ? 1 : -1; p.act = 'walk'; p.t = 0; p.dur = Math.max(0.6, Math.hypot(p.tx - p.x, (p.ty - p.y) * 2) / 14); }
   function next() {
     p.t = 0; p.pose = S.state === 'back' ? 'back' : !S.firstDone ? 'wave' : 'home';
@@ -788,6 +835,7 @@ const PET = (() => {
       for (const a of acts2) { k2 -= a[0]; if (k2 <= 0) { a[1](); return; } }
       return;
     }
+    p.rest = false; if (stayAsk()) return;
     const cards = Object.keys(S.cards), svs = Object.keys(S.souvenirs), nb = (S.bento.far || 0) + (S.bento.squid || 0) + (S.bento.hair || 0) + (S.bento.special || 0);
     const acts = [
       [3, () => { go(rnd(AREA.x0, AREA.x1), rnd(AREA.y0, AREA.y1)); }],
@@ -854,6 +902,7 @@ const PET = (() => {
     if (S.state === 'away') return;
     if (performance.now() < prEat) { prEat = 0; return; }
     if (preenOk() && !prTold && ++prTaps === 2) { prTold = true; p.act = 'jump'; p.dur = 0.75; p.t = 0; p.then = null; emote('spark'); say('順著我的翅膀往下滑滑看～', 3.2); return; }
+    if (p.rest && p.act === 'nap') { p.rest = false; p.act = 'jump'; p.dur = 0.75; p.t = 0; p.then = null; emote('spark'); say(pick(['嗯？我醒了！', '哈～睡飽了，謝謝你陪我。']), 2.2); return; }
     p.act = 'jump'; p.dur = 0.75; p.t = 0; p.then = null; emote('heart', true);
     say(pick(S.state === 'back' ? ['我回來了！', '快看信嘛～', '好想你喔！'] : ['嘿！', '摸摸頭～', '好癢！', '我在這裡！', '早安呀，一起玩！', '耶！我好開心喔！']), 2.2);
   }
@@ -884,8 +933,10 @@ const PET = (() => {
   function frame(now) {
     const dt = Math.min(0.05, (now - (p.last || now)) / 1000); p.last = now;
     const b = $('bird');
+    { const inL = !!(b && b.offsetParent && S.state === 'home' && ROOM().id === 'living'); if (inL !== invWas) { invWas = inL; if (inL) { invIn = now; invDone = false; } else stayEnd(); } }      /* D506：進客廳才重新算一次邀請 */
     if (b && b.offsetParent && S.state !== 'away') {
       p.t += dt;
+      if (inv) { if (p.act !== 'idle' || !stayOk()) stayEnd(); else { const a = document.activeElement; inv.t -= a && a.classList && a.classList.contains('stayB') ? dt / 3 : dt; if (inv.t <= 0) stayEnd(); } }
       let bob = 0, rot = 0, sq = 1;
       if (p.act === 'walk') { const u = Math.min(1, p.t / p.dur); p.x = p.sx + (p.tx - p.sx) * u; p.y = p.sy + (p.ty - p.sy) * u; bob = Math.abs(Math.sin(p.t * 9)) * 2.2; rot = Math.sin(p.t * 9) * 4; if (u >= 1) { p.act = 'idle'; p.t = 0; p.dur = 0.4; const f = p.then; p.then = null; if (f) f(); } }
       else if (p.act === 'jump') { const u = Math.min(1, p.t / p.dur); bob = Math.sin(u * Math.PI) * 9; sq = u < 0.15 || u > 0.9 ? 0.92 : 1.04; }
@@ -921,17 +972,18 @@ const PET = (() => {
   requestAnimationFrame(frame);
   return {
     preen() { return { img: $('bird').dataset.k, ok: preenOk(), on: !!(pr && pr.on), k: pr ? pr.k : 0, lean: p.lean || 0, act: p.act, pose: p.pose, n: prN, told: prTold, say: p.say, x: p.x, y: p.y }; },      /* D479 測試掛勾 */
-    freeze(sec) { p.act = 'idle'; p.t = 0; p.dur = sec || 30; p.then = null; },
-    tell(t, sec) { if (pr) preenEnd(false); go(62, 77); p.then = () => { p.face = 1; p.act = 'look'; p.dur = Math.max(2.6, (sec || 3.4) - .4); emote('heart'); say(t, sec || 3.4); }; },      /* D500：走到明信片牆前說一句 */
-    hide() { $('sayBox').classList.add('off'); $('emote').hidden = true; p.sayT = 0; p.emoT = 0; },
+    stay(force) { if (force) stayAsk(true); return { ask: !!inv, t: inv ? inv.t : 0, done: invDone, n: invN, pick: invPick, act: p.act, rest: !!p.rest, x: p.x, y: p.y, face: p.face, say: p.say, ok: stayOk() }; },      /* D506 測試掛勾 */
+    freeze(sec) { stayEnd(); p.act = 'idle'; p.t = 0; p.dur = sec || 30; p.then = null; },
+    tell(t, sec) { stayEnd(); if (pr) preenEnd(false); go(62, 77); p.then = () => { p.face = 1; p.act = 'look'; p.dur = Math.max(2.6, (sec || 3.4) - .4); emote('heart'); say(t, sec || 3.4); }; },      /* D500：走到明信片牆前說一句 */
+    hide() { stayEnd(); $('sayBox').classList.add('off'); $('emote').hidden = true; p.sayT = 0; p.emoT = 0; },
     center() { const v = $('roomview'); v.scrollLeft = Math.max(0, p.x / 100 * ROOMDIM.w - v.clientWidth / 2); v.dispatchEvent(new Event('scroll')); },
     enter() {      // 換房間：小鳶從房間中間出來，說一句這個房間的話
-      const r = ROOM(); Object.assign(AREA, r.area); p.x = (AREA.x0 + AREA.x1) / 2; p.y = (AREA.y0 + AREA.y1) / 2; p.act = 'jump'; p.t = 0; p.dur = 0.75; p.then = null;
+      stayEnd(); const r = ROOM(); Object.assign(AREA, r.area); p.x = (AREA.x0 + AREA.x1) / 2; p.y = (AREA.y0 + AREA.y1) / 2; p.act = 'jump'; p.t = 0; p.dur = 0.75; p.then = null;
       if (S.state !== 'away') { emote('spark'); say(r.says ? pick(r.says) : pick(['回到客廳了！', '我的明信片牆～'])); }
       this.center();
     },
     reset(line) {      // renderHome 呼叫：換狀態時重新開始
-      const b = $('bird'); b.onclick = tap; b.onpointerdown = preenDown; if (pr) preenEnd(false); p.then = null; b.dataset.k = ''; Object.assign(AREA, ROOM().area); p.x = Math.max(AREA.x0, Math.min(AREA.x1, p.x)); p.y = Math.max(AREA.y0, Math.min(AREA.y1, p.y));
+      const b = $('bird'); b.onclick = tap; b.onpointerdown = preenDown; if (pr) preenEnd(false); if (inv) { inv = null; $('sayBox').classList.remove('ask'); } p.rest = false; p.then = null; b.dataset.k = ''; Object.assign(AREA, ROOM().area); p.x = Math.max(AREA.x0, Math.min(AREA.x1, p.x)); p.y = Math.max(AREA.y0, Math.min(AREA.y1, p.y));
       if (line) say(line, 3.2); else $('sayBox').classList.add('off');
       next();
     }
@@ -1450,10 +1502,10 @@ function travelBgmSync() { if (travelBgmOn) BGM.play('travel_' + ({ ranch: 'scho
   document.addEventListener('pointerdown', () => { if (travelBgmOn) travelBgmSync(); }, { passive: true });
 })();
 </script>
-<script src="cook.js?v=1.02"></script>
+<script src="cook.js?v=1.03"></script>
 <script src="boat.js?v=0.90"></script>
 <script src="wipe.js?v=0.98"></script>
-<script src="home.js?v=1.02"></script>
+<script src="home.js?v=1.03"></script>
 <script src="../shared/back_line.js?v=2"></script>
 <script>/* D104：旅行排行榜（明信片收藏數） */ if (window.KiteLB) { KiteLB.button(document.getElementById('lbSlot'), { title: '小鳶旅行收藏排行', travel: true }); setTimeout(function () { try { pushTravelStat(); } catch (e) {} }, 1500); }</script>
 </body>
