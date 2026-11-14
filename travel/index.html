@@ -111,6 +111,13 @@ header h1{font-size:20px;margin:0;flex:1}
 .say.off{opacity:0}
 .say.ask .bubble{padding:8px 10px 9px}.stayQ{display:block;font-weight:700;margin-bottom:6px}.stayR{display:flex;gap:8px;justify-content:center}
 .stayB{pointer-events:auto;min-height:40px;padding:0 12px;border:2px solid var(--line);border-radius:999px;background:#FFF3DA;color:#4A3426;font:700 14px/1 inherit;font-family:inherit;white-space:nowrap;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.tidy{position:absolute;z-index:90;width:13%;transform:translate(-50%,-100%);pointer-events:none;display:flex;flex-direction:column;align-items:center;transition:opacity .3s,transform .3s;animation:tidyIn .35s ease-out}
+.tidy img{display:block;width:100%;height:auto;filter:drop-shadow(0 3px 2px rgba(60,40,20,.35));transform:rotate(-8deg)}
+.tidy.out{opacity:0;transform:translate(-50%,-112%) scale(.7)}
+.tidyB{position:absolute;top:100%;right:-6px;margin-top:3px;pointer-events:auto;min-height:40px;padding:0 12px;border:2px solid var(--line);border-radius:999px;background:#FFF3DA;color:#4A3426;font:700 14px/1 inherit;font-family:inherit;white-space:nowrap;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;box-shadow:0 2px 0 rgba(90,60,30,.35)}
+.tidyB:active{transform:scale(.96)}.tidyB:focus-visible{outline:3px solid #2F7F86;outline-offset:2px}
+@keyframes tidyIn{from{opacity:0;transform:translate(-50%,-88%)}to{opacity:1;transform:translate(-50%,-100%)}}
+@media (prefers-reduced-motion:reduce){.tidy{animation:none;transition:none}}
 .stayB:active{transform:scale(.96)}.stayB:focus-visible{outline:3px solid #2F7F86;outline-offset:2px}
 .say.flo{transform:none;text-align:center}.say.flo .bubble{max-width:100%;box-sizing:border-box;word-break:break-word}
 .say.flo .bubble::after{bottom:auto;top:-14px;left:var(--tx,50%);border-top-color:transparent;border-bottom-color:#fff}
@@ -379,7 +386,7 @@ header .back,.letter .skip{min-height:44px;min-width:44px;display:inline-flex;al
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '1.03',
+  version: '1.04',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 0,      // D80：遠行便當改用點數換，不再每 3 趟送 1 份（0＝關閉）
@@ -797,7 +804,7 @@ const PET = (() => {
   }
   function stayAsk(force) {
     const now = performance.now();
-    if (!force && (invDone || p.sayT > 0 || now - invIn < STAY.wait * 1000 || now - invLast < STAY.gap * 1000)) return false;
+    if (!force && (tidy || tidyQ || invDone || p.sayT > 0 || now - invIn < STAY.wait * 1000 || now - invLast < STAY.gap * 1000)) return false;
     if (inv || !stayOk()) return false;
     invDone = true; invLast = now; invN++; invPick = ''; inv = { t: STAY.ask };
     p.act = 'idle'; p.t = 0; p.dur = 99; p.then = null; p.pose = 'home'; p.sayT = 0; p.say = STAY.q; p.face = 1;
@@ -807,6 +814,50 @@ const PET = (() => {
     [['win', '窗邊看看'], ['nap', '歇一下']].forEach(([k, t]) => { const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'stayB'; bt.dataset.stay = k; bt.textContent = t; bt.onclick = (e) => { e.stopPropagation(); stayPick(k); }; bt.onpointerdown = (e) => e.stopPropagation(); row.appendChild(bt); });
     sb.classList.add('ask'); sb.classList.remove('off'); emote('q');
     return true;
+  }
+  /* D508（GPT 2225 Q1）回家一起收道具：這趟確實帶出門的第一件道具（相機／望遠鏡／雨傘，照打包順序），讀完信回到客廳後短暫放在門邊，旁邊一顆「一起收好」。
+     點了小鳶走到門邊收起來、說「收好啦！」；不點約 6.5 秒自己收掉。略過拆信、沒帶道具、回到的不是客廳就沒有。
+     要等返家說話、D503 縮景都結束才出現（最多等 TIDY.wait 秒）；換房、出門、離開小屋畫面、面板蓋住、切到背景就收掉。只存記憶體、不發獎、不存檔。 */
+  const TIDY = { wait: 14, lead: 0.8, show: 6.5, lock: 7, x: 77, y: 84, ix: 86, iy: 81 };
+  let tidy = null, tidyQ = null, tidyN = 0, tidyGot = 0;
+  function tidyEnd() { if (tidy && tidy.el.isConnected) tidy.el.remove(); tidy = null; tidyQ = null; }
+  function tidySeen() { const r = tidy.el.getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!e && $('room').contains(e); }      /* 道具上面蓋著面板、信，或被捲到畫面外時 e 不在房間裡 */
+  function tidyShow(k) {
+    const el = document.createElement('div'); el.className = 'tidy'; el.id = 'tidy'; el.style.left = TIDY.ix + '%'; el.style.top = TIDY.iy + '%';
+    el.innerHTML = '<img src="assets/item_' + k + '.png" alt="">';
+    const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'tidyB'; bt.textContent = '一起收好'; bt.setAttribute('aria-label', '和小鳶一起把這趟帶的' + CFG.items[k].name + '收好');
+    bt.onclick = (e) => { e.stopPropagation(); tidyPick(); }; bt.onpointerdown = (e) => e.stopPropagation();
+    el.appendChild(bt); $('room').appendChild(el);
+    tidy = { k, el, t: TIDY.show, st: 0 };
+    if (!tidySeen()) return tidyEnd();
+    tidyN++; p.act = 'idle'; p.t = 0; p.dur = 3.2; p.then = null; p.rest = false; p.pose = 'home'; p.face = 1; emote('excl');      /* 放下手邊的事（打盹、走路、唱歌），轉向門邊說一句 */
+    say('這趟帶的' + CFG.items[k].name + '還在門邊～', 3);
+  }
+  function tidyPick() {
+    if (!tidy || tidy.st) return;
+    stayEnd(); if (pr) preenEnd(false);
+    const me = tidy, bt = me.el.querySelector('button'); if (bt) bt.remove();
+    me.st = 1; me.t = TIDY.lock; roomUserT = 0;
+    go(TIDY.x, TIDY.y);
+    p.then = () => {
+      if (tidy !== me) return;
+      tidy = null; tidyGot++; invLast = Math.max(invLast, performance.now() - (STAY.gap - 12) * 1000); me.el.classList.add('out');      /* 剛收完，「陪小鳶待一會」至少再等 12 秒 */
+       setTimeout(() => { if (me.el.isConnected) me.el.remove(); }, 320);
+      p.face = 1; p.act = 'look'; p.t = 0; p.dur = 2.4; emote('heart'); say('收好啦！', 2.4);
+      if (typeof travelBgmOn !== 'undefined' && travelBgmOn) BGM.sfx('pop');
+    };
+  }
+  function tidyTick(dt, inL) {
+    if (tidyQ) {
+      tidyQ.t -= dt;
+      if (!inL || inv || tidyQ.t <= 0) { tidyQ = null; return; }
+      if (tidyQ.t <= TIDY.wait - TIDY.lead && stayOk()) { const k = tidyQ.k; tidyQ = null; tidyShow(k); }
+      return;
+    }
+    if (!tidy) return;
+    if (!inL || document.hidden || !tidySeen()) return tidyEnd();
+    tidy.t -= dt;
+    if (tidy.t <= 0) { const el = tidy.el; tidy = null; el.classList.add('out'); setTimeout(() => { if (el.isConnected) el.remove(); }, 320); }      /* 沒點（或走過去途中被別的事打斷）：道具自己收起，不說話 */
   }
   function go(x, y) { p.sx = p.x; p.sy = p.y; p.tx = Math.max(AREA.x0, Math.min(AREA.x1, x)); p.ty = Math.max(AREA.y0, Math.min(AREA.y1, y)); p.face = p.tx >= p.x ? 1 : -1; p.act = 'walk'; p.t = 0; p.dur = Math.max(0.6, Math.hypot(p.tx - p.x, (p.ty - p.y) * 2) / 14); }
   function next() {
@@ -933,7 +984,7 @@ const PET = (() => {
   function frame(now) {
     const dt = Math.min(0.05, (now - (p.last || now)) / 1000); p.last = now;
     const b = $('bird');
-    { const inL = !!(b && b.offsetParent && S.state === 'home' && ROOM().id === 'living'); if (inL !== invWas) { invWas = inL; if (inL) { invIn = now; invDone = false; } else stayEnd(); } }      /* D506：進客廳才重新算一次邀請 */
+    { const inL = !!(b && b.offsetParent && S.state === 'home' && ROOM().id === 'living'); if (inL !== invWas) { invWas = inL; if (inL) { invIn = now; invDone = false; } else stayEnd(); } if (tidy || tidyQ) tidyTick(dt, inL); }      /* D506：進客廳才重新算一次邀請；D508：門邊道具跟著同一個「在客廳」判定 */
     if (b && b.offsetParent && S.state !== 'away') {
       p.t += dt;
       if (inv) { if (p.act !== 'idle' || !stayOk()) stayEnd(); else { const a = document.activeElement; inv.t -= a && a.classList && a.classList.contains('stayB') ? dt / 3 : dt; if (inv.t <= 0) stayEnd(); } }
@@ -973,6 +1024,8 @@ const PET = (() => {
   return {
     preen() { return { img: $('bird').dataset.k, ok: preenOk(), on: !!(pr && pr.on), k: pr ? pr.k : 0, lean: p.lean || 0, act: p.act, pose: p.pose, n: prN, told: prTold, say: p.say, x: p.x, y: p.y }; },      /* D479 測試掛勾 */
     stay(force) { if (force) stayAsk(true); return { ask: !!inv, t: inv ? inv.t : 0, done: invDone, n: invN, pick: invPick, act: p.act, rest: !!p.rest, x: p.x, y: p.y, face: p.face, say: p.say, ok: stayOk() }; },      /* D506 測試掛勾 */
+    tidy(k) { tidyEnd(); if (k && CFG.items[k]) tidyQ = { k, t: TIDY.wait }; },      /* D508：讀完信回客廳後排一次門邊道具 */
+    tidyInfo() { return { q: tidyQ ? +tidyQ.t.toFixed(2) : 0, on: !!tidy, k: tidy ? tidy.k : '', st: tidy ? tidy.st : -1, t: tidy ? +tidy.t.toFixed(2) : 0, n: tidyN, got: tidyGot, act: p.act, x: p.x, y: p.y, say: p.say }; },      /* D508 測試掛勾 */
     freeze(sec) { stayEnd(); p.act = 'idle'; p.t = 0; p.dur = sec || 30; p.then = null; },
     tell(t, sec) { stayEnd(); if (pr) preenEnd(false); go(62, 77); p.then = () => { p.face = 1; p.act = 'look'; p.dur = Math.max(2.6, (sec || 3.4) - .4); emote('heart'); say(t, sec || 3.4); }; },      /* D500：走到明信片牆前說一句 */
     hide() { stayEnd(); $('sayBox').classList.add('off'); $('emote').hidden = true; p.sayT = 0; p.emoT = 0; },
@@ -1186,7 +1239,8 @@ function openLetter() {
   const story = window.HOME && HOME.story ? HOME.story(tr) : null; let sp = 0;      /* D192：N3 回家小故事卡 */
   if (window.HOME) { const hx = HOME.letterExtra(tr, !!story); if (hx) extras.push(hx); }      // D162：配菜料理小記
   const kv = keptView(tr);      /* D503：這趟選的風景，要在 commitTrip 清旅程之前先拿出來 */
-  const finish = (ev) => { const tellKept = kv && !story && !ev; S.letters = nL; const news = commitTrip(); L.remove(); if (S.titles && Object.keys(S.titles).length) {} if (tellKept) S.room = 'living'; go('home'); toast(news.length ? '收進收藏冊了！' : '小鳶回來了'); if (tellKept) keptHome(l.id, kv); };      /* 按鈕點擊會帶事件進來＝略過或一般收尾；只有讀完整封信按「收進收藏冊」才在客廳說選的那一景 */
+  const tk = (tr.items || []).find((k) => k === 'camera' || k === 'telescope' || k === 'umbrella') || '';      /* D508：這趟確實帶出門的第一件道具，也要在 commitTrip 之前先拿 */
+  const finish = (ev) => { const tellKept = kv && !story && !ev; S.letters = nL; const news = commitTrip(); L.remove(); if (S.titles && Object.keys(S.titles).length) {} if (tellKept) S.room = 'living'; go('home'); toast(news.length ? '收進收藏冊了！' : '小鳶回來了'); if (tellKept) keptHome(l.id, kv); if (tk && !ev) PET.tidy(tk); };      /* 按鈕點擊會帶事件進來＝略過或一般收尾；只有讀完整封信按「收進收藏冊」才在客廳說選的那一景 */
   $('skipL').onclick = finish;
   let step = 0;
   const showCard = () => {
@@ -1502,10 +1556,10 @@ function travelBgmSync() { if (travelBgmOn) BGM.play('travel_' + ({ ranch: 'scho
   document.addEventListener('pointerdown', () => { if (travelBgmOn) travelBgmSync(); }, { passive: true });
 })();
 </script>
-<script src="cook.js?v=1.03"></script>
+<script src="cook.js?v=1.04"></script>
 <script src="boat.js?v=0.90"></script>
 <script src="wipe.js?v=0.98"></script>
-<script src="home.js?v=1.03"></script>
+<script src="home.js?v=1.04"></script>
 <script src="../shared/back_line.js?v=2"></script>
 <script>/* D104：旅行排行榜（明信片收藏數） */ if (window.KiteLB) { KiteLB.button(document.getElementById('lbSlot'), { title: '小鳶旅行收藏排行', travel: true }); setTimeout(function () { try { pushTravelStat(); } catch (e) {} }, 1500); }</script>
 </body>
