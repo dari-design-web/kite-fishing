@@ -305,6 +305,21 @@ function drawTwo(g) {
     ctx.globalAlpha = al; ctx.beginPath(); ctx.arc(TWO.x, y, r, 0, 6.283); ctx.fillStyle = on ? C.gold : 'rgba(16,41,61,.72)'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = on ? C.ink : '#E8FBFF'; if (!on) ctx.setLineDash([4, 3]); ctx.stroke(); ctx.setLineDash([]);
     text(on ? '✓' : '' + k, TWO.x, y + 0.5, on ? 17 : 13, on ? C.ink : C.paper, 'center', 900, false); ctx.globalAlpha = 1; });
 }
+/* D501（GPT 1440 Q1）借浪合一對小委託：一般玩法本局第一次升到第 4 關，升關橫幅退場後，池框左邊亮一個小圓印「浪」，小鳶說「把一對小夥伴留在旁邊，借水波合起來！」。
+   章魚以上的合成水波（D493）推到旁邊的夥伴時，被推到的亮白邊 WAVEQ.win 秒；這段時間內，其中一隻和另一隻「水波前就在池裡」的同階夥伴照原流程合起來，圓印變金勾、冒「借浪合到了！」後收起。
+   不算：水波的成品、那次水波的兩個輸入、剛放下還沒滿 WAVEQ.age 秒的。同時有升關橫幅、新發現卡或快滿警示時，金勾和字等它們退場後才出。沒完成就在下次升關或結算時收起。
+   只是自選的小目標：投放、合成、水波、分數、連鎖、升關都不變；只存在本局。快滿警示、過線、新發現卡時圓印先讓位。每日與四個試玩沒有。 */
+const WAVEQ = { lv: 4, x: 17, y: 252, r: 15, win: 0.8, age: 0.5, hold: 1.3, fade: 0.4 };
+function drawWaveQ(g) {
+  const q = g.wq; if (!q || !q.st || q.st > 3 || g.done) return; const el = g.t - q.t0; let al = 1;
+  if (q.st === 1) al = clamp(el / 0.3, 0, 1); else if (q.st === 2) { al = clamp((WAVEQ.hold + WAVEQ.fade - el) / WAVEQ.fade, 0, 1); if (el >= WAVEQ.hold + WAVEQ.fade) { q.st = 4; return; } } else { al = clamp(1 - el / WAVEQ.fade, 0, 1); if (el >= WAVEQ.fade) { q.st = 4; return; } }
+  if (g.nearT > 0 || g.over > 0 || g.found) return;
+  if (q.st === 1) for (const b of g.balls) { if (!b.wv || !b.wv.p || b.dead) continue; const e = g.t - b.wv.t; if (e < 0 || e >= WAVEQ.win) continue;
+    ctx.globalAlpha = al * (RM ? 0.85 : clamp((WAVEQ.win - e) / 0.25, 0, 1) * 0.9); ctx.lineWidth = 3; ctx.strokeStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 3, 0, 6.283); ctx.stroke(); ctx.globalAlpha = 1; }
+  const on = q.st === 2, e = on ? el : 0, sc = on ? (RM ? 1 : 1 + 0.35 * clamp(1 - e / 0.25, 0, 1)) : (RM ? 1 : 1 + 0.05 * Math.sin(g.t * 5)), r = WAVEQ.r * sc;
+  ctx.globalAlpha = al; ctx.beginPath(); ctx.arc(WAVEQ.x, WAVEQ.y, r, 0, 6.283); ctx.fillStyle = on ? C.gold : 'rgba(16,41,61,.72)'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = on ? C.ink : '#E8FBFF'; if (!on) ctx.setLineDash([4, 3]); ctx.stroke(); ctx.setLineDash([]);
+  text(on ? '✓' : '浪', WAVEQ.x, WAVEQ.y + 0.5, on ? 17 : 13, on ? C.ink : C.paper, 'center', 900, false); ctx.globalAlpha = 1;
+}
 function drawBerth(g) {
   const q = g.bq; if (!q || !q.st || q.st > 3) return; const el = g.t - q.t0; let al = 1;
   if (q.st === 1) al = clamp(el / 0.3, 0, 1); else if (q.st === 2) { al = clamp((BERTH.hold + BERTH.fade - el) / BERTH.fade, 0, 1); if (el >= BERTH.hold + BERTH.fade) { q.st = 4; return; } } else { al = clamp(1 - el / BERTH.fade, 0, 1); if (el >= BERTH.fade) { q.st = 4; return; } }
@@ -364,7 +379,7 @@ function makeMerge() {
     g.mergedNow = false; let thudB = null; const thudOk = (b) => b.thud === 1 && b.age >= 0.58 && b.vy >= THUD.minVy && !b.dead;      /* D464：剛合出來 0.08 秒內的接觸不算，等它往下落再撞 */
     const thudHit = (b) => { if (!thudOk(b)) return; b.thud = 2; if (!thudB || b.lv > thudB.lv) thudB = b; };
     if (g.halo) { g.halo.t += dt; if (g.halo.t >= HALO.dur || g.halo.b.dead || g.balls.indexOf(g.halo.b) < 0) g.halo = null; }      /* D457：高階登場短芒只跟遊戲時間走（暫停凍結），成品被再合／移走就丟 */
-    g.t += dt; if (g.bq && g.bq.st === 0 && !(g.bannerT > 0) && !g.found && !g.done) { g.bq.st = 1; g.bq.t0 = g.t; g.say = '試試在兩邊各合成一次'; g.sayT = 2.6; }      /* D495 */ if (g.tq && g.tq.st === 0 && !(g.bannerT > 0) && !g.found && !g.done) { g.tq.st = 1; g.tq.t0 = g.t; g.say = '放一顆，讓合出的夥伴再合一次'; g.sayT = 3; }      /* D498 */ if (g.lean) { g.lean.t += dt; if (g.lean.t >= LEAN.dur || g.done || g.nearK > 0 || g.over > 0 || g.bannerT > 0 || g.found) g.lean = null; } if (g.swapFx > 0) g.swapFx -= dt; if (g.sayT > 0) g.sayT -= dt; if (g.bannerT > 0) g.bannerT -= dt; if (g.newT > 0) g.newT -= dt; if (g.found) { g.found.t -= dt; if (g.found.t <= 0) g.found = null; }
+    g.t += dt; if (g.bq && g.bq.st === 0 && !(g.bannerT > 0) && !g.found && !g.done) { g.bq.st = 1; g.bq.t0 = g.t; g.say = '試試在兩邊各合成一次'; g.sayT = 2.6; }      /* D495 */ if (g.tq && g.tq.st === 0 && !(g.bannerT > 0) && !g.found && !g.done) { g.tq.st = 1; g.tq.t0 = g.t; g.say = '放一顆，讓合出的夥伴再合一次'; g.sayT = 3; }      /* D498 */ if (g.wq && g.wq.st === 0 && !(g.bannerT > 0) && !g.found && !g.done) { g.wq.st = 1; g.wq.t0 = g.t; g.say = '把一對小夥伴留在旁邊，借水波合起來！'; g.sayT = 3; } if (g.wq && g.wq.st === 2 && !g.wq.said) { if (g.bannerT > 0 || g.found || g.nearT > 0 || g.over > 0) g.wq.t0 = g.t; else if (!g.done) { g.wq.said = true; g.wq.t0 = g.t; pop('借浪合到了！', W / 2, 322, C.gold, true); jingle([784, 988, 1175], 80); } }      /* D501 */ if (g.lean) { g.lean.t += dt; if (g.lean.t >= LEAN.dur || g.done || g.nearK > 0 || g.over > 0 || g.bannerT > 0 || g.found) g.lean = null; } if (g.swapFx > 0) g.swapFx -= dt; if (g.sayT > 0) g.sayT -= dt; if (g.bannerT > 0) g.bannerT -= dt; if (g.newT > 0) g.newT -= dt; if (g.found) { g.found.t -= dt; if (g.found.t <= 0) g.found = null; }
     if (g.chainT > 0) { g.chainT -= dt; if (g.chainT <= 0) g.chain = 0; }
     if (g.wantT > 0) { g.wantT -= dt; if (g.wantT <= 0 || g.q[0] !== g.wantLv) g.wantT = 0; }      /* D207（GPT 1525 B）：每局第一次普通合成，下一個預覽輕歪＋「我也要！」最多 0.6 秒；預覽換圖就收 */
     if (!g.fall && !g.done) { g.wait -= dt; if (g.wait <= 0) g.spawn(); }
@@ -429,6 +444,7 @@ function makeMerge() {
   };
   g.merge = (a, b) => {
     const lv = a.lv + 1, x = (a.x + b.x) / 2, y = (a.y + b.y) / 2;
+    const wqOk = !!(g.wq && g.wq.st === 1 && a.wv && b.wv && a.wv.id === b.wv.id && (a.wv.p || b.wv.p) && g.t - a.wv.t <= WAVEQ.win);      /* D501 借浪合一對：這一對都在同一次水波前就在池裡、至少一隻被推到、在時限內合起來 */
     g.chain = g.chainT > 0 ? g.chain + 1 : 1; g.chainT = 1.3; g.bestChain = Math.max(g.bestChain, g.chain); const mul = g.chain >= 2 ? Math.min(5, g.chain) : 1; if (window.KiteBoard && !g.ferry && !g.net && !g.swp && !g.dual) KiteBoard.ev('merge', { chain: g.chain });      // QA：連鎖倍數最多 ×5，亂丟快丟不會比用心放分數高
     /* D474（GPT 1730 Q2 推薦 B）：一般玩法裡，同一組連鎖第一次到 ×3 的那一下，合成點旁邊最多兩隻已經落穩、沒參與合成的成品朝合成點歪一下頭再回正（0.3 秒、最多 6 度，只改畫的角度）。
        快滿警示、解圍收光、升關橫幅、新發現卡、鯨鯊慶典、收局時不播；每日、試玩、減少動態不播；不動物理、分數、連鎖、紅線 */
@@ -452,10 +468,10 @@ function makeMerge() {
       if (!DS && !g.ferry && !g.net && !g.swp && !g.dual) BOAT.list.forEach((d, i) => { if (lv >= d.lv && !(g.boats = g.boats || []).some((o) => o.i === i)) g.boats.push({ i, t0: g.t + BOAT.wait, st: 0 }); });      /* D476：小船靠岸 */
       g.discover(lv);
       if (lv >= PUSH.minLv && !DS && !g.ferry && !g.net && !g.swp && !g.dual && !g.done) {      /* D493 合成水波 */
-        const R = SEAF[lv][1], tight = g.nearK > 0 || g.over > 0, me = g.balls[g.balls.length - 1]; let n = 0;
-        for (const q of g.balls) { if (q === me || q === a || q === b || q.dead) continue; const dx = q.x - x, dy = q.y - y, d = Math.hypot(dx, dy) || 0.01, gp = d - R - q.r; if (gp > PUSH.gap) continue;
+        const R = SEAF[lv][1], tight = g.nearK > 0 || g.over > 0, me = g.balls[g.balls.length - 1], wid = g.wq && g.wq.st === 1 ? (g.wq.id = (g.wq.id || 0) + 1) : 0; let n = 0;
+        for (const q of g.balls) { if (q === me || q === a || q === b || q.dead) continue; if (wid && q.age >= WAVEQ.age) q.wv = { id: wid, t: g.t, p: 0 };      /* D501：記下這次水波前就在池裡的夥伴 */ const dx = q.x - x, dy = q.y - y, d = Math.hypot(dx, dy) || 0.01, gp = d - R - q.r; if (gp > PUSH.gap) continue;
           const u = clamp(gp / PUSH.gap, 0, 1), k = 1 - u * u, v = Math.min(PUSH.vMax, (PUSH.v0 + (lv - PUSH.minLv) * PUSH.vLv) * clamp(R / q.r, 0.5, 1.4)) * k, ny = dy / d;
-          q.vx += dx / d * v; if (ny < 0 && !tight && q.y - q.r > BOX.line + 40) q.vy += ny * v * PUSH.up; q.sq = Math.max(q.sq || 0, PUSH.sq * k); n++; }
+          q.vx += dx / d * v; if (ny < 0 && !tight && q.y - q.r > BOX.line + 40) q.vy += ny * v * PUSH.up; q.sq = Math.max(q.sq || 0, PUSH.sq * k); n++; if (q.wv && q.wv.id === wid && v > 1) q.wv.p = 1; }
         g.pushN = (g.pushN || 0) + 1; g.pushHit = (g.pushHit || 0) + n;
         if (!RM) { waves.push({ x, y, r: R, t: 0 }); if (lv >= PUSH.stopLv && lv < 9) g.hs = PUSH.stop; }
       }
@@ -465,7 +481,8 @@ function makeMerge() {
     if (g.tq && g.tq.st === 1) { const src = [a, b].filter((o) => o.tq && o.tq.id === g.tq.id).sort((p, q) => q.tq.n - p.tq.n)[0];      /* D498 一放兩合：先用這一筆更新，再看升關 */
       if (src) { const n = src.tq.n + 1, nb = lv <= 9 ? g.balls[g.balls.length - 1] : null; if (nb) nb.tq = { id: g.tq.id, n };
         if (n > g.tq.n) { g.tq.n = Math.min(2, n); g.tq.at[g.tq.n] = g.t; if (n >= 2) { g.tq.st = 2; g.tq.t0 = g.t; g.tqDone = true; pop('一放兩合！', W / 2, 322, C.gold, true); jingle([784, 988, 1175], 80); } else beep(880, 0.1, 'triangle', 0.06); } } }
-    g.merges++; if (!g.ferry && !g.net && !g.dual && g.merges >= g.need) {      /* D420：接駁航次不升關、不加速 */ g.lv++; if (g.bq && g.bq.st === 1) { g.bq.st = 3; g.bq.t0 = g.t; } if (g.tq && g.tq.st === 1) { g.tq.st = 3; g.tq.t0 = g.t; } if (!DS && !g.swp && g.lv === TWO.lv && !g.tq) g.tq = { st: 0, t0: g.t, id: 0, n: 0, at: {} }; if (!DS && !g.swp && g.lv === BERTH.lv && !g.bq) g.bq = { st: 0, t0: g.t, l: null, r: null }; g.merges = 0; g.need = MF.needBase + MF.needStep * g.lv; g.score += 10 * g.lv; g.banner = '第 ' + g.lv + ' 關・' + ((g.lv - 1) % 5 === 0 ? ['天亮了', '傍晚了', '夜港亮燈了'][tsIdx(g.lv)] : '掉得更快了'); g.bannerT = 1.4; for (const f of floats) if (!f.ban && banHit(f.big, f.s, f.y)) { if (f.life > 0.8) { f.y = Math.max(f.y, 340); f.ban = true; } else f.life = Math.min(f.life, 0.2); }      /* D263：同一下合成就升關時，剛跳出的連鎖浮字也移到橫幅條下；快淡完的就原地淡掉 */ jingle([660, 880], 110); }
+    if (wqOk) { g.wq.st = 2; g.wq.t0 = g.t; g.wq.said = false; g.wqDone = true; }      /* D501：金勾與「借浪合到了！」等升關橫幅、新發現卡退場後才出（見 g.update） */
+    g.merges++; if (!g.ferry && !g.net && !g.dual && g.merges >= g.need) {      /* D420：接駁航次不升關、不加速 */ g.lv++; if (g.wq && g.wq.st === 1) { g.wq.st = 3; g.wq.t0 = g.t; } if (!DS && !g.swp && g.lv === WAVEQ.lv && !g.wq) g.wq = { st: 0, t0: g.t, id: 0 }; if (g.bq && g.bq.st === 1) { g.bq.st = 3; g.bq.t0 = g.t; } if (g.tq && g.tq.st === 1) { g.tq.st = 3; g.tq.t0 = g.t; } if (!DS && !g.swp && g.lv === TWO.lv && !g.tq) g.tq = { st: 0, t0: g.t, id: 0, n: 0, at: {} }; if (!DS && !g.swp && g.lv === BERTH.lv && !g.bq) g.bq = { st: 0, t0: g.t, l: null, r: null }; g.merges = 0; g.need = MF.needBase + MF.needStep * g.lv; g.score += 10 * g.lv; g.banner = '第 ' + g.lv + ' 關・' + ((g.lv - 1) % 5 === 0 ? ['天亮了', '傍晚了', '夜港亮燈了'][tsIdx(g.lv)] : '掉得更快了'); g.bannerT = 1.4; for (const f of floats) if (!f.ban && banHit(f.big, f.s, f.y)) { if (f.life > 0.8) { f.y = Math.max(f.y, 340); f.ban = true; } else f.life = Math.min(f.life, 0.2); }      /* D263：同一下合成就升關時，剛跳出的連鎖浮字也移到橫幅條下；快淡完的就原地淡掉 */ jingle([660, 880], 110); }
   };
   g.netHit = (x, y, r) => {      /* D431：合成中心離網束外框 ≤ 新海鮮半徑＋reach → 最近一束削一層（等距取先列的） */
     let hit = null, hd = 1e9; for (const n of g.netLive()) { const d = netDist(n, x, y); if (d <= r + NETR.reach && d < hd - 0.01) { hd = d; hit = n; } }
@@ -556,7 +573,7 @@ function makeMerge() {
     hud(g.score, g.chain >= 2 ? '連鎖 ×' + g.chain : null, '第 ' + g.lv + ' 關');
     }
     if (g.sayT > 0) bubble(g.say, clamp(kx + 30, 90, W - 90), 176);      // QA：不再蓋住分數列
-    drawBerth(g); drawTwo(g);
+    drawBerth(g); drawTwo(g); drawWaveQ(g);
     if (g.bannerT > 0) { const k = clamp(g.bannerT * 1.5, 0, 1), by = 260 - (1 - k) * 30; ctx.globalAlpha = k; ctx.font = FONT(24, 900); const bw = ctx.measureText(g.banner).width + 28; pill(W / 2 - bw / 2, by - 21, bw, 42, 'rgba(16,41,61,.55)'); text(g.banner, W / 2, by, 24, C.gold, 'center', 900); ctx.globalAlpha = 1; }      /* D262（合成港第 5 關以後實玩）：後面關卡魚艙堆高，「第 N 關・掉得更快了」壓在海鮮和浮字上看不清 → 字後面墊半透明深藍圓角條 */
     if (g.found) drawFound(g.found);
   };
@@ -1129,7 +1146,7 @@ const AQ = (() => {
   return { add, save, ui, open, data: d };
 })();
 window.__aq = AQ;
-window.__mini = { get G() { return G; }, BERTH, TWO, PUSH, get waves() { return waves; }, AIMCALM, SWEAT, PUFF,      /* D482 測試掛勾 */ plain: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = false; dualMode = false; newGame(); state = 'play'; }, THUD, LEAN, BOAT,      /* D476、D474、D464 測試掛勾 */ pop, get floats() { return floats; }, mixHex,      /* D462 測試掛勾 */ get state() { return state; }, FY, DV, dual: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = false; dualMode = true; newGame(); state = 'play'; dualHow(); }, swap: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = true; dualMode = false; newGame(); state = 'play'; swapHow(); }, ferry: () => { mode = 'merge'; ferryMode = true; netMode = false; swapMode = false; dualMode = false; newGame(); state = 'play'; }, net: (pi) => { mode = 'merge'; ferryMode = false; netMode = true; swapMode = false; dualMode = false; if (pi != null) netStore.set({ ...netStore.get(), c: pi }); newGame(); state = 'play'; netHow(); }, NETR, netStore, setMode, seaFace, finish, IMG, SEAF, get fest() { return { pf: festPF(), n: fests.length, txt: !!festTxt, y: festTxt && festTxt.y, k: festTxt && festTxt.k }; }, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; }, get hudChip() { return hudChip; } };      /* D263：測試掛勾加 pop／floats；D306 加 finish */      /* D254：測試掛勾，固定亂數 */
+window.__mini = { get G() { return G; }, BERTH, TWO, WAVEQ, PUSH, get waves() { return waves; }, AIMCALM, SWEAT, PUFF,      /* D482 測試掛勾 */ plain: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = false; dualMode = false; newGame(); state = 'play'; }, THUD, LEAN, BOAT,      /* D476、D474、D464 測試掛勾 */ pop, get floats() { return floats; }, mixHex,      /* D462 測試掛勾 */ get state() { return state; }, FY, DV, dual: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = false; dualMode = true; newGame(); state = 'play'; dualHow(); }, swap: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = true; dualMode = false; newGame(); state = 'play'; swapHow(); }, ferry: () => { mode = 'merge'; ferryMode = true; netMode = false; swapMode = false; dualMode = false; newGame(); state = 'play'; }, net: (pi) => { mode = 'merge'; ferryMode = false; netMode = true; swapMode = false; dualMode = false; if (pi != null) netStore.set({ ...netStore.get(), c: pi }); newGame(); state = 'play'; netHow(); }, NETR, netStore, setMode, seaFace, finish, IMG, SEAF, get fest() { return { pf: festPF(), n: fests.length, txt: !!festTxt, y: festTxt && festTxt.y, k: festTxt && festTxt.k }; }, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; }, get hudChip() { return hudChip; } };      /* D263：測試掛勾加 pop／floats；D306 加 finish */      /* D254：測試掛勾，固定亂數 */
 })();
 </script>
 <script>(function () { var b = document.getElementById('backBtn'); b.addEventListener('click', function (e) { if (window.__mini && window.__mini.state === 'play' && !confirm('這局還在進行，確定要離開嗎？（分數不會記錄）')) e.preventDefault(); }); /* QA：遊戲中按返回先確認 */ /* D161：一律回小鳶樂園（遊戲大廳），不再回舊版測試首頁 */ })();</script>
