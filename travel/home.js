@@ -551,7 +551,7 @@
     P.addEventListener('pointercancel', function () { down = false; back(); });
     T.addEventListener('click', function (e) { if (done || prevT || !P.classList.contains('sel')) return; drop(hit(e.clientX, e.clientY)); });
     $('dkAg').onclick = function () { if (done || prevT) return; back(); fb.textContent = ''; tip.textContent = '再看一次整張桌子……'; preview(ready); };
-    $('hmX').onclick = function () { clearInterval(prevT); close(); };
+    $('hmX').onclick = function () { clearInterval(prevT); close(); if (done && window.hangAfterDesk) setTimeout(window.hangAfterDesk, 900);      /* D500：擺好以後接著聊牆上自己掛的那張卡 */ };
     window.__desk = { ks: ks, miss: miss, drop: drop, busy: function () { return !!prevT; }, done: function () { return done; } };
     preview(ready);
   }
