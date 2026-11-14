@@ -291,6 +291,10 @@ function drawDual(g) {      /* D447：GPT 0920 固定隔板（64×512，木身 x
 /* D504（GPT 1725 Q1）借背滑落：一般玩法第 5 關起，整局成功一次。池裡有落穩的海龜或海豚、牠的一側有空位時，把落下準線對在牠那一側的上緣停住 BACK.still 秒，
    準線旁的短箭頭由空心變實心；這時放手，這顆第一下只碰到同一隻、同一側，就多拿一筆往箭頭方向的橫向速度（BACK.vx），之後照原本的碰撞滾。
    放手前移開準線＝普通投放、次數保留；碰到別隻、同階可直接合成、快滿警示中、空位被佔 → 照原樣落下、次數保留。不給分；每日與四個試玩沒有。 */
+/* D507（GPT 2042 Q1）「再瞄一下」：一般玩法第 6 關起、整局一次。池子亮琥珀快滿警示、還沒過紅線、小鳶還抓著這一顆而且還沒排定放手時，
+   「下一顆」框正下方出現一顆「再瞄一下」；按下去，這一顆的手持倒數加 1.25 遊戲秒（倒數圈跟著補滿），照樣可以滑、可以提早放手，時間到照原流程自動落下。
+   過線失敗計時照常跑；不給分、不改供給、合成、水波、借背、升關；每日與四個試玩沒有。資格讀 update 裡同一次算出的 g.nearU／g.over（不讀繪製用的 g.nearK） */
+const AIM = { lv: 6, add: 1.25, w: 80, h: 36 }; let aimTold = false;
 const BACK = { lv: 5, still: 0.25, vx: 150, k0: 0.3, k1: 0.96, move: 5, fx: 0.55 };
 function backSpace(g, b, side, r, skip) { const x = b.x + side * (b.r + r + 1), y = b.y - b.r * 0.3; if (x < BOX.l + r || x > BOX.r - r) return false;
   for (const o of g.balls) if (o !== b && o !== skip && !o.dead && Math.hypot(o.x - x, o.y - y) < o.r + r - 2) return false; return true; }
@@ -364,6 +368,8 @@ function makeMerge() {
   g.dual = dualMode && !DS && !g.ferry && !g.net; if (g.dual) { g.drops = DV.drops; g.outT = 0; g.fEnd = ''; g.topS = [-1, -1]; if (!IMG.fixed_divider) for (const k of ['fixed_divider', 'chamber_left', 'chamber_right']) want(k, '../assets/merge/' + k + '.png'); }
   g.swp = swapMode && !DS && !g.ferry && !g.net && !g.dual; g.swapUsed = false; g.swaps = 0; g.swapFx = 0; g.swapR = null;
   if (g.swp && !IMG.swap_ready) { want('swap_ready', '../assets/merge/swap_ready.png'); want('swap_used_gray', '../assets/merge/swap_used_gray.png'); }
+  g.canAim = () => { const f = g.fall; return !!(!DS && !g.ferry && !g.net && !g.dual && !g.swp && !g.done && state === 'play' && g.lv >= AIM.lv && !g.aimUsed && f && f.held && f.hold > 0 && g.dropAt == null && g.nearU && !(g.over > 0) && !(g.bannerT > 0) && !g.found && fests.length === 0 && !festTxt); };
+  g.doAim = () => { if (!g.canAim() || g.tap) return false; const f = g.fall; f.hold += AIM.add; f.hold0 = Math.max(f.hold0, f.hold); g.aimUsed = true; g.aimN = (g.aimN || 0) + 1; g.aimFx = 0.5; g.aimR = null; g.say = '好，我再抓一下！'; g.sayT = 1.4; beep(620, 0.07, 'triangle', 0.05, 200); buzz(10); return true; };
   g.canSwap = () => !!(g.swp && g.fall && g.fall.held && !g.swapUsed && !g.done && g.q[0] !== g.fall.lv);
   g.doSwap = () => { if (!g.canSwap()) return false; const f = g.fall, a = f.lv; f.lv = g.q[0]; g.q[0] = a; f.r = SEAF[f.lv][1]; f.x = clamp(g.kx, BOX.l + f.r, BOX.r - f.r); f.y = KF + f.r - 2; g.swapUsed = true; g.swaps++; g.swapFx = 0.35; g.dropAt = null; g.pendingDrop = null; g.tap = null; beep(700, 0.05, 'triangle', 0.05, 160); buzz(10); return true; };
   if (g.net) { const ns = netStore.get(), pi = ns.c % NETR.ports.length, P = NETR.ports[pi]; g.port = pi; g.drops = P.drops; g.nets = P.nets.map((n, i) => ({ ...n, i, hp: NETR.hp, hitT: 0, goneT: -1 })); g.outT = 0; g.clearT = 0; g.fEnd = ''; g.netHits = 0;
@@ -472,6 +478,9 @@ function makeMerge() {
     const was = g.over; g.over = high && !(g.net && g.clearT > 0) ? g.over + dt : Math.max(0, g.over - dt * 2);
     if (g.over > 0 && was === 0) { g.say = '快滿了！往旁邊放'; g.sayT = 1.4; beep(330, 0.12, 'square', 0.04); }
     if (g.over > 1.6) { g.done = true; g.say = '堆過紅線了！'; g.sayT = 2; }
+    { let top = 1e9; for (const b of g.balls) if (b.age > 1.2 && Math.abs(b.vy) < 80 && b.y - b.r < top) top = b.y - b.r; g.nearU = !g.done && top < BOX.line + 70; }      /* D507：和 drawNearFull 同一條近滿式子，但在 update 裡算 */
+    if (g.aimFx > 0) g.aimFx -= dt;
+    if (!aimTold && g.canAim() && !(g.sayT > 0)) { aimTold = true; g.say = '快滿了！可以按「再瞄一下」'; g.sayT = 2.2; }
   };
   g.merge = (a, b) => {
     const lv = a.lv + 1, x = (a.x + b.x) / 2, y = (a.y + b.y) / 2;
@@ -564,7 +573,7 @@ function makeMerge() {
       drawSea(f.lv, f.x, f.y, f.r, 0);
     }
     const kx = g.kx, ky = KF + Math.sin(tt * 3) * 3;
-    if (f && f.held) { const k = clamp(f.hold / f.hold0, 0, 1); ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(f.x, f.y, f.r + 6, 0, 6.283); ctx.stroke(); ctx.strokeStyle = k < 0.3 ? C.warn : C.gold; ctx.beginPath(); ctx.arc(f.x, f.y, f.r + 6, -1.571, -1.571 + 6.283 * k); ctx.stroke(); }
+    if (f && f.held) { const k = clamp(f.hold / f.hold0, 0, 1); ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(f.x, f.y, f.r + 6, 0, 6.283); ctx.stroke(); ctx.strokeStyle = k < 0.3 ? C.warn : C.gold; ctx.beginPath(); ctx.arc(f.x, f.y, f.r + 6, -1.571, -1.571 + 6.283 * k); ctx.stroke(); if (g.aimFx > 0) { const e = 1 - g.aimFx / 0.5; ctx.globalAlpha = 1 - e; ctx.strokeStyle = '#FFF3C4'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(f.x, f.y, f.r + 6 + (RM ? 4 : 12 * e), 0, 6.283); ctx.stroke(); ctx.globalAlpha = 1; }      /* D507：按了「再瞄一下」，圈補滿時往外亮一圈 */ }
     drawKiteCarry(kx, ky, 0.85, tt * 9, 'kite_hold', f && f.held);
     /* 下一個。D300（GPT 2230 A②）：小鳶飛到右邊（離右牆 130 以內）時，整框連標題與海鮮圖移到左上分數下方、照常清楚（原本淡到 0.12 看不到）；離開右邊回右上。只換位置，預覽內容不變。D301（GPT 2335 A③）：換到左上後要退到離右牆 160 以外才回右上，130～160 之間維持上次那一側，不會左右來回閃 */
     /* D303（GPT 0930 B②）：結算後重播變身時不畫「下一個」整框（含兩個預覽），背景跟結算一樣只剩遮暗的局面；資料與 130／160 換側規則不變 */
@@ -603,7 +612,14 @@ function makeMerge() {
     const bw = 118; rrect(10, 47, bw, 9, 4.5, 'rgba(16,41,61,.6)'); rrect(10, 47, Math.max(9, bw * g.merges / g.need), 9, 4.5, C.leaf);
     hud(g.score, g.chain >= 2 ? '連鎖 ×' + g.chain : null, '第 ' + g.lv + ' 關');
     }
-    if (g.sayT > 0) bubble(g.say, clamp(kx + 30, 90, W - 90), 176);      // QA：不再蓋住分數列
+    if (g.sayT > 0) { let sx = clamp(kx + 30, 90, W - 90); if (g.aimR) { const hw = bubW(g.say) / 2; sx = g.aimR.x > W / 2 ? Math.min(sx, g.aimR.x + 4 - hw) : Math.max(sx, g.aimR.x + g.aimR.w - 4 + hw); }      /* D507：「再瞄一下」亮著時，小鳶的話讓開按鈕 */ bubble(g.say, sx, 176); }      /* QA：不再蓋住分數列 */
+    if (g.canAim()) {      /* D507：跟著「下一顆」框換邊，放在框正下方；畫在小鳶的話之後，不被泡泡蓋住 */
+      const nbL = !!g.nbL, nbX = nbL ? 10 : W - 74, nbY = nbL ? 64 : 84, bw = AIM.w, bh = AIM.h, bx = nbL ? nbX : nbX + 62 - bw, by = nbY + 62, ph = RM ? 0.5 : 0.5 + 0.5 * Math.sin(tt * 7);
+      g.aimR = { x: bx - 6, y: by - 4, w: bw + 12, h: bh + 10 };
+      rrect(bx, by, bw, bh, 12, 'rgba(16,41,61,.86)', 'rgba(255,' + Math.round(170 + 44 * ph) + ',70,' + (0.75 + 0.25 * ph) + ')', 2.5);
+      ctx.strokeStyle = '#FFD66B'; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(bx + 13, by + bh / 2, 6.5, -1.571, 3.3); ctx.stroke(); ctx.beginPath(); ctx.moveTo(bx + 13, by + bh / 2); ctx.lineTo(bx + 13, by + bh / 2 - 4); ctx.moveTo(bx + 13, by + bh / 2); ctx.lineTo(bx + 16, by + bh / 2 + 1.5); ctx.stroke(); ctx.lineCap = 'butt';
+      text('再瞄一下', bx + 49, by + bh / 2 + 0.5, 11.5, '#FFE6A6', 'center', 800, false);
+    } else g.aimR = null;
     drawBerth(g); drawTwo(g); drawWaveQ(g); drawBackFx(g);
     if (g.bannerT > 0) { const k = clamp(g.bannerT * 1.5, 0, 1), by = 260 - (1 - k) * 30; ctx.globalAlpha = k; ctx.font = FONT(24, 900); const bw = ctx.measureText(g.banner).width + 28; pill(W / 2 - bw / 2, by - 21, bw, 42, 'rgba(16,41,61,.55)'); text(g.banner, W / 2, by, 24, C.gold, 'center', 900); ctx.globalAlpha = 1; }      /* D262（合成港第 5 關以後實玩）：後面關卡魚艙堆高，「第 N 關・掉得更快了」壓在海鮮和浮字上看不清 → 字後面墊半透明深藍圓角條 */
     if (g.found) drawFound(g.found);
@@ -1021,12 +1037,13 @@ cv.addEventListener('pointerdown', (e) => {
   if (state === 'end' && endBtn2R && endInfo && endInfo.t > 0.8 && !e.kbd) { const q = endBtn2R; if (p.x > q.x && p.x < q.x + q.w && p.y > q.y && p.y < q.y + q.h + 8) { ferryMode = false; netMode = false; swapMode = false; dualMode = false; newGame(); state = 'ready'; document.getElementById('how').innerHTML = HOW[mode]; beep(520, 0.06); return; } }
   if (state === 'end') { const r = endBtnR, onBtn = e.kbd || (r && p.x > r.x - 14 && p.x < r.x + r.w + 14 && p.y > r.y - 14 && p.y < r.y + r.h + 14); if (endInfo && endInfo.t > 0.8 && onBtn) { newGame(); if (G.net) netHow(); if (G.swp) swapHow(); if (G.dual) dualHow();      /* 玩家角度：結算畫面只有按「再玩一次」才重開，避免疊貨櫃連點時一下就跳過成績 */ state = 'play'; dailyBegin(); beep(660, 0.08); if (mode === 'merge') { down = true; G.down(p.x, p.y); G.tap = null; } } return; }
   if (mode === 'merge' && G.swp && G.swapR && !e.kbd) { const q = G.swapR; if (p.x > q.x && p.x < q.x + q.w && p.y > q.y && p.y < q.y + q.h) { G.doSwap(); return; } }      /* D437：點「換」不會讓小鳶飛過去放手 */
+  if (mode === 'merge' && G.aimR && !e.kbd) { const q = G.aimR; if (p.x > q.x && p.x < q.x + q.w && p.y > q.y && p.y < q.y + q.h) { if (!down) G.doAim(); return; } }      /* D507：點「再瞄一下」由按鈕自己收掉，不會變成一次投放；另一根手指正在拖的時候不算 */
   down = true; G.down(p.x, p.y);
 });
 cv.addEventListener('pointermove', (e) => { if (state !== 'play') return; const p = pos(e); if (down || mode === 'merge') G.move(p.x, p.y); });
 const upH = () => { if (!down) return; down = false; if (state === 'play') G.up(); };
 cv.addEventListener('pointerup', upH); cv.addEventListener('pointercancel', upH);
-document.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { if (state !== 'play') { const ev = new PointerEvent('pointerdown', { clientX: 0, clientY: 0 }); ev.kbd = true; cv.dispatchEvent(ev); upH(); } else if (mode === 'stack') G.tap(); else if (G.fall) G.release(); e.preventDefault(); } if (mode === 'merge' && state === 'play' && (e.key === 's' || e.key === 'S' || e.key === 'ArrowUp') && G.swp) { G.doSwap(); e.preventDefault(); } if (mode === 'merge' && state === 'play' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { G.tx = clamp(G.tx + (e.key === 'ArrowLeft' ? -30 : 30), 0, W); } });
+document.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { if (state !== 'play') { const ev = new PointerEvent('pointerdown', { clientX: 0, clientY: 0 }); ev.kbd = true; cv.dispatchEvent(ev); upH(); } else if (mode === 'stack') G.tap(); else if (G.fall) G.release(); e.preventDefault(); } if (mode === 'merge' && state === 'play' && (e.key === 's' || e.key === 'S' || e.key === 'ArrowUp') && G.swp) { G.doSwap(); e.preventDefault(); } if (mode === 'merge' && state === 'play' && (e.key === 'a' || e.key === 'A') && G.doAim && !down) { G.doAim(); e.preventDefault(); } if (mode === 'merge' && state === 'play' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { G.tx = clamp(G.tx + (e.key === 'ArrowLeft' ? -30 : 30), 0, W); } });
 function finish() {
   if (G.ferry) return finishFerry();
   if (G.net) return finishNet();
