@@ -509,7 +509,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '1.48',
+  version: '1.49',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -713,6 +713,7 @@ function buildScript() {
   add(12, 'log', 180); add(16, 'log', 90); side(18, true, 3); gate(22, 250); add(26.5, 'log', 250); side(29, false, 3); add(32.5, 'chaser', 20); gate(34.5, 110);
   side(37, true, 3); add(39, 'sprayer', 70); gate(42, 180); add(45, 'chaser', 340); side(47, false, 3); add(49, 'log', 180); gate(53, 280); side(55.5, true, 3); add(58, 'chaser', 20); add(60.5, 'sprayer', 290); gate(62, 90); side(64, false, 3); gate(66, 200);
   add(CONFIG.boss.at, 'boss', 180);
+  if (ST().theme === 'harbor' && !daily) { const q = E.find((e) => e.t === OC.at && e.type === 'sprayer' && e.x === 70); if (q) { q.x = OC.x; q.oc = true; } }      /* D505：第 1 關王前 39 秒那隻漏油桶可以打斷首發；x 從 70 改到 180（原位置正下方有蛇形長隊、泡泡牆、漂流木擋住羽毛，實測打不到；180 是 42 秒漂流木缺口的正中，要走的路和要打的方向同一條）；同一隻、同怪種、出生秒數不變 */
   add(24, 'dive', 0, { fromLeft: true }); add(30, 'split', 180); add(39.5, 'dive', 0, { fromLeft: false }); add(52, 'split', 110); add(59, 'dive', 0, { fromLeft: true, n: 4 });      // D109／G79：小怪新軌跡（弧線俯衝、編隊分流）
   if (ST().theme === 'market' || ST().theme === 'pier') {      /* D458（GPT 2030 Q1）：第 2、3 關把 18.5 秒那排 4 隻瓶罐改成「左兩隻先、右兩隻後」錯峰：同 4 隻、同怪種，只改出生秒數與 x；x 沿原排附近，避開 19.2 秒塑膠袋與 20.5 秒泡泡怪 */
     const q = E.filter((e) => e.t === 18.5 && e.type === 'bottle').sort((a, b) => a.x - b.x), SL = [[0, 70], [0.5, 130], [1.5, 230], [2, 290]];
@@ -909,6 +910,7 @@ function spawn(e) {
   if (e.wb && !daily) f.wb = true;      /* D492 */
   if (e.eb && !daily) f.eb = { st: 0, dir: 0, u: 0, from: 0, to: 0 };      /* D494 */
   if (e.tp && !daily) { f.tp = { st: 0, cut: 0, cx: 0 }; f.x0 = f.x = TP.x; }      /* D497 */
+  if (e.oc && !daily && TH() === 'harbor') f.oc = { st: 0, t: 0 };      /* D505 */
   if (e.sn !== undefined) { f.sn = e.sn; f.si = e.si; f.sl = e.sl; if (e.head && SBURN_ON()) { f.hp = SBURN.hp; f.aim = true; } if (!e.head && SBURN_ON() && stats.burnSn && stats.burnSn[e.sn]) f.burn = { t: SBURN.step, n: e.sl, last: e.si === e.sl - 1, late: true }; }      /* D491 */
   if (e.mascot) { f.mascot = e.mascot; if (!stats.toldBound && !newHold()) { stats.toldBound = true; banner(MASCOT_NAME[e.mascot] + '被綁住了！打斷它'); } }
   if (RM() && (e.type === 'can' || e.type === 'butt')) { f.x = f.x0 = RAIL_X() + R(-4, 4); f.vx = 0; f.rail = true; f.vy *= 1.25; }      // 鐵軌刺蝟只沿著鐵軌滾
@@ -932,6 +934,40 @@ function hearts(x, y, n) { for (let i = 0; i < n; i++) part('heart', x + rand(-1
 const PICK_NOTE = { jerky: '魚乾：補體力', power: '羽毛：變強', gale: '疾風：加速' };
 function addPick(kind, x, y) { picks.push({ kind, x, y, first: !seenPick[kind] }); seenPick[kind] = true; }      // first：這種道具這一局第一次出現
 /* D346 打擊感：打中閃白、魔王一抖＋傷害數字、短促打擊聲；大的清掉與魔王換階段時畫面停一下 */
+/* D505（GPT 1825 Q1）打斷漏油桶首發：一般玩法第 1 關王前那隻漏油桶（39 秒），第一顆油滴噴出前 pre 秒，噴口兩旁亮兩筆暖色短線；
+   這段時間內被普通風之羽打中而且還活著 → 這一顆油滴噴不出來（原本的發射計時照樣歸零，之後照原節奏噴）。墨汁、大招、爆炸不算；不另計分；每日與試玩沒有。
+   st：0 還沒預告、1 預告中、2 已打斷（等原首發時點略過）、3 打斷完成、4 沒打斷照常噴。 */
+const OC = { at: 39, x: 180, pre: 2, sayY: 204 };
+function ocStep(f, d, dt) {
+  const o = f.oc; o.t += dt;
+  if (o.st === 0 && !f.leave && !f.shot1 && f.shootAcc >= d.shootEvery - OC.pre) { o.st = 1; o.t = 0; stats.ocN = (stats.ocN || 0) + 1; beep(520, 0.06, 'triangle', 0.03, 180);
+    if (!stats.toldOc && cine <= 0) { stats.toldOc = true; say('趁牠還沒噴，先打中牠！', f.x, OC.sayY, '#FFFFFF', false, '#1F3A4D'); } }
+  if (f.leave && o.st < 3) o.st = 4;
+}
+function ocSkip(f) {      /* 原首發時點：已打斷就略過這一顆，沒打斷就照常 */
+  const o = f.oc; if (!o) return false; if (f.shot1) return false; f.shot1 = true;
+  if (o.st === 2) { o.st = 3; for (let i = 0; i < 3; i++) part('bubble', f.x + rand(-5, 5), f.y + f.r + 2, { vy: rand(-26, -10), fade: 2.2, size: rand(1.5, 2.6) }); return true; }
+  o.st = 4; return false;
+}
+function ocCut(f) {
+  const o = f.oc; o.st = 2; o.t = 0; stats.ocHit = 1;
+  for (let i = 0; i < 6; i++) part('drop', f.x + rand(-4, 4), f.y + f.r + 2, { size: rand(2, 3.4), fade: 2.6, color: i % 2 ? '#4A3A32' : '#8A6A4A', vx: rand(-60, 60), vy: rand(10, 70) });
+  say('打斷了！', f.x, f.y + 64, '#FFFFFF', false, '#1F3A4D'); jingle([523, 784], 80);
+}
+function drawOilCut(f) {
+  const o = f.oc, y = f.y + f.r + 3; ctx.save(); ctx.translate(f.x, y); ctx.lineCap = 'round';
+  if (o.st === 1) {      /* 噴口兩旁各一筆往內指的短線；減少動態時不晃 */
+    const k = calm ? 0 : Math.sin(clock * 14) * 1.6;
+    for (const d of [-1, 1]) { ctx.beginPath(); ctx.moveTo(d * (22 + k), 14); ctx.lineTo(d * (10 + k), 4); ctx.strokeStyle = 'rgba(31,58,77,.65)'; ctx.lineWidth = 6.5; ctx.stroke(); ctx.strokeStyle = '#FFB648'; ctx.lineWidth = 3.6; ctx.stroke(); }
+    ctx.beginPath(); ctx.arc(0, 6, 3.6, 0, 6.2832); ctx.fillStyle = '#FFE08A'; ctx.fill(); ctx.strokeStyle = 'rgba(31,58,77,.65)'; ctx.lineWidth = 1.2; ctx.stroke();
+    const u = Math.max(0, Math.min(1, o.t / OC.pre)), rr = f.r + (calm ? 7 : 4 + 14 * (1 - u));      /* 外圈往桶身收：收到底就噴；減少動態時固定一圈 */
+    ctx.beginPath(); ctx.arc(0, -f.r - 3, rr, 0, 6.2832); ctx.strokeStyle = 'rgba(31,58,77,.45)'; ctx.lineWidth = 4; ctx.stroke(); ctx.strokeStyle = 'rgba(255,182,72,.9)'; ctx.lineWidth = 2; ctx.stroke();
+  } else {      /* 已打斷：噴口上一個小叉，到原本該噴的時候消失 */
+    ctx.globalAlpha = 0.95;
+    for (const d of [-1, 1]) { ctx.beginPath(); ctx.moveTo(-6, 7 - d * 6); ctx.lineTo(6, 7 + d * 6); ctx.strokeStyle = 'rgba(31,58,77,.6)'; ctx.lineWidth = 5; ctx.stroke(); ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 2.4; ctx.stroke(); }
+  }
+  ctx.restore();
+}
 /* D502（GPT 1525 Q1）站穩聚羽：一般玩法第 1～8 關，小鳶穩住 still 秒（位移不超過 inR）後，新射出的普通羽收窄；離開定點超過 outR 就恢復原射法。
    只在發射當下決定羽距與角度；顆數、射速、單發傷害、光羽、墨汁、大招不變；每日與試玩不用。 */
 const FOCUS = { still: 0.35, inR: 4, outR: 9, p1: 3, p2: 6, p3x: [4, 8], p3v: [20, 45], fade: 0.12 };
@@ -1474,7 +1510,7 @@ function update(dt) {
     if (d.hoverY) {      // 漏油桶：飄到上方停住，朝小鳶噴油滴，停留一陣子後離開
       if (f.leave) { f.y -= 60 * dt; if (f.y < -f.r - 24) f.gone = true; }      // 離場：一路往上漂出畫面（先判斷，才不會又被當成「還在進場」）
       else if (f.y < d.hoverY) f.y += f.vy * dt;
-      else { f.hoverT = (f.hoverT || 0) + dt; if (f.hoverT > d.stay) { f.leave = true; say(NM() ? '香腸小火龍飛走了' : PM() ? '蝠鱝飛走了' : RM() ? '礦坑怪飛走了' : '漏油桶漂走了', f.x, f.y + 34, '#FFD0C4'); } f.shootAcc = (f.shootAcc || 0) + dt; if (f.shootAcc >= d.shootEvery && !f.leave) { f.shootAcc = 0; const dx = kite.x - f.x, dy = kite.y - f.y, m = Math.hypot(dx, dy) || 1; mk(NM() || PM() || RM() ? 'fire' : 'drop', f.x, f.y + 14, { noCount: true, aimed: true, vx: dx / m * d.shotSpeed, vy: dy / m * d.shotSpeed }); beep(260, 0.1, 'square', 0.03, -80); } }
+      else { f.hoverT = (f.hoverT || 0) + dt; if (f.hoverT > d.stay) { f.leave = true; say(NM() ? '香腸小火龍飛走了' : PM() ? '蝠鱝飛走了' : RM() ? '礦坑怪飛走了' : '漏油桶漂走了', f.x, f.y + 34, '#FFD0C4'); } f.shootAcc = (f.shootAcc || 0) + dt; if (f.oc) ocStep(f, d, dt);      /* D505 */ if (f.shootAcc >= d.shootEvery && !f.leave && ocSkip(f)) f.shootAcc = 0; else if (f.shootAcc >= d.shootEvery && !f.leave) { f.shootAcc = 0; const dx = kite.x - f.x, dy = kite.y - f.y, m = Math.hypot(dx, dy) || 1; mk(NM() || PM() || RM() ? 'fire' : 'drop', f.x, f.y + 14, { noCount: true, aimed: true, vx: dx / m * d.shotSpeed, vy: dy / m * d.shotSpeed }); beep(260, 0.1, 'square', 0.03, -80); } }
       continue;
     }
     if (f.arc) { const A = f.arc; A.t += dt; if (A.t >= 0) { const u = Math.min(1, A.t / A.dur), a = 1 - u; f.x = a * a * A.p0[0] + 2 * a * u * A.p1[0] + u * u * A.p2[0]; f.y = a * a * A.p0[1] + 2 * a * u * A.p1[1] + u * u * A.p2[1]; } continue; }
@@ -1504,7 +1540,7 @@ function update(dt) {
     if (RM() && f.rail && f.noCount && (f.type === 'can' || f.type === 'butt')) continue;      // D112：刺蝟列車是鐵軌危險，不是目標，羽毛直接穿過（不再出現「打了沒反應」）
     if (f.bar) { if (f.hp > 0 && Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { f.hp = 0; part('star', s.x, s.y, { size: 3, fade: 4, color: '#fff' }); } continue; }      // D112：暴走連射的子彈一碰就散，羽毛繼續往前飛（不然子彈會變成魔王的盾）
     if (f === boss && f.parts && partShot(f, s)) continue;      /* D367：先看有沒有打到魔王零件 */
-    if (Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { s.dead = true; if (f === boss && f.phased) { if (!bossShot(f, s)) s.dead = false; continue; } if (RM() && railBlocks(f)) { blockPing(f, s.x, s.y); if (!stats.toldBlock && !newHold()) { stats.toldBlock = true; say(f.type === 'tire' ? '灰盾＝躲殼打不動，等綠圈' : f.type === 'battery' ? '灰盾＝大叫打不動，等綠圈' : '灰盾＝縮成球打不動，等綠圈', f.x, f.y - 34, '#FFFFFF', false, '#1F3A4D'); } continue; } const x2 = f === boss && f.atk === 'devour' && f.mouth >= 1, bk = TH() === 'beam' ? beamK(f, s) : NEWT() && f === boss ? shellK(f, s) : 1; if (bk < 0) continue; f.hp -= f.type === 'boss' ? bossTake(f, (x2 ? 2 : 1) * bk) : (x2 ? 2 : 1) * bk; if (x2 && !stats.toldX2) { stats.toldX2 = true; say('打嘴巴 傷害 ×2', f.x, f.y + 84, '#FFE08A'); } f.hitT = 0.08; hitAt = [s.x, s.y]; if (s.wind && f.wb) { stats.wbN = (stats.wbN || 0) + 1; if (!stats.wbHit) { stats.wbHit = true; say('借風打到了！', f.x, Math.max(WB.sayY, f.y - 30), '#FFFFFF', false, '#1F3A4D'); jingle([523, 784], 80); } } if (f.eb && f.hp <= 0 && f.eb.st > 0 && !stats.ebbHit) { stats.ebbHit = f.eb.st; say(f.eb.st === 1 ? '搶先清掉了！' : '攔到了！', f.x, Math.max(EBB.sayY, f.y - 30), '#FFFFFF', false, '#1F3A4D'); jingle([523, 784], 80); }      /* D494 */ if (f.ln && f.ln.w > 0 && f.hp <= 0 && !stats.lnHit) { stats.lnHit = 1; say('趁慢清掉了！', Math.max(70, Math.min(W - 70, f.x)), Math.max(LN.sayY, f.y - 30), '#FFFFFF', false, '#1F3A4D'); jingle([523, 784], 80); }      /* D496 */ if (s.tpSkip && s.tpSkip !== f && !stats.tpHit && f !== boss && t - s.tpT < TP.win) { stats.tpHit = 1; say('穿過去打到了！', Math.max(84, Math.min(W - 84, f.x)), Math.max(TP.sayY, f.y - 30), '#FFFFFF', false, '#1F3A4D'); jingle([523, 784], 80); } tpPierce(f, s);      /* D497 */ hitFx(f, (x2 ? 2 : 1) * bk); if (f.type !== 'boss' && f.type !== 'minib' && f.hp > 0) f.y -= 2.5; if (f.hp > 0 && !s.ink && !s.lit) { tireRoll(f); foamPop(f); } part('star', s.x, s.y, { size: 3, fade: 4, color: s.ink ? '#C9B6F2' : '#fff' }); if (f.hp > 0 && rings.length < 40) rings.push({ x: s.x, y: s.y, r: 2, max: W * 0.025, life: 1, color: s.ink ? '201,182,242' : s.lit ? '255,255,255' : s.pw === 2 ? '150,235,250' : s.pw === 3 ? '255,214,130' : '255,255,255', clr: 0.12, age: 0, lw: s.pw > 1 && !s.lit ? 2.6 : 2 }); }      /* D343：受擊只出小亮點（直徑約 0.05W），跟清掉的大圈分得出來 */
+    if (Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { s.dead = true; if (f === boss && f.phased) { if (!bossShot(f, s)) s.dead = false; continue; } if (RM() && railBlocks(f)) { blockPing(f, s.x, s.y); if (!stats.toldBlock && !newHold()) { stats.toldBlock = true; say(f.type === 'tire' ? '灰盾＝躲殼打不動，等綠圈' : f.type === 'battery' ? '灰盾＝大叫打不動，等綠圈' : '灰盾＝縮成球打不動，等綠圈', f.x, f.y - 34, '#FFFFFF', false, '#1F3A4D'); } continue; } const x2 = f === boss && f.atk === 'devour' && f.mouth >= 1, bk = TH() === 'beam' ? beamK(f, s) : NEWT() && f === boss ? shellK(f, s) : 1; if (bk < 0) continue; f.hp -= f.type === 'boss' ? bossTake(f, (x2 ? 2 : 1) * bk) : (x2 ? 2 : 1) * bk; if (x2 && !stats.toldX2) { stats.toldX2 = true; say('打嘴巴 傷害 ×2', f.x, f.y + 84, '#FFE08A'); } f.hitT = 0.08; hitAt = [s.x, s.y]; if (s.wind && f.wb) { stats.wbN = (stats.wbN || 0) + 1; if (!stats.wbHit) { stats.wbHit = true; say('借風打到了！', f.x, Math.max(WB.sayY, f.y - 30), '#FFFFFF', false, '#1F3A4D'); jingle([523, 784], 80); } } if (f.eb && f.hp <= 0 && f.eb.st > 0 && !stats.ebbHit) { stats.ebbHit = f.eb.st; say(f.eb.st === 1 ? '搶先清掉了！' : '攔到了！', f.x, Math.max(EBB.sayY, f.y - 30), '#FFFFFF', false, '#1F3A4D'); jingle([523, 784], 80); }      /* D494 */ if (f.ln && f.ln.w > 0 && f.hp <= 0 && !stats.lnHit) { stats.lnHit = 1; say('趁慢清掉了！', Math.max(70, Math.min(W - 70, f.x)), Math.max(LN.sayY, f.y - 30), '#FFFFFF', false, '#1F3A4D'); jingle([523, 784], 80); }      /* D496 */ if (s.tpSkip && s.tpSkip !== f && !stats.tpHit && f !== boss && t - s.tpT < TP.win) { stats.tpHit = 1; say('穿過去打到了！', Math.max(84, Math.min(W - 84, f.x)), Math.max(TP.sayY, f.y - 30), '#FFFFFF', false, '#1F3A4D'); jingle([523, 784], 80); } tpPierce(f, s);      /* D497 */ if (f.oc && f.oc.st === 1 && f.hp > 0 && !s.ink && !s.lit) ocCut(f);      /* D505 */ hitFx(f, (x2 ? 2 : 1) * bk); if (f.type !== 'boss' && f.type !== 'minib' && f.hp > 0) f.y -= 2.5; if (f.hp > 0 && !s.ink && !s.lit) { tireRoll(f); foamPop(f); } part('star', s.x, s.y, { size: 3, fade: 4, color: s.ink ? '#C9B6F2' : '#fff' }); if (f.hp > 0 && rings.length < 40) rings.push({ x: s.x, y: s.y, r: 2, max: W * 0.025, life: 1, color: s.ink ? '201,182,242' : s.lit ? '255,255,255' : s.pw === 2 ? '150,235,250' : s.pw === 3 ? '255,214,130' : '255,255,255', clr: 0.12, age: 0, lw: s.pw > 1 && !s.lit ? 2.6 : 2 }); }      /* D343：受擊只出小亮點（直徑約 0.05W），跟清掉的大圈分得出來 */
   }
   shots = shots.filter((s) => !s.dead && s.y > -20 && s.x > -20 && s.x < W + 20);
   updateRing(dt); bossFinalCheck(real);
@@ -3833,7 +3869,7 @@ function draw() {
   if (daily && daily.fork) drawForks();      /* D421 */
   if (daily && daily.salv) drawSalv();      /* D432 */
   drawBulTrails();
-  drawPhaseArcs(); for (const f of foes) drawFoe(f); for (const f of foes) if (f.roll && !f.roll.done) drawTireRollTell(f);
+  drawPhaseArcs(); for (const f of foes) drawFoe(f); for (const f of foes) if (f.roll && !f.roll.done) drawTireRollTell(f); for (const f of foes) if (f.oc && (f.oc.st === 1 || f.oc.st === 2)) drawOilCut(f);      /* D505 */
   for (const k of pops) { const a = k.life / 0.2, s = 1 + (1 - a) * (k.big ? 0.75 : 0.55), f = k.f; ctx.save(); ctx.translate(f.x, f.y); ctx.scale(s, s); ctx.translate(-f.x, -f.y); ctx.globalAlpha = a * a; f.hitT = CANF ? 1 : 0; f.jit = 0; drawFoe(f); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a * 0.7; drawFoe(f); ctx.restore(); }      /* D455：清掉的小怪白閃、放大、淡出 */
   if (NEWT()) drawNewOver();
   drawClouds(); drawMinionTells(); drawTaotieZones(); drawVents(); drawMarketUI(); if (PM()) { drawBoats(); drawEscort(); drawAgenorZones(); } if (RM()) { drawSmokeClouds(); for (const f of foes) drawRailFoeState(f); drawTunnelDark(); drawRushes(); drawMascots(); drawJianjiZones(); } drawBossFx(); drawSparks(); drawPings(); drawFrag();
@@ -4429,6 +4465,7 @@ window.__flyGame.hop = () => foes.filter((q) => q.type === 'chip').map((q) => ({
 window.__flyGame.pop = () => foes.filter((q) => q.type === 'foam').map((q) => ({ x: +q.x.toFixed(1), y: +q.y.toFixed(1), hp: q.hp, k: foamPopK(q), hit: foamHit(q) && !!img.n_ice_hit, p: q.pop ? { t: +q.pop.t.toFixed(2), n: q.pop.n, up: +q.pop.up.toFixed(1) } : null }));      /* D478 測試掛勾 */
 window.__flyGame.roll = () => foes.filter((q) => q.type === 'tire').map((q) => ({ x: +q.x.toFixed(1), y: +q.y.toFixed(1), hp: q.hp, r: q.roll ? { t: +(q.roll.t || 0).toFixed(2), e: +q.roll.e.toFixed(2), dir: q.roll.dir, done: q.roll.done } : null }));      /* D475 測試掛勾 */
 window.__flyGame.fc = () => ({ on: !!(kite.fc && kite.fc.on), t: kite.fc ? +kite.fc.t.toFixed(2) : 0, a: kite.fc ? +kite.fc.a.toFixed(2) : 0, n: stats.fcN || 0, told: toldFocus, xs: shots.filter((q) => q.fc).map((q) => [+(q.x - kite.x).toFixed(1), q.vx]) });      /* D502 測試掛勾 */
+window.__flyGame.oc = () => ({ t: +t.toFixed(2), n: stats.ocN || 0, hit: stats.ocHit || 0, told: !!stats.toldOc, f: foes.filter((q) => q.oc).map((q) => ({ x: +q.x.toFixed(1), y: +q.y.toFixed(1), hp: q.hp, st: q.oc.st, acc: +(q.shootAcc || 0).toFixed(2), leave: !!q.leave })), drops: foes.filter((q) => q.aimed).length });      /* D505 測試掛勾 */
 window.__flyGame.salv = { open: salvOpen, st: () => ({ mode, daily, kite, stats }) };      /* D432 測試掛勾 */
 window.__flyGame.fork = { open: forkOpen, map: toMap, st: () => ({ mode, t, daily, kite, foes, stats, sc: scoreFinal(), pings: pings.length }), ping: (x, y) => { pings.push({ x, y, life: 0.12, max: 0.12 }); return !!img.fx_blocked_ping; } };      /* D451：測試掛勾加 ping */      /* D421 測試掛勾 */
 /* C-81／C-82（Dari 10/13 01:03）：音樂開關、暫停鈕改圖示；選單畫面也有音樂，每個場景不同曲子 */
