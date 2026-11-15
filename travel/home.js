@@ -625,12 +625,26 @@
   function decoHTML() { var h = H(), d = h.deco || {}, on = h.decoOn || {}; return GORDER.filter(function (g) { return d[g] && on[g]; }).map(function (g) { var r = GIFT[g].r; return '<img class="hmDeco ' + g + '" src="' + A + 'gift_' + g + '.webp" alt="' + GIFT[g].n + '" style="left:' + (r[0] / 10.8) + '%;top:' + (r[1] / 13.5) + '%;width:' + (r[2] / 10.8) + '%;z-index:' + GIFT[g].z + '">'; }).join(''); }
   function decoSheet() {
     var h = H(), d = h.deco || {}, on = h.decoOn = h.decoOn || {};
-    var html = '<h3>🪴 佈置小房間</h3><p class="mu sm">朋友的回禮可以擺在客廳固定的位置，點一下擺出來或收起來。</p><div class="list" style="margin:0">' + GORDER.map(function (g) { var has = d[g]; return '<button type="button" class="opt" data-dc="' + g + '" aria-pressed="' + !!(has && on[g]) + '"' + (has ? '' : ' disabled') + '><span class="ic em">' + (has ? img('gift_' + g) : '❔') + '</span><span class="tx">' + (has ? GIFT[g].n : '還沒拿到') + '<small>' + (has ? (on[g] ? '<b class="ok">擺在客廳・點一下收起來</b>' : '收在櫃子裡・點一下擺出來') : '完成廚房的港邊訂單，朋友會送回禮') + '</small></span></button>'; }).join('') + '</div><div class="row"><button class="btn ghost" id="hmX">關閉</button></div>';
+    var html = '<h3>🪴 佈置小房間</h3><p class="mu sm">朋友的回禮可以擺在客廳固定的位置，點一下擺出來或收起來。</p><div class="list" style="margin:0">' + GORDER.map(function (g) { var has = d[g]; return '<button type="button" class="opt" data-dc="' + g + '" aria-pressed="' + !!(has && on[g]) + '"' + (has ? '' : ' disabled') + '><span class="ic em">' + (has ? img('gift_' + g) : '❔') + '</span><span class="tx">' + (has ? GIFT[g].n : '還沒拿到') + '<small>' + (has ? (on[g] ? '<b class="ok">擺在客廳・點一下收起來</b>' : '收在櫃子裡・點一下擺出來') : '完成廚房的港邊訂單，朋友會送回禮') + '</small></span></button>' + (g === 'lamp' && lampCan() ? lampRow() : ''); }).join('') + '</div><div class="row"><button class="btn ghost" id="hmX">關閉</button></div>';
     modal(html);
-    document.querySelectorAll('[data-dc]').forEach(function (b) { b.onclick = function () { var g = b.dataset.dc; on[g] = on[g] ? 0 : 1; sv(); decoRender(); decoSheet(); }; });
+    document.querySelectorAll('[data-dc]').forEach(function (b) { b.onclick = function () { var g = b.dataset.dc; on[g] = on[g] ? 0 : 1; if (g === 'lamp' && !on[g]) lampDir = ''; sv(); decoRender(); decoSheet(); }; });
+    document.querySelectorAll('[data-ld]').forEach(function (b) { b.onclick = function () { lampDir = lampDir === b.dataset.ld ? '' : b.dataset.ld; decoRender(); decoSheet(); }; });
     $('hmX').onclick = close;
   }
-  function decoRender() { var room = $('room'); if (!room) return; var l = $('hmDecoL'); if (!l) { l = document.createElement('div'); l.id = 'hmDecoL'; room.insertBefore(l, room.firstChild); } var html = S.room === 'living' ? decoHTML() : ''; if (l._h !== html) { l.innerHTML = html; l._h = html; } }
+  /* D511：客廳「燈塔燈照哪邊」（GPT 0825 Q1，新圖 0）。小燈塔燈擺出來時，佈置清單那一列下面多兩顆「照牆卡／照腳邊」；
+     光是程式畫的淡暖光（#hmBeam，不收點擊、在小鳶和泡泡下面），再按亮著的那顆就關掉。只記在這次待在客廳的時候：收燈、換房、重開都回到原樣；不存檔、不發獎。 */
+  var lampDir = '', LAMP = { wall: '照牆卡', floor: '照腳邊' };
+  function lampCan() { var h = H(); return !!((h.deco || {}).lamp && (h.decoOn || {}).lamp && S.room === 'living'); }
+  function lampRow() { return '<div class="hmLd" role="group" aria-label="小燈塔燈照哪邊"><span>💡 燈照哪邊</span>' + ['wall', 'floor'].map(function (k) { var on = lampDir === k; return '<button type="button" data-ld="' + k + '" aria-pressed="' + on + '">' + LAMP[k] + (on ? '・亮著' : '') + '</button>'; }).join('') + '</div>' + (lampDir ? '<p class="hmLdT">再按一次「' + LAMP[lampDir] + '」就關燈。離開客廳會回到原樣。</p>' : ''); }
+  function lampRender(room) {
+    if (lampDir && !lampCan()) lampDir = '';
+    var b = $('hmBeam');
+    if (!lampDir) { if (b) b.remove(); return; }
+    if (!b) { b = document.createElement('div'); b.id = 'hmBeam'; b.setAttribute('aria-hidden', 'true'); b.innerHTML = '<i class="c"></i><i class="p"></i><i class="g"></i>'; room.insertBefore(b, room.firstChild); }
+    var c = lampDir === 'wall' ? 'bw' : 'bf'; if (b.className !== c) b.className = c;
+  }
+  window.__lamp = function (k) { if (k !== undefined) { lampDir = k; decoRender(); } return { dir: lampDir, can: lampCan(), on: !!$('hmBeam') }; };      /* D511 測試掛勾 */
+  function decoRender() { var room = $('room'); if (!room) return; var l = $('hmDecoL'); if (!l) { l = document.createElement('div'); l.id = 'hmDecoL'; room.insertBefore(l, room.firstChild); } var html = S.room === 'living' ? decoHTML() : ''; if (l._h !== html) { l.innerHTML = html; l._h = html; } lampRender(room); }
   /* --- C 方案一：港口朋友的照護委託（取代單純「收成次數到了就領養」；次數仍決定介紹信什麼時候寄來） --- */
   var CARE = [null,      /* D171：介紹信換 GPT D169 逐句修訂 v1（結尾停在「想先看看牧場」，邀不邀請由玩家決定） */
     { f: 1, story: "欸，我在港邊遇到一隻小雞！牠一直探頭，想知道牧場是什麼樣子。", ask: "想怎麼陪小雞認識新地方？", ch: ["慢慢走一小段", "停下來聽咕咕聲", "陪牠看看四周"], end: "小雞咕咕兩聲，放鬆了些，想先看看牧場。" },
@@ -756,6 +770,13 @@
     '.bar{height:12px;border-radius:6px;background:#EADFCB;overflow:hidden}.bar i{display:block;height:100%;width:0;background:#E39A1F;transition:width .2s}' +
     '.dish{width:160px;height:160px;margin:0 auto;animation:hmD .6s}@keyframes hmD{0%{transform:scale(.3)}70%{transform:scale(1.15)}}' +
     '#hmWin{position:absolute;left:3.7%;top:13.6%;width:32.4%;height:27.6%;z-index:3;border:0;padding:0;background:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}#hmWin span{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);white-space:nowrap;padding:4px 9px;border-radius:999px;background:rgba(255,253,248,.93);color:#2B6E8F;font:800 12px/1 sans-serif;box-shadow:0 2px 6px rgba(0,0,0,.2)}#hmWin:active span{background:#FFE7A8}' +
+    '#hmBeam{position:absolute;inset:0;pointer-events:none;z-index:2;animation:hmBm .45s ease-out}#hmBeam i{position:absolute;display:block}@keyframes hmBm{0%{opacity:0}}@media (prefers-reduced-motion:reduce){#hmBeam{animation:none}}' +
+    '#hmBeam .g{left:17.3%;top:34.4%;width:8%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(255,236,170,.7),rgba(255,214,120,.28) 40%,rgba(255,214,120,0) 70%)}' +
+    '#hmBeam.bw .c{inset:0;clip-path:polygon(21.5% 36.4%,86% 29.4%,86% 35.6%);background:linear-gradient(90deg,rgba(255,200,90,.7) 21%,rgba(255,204,100,.42) 50%,rgba(255,208,110,.2) 72%,rgba(255,208,110,0) 85%);filter:blur(2px)}' +
+    '#hmBeam.bw .p{left:39%;top:26.2%;width:49%;height:11.4%;border-radius:50%;background:radial-gradient(ellipse,rgba(255,206,100,.62),rgba(255,206,100,.34) 45%,rgba(255,206,100,0) 72%)}' +
+    '#hmBeam.bf .c{inset:0;clip-path:polygon(21.5% 37.6%,39% 72%,5% 72%);background:linear-gradient(180deg,rgba(255,232,160,.4) 37%,rgba(255,236,170,.2) 52%,rgba(255,240,180,.3) 64%,rgba(255,240,180,0) 72%);filter:blur(2px)}' +
+    '#hmBeam.bf .p{left:-1%;top:62.5%;width:46%;height:15%;border-radius:50%;background:radial-gradient(ellipse,rgba(255,244,190,.78),rgba(255,236,160,.42) 45%,rgba(255,236,160,0) 72%)}' +
+    '.hmLd{display:flex;align-items:center;gap:8px;margin:-2px 0 6px;padding:8px 10px;border-radius:12px;background:#FFF6DC}.hmLd span{flex:1;font-size:13px;font-weight:800;color:#7A5A1E;white-space:nowrap}.hmLd button{min-height:44px;padding:0 12px;border-radius:999px;border:2px solid #E3B755;background:#FFFDF8;color:#4A3426;font:800 13px/1.1 inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}.hmLd button[aria-pressed="true"]{background:#F4BB42;border-color:#C98F1D}.hmLdT{margin:-2px 2px 8px;font-size:12px;color:#8A7A66}' +
     '#hmDecoL{position:absolute;inset:0;pointer-events:none;z-index:1}#hmDecoL .hmDeco{position:absolute;aspect-ratio:1;object-fit:contain;animation:hmD .5s}' +
     '.hmDoor{position:absolute;left:83%;top:50%;width:24%;aspect-ratio:1;transform:translate(-50%,-100%);border:3px solid #F4BB42;border-radius:50%;background:#FFFDF8;padding:4%;box-shadow:0 4px 12px rgba(0,0,0,.3);cursor:pointer;-webkit-tap-highlight-color:transparent;animation:hmK 1.4s ease-in-out infinite}.hmDoor .vi{width:100%;height:100%;object-fit:contain;display:block}.hmDoor .lb{position:absolute;left:50%;top:-4%;transform:translateX(-50%);white-space:nowrap;font-size:12px;font-weight:800;background:#FFFDF8;color:#4A3426;border-radius:10px;padding:3px 8px;box-shadow:0 2px 6px rgba(0,0,0,.25)}.hmDoor.press{filter:brightness(1.12)}' +
     '@keyframes hmK{0%,100%{rotate:0deg}10%{rotate:-4deg}20%{rotate:4deg}30%{rotate:0deg}}' +
