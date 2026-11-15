@@ -209,6 +209,19 @@ h3{font-size:15px;margin:14px 16px 6px}
 .env.open .closed{opacity:0;transition-delay:.4s}      /* 先讓打開的信封淡入，再收掉閉合的，避免中間變透明 */
 .env.open .opened{opacity:1;transition-delay:.25s}
 .tapme{color:#fff;margin-top:16px;font-size:15px}
+/* D517（GPT 1325 Q1 a）：親手抽出第一張明信片。.pullw 蓋在信封上，用 clip-path 切掉信封口袋那一塊，卡片就像從口袋裡露出來；位置只調 PULL_K */
+.env.pullable{touch-action:none;-webkit-user-select:none;user-select:none}
+.env .pullw{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .14s;clip-path:polygon(0 -60%,100% -60%,100% 29%,80% 45.8%,58.3% 63.5%,52.8% 68.1%,50% 69.4%,47.2% 68.1%,41.7% 63.7%,20% 45.6%,0 28.7%)}
+.env .pullc{position:absolute;left:19.9%;width:60.2%;top:35.4%;aspect-ratio:8/5;border:3px solid #FFFDF8;border-radius:5px;overflow:hidden;box-sizing:border-box;box-shadow:0 2px 6px rgba(0,0,0,.28);will-change:transform}
+.env .pullc .ttl,.env .pullc .tmp,.env .pullc .fr{display:none}
+.env.pull img{transition-delay:0s!important}
+.env.pull .pullw{opacity:1}
+.env.pullback .pullc{transition:transform .2s ease-out}
+.env.pullout .pullc{transition:transform .2s ease-in,opacity .2s ease-in;opacity:0}
+.env.pullable:not(.open)::after{content:'';position:absolute;left:50%;top:-13%;width:16px;height:16px;margin-left:-8px;border-left:3px solid rgba(255,255,255,.8);border-top:3px solid rgba(255,255,255,.8);transform:rotate(45deg);animation:pullhint 1.5s ease-in-out infinite;pointer-events:none}
+@keyframes pullhint{0%,100%{transform:translateY(5px) rotate(45deg);opacity:.25}50%{transform:translateY(-3px) rotate(45deg);opacity:.95}}
+.pc.pullin{animation:pullin .3s cubic-bezier(.2,1.2,.4,1)}
+@keyframes pullin{from{transform:translateY(26px) scale(.62);opacity:.3}}
 .pc{width:min(340px,86vw);aspect-ratio:8/5;perspective:900px;margin-top:6px}
 .pc .in{position:relative;width:100%;height:100%;transition:transform .6s;transform-style:preserve-3d}
 .pc.flip .in{transform:rotateY(180deg)}
@@ -387,7 +400,7 @@ header .back,.letter .skip{min-height:44px;min-width:44px;display:inline-flex;al
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '1.06',
+  version: '1.07',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 0,      // D80：遠行便當改用點數換，不再每 3 趟送 1 份（0＝關閉）
@@ -1300,6 +1313,8 @@ function cardHTML(l, i, opts) {
 /* v0.24（C-126）：信的最後提到現場的港口朋友（讀首頁／港口朋友頁存的 kiteFriends1，只讀不改） */
 const PAL_WORDS = { 1: ['探頭小鳶', '還在牆後面偷看港口，說等你回來一起數船'], 2: ['打盹小鳶', '又睡著了，夢話是你的名字'], 3: ['剛到港口的小鳶', '說牠背包裡也有一張要寄給你'], 4: ['鯨鯊', '游過來問你什麼時候再去'], 5: ['海龜', '說港口的垃圾變少了，謝謝你'], 6: ['小卷', '晚上發光的時候想起你'] };
 function palLine(nL) { let fr = {}; try { fr = JSON.parse(localStorage.getItem('kiteFriends1') || '{}') || {}; } catch (e) {} const ids = Object.keys(fr).filter((k) => PAL_WORDS[k]); if (!ids.length) return (nL || 1) % 5 === 1 ? '聽說東三東四館內住了好多大大的港口朋友，下次一起去找牠們！' : '';      /* D392：還沒認識港口朋友時，這句只在第 1、6、11…封信出現（GPT 選 B 每 5 封一次）（原本每封約一半，連看好幾封都同一句） */ const w = PAL_WORDS[ids[Math.floor(Math.random() * ids.length)]]; return '回家路上經過東三東四，' + w[0] + w[1] + '！'; }
+/* D517：拆信時可以自己把第一張明信片抽出來。go 放手門檻（畫面 px）、start 多少 px 才算開始拖、travel 卡片最多往上走信封高度的幾成 */
+const PULL_K = { go: 28, start: 6, travel: 0.29, minH: 480 };
 function openLetter() {
   if (S.state !== 'back' || !S.trip) return;
   const tr = S.trip, l = LOCS.find((x) => x.id === tr.dest);
@@ -1320,8 +1335,9 @@ function openLetter() {
   const tk = (tr.items || []).find((k) => k === 'camera' || k === 'telescope' || k === 'umbrella') || '';      /* D508：這趟確實帶出門的第一件道具，也要在 commitTrip 之前先拿 */
   const finish = (ev) => { const tellKept = kv && !story && !ev; S.letters = nL; const news = commitTrip(); L.remove(); if (S.titles && Object.keys(S.titles).length) {} if (tellKept) S.room = 'living'; go('home'); toast(news.length ? '收進收藏冊了！' : '小鳶回來了'); if (tellKept) keptHome(l.id, kv); if (tk && !ev) PET.tidy(tk); };      /* 按鈕點擊會帶事件進來＝略過或一般收尾；只有讀完整封信按「收進收藏冊」才在客廳說選的那一景 */
   $('skipL').onclick = finish;
-  let step = 0;
+  let step = 0, pulled = false, shown = false;
   const showCard = () => {
+    if (!L.isConnected) return;      /* 等信封打開的 0.75 秒內按了略過：信已經收掉，不要再出卡 */
     const q = queue[step];
     const sPages = story ? (tr.peek && PEEK[tr.peek] ? ['box', 'peek', 'home'] : ['box', 'home']) : [];      /* D193：看過 N2 才插中間卡 */
     if (!q && story && sp < sPages.length) {
@@ -1344,12 +1360,46 @@ function openLetter() {
       if (q.gpts) { let n = 0; const tgt = q.gpts, t0 = performance.now(); const tick = (t) => { n = Math.min(tgt, Math.round((t - t0) / 600 * tgt)); const e = $('gnum'); if (!e) return; e.textContent = '+' + n; if (n < tgt) requestAnimationFrame(tick); }; setTimeout(() => requestAnimationFrame(tick), 450); }
       return;
     }
-    L.innerHTML = '<button class="skip" id="skipL2">略過 ››</button><div class="cap">' + (q.lim ? '本週限定！' : (queue.length > 1 ? '第 ' + (step + 1) + ' 張・' : '') + l.name) + '</div>' + cardHTML(l, q.i || 0, { anim: true, friend: step === 0 ? tr.friend : '', lim: q.lim }) + '<div class="row" style="margin-top:14px"><button class="btn ghost" id="flipL" style="color:#fff;border-color:#fff">看背面</button><button class="btn gold" id="nextL">' + (step + 1 < queue.length ? '下一張' : '好') + '</button></div>';
+    L.innerHTML = '<button class="skip" id="skipL2">略過 ››</button><div class="cap">' + (q.lim ? '本週限定！' : (queue.length > 1 ? '第 ' + (step + 1) + ' 張・' : '') + l.name) + '</div>' + cardHTML(l, q.i || 0, { anim: !pulled, friend: step === 0 ? tr.friend : '', lim: q.lim }) + '<div class="row" style="margin-top:14px"><button class="btn ghost" id="flipL" style="color:#fff;border-color:#fff">看背面</button><button class="btn gold" id="nextL">' + (step + 1 < queue.length ? '下一張' : '好') + '</button></div>';
     $('skipL2').onclick = finish; $('flipL').onclick = () => { const p = $('pc'); p.classList.toggle('flip'); $('flipL').textContent = p.classList.contains('flip') ? '看正面' : '看背面'; };
     $('nextL').onclick = () => { step++; showCard(); };
+    if (pulled) { pulled = false; $('pc').classList.add('pullin'); }      /* 自己抽出來的那一張：不再播一次從下面滑上來，只做一下放大接到手上 */
   };
-  $('envL').onclick = () => { if ($('envL').classList.contains('open')) return; $('envL').classList.add('open'); $('tapme').textContent = ''; setTimeout(showCard, 750); };
-  $('tapme').onclick = () => $('envL').onclick();      // QA：點「點一下打開信封」的字也能開
+  const envL = $('envL'), tapme = $('tapme');
+  let noTap = 0;
+  const first = () => { if (shown) return; shown = true; showCard(); };      /* 點開和抽出共用這一個出卡接點，只會出一次 */
+  envL.onclick = () => { if (Date.now() < noTap || envL.classList.contains('open')) return; envL.classList.add('open'); tapme.textContent = ''; setTimeout(first, 750); };
+  /* D517：第一頁確定是明信片（不是點數、券、故事、結語）、沒開減少動態、畫面夠高，才能用手往上抽 */
+  const q0 = queue[0];
+  if (q0 && !q0.gpts && !q0.gcp && (q0.lim || l.cards[q0.i || 0]) && window.PointerEvent && innerHeight >= PULL_K.minH && !(window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches)) {
+    const HINT = '點一下打開，或往上抽出明信片';
+    envL.classList.add('pullable'); tapme.textContent = HINT;
+    const w = document.createElement('div'); w.className = 'pullw'; w.innerHTML = '<div class="pullc">' + sceneHTML(l, q0.i || 0, '', q0.lim) + '</div>'; envL.appendChild(w);
+    const c = w.firstChild; let pid = null, y0 = 0, dy = 0, on = false, busy = false;
+    const max = () => envL.getBoundingClientRect().height * PULL_K.travel;
+    const put = () => { c.style.transform = 'translateY(' + (-dy).toFixed(1) + 'px)'; tapme.textContent = dy >= PULL_K.go ? '放手，接住這張明信片！' : '再往上一點…'; };
+    const back = () => { on = false; pid = null; dy = 0; noTap = Date.now() + 350; envL.classList.add('pullback'); c.style.transform = ''; envL.classList.remove('open', 'pull'); tapme.textContent = HINT; setTimeout(() => envL.classList.remove('pullback'), 220); };
+    envL.addEventListener('pointerdown', (e) => { if (busy || shown || pid !== null || envL.classList.contains('open') || (e.pointerType === 'mouse' && e.button !== 0)) return; pid = e.pointerId; y0 = e.clientY; dy = 0; on = false; });
+    envL.addEventListener('pointermove', (e) => {
+      if (e.pointerId !== pid || busy) return;
+      const d = y0 - e.clientY;
+      if (!on) { if (d < PULL_K.start) return; on = true; try { envL.setPointerCapture(pid); } catch (er) {} envL.classList.remove('pullback'); envL.classList.add('open', 'pull'); }
+      dy = Math.max(0, Math.min(max(), d)); put(); e.preventDefault();
+    });
+    const up = (e) => {
+      if (e.pointerId !== pid) return;
+      if (!on) { pid = null; return; }      /* 沒拖動＝點一下，交給原本的 onclick */
+      if (e.type === 'pointercancel' || dy < PULL_K.go) { back(); return; }
+      on = false; pid = null; busy = true; noTap = Date.now() + 600; pulled = true; tapme.textContent = '';
+      envL.classList.add('pullout'); c.style.transform = 'translateY(' + (-max() - 30).toFixed(1) + 'px)';
+      if (typeof travelBgmOn !== 'undefined' && travelBgmOn && typeof BGM !== 'undefined') { try { BGM.sfx('swish'); } catch (er) {} }
+      setTimeout(first, 200);
+    };
+    envL.addEventListener('pointerup', up); envL.addEventListener('pointercancel', up);
+    const vis = () => { if (!L.isConnected) { document.removeEventListener('visibilitychange', vis); return; } if (document.hidden && on) back(); };
+    document.addEventListener('visibilitychange', vis);
+  }
+  tapme.onclick = () => envL.onclick();      // QA：點「點一下打開信封」的字也能開
 }
 
 /* 收藏冊：常設 24 張、每週限定、港灣護照、合照（本機） */
@@ -1634,10 +1684,10 @@ function travelBgmSync() { if (travelBgmOn) BGM.play('travel_' + ({ ranch: 'scho
   document.addEventListener('pointerdown', () => { if (travelBgmOn) travelBgmSync(); }, { passive: true });
 })();
 </script>
-<script src="cook.js?v=1.06"></script>
+<script src="cook.js?v=1.07"></script>
 <script src="boat.js?v=0.90"></script>
 <script src="wipe.js?v=0.98"></script>
-<script src="home.js?v=1.06"></script>
+<script src="home.js?v=1.07"></script>
 <script src="../shared/back_line.js?v=2"></script>
 <script>/* D104：旅行排行榜（明信片收藏數） */ if (window.KiteLB) { KiteLB.button(document.getElementById('lbSlot'), { title: '小鳶旅行收藏排行', travel: true }); setTimeout(function () { try { pushTravelStat(); } catch (e) {} }, 1500); }</script>
 </body>
