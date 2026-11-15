@@ -5,6 +5,7 @@
 /* D528：小鳶彈珠港（灰盒試作，不計分）。Claude＋GPT 回合 3 定案三個灰盒的第二個（參考 Peggle、BALL x PIT）。
    GPT 回合 2 的重點：打擊感要來自玩家的瞄準——先驗「直打 vs 借牆反彈」看不看得出差別，升級球之後再說。
    玩法：手指在畫面上拖，小鳶從上方瞄準（虛線預測到第一次碰撞）；放手丟出貝殼彈珠。打中橘色垃圾就清掉，白色浮標只會把球彈開，兩側港牆可以借來反彈。
+   D530（GPT 三灰盒實玩 0150）：預測線先撞牆時多畫一段反彈；撞牆之後才打到的才算「借牆」；換盤時收掉上一盤的提示；結算多「換一題」（第二套盤：中間多擋浮標）。
    一局 2 盤、每盤 4 顆球（GPT 原案 3 顆，灰盒放寬一顆好上手）；清光橘色就提早過盤。同一顆球連撞越多音越高、最後一個目標慢動作。結算看用了幾顆球。不存檔、不回報點數。 */
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;overflow:hidden;background:#0F3442;font-family:'Zen Maru Gothic',system-ui,sans-serif;user-select:none;touch-action:none}
@@ -51,7 +52,8 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0F3442;font-family:'Z
   <div class="stars" id="stars"></div>
   <p id="sum"></p>
   <p class="muted">灰盒試作：不計分、不存檔。</p>
-  <div class="row"><button type="button" id="again">再玩一次</button><button type="button" class="alt" id="out">回小鳶樂園</button></div>
+  <div class="row"><button type="button" id="again">同樣的盤再玩</button><button type="button" id="alt">換一題</button></div>
+  <div class="row"><button type="button" class="alt" id="out">回小鳶樂園</button></div>
 </div></div>
 <script>
 'use strict';
@@ -61,10 +63,14 @@ const cv = $('cv'), ctx = cv.getContext('2d');
 const LW = 360, LH = 600;      /* 邏輯場地；畫面依寬高等比縮放置中 */
 const CFG = { balls: 4, r: 8, g: 820, speed: 620, rest: 0.82, wallRest: 0.9, maxT: 9, minV: 26, launch: { x: 180, y: 70 } };
 /* 兩盤手做（GPT 回合 2：第 1 盤教直打＋借牆，第 2 盤換遮擋位置） */
-const BOARDS = [
+const SETS = [[
   { t: [[180, 300], [70, 250], [292, 420], [120, 470], [240, 230]], b: [[150, 200], [210, 200], [180, 380], [100, 360], [260, 340], [60, 430], [300, 520], [180, 520]] },
   { t: [[60, 330], [300, 330], [180, 460], [120, 230], [250, 520], [180, 250]], b: [[180, 300], [130, 300], [230, 300], [90, 410], [270, 410], [180, 400], [60, 220], [300, 220], [180, 180], [140, 520]] }
-];
+], [      /* D530（GPT 實玩③）第二套：同樣的垃圾，中間多擋幾個浮標，直打走不通的要改借牆 */
+  { t: [[180, 300], [70, 250], [292, 420], [120, 470], [240, 230]], b: [[180, 240], [150, 200], [210, 200], [205, 175], [100, 360], [260, 340], [60, 430], [300, 520], [180, 520], [180, 380]] },
+  { t: [[60, 330], [300, 330], [180, 460], [120, 230], [250, 520], [180, 250]], b: [[180, 190], [140, 210], [220, 210], [130, 300], [230, 300], [90, 410], [270, 410], [180, 400], [140, 520], [60, 220], [300, 220]] }
+]];
+let setNo = 0; let BOARDS = SETS[0];
 let W = 0, H = 0, dpr = 1, sc = 1, ox = 0, oy = 0, bi = 0, pegs = [], ball = null, aim = null, balls = 0, used = 0, hitsThis = 0, parts = [], floats = [], shake = 0, slow = 0, sound = true, ac = null, playing = false, total = 0, cleared = 0, kiteX = 180, bestCombo = 0, wallHit = false, toldWall = false;
 const kiteImg = new Image(); kiteImg.src = '../assets/board/mini_kite_glide.webp';
 function fit() { dpr = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); const top = 56, bot = 10; sc = Math.min((W - 32) / LW, (H - top - bot) / LH);      /* 左右各留 16px 畫港牆 */ ox = (W - LW * sc) / 2; oy = top + (H - top - bot - LH * sc) / 2; }
@@ -73,8 +79,8 @@ function tone(f, d, type, g, slide) { if (!sound) return; try { ac = ac || new (
 function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
 let tipT = 0; function tip(t, ms) { const e = $('tip'); e.textContent = t; e.classList.remove('off'); clearTimeout(tipT); tipT = setTimeout(() => e.classList.add('off'), ms || 2400); }
 function hud() { $('lv').textContent = '第 ' + (bi + 1) + '／' + BOARDS.length + ' 盤'; $('balls').textContent = '🐚 ' + balls; $('tg').textContent = '🎯 ' + pegs.filter((p) => p.t && !p.gone).length; }
-function load() { const B = BOARDS[bi]; pegs = [...B.t.map(([x, y]) => ({ x, y, r: 14, t: true, gone: false, fl: 0 })), ...B.b.map(([x, y]) => ({ x, y, r: 11, t: false, fl: 0 }))]; balls = CFG.balls; ball = null; aim = null; hud(); }
-function start() { bi = 0; used = 0; cleared = 0; total = BOARDS.reduce((s, b) => s + b.t.length, 0); bestCombo = 0; playing = true; $('intro').hidden = true; $('done').hidden = true; load(); tip('拖動瞄準，放手丟出去！', 2600); }
+function load() { $('tip').classList.add('off'); const B = BOARDS[bi]; pegs = [...B.t.map(([x, y]) => ({ x, y, r: 14, t: true, gone: false, fl: 0 })), ...B.b.map(([x, y]) => ({ x, y, r: 11, t: false, fl: 0 }))]; balls = CFG.balls; ball = null; aim = null; hud(); }
+function start(next) { if (next) setNo = (setNo + 1) % SETS.length; BOARDS = SETS[setNo]; bi = 0; used = 0; cleared = 0; total = BOARDS.reduce((s, b) => s + b.t.length, 0); bestCombo = 0; playing = true; $('intro').hidden = true; $('done').hidden = true; load(); tip('拖動瞄準，放手丟出去！', 2600); }
 
 /* ---------- 物理（固定步長） ---------- */
 function stepBall(b, dt, sim) {
@@ -96,8 +102,9 @@ function stepBall(b, dt, sim) {
 }
 function predict(ax, ay) {      /* 預測到第一次碰撞（照真實物理跑） */
   const d = Math.hypot(ax, ay) || 1, b = { x: CFG.launch.x, y: CFG.launch.y, vx: ax / d * CFG.speed, vy: ay / d * CFG.speed }, pts = [[b.x, b.y]];
-  for (let i = 0; i < 400; i++) { const ev = stepBall(b, 1 / 240, true); if (i % 4 === 0) pts.push([b.x, b.y]); if (ev || b.y > LH + 20) { pts.push([b.x, b.y]); return { pts, ev }; } }
-  return { pts, ev: null };
+  let wall = null;      /* D530（GPT 實玩①）：先撞到牆的話，再多畫一段反彈到下一個碰撞 */
+  for (let i = 0; i < 700; i++) { const ev = stepBall(b, 1 / 240, true); if (i % 4 === 0) pts.push([b.x, b.y]); if (ev && ev.k === 'wall' && !wall) { wall = [b.x, b.y]; continue; } if ((ev && ev.k === 'peg') || (ev && wall) || b.y > LH + 20) { pts.push([b.x, b.y]); return { pts, ev, wall }; } }
+  return { pts, ev: null, wall };
 }
 function fire() {
   if (!aim || ball || !playing || balls <= 0) return;
@@ -106,7 +113,7 @@ function fire() {
   balls--; used++; hitsThis = 0; wallHit = false; aim = null; tone(380, 0.12, 'triangle', 0.08, 620); buzz(8); hud();
 }
 function endBall() {
-  const n = hitsThis; ball = null;
+  const n = hitsThis; wallHit = !!(ball && ball.wallHits); ball = null;
   if (n >= 2) { floats.push({ x: LW / 2, y: 140, s: (wallHit ? '借牆 ' : '') + '一顆撞掉 ' + n + ' 個！', t: 0, c: '#FFE17A', big: true }); bestCombo = Math.max(bestCombo, n); }
   if (wallHit && n >= 1 && !toldWall) { toldWall = true; tip('借牆打到了！牆是你的隊友', 2200); }
   const left = pegs.filter((p) => p.t && !p.gone).length;
@@ -123,7 +130,7 @@ function finish() {
 }
 function hitPeg(p, x, y) {
   if (p.t) {
-    if (ball.hits.has(p)) return; ball.hits.add(p); p.gone = true; cleared++; hitsThis++;
+    if (ball.hits.has(p)) return; ball.hits.add(p); p.gone = true; cleared++; hitsThis++; if (ball.wall) ball.wallHits = (ball.wallHits || 0) + 1;      /* 撞牆之後才打到的才算「借牆」 */
     const left = pegs.filter((q) => q.t && !q.gone).length;
     tone(520 + hitsThis * 110, 0.14, 'triangle', 0.11, 900 + hitsThis * 120); buzz(16 + hitsThis * 4);
     burst(p.x, p.y, '#F7A05A', 14); burst(p.x, p.y, '#FFFFFF', 6); shake = calm ? 0 : 4 + hitsThis * 1.5;
@@ -148,7 +155,7 @@ let last = performance.now();
 function frame(now) {
   let dt = Math.min(0.033, (now - last) / 1000); last = now;
   if (slow > 0) { slow -= dt; dt *= 0.25; }
-  if (ball) { const n = 6; for (let i = 0; i < n; i++) { const ev = stepBall(ball, dt / n); if (ev) { if (ev.k === 'peg') hitPeg(ev.p, ev.x, ev.y); else { wallHit = true; burst(ev.x, ev.y, '#BFE3F0', 4); tone(240, 0.05, 'sine', 0.04); } } } ball.t += dt; if (ball.y > LH + 20 || ball.t > CFG.maxT) endBall(); }
+  if (ball) { const n = 6; for (let i = 0; i < n; i++) { const ev = stepBall(ball, dt / n); if (ev) { if (ev.k === 'peg') hitPeg(ev.p, ev.x, ev.y); else { ball.wall = true; burst(ev.x, ev.y, '#BFE3F0', 4); tone(240, 0.05, 'sine', 0.04); } } } ball.t += dt; if (ball.y > LH + 20 || ball.t > CFG.maxT) endBall(); }
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#3AA6BD'); g.addColorStop(1, '#155B72'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   ctx.save(); if (shake > 0) { ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake); shake = Math.max(0, shake - dt * 30); }
@@ -158,6 +165,7 @@ function frame(now) {
   ctx.fillStyle = 'rgba(255,255,255,.08)'; for (let i = 0; i < 14; i++) { const y = (i * 47 + (calm ? 0 : now * 0.01)) % LH, x = (i * 83) % LW; ctx.fillRect(L(x), T(y), 24 * sc, 2); }
   /* 預測線 */
   if (aim && !ball) { const pr = predict(aim.x, aim.y); ctx.save(); ctx.setLineDash([6, 6]); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 3; ctx.beginPath(); pr.pts.forEach(([x, y], i) => (i ? ctx.lineTo(L(x), T(y)) : ctx.moveTo(L(x), T(y)))); ctx.stroke(); ctx.restore();
+    if (pr.wall) { ctx.strokeStyle = '#BFE3F0'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(L(pr.wall[0]), T(pr.wall[1]), 7, 0, 6.28); ctx.stroke(); }
     if (pr.ev) { const [x, y] = pr.pts[pr.pts.length - 1]; ctx.fillStyle = pr.ev.k === 'peg' && pr.ev.p.t ? '#FFB27A' : '#fff'; ctx.beginPath(); ctx.arc(L(x), T(y), 5, 0, 6.28); ctx.fill(); } }
   /* 浮標、目標 */
   for (const p of pegs) { if (p.gone) continue; const x = L(p.x), y = T(p.y), r = p.r * sc;
@@ -178,7 +186,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-$('go').onclick = start; $('again').onclick = start;
+$('go').onclick = () => start(); $('again').onclick = () => start(); $('alt').onclick = () => start(true);
 $('snd').onclick = () => { sound = !sound; $('snd').textContent = sound ? '🔊' : '🔇'; $('snd').setAttribute('aria-pressed', String(sound)); };
 function leave() { if (history.length > 1) history.back(); else location.href = '../../line/index.html'; }
 $('back').onclick = leave; $('out').onclick = () => (location.href = '../../line/index.html');
@@ -187,8 +195,8 @@ function simAll(b2, deg) {      /* 測試用：在第 b2 盤（全新）以 deg 
   const keep = pegs; pegs = [...BOARDS[b2].t.map(([x, y], i) => ({ x, y, r: 14, t: true, i })), ...BOARDS[b2].b.map(([x, y]) => ({ x, y, r: 11, t: false }))];
   const r = deg * Math.PI / 180, b = { x: CFG.launch.x, y: CFG.launch.y, vx: Math.cos(r) * CFG.speed, vy: Math.sin(r) * CFG.speed }, hit = new Set();
   for (let i = 0; i < 240 * CFG.maxT && b.y < LH + 20; i++) { const ev = stepBall(b, 1 / 240); if (ev && ev.k === 'peg' && ev.p.t) { hit.add(ev.p.i); ev.p.gone = true; } }
-  pegs = keep; return [...hit];
+  pegs = keep; return [...hit];      /* b2：盤號；用 BOARDS（目前這一套） */
 }
-window.__pin = { simAll, predict, fireAt: (x, y) => { aim = { x: x - CFG.launch.x, y: Math.max(8, y - CFG.launch.y) }; fire(); }, get ball() { return ball; }, get pegs() { return pegs; }, get playing() { return playing; }, get bi() { return bi; }, get cleared() { return cleared; }, get balls() { return balls; }, geo: () => ({ ox, oy, sc }) };      /* 測試掛勾 */
+window.__pin = { useSet: (k) => { setNo = k; BOARDS = SETS[k]; }, simAll, predict, fireAt: (x, y) => { aim = { x: x - CFG.launch.x, y: Math.max(8, y - CFG.launch.y) }; fire(); }, get ball() { return ball; }, get pegs() { return pegs; }, get playing() { return playing; }, get bi() { return bi; }, get cleared() { return cleared; }, get balls() { return balls; }, geo: () => ({ ox, oy, sc }) };      /* 測試掛勾 */
 </script>
 </body></html>

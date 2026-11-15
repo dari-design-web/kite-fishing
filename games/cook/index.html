@@ -5,6 +5,7 @@
 /* D527：廟口備餐盤（灰盒試作，不計分）。Dari 11/15 23:32「港口放行中規中矩，多花時間蒐集討論」→ Claude＋GPT 三回合討論定案（Claude產出\有意思的遊戲_回合3_定案_20261116_v1.md），三個灰盒的第一個。
    參考 Dicey Dungeons：手上的火候牌（小🔥／中🔥🔥／大🔥🔥🔥）各只能用一次，放進菜的格子；同一張大火給了湯，就沒得烤小卷。
    一局 3 波。每波：必做的菜（一定做得完）＋可選加點＋下一波預告。剩下的牌可以「留一張」到下一波（只多活一波）。
+   D530（GPT 三灰盒實玩 0150）：預告多列下一波發牌、選牌後不合的菜標「吃不了」、必做／加點分開回饋、頂欄即時更新。
    第 1 局是固定教學局（GPT 回合 2 紙上原型），之後隨機出題；每題都先算出「最多能做幾道加點」，結算時跟你比。不存檔、不回報點數。 */
 :root{--ink:#3B2A1E;--paper:#FFF8EC;--red:#D9453B;--gold:#F4BB42;--teal:#2F7F86;--line:#E5D4BA}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -19,7 +20,7 @@ body{background:radial-gradient(120% 70% at 50% 0%,#7A2E22 0%,#4A1C16 55%,#2A100
 .pill{background:rgba(255,255,255,.92);color:var(--ink);border-radius:999px;padding:4px 10px;font-weight:900;font-size:14px;white-space:nowrap}
 .sp{flex:1}
 .top button{border:0;border-radius:999px;background:rgba(255,255,255,.92);font:inherit;font-weight:900;font-size:14px;padding:6px 12px;min-height:36px;color:var(--ink)}
-.next{display:flex;align-items:center;gap:8px;background:rgba(255,248,236,.14);border:1.5px dashed rgba(255,248,236,.55);border-radius:14px;padding:6px 10px;color:#FFE9C9;font-size:14px;min-height:46px}
+.next{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;background:rgba(255,248,236,.14);border:1.5px dashed rgba(255,248,236,.55);border-radius:14px;padding:6px 10px;color:#FFE9C9;font-size:14px;min-height:46px}
 .next b{color:#fff}
 .next .mini{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);color:var(--ink);border-radius:10px;padding:3px 8px;font-weight:900}
 .board{flex:1;display:flex;flex-direction:column;gap:8px;overflow:auto;padding:2px}
@@ -37,6 +38,8 @@ body{background:radial-gradient(120% 70% at 50% 0%,#7A2E22 0%,#4A1C16 55%,#2A100
 .dish .slot{margin-top:2px;width:64px;height:34px;border-radius:10px;border:2px dashed #C9A97F;display:flex;align-items:center;justify-content:center;font-size:15px}
 .dish.can .slot{border-color:var(--teal);background:#E2F4F2;animation:pulse 1s infinite}
 .dish.no{opacity:.55}
+.dish.no .slot::after{content:'✕ 吃不了';font-size:11px;color:#9C2318;font-weight:900}      /* D530（GPT 實玩②）：選牌後火候不合的菜直接標出來 */
+.dish.filled.no .slot::after{content:none}
 .dish.filled .slot{border-style:solid;border-color:#E2483A;background:#FFE3D6}
 .dish.done{animation:served .45s ease}
 .keep{display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.25);border-radius:14px;padding:8px 10px;color:#FFE9C9;font-size:14px}
@@ -193,7 +196,7 @@ function render() {
   const w = wave();
   $('wv').textContent = '第 ' + (wi + 1) + '／3 波'; $('sc').textContent = '加點 ' + score;
   const nw = waves[wi + 1];
-  $('next').innerHTML = nw ? '<span>下一波預告：</span>' + nw.opt.map((k) => '<span class="mini">' + MENU[k].em + ' ' + MENU[k].nm + ' <small>' + MENU[k].acc.map((h) => HEAT[h]).join('／') + '</small></span>').join(' ') + '<span class="muted" style="color:#E9CFAE">（加點）</span>' : '<b>最後一波！</b>留的火到這裡就用掉';
+  $('next').innerHTML = nw ? '<span>下一波預告：</span>' + nw.opt.map((k) => '<span class="mini">' + MENU[k].em + ' ' + MENU[k].nm + ' <small>' + MENU[k].acc.map((h) => HEAT[h]).join('／') + '</small></span>').join(' ') + '<span class="muted" style="color:#E9CFAE">（加點）</span><br><span>下一波發牌：</span>' + nw.chips.map((h) => '<span class="mini">' + HEAT[h] + '</span>').join(' ') : '<b>最後一波！</b>留的火到這裡就用掉';      /* D530（GPT 實玩①）：預告也列下一波會發哪幾張火 */
   const ds = allDishes();
   $('dishes').innerHTML = ds.map((d, i) => { const m = MENU[d.k], c = place[i]; const can = sel >= 0 && c === undefined && fits(d.k, chips[sel].h); return '<div class="dish ' + (d.must ? 'must' : 'opt') + (c !== undefined ? ' filled' : '') + (sel >= 0 ? (can ? ' can' : ' no') : '') + '" data-i="' + i + '" role="button" aria-label="' + m.nm + (d.must ? '（必做）' : '（加點）') + '，吃' + m.acc.map((h) => HN[h]).join('或') + '"><span class="tag">' + (d.must ? '必做' : '加點') + '</span><div class="em">' + m.em + '</div><div class="nm">' + m.nm + '</div><div class="acc">' + m.acc.map((h) => '<span>' + HEAT[h] + '</span>').join('') + '</div><div class="slot">' + (c !== undefined ? HEAT[chips[c].h] : '') + '</div></div>'; }).join('');
   const last = wi === 2;
@@ -230,7 +233,8 @@ $('serve').onclick = () => {
   const ds = allDishes(); let opt = 0; ds.forEach((d, i) => { if (!d.must && place[i] !== undefined) opt++; });
   const unused = chips.filter((c, i) => !Object.values(place).includes(i) && keepPick !== i);
   score += opt;
-  $('dishes').querySelectorAll('.dish.filled').forEach((el, n) => setTimeout(() => { el.classList.add('done'); fx(el, '+1'); tone(660 + n * 90, 0.12, 'triangle', 0.08); }, n * 120));
+  $('sc').textContent = '加點 ' + score;      /* D530（GPT 實玩③）：頂欄當下就對齊；必做冒「完成✓」、加點冒「加點＋1」 */
+  $('dishes').querySelectorAll('.dish.filled').forEach((el, n) => setTimeout(() => { el.classList.add('done'); fx(el, el.classList.contains('must') ? '完成✓' : '加點＋1'); tone(660 + n * 90, 0.12, 'triangle', 0.08); }, n * 120));
   buzz(18);
   keepNext = keepPick >= 0 ? chips[keepPick].h : null;
   const msg = opt ? '加點做了 ' + opt + ' 道！' : '必做都出餐了'; tip(msg + (keepNext ? '　留了一張' + HN[keepNext] + '到下一波' : unused.length ? '　（剩下的火熄掉了）' : ''), 1800);
