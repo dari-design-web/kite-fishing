@@ -1,0 +1,174 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>漁網搭檔</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
+<style>
+/* D529：漁網搭檔（灰盒試作，不計分）。Claude＋GPT 回合 3 定案三灰盒之三。原案 Claude「漁網拉霸」（參考 Luck be a Landlord），
+   依 GPT 回合 2 改版：去掉拉霸／繳錢的抽獎感，改成「先看下一網會怎麼排，再挑一張搭檔卡換進魚池」，第一網後就有決定。
+   規則：魚池有 8 格（編號 1～8），每一網從池裡拿 6 格排成 2×3。🐟魚、🐚貝各 1 分；🐦海鷗旁邊有魚 +2、🐙章魚旁邊有貝 +2（只算上下左右，每種搭檔一網最多算一次）。
+   每網收完後，看下一網的排法，從兩張搭檔卡挑一張（把某一格換成某種東西），換掉的會一直留在池裡。一局 4 網。
+   第 1 局是 GPT 回合 2 的教學序列，之後隨機；結算跟「這題最好能拿幾分」比。不存檔、不回報點數。 */
+:root{--ink:#24343A;--sea:#2C8FA6;--paper:#FFFDF6}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;font-family:'Zen Maru Gothic',system-ui,sans-serif;color:var(--ink);user-select:none;touch-action:manipulation}
+body{background:linear-gradient(#3AA6BD,#155B72)}
+.wrap{position:fixed;inset:0;display:flex;flex-direction:column;gap:10px;padding:calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 12px);max-width:520px;margin:0 auto}
+.top{display:flex;align-items:center;gap:6px;color:#fff}
+.top h1{margin:0;font-size:16px;white-space:nowrap}
+.pill{background:rgba(255,255,255,.92);color:var(--ink);border-radius:999px;padding:4px 10px;font-weight:900;font-size:14px;white-space:nowrap}
+.sp{flex:1}
+.top button{border:0;border-radius:999px;background:rgba(255,255,255,.92);font:inherit;font-weight:900;font-size:14px;padding:6px 12px;min-height:36px;color:var(--ink)}
+@media (max-width:400px){.top h1{font-size:15px}.pill{padding:3px 8px;font-size:13px}.top button{padding:5px 9px;font-size:13px}}
+.pool{display:flex;gap:4px;justify-content:center;background:rgba(0,0,0,.18);border-radius:14px;padding:6px}
+.pool .ps{width:36px;height:46px;border-radius:9px;background:rgba(255,255,255,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:20px;line-height:1;position:relative}
+.pool .ps small{font-size:10px;color:#6E8288;margin-top:2px}
+.pool .ps.chg{outline:3px solid #FFE17A}
+.lbl{color:#E8FBFF;font-weight:700;font-size:14px;text-align:center}
+.netbox{position:relative;align-self:center;background:repeating-linear-gradient(45deg,rgba(255,255,255,.18) 0 2px,transparent 2px 16px),repeating-linear-gradient(-45deg,rgba(255,255,255,.18) 0 2px,transparent 2px 16px),#1F7B93;border:5px solid #C9A06A;border-radius:18px;padding:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:min(330px,88vw)}
+.cell{position:relative;aspect-ratio:1;border-radius:14px;background:rgba(255,253,246,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:40px;line-height:1;transition:transform .15s}
+.cell small{position:absolute;left:6px;top:4px;font-size:11px;color:#6E8288;font-weight:700}
+.cell .pt{position:absolute;right:6px;bottom:4px;font-size:13px;font-weight:900;color:#E8674A}
+.cell.pair{background:#FFF1C9;box-shadow:0 0 0 3px #F4BB42}
+.cell.new{box-shadow:0 0 0 3px #7FE0D4}
+.cell.pop{animation:pop .4s ease}
+.links{position:absolute;inset:0;pointer-events:none}
+.score{color:#fff;text-align:center;font-weight:900;font-size:16px;min-height:22px}
+.cards{display:flex;gap:10px}
+.cards button{flex:1;border:3px solid transparent;border-radius:16px;background:var(--paper);font:inherit;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 4px 0 rgba(0,0,0,.25);min-height:84px;color:var(--ink)}
+.cards button b{font-size:26px;line-height:1.1}
+.cards button span{font-size:13px}
+.cards button[aria-pressed="true"]{border-color:#F4BB42;background:#FFF6DC}
+.cards button:disabled{opacity:.4}
+.bar{display:flex;gap:10px;margin-top:auto}
+.bar button{flex:1;border:0;border-radius:999px;font:inherit;font-weight:900;font-size:17px;padding:12px;min-height:50px;background:#F4BB42;color:#4A3426;box-shadow:0 4px 0 #C98A1A}
+.bar button:disabled{background:#8C9AA0;color:#DCE4E6;box-shadow:none}
+#tip{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 76px);z-index:4;background:#FFFDF6;border-radius:14px;padding:8px 14px;font-weight:700;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,.3);max-width:min(92vw,360px);text-align:center;transition:opacity .25s;pointer-events:none}
+#tip.off{opacity:0}
+.fx{position:fixed;pointer-events:none;z-index:5;font-weight:900;font-size:20px;color:#FFE17A;text-shadow:0 2px 0 rgba(0,0,0,.5);animation:up 1s ease forwards}
+.card{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:rgba(10,30,40,.55);padding:18px}
+.card[hidden]{display:none}
+.card>div{width:min(350px,94vw);background:#FFFDF6;border-radius:22px;padding:20px 18px 16px;text-align:center;box-shadow:0 12px 34px rgba(0,0,0,.45);animation:pop .3s cubic-bezier(.3,1.5,.5,1)}
+.card h2{margin:2px 0 8px;font-size:23px}
+.card p{margin:6px 0;line-height:1.6;font-size:15px}
+.card .stars{font-size:34px;letter-spacing:4px}
+.card .stars i{font-style:normal;color:#D9D2C4}.card .stars i.on{color:#F4BB42;text-shadow:0 2px 0 #C98A1A}
+.card .row{display:flex;gap:10px;margin-top:12px}
+.card button{flex:1;border:0;border-radius:999px;font:inherit;font-weight:900;font-size:16px;padding:12px 8px;min-height:48px;background:#F4BB42;color:#4A3426;box-shadow:0 4px 0 #C98A1A}
+.card button.alt{background:#fff;border:2px solid #9FC9CC;box-shadow:none;color:#1F5A5F}
+.howto{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;text-align:left;margin:10px 0;font-size:14px}
+.howto b{font-size:22px}
+.muted{color:#6E8288;font-size:13px}
+@keyframes pop{0%{transform:scale(.86)}60%{transform:scale(1.08)}100%{transform:none}}
+@keyframes up{to{transform:translateY(-46px);opacity:0}}
+@media (prefers-reduced-motion:reduce){.cell.pop,.card>div{animation:none}}
+</style></head><body>
+<div class="wrap">
+  <div class="top"><h1>漁網搭檔</h1><span class="pill" id="nn">第 1／4 網</span><span class="pill" id="tot">漁獲 0</span><span class="sp"></span><button id="snd" type="button" aria-pressed="true" aria-label="音效開關">🔊</button><button id="back" type="button">離開</button></div>
+  <div class="lbl">魚池（8 格，換掉的會一直留著）</div>
+  <div class="pool" id="pool"></div>
+  <div class="lbl" id="netlbl">這一網</div>
+  <div class="netbox" id="net"><svg class="links" id="links"></svg></div>
+  <div class="score" id="score"></div>
+  <div class="cards" id="cards"></div>
+  <div class="bar"><button id="haul" type="button">收網！</button></div>
+</div>
+<div id="tip" class="off"></div>
+<div class="card" id="intro"><div>
+  <h2>🕸 漁網搭檔</h2>
+  <p>魚池有 8 格，每一網拿其中 6 格排成 2×3。</p>
+  <div class="howto"><b>🐟🐚</b><span>魚、貝各 1 分</span><b>🐦</b><span>海鷗旁邊有魚 +2</span><b>🐙</b><span>章魚旁邊有貝 +2</span><b>🃏</b><span>每網收完，先看下一網怎麼排，再挑一張搭檔卡換進魚池</span></div>
+  <p class="muted">「旁邊」只算上下左右；每種搭檔一網最多算一次。<br>灰盒試作：不計分、不存檔。</p>
+  <div class="row"><button type="button" id="go">撒網！</button></div>
+</div></div>
+<div class="card" id="done" hidden><div>
+  <h2>回港了！</h2>
+  <div class="stars" id="stars"></div>
+  <p id="sum"></p>
+  <p class="muted">灰盒試作：不計分、不存檔。</p>
+  <div class="row"><button type="button" id="same">同一題再試</button><button type="button" id="again">換一題</button></div>
+  <div class="row"><button type="button" class="alt" id="out">回小鳶樂園</button></div>
+</div></div>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const EM = { fish: '🐟', shell: '🐚', gull: '🐦', octo: '🐙', water: '🌊' }, NM = { fish: '魚', shell: '貝', gull: '海鷗', octo: '章魚', water: '水' };
+/* GPT 回合 2 教學序列：池 1～8＝魚魚貝貝鷗章水水；第 2 網上排 5,7,1／下排 6,3,8，卡片：第 7 格換魚 or 換貝（換魚 7 分、換貝 5 分）。 */
+const TUTOR = { pool: ['fish', 'fish', 'shell', 'shell', 'gull', 'octo', 'water', 'water'],
+  nets: [[1, 5, 2, 3, 6, 4], [5, 7, 1, 6, 3, 8], [6, 7, 3, 5, 1, 8], [2, 6, 4, 5, 8, 1]].map((a) => a.map((x) => x - 1)),
+  cards: [null, [[6, 'fish'], [6, 'shell']], [[7, 'shell'], [7, 'gull']], [[3, 'octo'], [0, 'gull']]] };
+let seed = 1, tutor = true, G = null, pool = [], ni = 0, pick = -1, total = 0, sound = true, ac = null, phase = 'haul', gSeed = 1;
+const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+
+function scoreNet(pl, lay) {      /* lay：6 個池格編號（上排 3、下排 3）。回傳 {pts, pairs:[[a,b]], base} */
+  const t = lay.map((k) => pl[k]); let base = 0, pairs = [];
+  t.forEach((x) => { if (x === 'fish' || x === 'shell') base++; });
+  const adj = (i) => [i - 3, i + 3, i % 3 ? i - 1 : -1, i % 3 < 2 ? i + 1 : -1].filter((j) => j >= 0 && j < 6);
+  for (const [a, b] of [['gull', 'fish'], ['octo', 'shell']]) { let done = false; t.forEach((x, i) => { if (done || x !== a) return; const j = adj(i).find((j2) => t[j2] === b); if (j !== undefined) { pairs.push([i, j]); done = true; } }); }
+  return { pts: base + pairs.length * 2, pairs, base };
+}
+function bestTotal(g) { let best = 0; const n = g.nets.length; const cs = g.cards; (function rec(k, pl, sc) { if (k === n) { best = Math.max(best, sc); return; } const opts = cs[k] ? cs[k] : [null]; for (const c of opts) { const p2 = pl.slice(); if (c) p2[c[0]] = c[1]; rec(k + 1, p2, sc + scoreNet(p2, g.nets[k]).pts); } })(0, g.pool.slice(), 0); return best; }
+function worstTotal(g) { let w = 1e9; const n = g.nets.length; const cs = g.cards; (function rec(k, pl, sc) { if (k === n) { w = Math.min(w, sc); return; } const opts = cs[k] ? cs[k] : [null]; for (const c of opts) { const p2 = pl.slice(); if (c) p2[c[0]] = c[1]; rec(k + 1, p2, sc + scoreNet(p2, g.nets[k]).pts); } })(0, g.pool.slice(), 0); return w; }
+function makeGame() {
+  const T = ['fish', 'shell', 'gull', 'octo', 'water'];
+  for (let t = 0; t < 2000; t++) {
+    const pool = Array.from({ length: 8 }, () => T[Math.floor(rnd() * 5)]);
+    if (pool.filter((x) => x === 'water').length > 3) continue;
+    const nets = [], cards = [null];
+    for (let k = 0; k < 4; k++) { const a = [0, 1, 2, 3, 4, 5, 6, 7]; for (let i = 7; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } nets.push(a.slice(0, 6)); }
+    for (let k = 1; k < 4; k++) { const s1 = Math.floor(rnd() * 8), s2 = rnd() < 0.5 ? s1 : Math.floor(rnd() * 8); const t1 = T[Math.floor(rnd() * 4)]; let t2 = T[Math.floor(rnd() * 4)]; if (s1 === s2 && t1 === t2) t2 = T[(T.indexOf(t1) + 1) % 4]; cards.push([[s1, t1], [s2, t2]]); }
+    const g = { pool, nets, cards }, b = bestTotal(g), w = worstTotal(g);
+    if (b - w >= 4 && b >= 14) return g;      /* 選擇要真的有差（最好最差差 4 分以上） */
+  }
+  return TUTOR;
+}
+
+/* ---------- 畫面 ---------- */
+function tone(f, d, type, g, slide) { if (!sound) return; try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); const o = ac.createOscillator(), a = ac.createGain(), n = ac.currentTime; o.type = type || 'sine'; o.frequency.setValueAtTime(f, n); if (slide) o.frequency.exponentialRampToValueAtTime(slide, n + d); a.gain.setValueAtTime(g || 0.1, n); a.gain.exponentialRampToValueAtTime(0.001, n + d); o.connect(a); a.connect(ac.destination); o.start(n); o.stop(n + d); } catch (e) {} }
+function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+let tipT = 0; function tip(t, ms) { const e = $('tip'); e.textContent = t; e.classList.remove('off'); clearTimeout(tipT); tipT = setTimeout(() => e.classList.add('off'), ms || 2600); }
+function curPool() { const p = pool.slice(); const c = G.cards[ni]; if (c && pick >= 0) { const [s, t] = c[pick]; p[s] = t; } return p; }
+function render(show) {
+  const pl = curPool(), lay = G.nets[ni], c = G.cards[ni], ch = c && pick >= 0 ? c[pick][0] : -1;
+  $('nn').textContent = '第 ' + (ni + 1) + '／' + G.nets.length + ' 網'; $('tot').textContent = '漁獲 ' + total;
+  $('pool').innerHTML = pl.map((x, i) => '<div class="ps' + (i === ch ? ' chg' : '') + '">' + EM[x] + '<small>' + (i + 1) + '</small></div>').join('');
+  const r = scoreNet(pl, lay), inPair = new Set(r.pairs.flat());
+  $('netlbl').textContent = c ? (pick < 0 ? '這一網會這樣排——先挑一張搭檔卡' : '換好了，這一網會是：') : '這一網';
+  const net = $('net'); net.querySelectorAll('.cell').forEach((e) => e.remove());
+  lay.forEach((k, i) => { const d = document.createElement('div'); const x = pl[k]; d.className = 'cell' + (show && inPair.has(i) ? ' pair' : '') + (k === ch ? ' new' : ''); d.innerHTML = '<small>' + (k + 1) + '</small>' + EM[x]; d.setAttribute('aria-label', (k + 1) + ' 號格：' + NM[x]); net.appendChild(d); });
+  drawLinks(show ? r.pairs : []);
+  $('score').textContent = show ? '這網：基本 ' + r.base + ' ＋ 搭檔 ' + r.pairs.length * 2 + ' ＝ ' + r.pts + ' 分' : '';
+  $('cards').innerHTML = c ? c.map(([s, t], i) => '<button type="button" data-k="' + i + '" aria-pressed="' + (pick === i) + '"><b>' + EM[pool[s]] + '→' + EM[t] + '</b><span>把 ' + (s + 1) + ' 號格換成' + NM[t] + '</span></button>').join('') : '';
+  $('cards').querySelectorAll('button').forEach((b) => (b.onclick = () => { if (phase !== 'haul') return; pick = +b.dataset.k; tone(560, 0.06, 'triangle', 0.06); render(true); }));
+  $('haul').disabled = phase !== 'haul' || (c && pick < 0); $('haul').textContent = c && pick < 0 ? '先挑一張卡' : '收網！';
+}
+function drawLinks(pairs) {
+  const svg = $('links'), net = $('net'), cells = net.querySelectorAll('.cell'); svg.innerHTML = ''; if (!pairs.length) return;
+  const R = net.getBoundingClientRect(); svg.setAttribute('viewBox', '0 0 ' + R.width + ' ' + R.height);
+  for (const [a, b] of pairs) { const A = cells[a].getBoundingClientRect(), B2 = cells[b].getBoundingClientRect(); const l = document.createElementNS('http://www.w3.org/2000/svg', 'line'); l.setAttribute('x1', A.left + A.width / 2 - R.left); l.setAttribute('y1', A.top + A.height / 2 - R.top); l.setAttribute('x2', B2.left + B2.width / 2 - R.left); l.setAttribute('y2', B2.top + B2.height / 2 - R.top); l.setAttribute('stroke', '#F4BB42'); l.setAttribute('stroke-width', '7'); l.setAttribute('stroke-linecap', 'round'); l.setAttribute('opacity', '.75'); svg.appendChild(l); }
+}
+function fx(el, txt) { const r = el.getBoundingClientRect(), d = document.createElement('div'); d.className = 'fx'; d.textContent = txt; d.style.left = (r.left + r.width / 2 - 20) + 'px'; d.style.top = (r.top + 4) + 'px'; document.body.appendChild(d); setTimeout(() => d.remove(), 1000); }
+$('haul').onclick = () => {
+  if (phase !== 'haul') return; const c = G.cards[ni]; if (c && pick < 0) return;
+  phase = 'busy'; if (c) { const [s, t] = c[pick]; pool[s] = t; } pick = -1;
+  const r = scoreNet(pool, G.nets[ni]); render(true);
+  const cells = $('net').querySelectorAll('.cell');
+  r.pairs.forEach(([a, b2], n) => setTimeout(() => { [a, b2].forEach((i) => { cells[i].classList.remove('pop'); void cells[i].offsetWidth; cells[i].classList.add('pop'); }); fx(cells[a], '+2'); tone(660 + n * 160, 0.14, 'triangle', 0.1, 990 + n * 160); buzz(14); }, calm ? 0 : 250 + n * 320));
+  setTimeout(() => { total += r.pts; $('tot').textContent = '漁獲 ' + total; tone(330, 0.2, 'sine', 0.07, 520); tip('收網 +' + r.pts + (r.pairs.length ? '（搭檔 ' + r.pairs.length + ' 組）' : ''), 1600); }, calm ? 100 : 300 + r.pairs.length * 320);
+  setTimeout(() => { if (ni + 1 < G.nets.length) { ni++; phase = 'haul'; render(false); if (tutor && ni === 1) tip('下一網已經排好了：挑一張卡，看哪張能讓海鷗、章魚碰到朋友', 3600); } else finish(); }, calm ? 600 : 1500 + r.pairs.length * 320);
+};
+function finish() {
+  const b = bestTotal(G), st = total >= b ? 3 : total >= b - 2 ? 2 : 1;
+  $('stars').innerHTML = [0, 1, 2].map((i) => '<i class="' + (i < st ? 'on' : '') + '">★</i>').join('');
+  $('sum').innerHTML = '漁獲 <b>' + total + '</b> 分（這題最多 <b>' + b + '</b> 分）<br><span class="muted">' + (st === 3 ? '每張卡都挑對了！' : '提示：換進去的東西會一直留在池裡，後面幾網也會用到') + '</span>';
+  $('done').hidden = false; tone(523, 0.14, 'triangle', 0.1); setTimeout(() => tone(659, 0.14, 'triangle', 0.1), 120); setTimeout(() => tone(784, 0.24, 'triangle', 0.11), 240);
+}
+function start(same) { if (!same) { if (tutor) G = TUTOR; else { gSeed = (Date.now() & 0xffffff) | 1; seed = gSeed; G = makeGame(); } } pool = G.pool.slice(); ni = 0; pick = -1; total = 0; phase = 'haul'; $('intro').hidden = true; $('done').hidden = true; render(false); if (tutor && !same) tip('第一網：按收網，看海鷗碰到魚會加分', 2600); }
+$('go').onclick = () => start(); $('same').onclick = () => start(true); $('again').onclick = () => { tutor = false; start(); };
+$('snd').onclick = () => { sound = !sound; $('snd').textContent = sound ? '🔊' : '🔇'; $('snd').setAttribute('aria-pressed', String(sound)); };
+function leave() { if (history.length > 1) history.back(); else location.href = '../../line/index.html'; }
+$('back').onclick = leave; $('out').onclick = () => (location.href = '../../line/index.html');
+addEventListener('resize', () => { if (G) render(phase !== 'haul' || pick >= 0); });
+G = TUTOR; pool = G.pool.slice(); render(false);
+window.__net = { scoreNet, bestTotal, worstTotal, makeGame, setSeed: (s) => (seed = s), get G() { return G; }, get total() { return total; }, get ni() { return ni; }, get phase() { return phase; } };      /* 測試掛勾 */
+</script>
+</body></html>
