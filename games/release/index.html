@@ -1,0 +1,266 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>小鳶港口放行</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
+<style>
+/* D524：小鳶港口放行（試作，不計分）。Dari 11/15 22:04「再做市場分析、找更適合的小遊戲、討論後先做」；
+   Claude 研究＋GPT 2215 研究一致首選「箭頭疏通」類（Sensor Tower 2026 Q2：Arrows Puzzle Escape 全球下載第一；AppMagic 2026 H1 方塊／排序拼圖上升、骰子類下滑）。
+   玩法：港裡停滿船，船頭箭頭朝哪就只能往哪開。點一艘前方航道淨空的船，牠就開出港；擋住的話船會撞一下、亮出擋路的那艘。
+   一局 3 盤（5×6 → 6×7 → 6×7），清空最後一盤結算；不倒數、沒有失敗，只記時間和撞到幾次（給 1～3 顆星）。不存檔、不回報點數。
+   盤面用種子隨機產生，產生後一定驗證可以全部放行（反覆放走「現在能走的船」直到清空），而且至少要分 3 輪才放得完。 */
+:root{--ink:#24343A;--sea1:#2C8FA6;--sea2:#1D6E86;--dock:#C99A63;--dock2:#8C6440;--gold:#F4BB42;--red:#E2574C}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#0F3442;color:var(--ink);font-family:'Zen Maru Gothic',system-ui,sans-serif;overflow:hidden;touch-action:manipulation;user-select:none}
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block}
+.top{position:fixed;left:0;right:0;top:0;display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top) + 10px) 12px 8px;z-index:3;pointer-events:none}
+.top>*{pointer-events:auto}
+.top h1{margin:0;font-size:18px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.25);white-space:nowrap}
+.pill{background:rgba(255,255,255,.92);border-radius:999px;padding:4px 10px;font-weight:900;font-size:14px;white-space:nowrap}
+.sp{flex:1}
+.top button{border:0;border-radius:999px;background:rgba(255,255,255,.92);color:var(--ink);font:inherit;font-weight:900;font-size:14px;padding:6px 12px;min-height:36px;cursor:pointer}
+.bot{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:10px;padding:8px 12px calc(env(safe-area-inset-bottom) + 12px);z-index:3}
+.bot button{border:0;border-radius:999px;background:rgba(255,255,255,.92);color:var(--ink);font:inherit;font-weight:900;font-size:15px;padding:10px 18px;min-height:44px;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.18)}
+.bot button:active,.top button:active{transform:translateY(2px);box-shadow:none}
+#tip{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 58px);z-index:3;background:#FFFDF6;border-radius:14px;padding:8px 14px;font-weight:700;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,.25);max-width:min(92vw,360px);text-align:center;transition:opacity .25s}
+#tip.off{opacity:0;pointer-events:none}
+.card{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:rgba(10,30,40,.55);padding:20px}
+.card[hidden]{display:none}
+.card>div{width:min(340px,92vw);background:#FFFDF6;border-radius:22px;padding:22px 20px 18px;text-align:center;box-shadow:0 12px 34px rgba(0,0,0,.4);animation:pop .32s cubic-bezier(.3,1.5,.5,1)}
+.card h2{margin:4px 0 6px;font-size:24px}
+.card p{margin:6px 0;line-height:1.6;font-size:15px}
+.card img{width:96px;height:96px;object-fit:contain}
+.card .stars{font-size:34px;letter-spacing:4px;margin:6px 0}
+.card .stars i{font-style:normal;color:#D9D2C4}.card .stars i.on{color:var(--gold);text-shadow:0 2px 0 #C98A1A}
+.card .row{display:flex;gap:10px;margin-top:14px}
+.card button{flex:1;border:0;border-radius:999px;font:inherit;font-weight:900;font-size:17px;padding:13px 10px;min-height:48px;cursor:pointer;background:var(--gold);color:#4A3426;box-shadow:0 4px 0 #C98A1A}
+.card button.alt{background:#fff;border:2px solid #9FC9CC;box-shadow:none;color:#1F5A5F}
+.card .demo{display:flex;justify-content:center;gap:10px;margin:8px 0 4px;font-size:14px;color:#41606A}
+.card .demo b{display:block;font-size:26px}
+.muted{color:#6E8288;font-size:13px}
+@keyframes pop{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.card>div{animation:none}}
+</style></head><body>
+<canvas id="cv" aria-label="港口：點船讓牠照箭頭方向開出去"></canvas>
+<div class="top"><h1>港口放行</h1><span class="pill" id="lv">第 1／3 盤</span><span class="pill" id="left">⛵ 0</span><span class="sp"></span><button id="snd" type="button" aria-pressed="true" aria-label="音效開關">🔊</button><button id="back" type="button">離開</button></div>
+<div id="tip" class="off"></div>
+<div class="bot"><button id="hint" type="button">💡 提示</button><button id="restart" type="button">↻ 這盤重來</button></div>
+<div class="card" id="intro"><div>
+  <img src="../assets/board/mini_kite_glide.webp" alt="">
+  <h2>小鳶港口放行</h2>
+  <p>港裡停滿了船，船頭的<b>箭頭</b>朝哪，船就只能往哪開。</p>
+  <p>點一艘<b>前面沒有船擋住</b>的船，牠就會開出港口。<br>把三盤的船全部放出去！</p>
+  <div class="demo"><span><b>⬆️</b>照箭頭走</span><span><b>🚫</b>擋住會撞到</span><span><b>💡</b>卡住按提示</span></div>
+  <p class="muted">試作版：不計分、不存檔。</p>
+  <div class="row"><button type="button" id="go">開始放行</button></div>
+</div></div>
+<div class="card" id="done" hidden><div>
+  <img src="../assets/board/mini_kite_glide.webp" alt="">
+  <h2>港口通暢了！</h2>
+  <div class="stars" id="stars"></div>
+  <p id="sum"></p>
+  <p class="muted">試作版：不計分、不存檔。</p>
+  <div class="row"><button type="button" id="again">再玩一次</button><button type="button" class="alt" id="out">回小鳶樂園</button></div>
+</div></div>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const CFG = { version: '0.1', boards: [{ c: 5, r: 6, n: 7 }, { c: 6, r: 7, n: 10 }, { c: 6, r: 7, n: 13 }], minRounds: 3, maxFirst: 3, star3: { bump: 0, sec: 90 }, star2: { bump: 3 } };
+const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const cv = $('cv'), ctx = cv.getContext('2d');
+const DIRS = { U: [0, -1], D: [0, 1], L: [-1, 0], R: [1, 0] };
+const HUES = ['#F26D5B', '#F4BB42', '#5BB4E5', '#7CC47F', '#B38BE0', '#F29BC1', '#F0925A', '#4FC2B4'];
+let W = 0, H = 0, dpr = 1, cell = 40, ox = 0, oy = 0;
+let seed = 1, boardNo = 0, B = null, ships = [], fx = [], waves = [], shake = 0, hitT = 0, combo = 0, comboT = 0, bumps = 0, t0 = 0, tAll = 0, playing = false, kite = { x: 0, y: 0, tx: 0, ty: 0, hop: 0 }, hintId = -1, hintT = 0, sound = true, ac = null, tipT = 0, firstTap = true;
+const kiteImg = new Image(); kiteImg.src = '../assets/board/mini_kite_glide.webp';
+const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+
+/* ---------- 盤面產生：隨機擺船 → 驗證可清空且至少 3 輪 ---------- */
+function cellsOf(s) { const [dx, dy] = DIRS[s.d], out = []; for (let k = 0; k < s.len; k++) out.push([s.c - dx * k, s.r - dy * k]); return out; }      /* (c,r) 是船頭那一格，船身往船尾方向延伸 */
+function occ(list, cols, rows) { const g = Array.from({ length: rows }, () => Array(cols).fill(-1)); list.forEach((s) => { if (s.gone || s.out) return; cellsOf(s).forEach(([x, y]) => (g[y][x] = s.id)); }); return g; }
+function blocker(s, g, cols, rows) { const [dx, dy] = DIRS[s.d]; let x = s.c + dx, y = s.r + dy; while (x >= 0 && y >= 0 && x < cols && y < rows) { if (g[y][x] >= 0) return { id: g[y][x], x, y }; x += dx; y += dy; } return null; }
+function rounds(list, cols, rows) { const L = list.map((s) => ({ ...s, gone: false })); let n = 0, first = -1; for (;;) { const g = occ(L, cols, rows), free = L.filter((s) => !s.gone && !blocker(s, g, cols, rows)); if (first < 0) first = free.length; if (!free.length) break; free.forEach((s) => (s.gone = true)); n++; } return { ok: L.every((s) => s.gone), n, first }; }
+function makeBoard(spec) {
+  for (let tries = 0; tries < 4000; tries++) {
+    const list = [], g = Array.from({ length: spec.r }, () => Array(spec.c).fill(-1));
+    let guard = 0;
+    while (list.length < spec.n && guard++ < 400) {
+      const d = 'UDLR'[Math.floor(rnd() * 4)], len = rnd() < 0.7 ? 2 : 3, c = Math.floor(rnd() * spec.c), r = Math.floor(rnd() * spec.r);
+      const s = { id: list.length, c, r, d, len }, cs = cellsOf(s);
+      if (cs.some(([x, y]) => x < 0 || y < 0 || x >= spec.c || y >= spec.r || g[y][x] >= 0)) continue;
+      /* 兩艘面對面、同一條線互頂的船永遠走不了——擺之前就擋掉 */
+      const [dx, dy] = DIRS[d]; let x = c + dx, y = r + dy, bad = false; while (x >= 0 && y >= 0 && x < spec.c && y < spec.r) { const o = g[y][x]; if (o >= 0) { const os = list[o], [ex, ey] = DIRS[os.d]; if (ex === -dx && ey === -dy) bad = true; break; } x += dx; y += dy; }
+      if (bad) continue;
+      cs.forEach(([x2, y2]) => (g[y2][x2] = s.id)); list.push(s);
+    }
+    if (list.length < spec.n) continue;
+    const rr = rounds(list, spec.c, spec.r);
+    if (rr.ok && rr.n >= CFG.minRounds && rr.first <= CFG.maxFirst) return { cols: spec.c, rows: spec.r, list };
+  }
+  return null;
+}
+
+/* ---------- 版面 ---------- */
+function fit() {
+  dpr = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (!B) return;
+  const top = 64 + 30, bot = 76, side = 26;      /* 上面 HUD、下面按鈕，四周留一圈碼頭與出海口 */
+  cell = Math.floor(Math.min((W - side * 2) / B.cols, (H - top - bot - side * 2) / B.rows, 76));
+  ox = Math.round((W - cell * B.cols) / 2); oy = Math.round(top + side + (H - top - bot - side * 2 - cell * B.rows) / 2);
+  if (!kite.x) { kite.x = kite.tx = W - 46; kite.y = kite.ty = oy - 30; }
+}
+addEventListener('resize', fit);
+
+/* ---------- 音效（可關） ---------- */
+function tone(f, d, type, g, slide) { if (!sound) return; try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); const o = ac.createOscillator(), a = ac.createGain(), n = ac.currentTime; o.type = type || 'sine'; o.frequency.setValueAtTime(f, n); if (slide) o.frequency.exponentialRampToValueAtTime(slide, n + d); a.gain.setValueAtTime(g || 0.12, n); a.gain.exponentialRampToValueAtTime(0.001, n + d); o.connect(a); a.connect(ac.destination); o.start(n); o.stop(n + d); } catch (e) {} }
+function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+
+/* ---------- 遊戲流程 ---------- */
+function startGame() { seed = (Date.now() & 0xffffff) | 1; boardNo = 0; bumps = 0; tAll = 0; playing = true; $('intro').hidden = true; $('done').hidden = true; loadBoard(); tip('看船頭箭頭，點一艘前面沒有船擋住的船！', 4); }
+function loadBoard(keepSeed) {
+  const spec = CFG.boards[boardNo]; if (!keepSeed) B = makeBoard(spec) || B; else B = { ...keepSeed, list: keepSeed.list.map((s) => ({ ...s })) };
+  B.start = { cols: B.cols, rows: B.rows, list: B.list.map((s) => ({ ...s })) };
+  ships = B.list.map((s, i) => ({ ...s, hue: HUES[i % HUES.length], gone: false, out: 0, bump: 0, flash: 0, pop: calm ? 1 : 0, delay: i * 0.035 }));
+  fx = []; hintId = -1; combo = 0; t0 = performance.now(); fit(); hud();
+}
+function hud() { $('lv').textContent = '第 ' + (boardNo + 1) + '／' + CFG.boards.length + ' 盤'; $('left').textContent = '⛵ ' + ships.filter((s) => !s.gone).length; }
+function tip(t, sec) { const e = $('tip'); e.textContent = t; e.classList.remove('off'); tipT = sec || 2.4; }
+function grid() { return occ(ships, B.cols, B.rows); }
+function shipAt(px, py) {      /* 先看手指落在哪一格（那格有船就是牠）；落在空格才找 8px 內最近的船，相鄰兩艘不會點錯（Codex 審） */
+  const gx = Math.floor((px - ox) / cell), gy = Math.floor((py - oy) / cell);
+  if (gx >= 0 && gy >= 0 && gx < B.cols && gy < B.rows) { const id = grid()[gy][gx]; if (id >= 0) return ships.find((s) => s.id === id); }
+  let best = null, bd = 8;
+  for (const s of ships) { if (s.gone || s.out) continue; for (const [x, y] of cellsOf(s)) { const X = ox + x * cell, Y = oy + y * cell, d = Math.max(X - px, px - X - cell, Y - py, py - Y - cell, 0); if (d < bd) { bd = d; best = s; } } }
+  return best;
+}
+function tapShip(s) {
+  if (!playing || !s) return;
+  const g = grid(), b = blocker(s, g, B.cols, B.rows);
+  if (hintId === s.id) hintId = -1;
+  if (!b) {      /* 放行：船沿箭頭加速開出港，尾浪、水花、小鳶飛過去拍翅 */
+    s.out = 0.001; combo = comboT > 0 ? combo + 1 : 1; comboT = 1.3;
+    const [hx, hy] = center(s.c, s.r); kite.tx = hx; kite.ty = hy - cell * 0.9; kite.hop = 1;
+    tone(330 + Math.min(combo, 8) * 45, 0.18, 'triangle', 0.13, 520 + Math.min(combo, 8) * 60); setTimeout(() => tone(196, 0.32, 'sine', 0.06), 60);
+    buzz(12); burst(hx, hy, '#FFFFFF', 10, 1);
+    if (combo >= 3) float(hx, hy - cell * 0.6, '連續放行 ×' + combo, '#FFE17A');
+    if (firstTap) { firstTap = false; tip('放行成功！空出來的位置，別的船就能走了', 2.6); }
+    hud();
+  } else {      /* 撞到：船往前頂一下再彈回、擋路的船閃紅、小震動 */
+    const [dx, dy] = DIRS[s.d], dist = Math.abs(b.x - s.c) + Math.abs(b.y - s.r) - 1;
+    s.bump = 1; s.bumpLen = Math.max(0.18, Math.min(dist, 1.5)); s.bdx = dx; s.bdy = dy;
+    const o = ships.find((z) => z.id === b.id); o.flash = 1.2; bumps++; combo = 0; hitT = calm ? 0 : 0.06; shake = calm ? 0 : 6;
+    tone(110, 0.16, 'square', 0.07, 70); buzz([18, 30, 18]);
+    const [bx, by] = center(b.x, b.y); burst(bx - dx * cell * 0.5, by - dy * cell * 0.5, '#FFD1C9', 8, 0.7);
+    tip('前面被擋住了！先放走亮紅框那艘', 2.2);
+  }
+}
+function center(x, y) { return [ox + (x + 0.5) * cell, oy + (y + 0.5) * cell]; }
+function burst(x, y, col, n, sp) { if (calm) n = Math.min(n, 3); for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, v = (40 + Math.random() * 90) * (sp || 1); fx.push({ k: 'p', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.5 + Math.random() * 0.3, t: 0, col, r: 2 + Math.random() * 3 }); } }
+function float(x, y, txt, col) { fx.push({ k: 't', x, y, txt, col, t: 0, life: 1.1 }); }
+function boardClear() {
+  const sec = (performance.now() - t0) / 1000; tAll += sec; playing = false;
+  float(W / 2, oy + cell * B.rows / 2, boardNo + 1 < CFG.boards.length ? '這盤清空了！' : '全部放行！', '#FFE17A');
+  tone(523, 0.14, 'triangle', 0.12); setTimeout(() => tone(659, 0.14, 'triangle', 0.12), 120); setTimeout(() => tone(784, 0.26, 'triangle', 0.13), 240);
+  for (let i = 0; i < 4; i++) burst(ox + Math.random() * cell * B.cols, oy + Math.random() * cell * B.rows, HUES[i], 12, 1.4);
+  setTimeout(() => { if (boardNo + 1 < CFG.boards.length) { boardNo++; loadBoard(); playing = true; tip('第 ' + (boardNo + 1) + ' 盤：船變多了！', 2.2); } else finish(); }, calm ? 500 : 1100);
+}
+function finish() {
+  const st = bumps <= CFG.star3.bump && tAll <= CFG.star3.sec ? 3 : bumps <= CFG.star2.bump ? 2 : 1;
+  $('stars').innerHTML = [0, 1, 2].map((i) => '<i class="' + (i < st ? 'on' : '') + '">★</i>').join('');
+  $('sum').textContent = '用了 ' + Math.round(tAll) + ' 秒，撞到 ' + bumps + ' 次。' + (st === 3 ? '一次都沒撞，好厲害！' : st === 2 ? '再少撞幾次就三顆星！' : '下次先找最外面能走的船試試！');
+  $('done').hidden = false; try { $('again').focus({ preventScroll: true }); } catch (e) {}
+}
+function hint() {
+  if (!playing) return; const g = grid(); const free = ships.filter((s) => !s.gone && !s.out && !blocker(s, g, B.cols, B.rows));
+  if (!free.length) return; hintId = free[0].id; hintT = 2.4; tip('試試看亮黃框的這艘', 2);
+}
+
+/* ---------- 畫圖 ---------- */
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function drawSea(now) {
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#3AA6BD'); g.addColorStop(1, '#17617A'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = 'rgba(255,255,255,.10)'; ctx.lineWidth = 2;
+  for (let i = 0; i < 18; i++) { const y = (i * 53 + (calm ? 0 : now * 0.012)) % (H + 40) - 20, x = (i * 97) % W; ctx.beginPath(); ctx.moveTo(x - 18, y); ctx.quadraticCurveTo(x, y - 5, x + 18, y); ctx.stroke(); }
+}
+function drawDock() {
+  const bw = cell * B.cols, bh = cell * B.rows, p = 12;
+  ctx.fillStyle = 'rgba(8,40,52,.28)'; rr(ox - p + 3, oy - p + 5, bw + p * 2, bh + p * 2, 16); ctx.fill();
+  ctx.fillStyle = '#1F7B93'; rr(ox - p, oy - p, bw + p * 2, bh + p * 2, 16); ctx.fill();
+  ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(255,255,255,.18)'; rr(ox - p, oy - p, bw + p * 2, bh + p * 2, 16); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.lineWidth = 1;
+  for (let x = 0; x <= B.cols; x++) { ctx.beginPath(); ctx.moveTo(ox + x * cell, oy); ctx.lineTo(ox + x * cell, oy + bh); ctx.stroke(); }
+  for (let y = 0; y <= B.rows; y++) { ctx.beginPath(); ctx.moveTo(ox, oy + y * cell); ctx.lineTo(ox + bw, oy + y * cell); ctx.stroke(); }
+  ctx.fillStyle = '#4A3426';      /* 四角繫船柱 */
+  [[ox - p + 8, oy - p + 8], [ox + bw + p - 8, oy - p + 8], [ox - p + 8, oy + bh + p - 8], [ox + bw + p - 8, oy + bh + p - 8]].forEach(([x, y]) => { ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill(); });
+}
+function drawShip(s, now) {
+  const [dx, dy] = DIRS[s.d], horiz = dx !== 0;
+  let off = 0;
+  if (s.out) off = s.out;      /* 已經開出去的距離（格） */
+  if (s.bump) { const k = s.bump; off = Math.sin((1 - k) * Math.PI) * s.bumpLen * 0.42; }
+  const ang = Math.atan2(dy, dx), L = s.len * cell, Wd = cell * 0.74;
+  const [hx, hy] = center(s.c, s.r), cx = hx - dx * (s.len - 1) * cell / 2 + dx * off * cell, cy = hy - dy * (s.len - 1) * cell / 2 + dy * off * cell;
+  const sc = s.pop < 1 ? 0.6 + 0.4 * easeBack(s.pop) : 1;
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang); ctx.scale(sc, sc);
+  const hl = L / 2 - cell * 0.08, hw = Wd / 2;
+  ctx.fillStyle = 'rgba(0,30,40,.28)'; hull(hl, hw, 3, 4); ctx.fill();      /* 影子 */
+  if (s.out) { ctx.fillStyle = 'rgba(255,255,255,' + Math.min(0.5, s.out * 0.25) + ')'; ctx.beginPath(); ctx.moveTo(-hl, -hw * 0.7); ctx.lineTo(-hl - cell * Math.min(2.4, s.out * 1.2), 0); ctx.lineTo(-hl, hw * 0.7); ctx.fill(); }
+  ctx.fillStyle = '#FFFDF6'; hull(hl, hw, 0, 0); ctx.fill();
+  ctx.fillStyle = s.hue; hull(hl - 4, hw - 4, 0, 0); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.85)'; rr(-hl + cell * 0.18, -hw * 0.46, Math.min(cell * 0.62, L * 0.32), hw * 0.92, 6); ctx.fill();      /* 船艙 */
+  ctx.fillStyle = 'rgba(0,0,0,.18)'; rr(-hl + cell * 0.24, -hw * 0.3, Math.min(cell * 0.18, L * 0.1), hw * 0.6, 3); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 2;      /* 甲板大箭頭 */
+  const ax = hl - cell * 0.42; ctx.beginPath(); ctx.moveTo(ax + cell * 0.24, 0); ctx.lineTo(ax - cell * 0.06, -cell * 0.2); ctx.lineTo(ax - cell * 0.06, -cell * 0.08); ctx.lineTo(ax - cell * 0.3, -cell * 0.08); ctx.lineTo(ax - cell * 0.3, cell * 0.08); ctx.lineTo(ax - cell * 0.06, cell * 0.08); ctx.lineTo(ax - cell * 0.06, cell * 0.2); ctx.closePath(); ctx.stroke(); ctx.fill();
+  if (s.flash > 0) { ctx.strokeStyle = 'rgba(226,87,76,' + Math.min(1, s.flash) + ')'; ctx.lineWidth = 5; hull(hl + 3, hw + 3, 0, 0); ctx.stroke(); }
+  if (hintId === s.id) { ctx.strokeStyle = 'rgba(255,212,94,' + (0.6 + 0.4 * Math.sin(now / 120)) + ')'; ctx.lineWidth = 5; hull(hl + 4, hw + 4, 0, 0); ctx.stroke(); }
+  ctx.restore();
+}
+function hull(hl, hw, sx, sy) { ctx.beginPath(); ctx.moveTo(-hl + sx, -hw + sy + 6); ctx.quadraticCurveTo(-hl + sx, -hw + sy, -hl + sx + 6, -hw + sy); ctx.lineTo(hl - hw * 0.9 + sx, -hw + sy); ctx.quadraticCurveTo(hl + sx, -hw * 0.25 + sy, hl + sx, sy); ctx.quadraticCurveTo(hl + sx, hw * 0.25 + sy, hl - hw * 0.9 + sx, hw + sy); ctx.lineTo(-hl + sx + 6, hw + sy); ctx.quadraticCurveTo(-hl + sx, hw + sy, -hl + sx, hw + sy - 6); ctx.closePath(); }
+function easeBack(k) { const c = 1.7; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); }
+function drawKite(now) {
+  if (!kiteImg.complete || !kiteImg.naturalWidth) return;
+  kite.x += (kite.tx - kite.x) * 0.16; kite.y += (kite.ty - kite.y) * 0.16;
+  const bob = calm ? 0 : Math.sin(now / 260) * 3 - kite.hop * 10, w = Math.max(52, cell * 1.1), h = w * kiteImg.naturalHeight / kiteImg.naturalWidth;
+  ctx.save(); ctx.translate(kite.x, kite.y + bob); if (kite.tx < kite.x - 2) ctx.scale(-1, 1); ctx.drawImage(kiteImg, -w / 2, -h / 2, w, h); ctx.restore();
+}
+let last = performance.now();
+function frame(now) {
+  let dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (hitT > 0) { hitT -= dt; dt = 0; }      /* 撞到時停 0.06 秒，手感比較「實」 */
+  if (comboT > 0) comboT -= dt; if (tipT > 0) { tipT -= dt; if (tipT <= 0) $('tip').classList.add('off'); } if (hintT > 0) { hintT -= dt; if (hintT <= 0) hintId = -1; }
+  kite.hop = Math.max(0, kite.hop - dt * 3);
+  ctx.save(); if (shake > 0) { ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake); shake = Math.max(0, shake - dt * 40); }
+  drawSea(now);
+  if (B) {
+    drawDock();
+    let any = false;
+    for (const s of ships) {
+      if (s.gone) continue; any = true;
+      if (s.pop < 1) { if (s.delay > 0) s.delay -= dt; else s.pop = Math.min(1, s.pop + dt * 4); }
+      if (s.bump) { s.bump = Math.max(0, s.bump - dt * 4.2); }
+      if (s.flash > 0) s.flash = Math.max(0, s.flash - dt);
+      if (s.out) { s.vo = (s.vo || 2) + dt * 26; s.out += s.vo * dt; if (s.out > Math.max(B.cols, B.rows) + 3) { s.gone = true; hud(); } else if (!calm && Math.random() < 0.6) { const [dx, dy] = DIRS[s.d], [hx, hy] = center(s.c, s.r), bx = hx + dx * (s.out - s.len + 0.5) * cell, by = hy + dy * (s.out - s.len + 0.5) * cell; fx.push({ k: 'p', x: bx + (Math.random() - 0.5) * cell * 0.4, y: by + (Math.random() - 0.5) * cell * 0.4, vx: -dx * 30, vy: -dy * 30, life: 0.5, t: 0, col: 'rgba(255,255,255,.9)', r: 2.5 }); } }
+      if (s.pop > 0 || s.delay <= 0) drawShip(s, now);
+    }
+    if (playing && !any) boardClear();
+  }
+  for (let i = fx.length - 1; i >= 0; i--) { const f = fx[i]; f.t += dt; if (f.t >= f.life) { fx.splice(i, 1); continue; } const a = 1 - f.t / f.life;
+    if (f.k === 'p') { f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= 0.92; f.vy *= 0.92; ctx.globalAlpha = a; ctx.fillStyle = f.col; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
+    else { ctx.globalAlpha = Math.min(1, a * 2); ctx.font = '900 20px "Zen Maru Gothic",sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(30,50,60,.85)'; const y = f.y - f.t * 36; ctx.strokeText(f.txt, f.x, y); ctx.fillStyle = f.col; ctx.fillText(f.txt, f.x, y); ctx.globalAlpha = 1; } }
+  if (B) drawKite(now);
+  ctx.restore();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+cv.addEventListener('pointerdown', (e) => { const s = shipAt(e.clientX, e.clientY); if (s) tapShip(s); });
+$('go').onclick = startGame; $('again').onclick = startGame;
+$('hint').onclick = hint;
+$('restart').onclick = () => { if (!B || !playing) return; tAll += (performance.now() - t0) / 1000; loadBoard(B.start);      /* 重來前花的時間也算進總時間（Codex 審） */ tip('這盤重來一次', 1.6); };
+$('snd').onclick = () => { sound = !sound; $('snd').textContent = sound ? '🔊' : '🔇'; $('snd').setAttribute('aria-pressed', String(sound)); };
+function leave() { if (history.length > 1) history.back(); else location.href = '../../line/index.html'; }
+$('back').onclick = leave; $('out').onclick = () => (location.href = '../../line/index.html');
+/* 開場先擺一盤當背景（不能點） */
+seed = 7; B = makeBoard(CFG.boards[0]); ships = B.list.map((s, i) => ({ ...s, hue: HUES[i % HUES.length], gone: false, out: 0, bump: 0, flash: 0, pop: 1, delay: 0 })); fit(); hud();
+window.__rel = { CFG, makeBoard, rounds, get B() { return B; }, get ships() { return ships; }, get bumps() { return bumps; }, tapId: (id) => tapShip(ships.find((s) => s.id === id)), free: () => { const g = grid(); return ships.filter((s) => !s.gone && !s.out && !blocker(s, g, B.cols, B.rows)).map((s) => s.id); }, blocked: () => { const g = grid(); return ships.filter((s) => !s.gone && !s.out && blocker(s, g, B.cols, B.rows)).map((s) => s.id); }, get playing() { return playing; }, get boardNo() { return boardNo; }, geo: () => ({ ox, oy, cell }) };      /* 測試掛勾 */
+</script>
+</body></html>

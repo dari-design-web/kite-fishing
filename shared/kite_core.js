@@ -104,6 +104,7 @@
     stack: { name: '小鳶疊貨櫃', levels: { all: '疊貨櫃' } },
     swim: { name: '鯨鯊快游', levels: { all: '鯨鯊快游' } },
     board: { name: '港口大富翁', levels: {} },      /* D471：小鳶樂園入口（單機骰子短局，不計分） */
+    release: { name: '港口放行', levels: {} },      /* D524：小鳶樂園入口（箭頭疏通試作，不計分） */
     daily: { name: '今日挑戰', levels: {} }      // G97：每日挑戰；D141：正式局也算今日積分
   };
 
