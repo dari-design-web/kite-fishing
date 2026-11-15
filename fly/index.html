@@ -509,7 +509,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '1.51',
+  version: '1.52',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -731,6 +731,7 @@ function buildScript() {
     snake(21.5, 180, 8); diag(36, 'bottle', true, 5); diag(36.2, 'bottle', false, 5); add(39.5, 'foam', 60); add(39.5, 'foam', 300); snake(52, 180, 9, true); row(56.5, 'foam', [90, 270]); diag(61, 'can', true, 6);
   }
   if (ST().theme === 'rail') {
+    if (!daily) { const q = E.find((e) => e.t === SK.at0 && e.type === 'sprayer' && e.x === SK.x); if (q) { q.t = SK.at; q.sk = true; } }      /* D515（GPT 1140 Q1 b）：第 4 關王前那隻煤煙礦坑怪（x 70，沒有固定補給）可以「引煤煙」。出場從 39 秒改到 44 秒：原本牠停好的 41～48 秒，42 秒那道枕木缺口的左枕木正好橫在牠和小鳶中間（43～46 秒羽毛全被枕木擋掉），實測幾乎打不到；晚 5 秒後牠在枕木過完才停好（46～53 秒，也出了光隧道），左右兩側都站得到。同一隻、同怪種、x、血量、噴煤灰彈都不變；60.5 秒那隻（x 290）整段都被 62、66 秒兩道枕木擋住，不用 */
     E.forEach((e) => { if (e.type === 'net' || e.type === 'tangle') { e.type = 'tire'; e.give = 'jerky'; } });      // 這一關沒有被纏住的朋友，吉祥物改成騎車來支援
     E.forEach((e) => { if (e.type === 'bag' && (e.t < 31 || e.t > 46)) e.type = 'goo'; });      // 光影母只在光隧道裡
     add(28.5, 'bound', 70, { mascot: 'tofu' }); add(40, 'bound', 290, { mascot: 'ele' }); add(57, 'bound', 80, { mascot: 'forest' });      // 被綁住的吉祥物（D30）
@@ -915,6 +916,7 @@ function spawn(e) {
   if (e.oc && !daily && TH() === 'harbor') f.oc = { st: 0, t: 0 };      /* D505 */
   if (e.pg && !daily && TH() === 'market') f.pg = e.pg;      /* D509 */
   if (e.ss && !daily && TH() === 'pier') f.ss = { side: 0, a: 0, fr: -1, m: 0, kill: 0, on: false };      /* D512 */
+  if (e.sk && !daily && TH() === 'rail') f.sk = { st: 0, t: 0, cur: 0, side: 0, k: 0, a: 0, hit: false };      /* D515 */
   if (e.sn !== undefined) { f.sn = e.sn; f.si = e.si; f.sl = e.sl; if (e.head && SBURN_ON()) { f.hp = SBURN.hp; f.aim = true; } if (!e.head && SBURN_ON() && stats.burnSn && stats.burnSn[e.sn]) f.burn = { t: SBURN.step, n: e.sl, last: e.si === e.sl - 1, late: true }; }      /* D491 */
   if (e.mascot) { f.mascot = e.mascot; if (!stats.toldBound && !newHold()) { stats.toldBound = true; banner(MASCOT_NAME[e.mascot] + '被綁住了！打斷它'); } }
   if (RM() && (e.type === 'can' || e.type === 'butt')) { f.x = f.x0 = RAIL_X() + R(-4, 4); f.vx = 0; f.rail = true; f.vy *= 1.25; }      // 鐵軌刺蝟只沿著鐵軌滾
@@ -998,6 +1000,32 @@ function drawSS(f) {
     for (const pass of [0, 1]) { ctx.strokeStyle = pass ? (on ? '#FFE08A' : '#FFB648') : 'rgba(31,58,77,.65)'; ctx.lineWidth = pass ? (on ? 4.4 : 3.2) : (on ? 7.6 : 6); ctx.globalAlpha = Math.max(0, Math.min(1, o.a)) * (on || !o.side ? 1 : 0.45);
       ctx.beginPath(); ctx.moveTo(x - d * 4, -11); ctx.lineTo(x, 0); ctx.lineTo(x - d * 4, 11); ctx.stroke();
       if (on) { ctx.beginPath(); ctx.moveTo(x + d * 8, -6); ctx.lineTo(x + d * 14, 0); ctx.lineTo(x + d * 8, 6); ctx.stroke(); } } }
+  ctx.restore();
+}
+/* D515（GPT 1140 Q1 b）：第 4 關「引煤煙，換側打」——王前那隻煤煙礦坑怪（44 秒出場、x 70）停好後先預告 SK.pre 秒（左右各一個短箭頭，小鳶站哪邊哪邊亮）；
+   時間到取一次小鳶在牠左邊還是右邊，煤煙就偏到那一側鎖住 SK.hold 秒，另一側整個露出來；站在正下方（中性帶）、離太遠、另一側沒有站位、魔王在場就照原本左右飄。
+   煙柱的畫面和擋羽共用 smokeX()；只動這一隻的煙柱橫向位置，煤灰彈、血量、停留、離場、計分都不變，不另計分。 */
+const SK = { at0: 39, at: 44, x: 70, pre: 1.2, hold: 2.6, ease: 0.22, off: 24, band: 9, reach: 84, stand: 24, sayY: 232 };
+function smokeX(f) { const sw = f.x + Math.sin(t * 1.3 + f.ph) * 18, o = f.sk; return o && o.k > 0 ? sw + (f.x + o.side * SK.off - sw) * o.k : sw; }
+function skSide(f) { const dx = kite.x - f.x, d = Math.sign(dx), far = f.x - d * SK.stand; return Math.abs(dx) >= SK.band && Math.abs(dx) <= SK.reach && kite.y > f.y + 60 && far >= 22 && far <= W - 22 ? d : 0; }
+function skStep(f, dt) {
+  const o = f.sk, live = f.hp > 0 && !f.leave && !boss && kite.hearts > 0;
+  if (o.st === 0 && live) { o.st = 1; o.t = 0; if (!stats.skTold && cine <= 0) { stats.skTold = true; beep(620, 0.06, 'triangle', 0.03, 120); say('站哪一邊，煤煙就偏哪一邊', f.x, SK.sayY, '#FFFFFF', false, '#1F3A4D'); } }
+  if (o.st === 1) { o.t += dt; o.cur = live ? skSide(f) : 0; if (!live) o.st = 3; else if (o.t >= SK.pre) { if (o.cur) { o.st = 2; o.t = 0; o.side = o.cur; stats.skN = (stats.skN || 0) + 1; stats.skSide = o.side; beep(360, 0.1, 'sawtooth', 0.03, -120); say(o.side < 0 ? '煤煙偏左了，換右邊打！' : '煤煙偏右了，換左邊打！', f.x, SK.sayY, '#FFE9A8', false, '#1F3A4D'); } else o.st = 3; } }
+  else if (o.st === 2) { o.t += dt; if (!live || o.t >= SK.hold) o.st = 3; }
+  o.k = Math.max(0, Math.min(1, o.k + (o.st === 2 ? 1 : -1) * dt / SK.ease));
+  o.a = Math.max(0, Math.min(1, o.a + (o.st === 1 || o.st === 2 ? 1 : -1) * dt / 0.15));
+}
+function skHit(f, s) {
+  const o = f.sk; if (o.st !== 2 || o.k < 0.6 || o.hit || s.ink || (s.x - f.x) * o.side > 0) return;
+  o.hit = true; stats.skHit = (stats.skHit || 0) + 1; jingle([587, 880], 80); say('換邊打到了！', f.x - o.side * 30, Math.max(96, f.y - 40), '#BFF0D0', false, '#1F3A4D');
+}
+function drawSK(f) {
+  const o = f.sk, wob = calm ? 0 : Math.sin(clock * 9) * 1.4, y = 34; ctx.save(); ctx.translate(f.x, f.y); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (const d of [-1, 1]) { const lock = o.st === 2, on = lock ? o.side === d : o.cur === d; if (lock && !on) continue; const x = d * ((lock ? 54 : 30) + (on ? wob : 0));
+    for (const pass of [0, 1]) { ctx.strokeStyle = pass ? (lock ? '#FFE08A' : on ? '#FFD9A0' : '#D8D2CC') : 'rgba(31,58,77,.7)'; ctx.lineWidth = pass ? (on ? 4.2 : 3) : (on ? 7.4 : 5.6); ctx.globalAlpha = o.a * (on ? 1 : 0.5); if (!lock) ctx.setLineDash(on ? [] : [5, 5]);
+      ctx.beginPath(); ctx.moveTo(x - d * 12, y); ctx.lineTo(x + d * 4, y); ctx.moveTo(x - d * 2, y - 7); ctx.lineTo(x + d * 5, y); ctx.lineTo(x - d * 2, y + 7); ctx.stroke(); ctx.setLineDash([]); } }
+  if (o.st === 2) { const d = -o.side, r = f.r + 7; ctx.globalAlpha = o.a * o.k; for (const pass of [0, 1]) { ctx.strokeStyle = pass ? '#8BE0A8' : 'rgba(31,58,77,.7)'; ctx.lineWidth = pass ? 3 : 6; ctx.beginPath(); ctx.arc(0, 0, r, d > 0 ? -0.5 : Math.PI - 0.9, d > 0 ? 0.9 : Math.PI + 0.5); ctx.stroke(); ctx.setLineDash([6, 7]); ctx.beginPath(); ctx.moveTo(d * 13, 40); ctx.lineTo(d * 13, 118); ctx.stroke(); ctx.setLineDash([]); } }      /* 露出來的那一側：綠色弧線＋往下一條綠色虛線（和第 4 關「綠圈＝現在打得到」同一個記號），羽毛從這條線上去打得到 */
   ctx.restore();
 }
 const OC = { at: 39, x: 180, pre: 2, sayY: 204 };
@@ -1574,9 +1602,9 @@ function update(dt) {
       continue;
     }
     if (d.hoverY) {      // 漏油桶：飄到上方停住，朝小鳶噴油滴，停留一陣子後離開
-      if (f.leave) { f.y -= 60 * dt; if (f.y < -f.r - 24) f.gone = true; }      // 離場：一路往上漂出畫面（先判斷，才不會又被當成「還在進場」）
+      if (f.leave) { f.y -= 60 * dt; if (f.sk) skStep(f, dt);      /* D515：離場時把煙放回原位 */ if (f.y < -f.r - 24) f.gone = true; }      // 離場：一路往上漂出畫面（先判斷，才不會又被當成「還在進場」）
       else if (f.y < d.hoverY) f.y += f.vy * dt;
-      else { f.hoverT = (f.hoverT || 0) + dt; if (f.hoverT > d.stay) { f.leave = true; say(NM() ? '香腸小火龍飛走了' : PM() ? '蝠鱝飛走了' : RM() ? '礦坑怪飛走了' : '漏油桶漂走了', f.x, f.y + 34, '#FFD0C4'); } f.shootAcc = (f.shootAcc || 0) + dt; if (f.oc) ocStep(f, d, dt);      /* D505 */ if (f.shootAcc >= d.shootEvery && !f.leave && ocSkip(f)) f.shootAcc = 0; else if (f.shootAcc >= d.shootEvery && !f.leave) { f.shootAcc = 0; const dx = kite.x - f.x, dy = kite.y - f.y, m = Math.hypot(dx, dy) || 1; mk(NM() || PM() || RM() ? 'fire' : 'drop', f.x, f.y + 14, { noCount: true, aimed: true, vx: dx / m * d.shotSpeed, vy: dy / m * d.shotSpeed }); beep(260, 0.1, 'square', 0.03, -80); } }
+      else { f.hoverT = (f.hoverT || 0) + dt; if (f.hoverT > d.stay) { f.leave = true; say(NM() ? '香腸小火龍飛走了' : PM() ? '蝠鱝飛走了' : RM() ? '礦坑怪飛走了' : '漏油桶漂走了', f.x, f.y + 34, '#FFD0C4'); } f.shootAcc = (f.shootAcc || 0) + dt; if (f.oc) ocStep(f, d, dt);      /* D505 */ if (f.sk) skStep(f, dt);      /* D515 */ if (f.shootAcc >= d.shootEvery && !f.leave && ocSkip(f)) f.shootAcc = 0; else if (f.shootAcc >= d.shootEvery && !f.leave) { f.shootAcc = 0; const dx = kite.x - f.x, dy = kite.y - f.y, m = Math.hypot(dx, dy) || 1; mk(NM() || PM() || RM() ? 'fire' : 'drop', f.x, f.y + 14, { noCount: true, aimed: true, vx: dx / m * d.shotSpeed, vy: dy / m * d.shotSpeed }); beep(260, 0.1, 'square', 0.03, -80); } }
       continue;
     }
     if (f.arc) { const A = f.arc; A.t += dt; if (A.t >= 0) { const u = Math.min(1, A.t / A.dur), a = 1 - u; f.x = a * a * A.p0[0] + 2 * a * u * A.p1[0] + u * u * A.p2[0]; f.y = a * a * A.p0[1] + 2 * a * u * A.p1[1] + u * u * A.p2[1]; } continue; }
@@ -1606,7 +1634,7 @@ function update(dt) {
     if (RM() && f.rail && f.noCount && (f.type === 'can' || f.type === 'butt')) continue;      // D112：刺蝟列車是鐵軌危險，不是目標，羽毛直接穿過（不再出現「打了沒反應」）
     if (f.bar) { if (f.hp > 0 && Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { f.hp = 0; part('star', s.x, s.y, { size: 3, fade: 4, color: '#fff' }); } continue; }      // D112：暴走連射的子彈一碰就散，羽毛繼續往前飛（不然子彈會變成魔王的盾）
     if (f === boss && f.parts && partShot(f, s)) continue;      /* D367：先看有沒有打到魔王零件 */
-    if (Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { s.dead = true; if (f === boss && f.phased) { if (!bossShot(f, s)) s.dead = false; continue; } if (RM() && railBlocks(f)) { blockPing(f, s.x, s.y); if (!stats.toldBlock && !newHold()) { stats.toldBlock = true; say(f.type === 'tire' ? '灰盾＝躲殼打不動，等綠圈' : f.type === 'battery' ? '灰盾＝大叫打不動，等綠圈' : '灰盾＝縮成球打不動，等綠圈', f.x, f.y - 34, '#FFFFFF', false, '#1F3A4D'); } continue; } const x2 = f === boss && f.atk === 'devour' && f.mouth >= 1, bk = TH() === 'beam' ? beamK(f, s) : NEWT() && f === boss ? shellK(f, s) : 1; if (bk < 0) continue; f.hp -= f.type === 'boss' ? bossTake(f, (x2 ? 2 : 1) * bk) : (x2 ? 2 : 1) * bk; if (x2 && !stats.toldX2) { stats.toldX2 = true; say('打嘴巴 傷害 ×2', f.x, f.y + 84, '#FFE08A'); } f.hitT = 0.08; hitAt = [s.x, s.y]; if (f.ss) ssHit(f, s);      /* D512 */ if (s.wind && f.wb) { stats.wbN = (stats.wbN || 0) + 1; if (!stats.wbHit) { stats.wbHit = true; say('借風打到了！', f.x, Math.max(WB.sayY, f.y - 30), '#FFFFFF', false, '#1F3A4D'); jingle([523, 784], 80); } } if (f.eb && f.hp <= 0 && f.eb.st > 0 && !stats.ebbHit) { stats.ebbHit = f.eb.st; say(f.eb.st === 1 ? '搶先清掉了！' : '攔到了！', f.x, Math.max(EBB.sayY, f.y - 30), '#FFFFFF', false, '#1F3A4D'); jingle([523, 784], 80); }      /* D494 */ if (f.ln && f.ln.w > 0 && f.hp <= 0 && !stats.lnHit) { stats.lnHit = 1; say('趁慢清掉了！', Math.max(70, Math.min(W - 70, f.x)), Math.max(LN.sayY, f.y - 30), '#FFFFFF', false, '#1F3A4D'); jingle([523, 784], 80); }      /* D496 */ if (s.tpSkip && s.tpSkip !== f && !stats.tpHit && f !== boss && t - s.tpT < TP.win) { stats.tpHit = 1; say('穿過去打到了！', Math.max(84, Math.min(W - 84, f.x)), Math.max(TP.sayY, f.y - 30), '#FFFFFF', false, '#1F3A4D'); jingle([523, 784], 80); } tpPierce(f, s);      /* D497 */ if (f.oc && f.oc.st === 1 && f.hp > 0 && !s.ink && !s.lit) ocCut(f);      /* D505 */ hitFx(f, (x2 ? 2 : 1) * bk); if (f.type !== 'boss' && f.type !== 'minib' && f.hp > 0) f.y -= 2.5; if (f.hp > 0 && !s.ink && !s.lit) { tireRoll(f); foamPop(f); } part('star', s.x, s.y, { size: 3, fade: 4, color: s.ink ? '#C9B6F2' : '#fff' }); if (f.hp > 0 && rings.length < 40) rings.push({ x: s.x, y: s.y, r: 2, max: W * 0.025, life: 1, color: s.ink ? '201,182,242' : s.lit ? '255,255,255' : s.pw === 2 ? '150,235,250' : s.pw === 3 ? '255,214,130' : '255,255,255', clr: 0.12, age: 0, lw: s.pw > 1 && !s.lit ? 2.6 : 2 }); }      /* D343：受擊只出小亮點（直徑約 0.05W），跟清掉的大圈分得出來 */
+    if (Math.hypot(s.x - f.x, s.y - f.y) < f.r + CONFIG.feather.r) { s.dead = true; if (f === boss && f.phased) { if (!bossShot(f, s)) s.dead = false; continue; } if (RM() && railBlocks(f)) { blockPing(f, s.x, s.y); if (!stats.toldBlock && !newHold()) { stats.toldBlock = true; say(f.type === 'tire' ? '灰盾＝躲殼打不動，等綠圈' : f.type === 'battery' ? '灰盾＝大叫打不動，等綠圈' : '灰盾＝縮成球打不動，等綠圈', f.x, f.y - 34, '#FFFFFF', false, '#1F3A4D'); } continue; } const x2 = f === boss && f.atk === 'devour' && f.mouth >= 1, bk = TH() === 'beam' ? beamK(f, s) : NEWT() && f === boss ? shellK(f, s) : 1; if (bk < 0) continue; f.hp -= f.type === 'boss' ? bossTake(f, (x2 ? 2 : 1) * bk) : (x2 ? 2 : 1) * bk; if (x2 && !stats.toldX2) { stats.toldX2 = true; say('打嘴巴 傷害 ×2', f.x, f.y + 84, '#FFE08A'); } f.hitT = 0.08; hitAt = [s.x, s.y]; if (f.ss) ssHit(f, s);      /* D512 */ if (f.sk) skHit(f, s);      /* D515 */ if (s.wind && f.wb) { stats.wbN = (stats.wbN || 0) + 1; if (!stats.wbHit) { stats.wbHit = true; say('借風打到了！', f.x, Math.max(WB.sayY, f.y - 30), '#FFFFFF', false, '#1F3A4D'); jingle([523, 784], 80); } } if (f.eb && f.hp <= 0 && f.eb.st > 0 && !stats.ebbHit) { stats.ebbHit = f.eb.st; say(f.eb.st === 1 ? '搶先清掉了！' : '攔到了！', f.x, Math.max(EBB.sayY, f.y - 30), '#FFFFFF', false, '#1F3A4D'); jingle([523, 784], 80); }      /* D494 */ if (f.ln && f.ln.w > 0 && f.hp <= 0 && !stats.lnHit) { stats.lnHit = 1; say('趁慢清掉了！', Math.max(70, Math.min(W - 70, f.x)), Math.max(LN.sayY, f.y - 30), '#FFFFFF', false, '#1F3A4D'); jingle([523, 784], 80); }      /* D496 */ if (s.tpSkip && s.tpSkip !== f && !stats.tpHit && f !== boss && t - s.tpT < TP.win) { stats.tpHit = 1; say('穿過去打到了！', Math.max(84, Math.min(W - 84, f.x)), Math.max(TP.sayY, f.y - 30), '#FFFFFF', false, '#1F3A4D'); jingle([523, 784], 80); } tpPierce(f, s);      /* D497 */ if (f.oc && f.oc.st === 1 && f.hp > 0 && !s.ink && !s.lit) ocCut(f);      /* D505 */ hitFx(f, (x2 ? 2 : 1) * bk); if (f.type !== 'boss' && f.type !== 'minib' && f.hp > 0) f.y -= 2.5; if (f.hp > 0 && !s.ink && !s.lit) { tireRoll(f); foamPop(f); } part('star', s.x, s.y, { size: 3, fade: 4, color: s.ink ? '#C9B6F2' : '#fff' }); if (f.hp > 0 && rings.length < 40) rings.push({ x: s.x, y: s.y, r: 2, max: W * 0.025, life: 1, color: s.ink ? '201,182,242' : s.lit ? '255,255,255' : s.pw === 2 ? '150,235,250' : s.pw === 3 ? '255,214,130' : '255,255,255', clr: 0.12, age: 0, lw: s.pw > 1 && !s.lit ? 2.6 : 2 }); }      /* D343：受擊只出小亮點（直徑約 0.05W），跟清掉的大圈分得出來 */
   }
   shots = shots.filter((s) => !s.dead && s.y > -20 && s.x > -20 && s.x < W + 20);
   updateRing(dt); bossFinalCheck(real);
@@ -3046,7 +3074,7 @@ function railFoeState(f, dt) {
 }
 function railBlocks(f) { return (f.type === 'tire' && f.shell) || (f.type === 'battery' && f.loud) || ((f.type === 'can' || f.type === 'butt') && f.rail && !f.open); }
 function smokeBlocks(s) {      // 煤煙礦坑怪噴出的煤煙雲擋住正下方的羽毛，兩側留有缺口
-  for (const f of foes) if (f.type === 'sprayer' && f.y > 0) { const cx = f.x + Math.sin(t * 1.3 + f.ph) * 18; if (Math.abs(s.x - cx) < 20 && s.y > f.y + 14 && s.y < f.y + 120) return true; }
+  for (const f of foes) if (f.type === 'sprayer' && f.y > 0) { const cx = smokeX(f);      /* D515：畫面和擋羽共用同一個位置 */ if (Math.abs(s.x - cx) < 20 && s.y > f.y + 14 && s.y < f.y + 120) return true; }
   return false;
 }
 /* D112：第 4 關「打得動／打不動」統一記號——灰色盾牌＝現在打不動；綠色準星圈＝現在打得到；紅色危險圈＋紅軌＝刺蝟列車，只能閃 */
@@ -3074,8 +3102,8 @@ function drawTrainLane() {      // 刺蝟列車還在畫面上時，整條鐵軌
   ctx.save(); ctx.globalAlpha = 0.55; hazard(x - hw, top, hw * 2, bot - top); ctx.restore();
 }
 function drawSmokeClouds() {
-  for (const f of foes) if (f.type === 'sprayer' && f.y > 0 && img.fx_coal_smoke) { const cx = f.x + Math.sin(t * 1.3 + f.ph) * 18; ctx.save(); ctx.translate(cx, f.y + 14 + 55); sprite('fx_coal_smoke', 44, 110); ctx.restore(); }      // 煤煙：直長半透明的圖
-  if (!img.fx_coal_smoke) for (const f of foes) if (f.type === 'sprayer' && f.y > 0) { const cx = f.x + Math.sin(t * 1.3 + f.ph) * 18; ctx.save(); ctx.globalAlpha = 0.78; for (const p of [[0, 40, 22, 30], [-8, 72, 20, 26], [8, 100, 18, 22]]) { const g = ctx.createRadialGradient(cx + p[0], f.y + p[1], 2, cx + p[0], f.y + p[1], p[2]); g.addColorStop(0, 'rgba(30,26,30,.95)'); g.addColorStop(1, 'rgba(30,26,30,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(cx + p[0], f.y + p[1], p[2], p[3], 0, 0, 6.2832); ctx.fill(); } ctx.restore(); }
+  for (const f of foes) if (f.type === 'sprayer' && f.y > 0 && img.fx_coal_smoke) { const cx = smokeX(f);      /* D515：畫面和擋羽共用同一個位置 */ ctx.save(); ctx.translate(cx, f.y + 14 + 55); sprite('fx_coal_smoke', 44, 110); ctx.restore(); }      // 煤煙：直長半透明的圖
+  if (!img.fx_coal_smoke) for (const f of foes) if (f.type === 'sprayer' && f.y > 0) { const cx = smokeX(f);      /* D515：畫面和擋羽共用同一個位置 */ ctx.save(); ctx.globalAlpha = 0.78; for (const p of [[0, 40, 22, 30], [-8, 72, 20, 26], [8, 100, 18, 22]]) { const g = ctx.createRadialGradient(cx + p[0], f.y + p[1], 2, cx + p[0], f.y + p[1], p[2]); g.addColorStop(0, 'rgba(30,26,30,.95)'); g.addColorStop(1, 'rgba(30,26,30,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(cx + p[0], f.y + p[1], p[2], p[3], 0, 0, 6.2832); ctx.fill(); } ctx.restore(); }
 }
 function drawRailFoeState(f) {      // 狀態提示畫在怪獸上面（B 組正式圖交付前的佔位）
   railMark(f);
@@ -3935,7 +3963,7 @@ function draw() {
   if (daily && daily.fork) drawForks();      /* D421 */
   if (daily && daily.salv) drawSalv();      /* D432 */
   drawBulTrails();
-  drawPhaseArcs(); for (const f of foes) drawFoe(f); for (const f of foes) if (f.roll && !f.roll.done) drawTireRollTell(f); for (const f of foes) if (f.oc && (f.oc.st === 1 || f.oc.st === 2)) drawOilCut(f);      /* D505 */ drawPG();      /* D509 */ for (const f of foes) if (f.ss && f.ss.a > 0.02) drawSS(f);      /* D512 */
+  drawPhaseArcs(); for (const f of foes) drawFoe(f); for (const f of foes) if (f.roll && !f.roll.done) drawTireRollTell(f); for (const f of foes) if (f.oc && (f.oc.st === 1 || f.oc.st === 2)) drawOilCut(f);      /* D505 */ drawPG();      /* D509 */ for (const f of foes) if (f.ss && f.ss.a > 0.02) drawSS(f);      /* D512 */ for (const f of foes) if (f.sk && f.sk.a > 0.02 && f.y > 0) drawSK(f);      /* D515 */
   for (const k of pops) { const a = k.life / 0.2, s = 1 + (1 - a) * (k.big ? 0.75 : 0.55), f = k.f; ctx.save(); ctx.translate(f.x, f.y); ctx.scale(s, s); ctx.translate(-f.x, -f.y); ctx.globalAlpha = a * a; f.hitT = CANF ? 1 : 0; f.jit = 0; drawFoe(f); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a * 0.7; drawFoe(f); ctx.restore(); }      /* D455：清掉的小怪白閃、放大、淡出 */
   if (NEWT()) drawNewOver();
   drawClouds(); drawMinionTells(); drawTaotieZones(); drawVents(); drawMarketUI(); if (PM()) { drawBoats(); drawEscort(); drawAgenorZones(); } if (RM()) { drawSmokeClouds(); for (const f of foes) drawRailFoeState(f); drawTunnelDark(); drawRushes(); drawMascots(); drawJianjiZones(); } drawBossFx(); drawSparks(); drawPings(); drawFrag();
@@ -4532,6 +4560,7 @@ window.__flyGame.pop = () => foes.filter((q) => q.type === 'foam').map((q) => ({
 window.__flyGame.roll = () => foes.filter((q) => q.type === 'tire').map((q) => ({ x: +q.x.toFixed(1), y: +q.y.toFixed(1), hp: q.hp, r: q.roll ? { t: +(q.roll.t || 0).toFixed(2), e: +q.roll.e.toFixed(2), dir: q.roll.dir, done: q.roll.done } : null }));      /* D475 測試掛勾 */
 window.__flyGame.fc = () => ({ on: !!(kite.fc && kite.fc.on), t: kite.fc ? +kite.fc.t.toFixed(2) : 0, a: kite.fc ? +kite.fc.a.toFixed(2) : 0, n: stats.fcN || 0, told: toldFocus, xs: shots.filter((q) => q.fc).map((q) => [+(q.x - kite.x).toFixed(1), q.vx]) });      /* D502 測試掛勾 */
 window.__flyGame.ss = () => ({ t: +t.toFixed(2), res: stats.ssRes || 0, told: !!stats.ssTold, f: foes.filter((q) => q.ss).map((q) => ({ x: +q.x.toFixed(1), y: +q.y.toFixed(1), hp: q.hp, side: q.ss.side, a: +q.ss.a.toFixed(2), on: q.ss.on })), shells: foes.filter((q) => q.type === 'drop' && !q.aimed).map((q) => ({ x: +q.x.toFixed(1), y: +q.y.toFixed(1), x0: +q.x0.toFixed(1), ssd: q.ssd || 0 })) });      /* D512 測試掛勾 */
+window.__flyGame.sk = () => ({ t: +t.toFixed(2), n: stats.skN || 0, hit: stats.skHit || 0, side: stats.skSide || 0, told: !!stats.skTold, boss: !!boss, kite: { x: kite.x, y: kite.y }, f: foes.filter((q) => q.sk).map((q) => ({ x: +q.x.toFixed(1), y: +q.y.toFixed(1), hp: q.hp, st: q.sk.st, cur: q.sk.cur, side: q.sk.side, k: +q.sk.k.toFixed(2), a: +q.sk.a.toFixed(2), cx: +smokeX(q).toFixed(1), hover: +(q.hoverT || 0).toFixed(2), leave: !!q.leave })) });      /* D515 測試掛勾 */
 window.__flyGame.pg = () => ({ t: +t.toFixed(2), st: stats.pg ? stats.pg.st : -1, res: stats.pgRes || '', f: foes.filter((q) => q.pg).map((q) => ({ pg: q.pg, x: +q.x.toFixed(1), y: +q.y.toFixed(1), hp: q.hp })) });      /* D509 測試掛勾 */
 window.__flyGame.oc = () => ({ t: +t.toFixed(2), n: stats.ocN || 0, hit: stats.ocHit || 0, told: !!stats.toldOc, f: foes.filter((q) => q.oc).map((q) => ({ x: +q.x.toFixed(1), y: +q.y.toFixed(1), hp: q.hp, st: q.oc.st, acc: +(q.shootAcc || 0).toFixed(2), leave: !!q.leave })), drops: foes.filter((q) => q.aimed).length });      /* D505 測試掛勾 */
 window.__flyGame.salv = { open: salvOpen, st: () => ({ mode, daily, kite, stats }) };      /* D432 測試掛勾 */
