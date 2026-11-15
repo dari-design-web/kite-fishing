@@ -1,0 +1,265 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>廟口備餐盤</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
+<style>
+/* D527：廟口備餐盤（灰盒試作，不計分）。Dari 11/15 23:32「港口放行中規中矩，多花時間蒐集討論」→ Claude＋GPT 三回合討論定案（Claude產出\有意思的遊戲_回合3_定案_20261116_v1.md），三個灰盒的第一個。
+   參考 Dicey Dungeons：手上的火候牌（小🔥／中🔥🔥／大🔥🔥🔥）各只能用一次，放進菜的格子；同一張大火給了湯，就沒得烤小卷。
+   一局 3 波。每波：必做的菜（一定做得完）＋可選加點＋下一波預告。剩下的牌可以「留一張」到下一波（只多活一波）。
+   第 1 局是固定教學局（GPT 回合 2 紙上原型），之後隨機出題；每題都先算出「最多能做幾道加點」，結算時跟你比。不存檔、不回報點數。 */
+:root{--ink:#3B2A1E;--paper:#FFF8EC;--red:#D9453B;--gold:#F4BB42;--teal:#2F7F86;--line:#E5D4BA}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;font-family:'Zen Maru Gothic',system-ui,sans-serif;color:var(--ink);user-select:none;touch-action:manipulation}
+body{background:radial-gradient(120% 70% at 50% 0%,#7A2E22 0%,#4A1C16 55%,#2A100C 100%)}
+.lantern{position:fixed;top:-6px;width:34px;height:46px;border-radius:50% 50% 45% 45%;background:radial-gradient(circle at 40% 35%,#FFB27A,#E2483A 60%,#9C2318);box-shadow:0 0 22px rgba(255,120,60,.6);opacity:.9;pointer-events:none}
+.lantern::after{content:'';position:absolute;left:50%;bottom:-8px;width:2px;height:10px;background:#F4BB42;transform:translateX(-50%)}
+.wrap{position:fixed;inset:0;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 12px);gap:10px;max-width:520px;margin:0 auto}
+.top{display:flex;align-items:center;gap:8px;color:#fff}
+.top h1{margin:0;font-size:16px;white-space:nowrap}
+@media (max-width:400px){.top{gap:5px}.top h1{font-size:15px}.pill{padding:3px 8px;font-size:13px}.top button{padding:5px 9px;font-size:13px}}
+.pill{background:rgba(255,255,255,.92);color:var(--ink);border-radius:999px;padding:4px 10px;font-weight:900;font-size:14px;white-space:nowrap}
+.sp{flex:1}
+.top button{border:0;border-radius:999px;background:rgba(255,255,255,.92);font:inherit;font-weight:900;font-size:14px;padding:6px 12px;min-height:36px;color:var(--ink)}
+.next{display:flex;align-items:center;gap:8px;background:rgba(255,248,236,.14);border:1.5px dashed rgba(255,248,236,.55);border-radius:14px;padding:6px 10px;color:#FFE9C9;font-size:14px;min-height:46px}
+.next b{color:#fff}
+.next .mini{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);color:var(--ink);border-radius:10px;padding:3px 8px;font-weight:900}
+.board{flex:1;display:flex;flex-direction:column;gap:8px;overflow:auto;padding:2px}
+.sec{color:#FFE9C9;font-size:13px;font-weight:700;margin:2px 2px -2px}
+.dishes{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.dish{position:relative;background:var(--paper);border-radius:16px;padding:8px 8px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;border:3px solid transparent;min-height:118px;box-shadow:0 3px 0 rgba(0,0,0,.25);transition:transform .12s}
+.dish.must{border-color:#F4BB42}
+.dish.opt{background:#F3E7D3}
+.dish .em{font-size:34px;line-height:1}
+.dish .nm{font-weight:900;font-size:15px}
+.dish .acc{font-size:12px;color:#7A5A44;display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+.dish .acc span{background:#fff;border-radius:8px;padding:1px 6px;border:1px solid var(--line)}
+.dish .tag{position:absolute;top:6px;left:8px;font-size:11px;font-weight:900;border-radius:999px;padding:1px 7px;background:#F4BB42;color:#4A3426}
+.dish.opt .tag{background:#C9B8A4;color:#fff}
+.dish .slot{margin-top:2px;width:64px;height:34px;border-radius:10px;border:2px dashed #C9A97F;display:flex;align-items:center;justify-content:center;font-size:15px}
+.dish.can .slot{border-color:var(--teal);background:#E2F4F2;animation:pulse 1s infinite}
+.dish.no{opacity:.55}
+.dish.filled .slot{border-style:solid;border-color:#E2483A;background:#FFE3D6}
+.dish.done{animation:served .45s ease}
+.keep{display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.25);border-radius:14px;padding:8px 10px;color:#FFE9C9;font-size:14px}
+.keep .slot{width:64px;height:40px;border-radius:12px;border:2px dashed #FFE9C9;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08);font-size:15px}
+.keep.can .slot{border-color:#7FE0D4;animation:pulse 1s infinite}
+.hand{display:flex;justify-content:center;gap:10px;min-height:66px;align-items:center}
+.chip{width:64px;height:58px;border-radius:14px;border:0;background:linear-gradient(#FFF1D6,#F6D59C);box-shadow:0 4px 0 #B8823A;font:inherit;font-weight:900;font-size:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;color:#8C2A16;cursor:pointer;transition:transform .12s}
+.chip small{font-size:11px;color:#7A5A44;margin-top:4px}
+.chip.sel{transform:translateY(-8px);box-shadow:0 10px 0 #B8823A,0 0 0 3px #fff}
+.chip.kept{background:linear-gradient(#E2F4F2,#9FD8D0);box-shadow:0 4px 0 #2F7F86}
+.chip.used{visibility:hidden}
+.bar{display:flex;gap:10px}
+.bar button{flex:1;border:0;border-radius:999px;font:inherit;font-weight:900;font-size:17px;padding:12px;min-height:50px}
+#serve{background:var(--gold);color:#4A3426;box-shadow:0 4px 0 #C98A1A}
+#serve:disabled{background:#8C7A6A;color:#D9CDBF;box-shadow:none}
+#undo{flex:.5;background:rgba(255,255,255,.9);color:var(--ink)}
+#tip{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 150px);z-index:4;background:#FFFDF6;border-radius:14px;padding:8px 14px;font-weight:700;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,.35);max-width:min(92vw,360px);text-align:center;transition:opacity .25s;pointer-events:none}
+#tip.off{opacity:0}
+.fx{position:fixed;pointer-events:none;z-index:5;font-weight:900;font-size:20px;color:#FFE17A;text-shadow:0 2px 0 rgba(0,0,0,.5);animation:up 1s ease forwards}
+.steam{position:fixed;pointer-events:none;z-index:5;width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.8);animation:steam .9s ease-out forwards}
+.card{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:rgba(20,8,6,.6);padding:18px}
+.card[hidden]{display:none}
+.card>div{width:min(350px,94vw);background:#FFFDF6;border-radius:22px;padding:20px 18px 16px;text-align:center;box-shadow:0 12px 34px rgba(0,0,0,.45);animation:pop .3s cubic-bezier(.3,1.5,.5,1)}
+.card h2{margin:2px 0 8px;font-size:23px}
+.card p{margin:6px 0;line-height:1.6;font-size:15px}
+.card .stars{font-size:34px;letter-spacing:4px}
+.card .stars i{font-style:normal;color:#D9D2C4}.card .stars i.on{color:var(--gold);text-shadow:0 2px 0 #C98A1A}
+.card .row{display:flex;gap:10px;margin-top:12px}
+.card button{flex:1;border:0;border-radius:999px;font:inherit;font-weight:900;font-size:16px;padding:12px 8px;min-height:48px;background:var(--gold);color:#4A3426;box-shadow:0 4px 0 #C98A1A}
+.card button.alt{background:#fff;border:2px solid #E5D4BA;box-shadow:none}
+.muted{color:#7A6A5E;font-size:13px}
+.howto{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;text-align:left;margin:10px 0;font-size:14px}
+.howto b{font-size:20px}
+@keyframes pulse{50%{transform:scale(1.04)}}
+@keyframes served{40%{transform:scale(1.08) rotate(-2deg)}100%{transform:none}}
+@keyframes up{to{transform:translateY(-46px);opacity:0}}
+@keyframes steam{to{transform:translate(var(--dx),-50px) scale(2.2);opacity:0}}
+@keyframes pop{from{transform:scale(.86);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.dish.can .slot,.keep.can .slot,.dish.done,.card>div{animation:none}.chip.sel{transform:none}}
+</style></head><body>
+<div class="lantern" style="left:8%"></div><div class="lantern" style="left:30%;top:-14px"></div><div class="lantern" style="right:26%;top:-10px"></div><div class="lantern" style="right:6%"></div>
+<div class="wrap">
+  <div class="top"><h1>廟口備餐盤</h1><span class="pill" id="wv">第 1／3 波</span><span class="pill" id="sc">加點 0</span><span class="sp"></span><button id="snd" type="button" aria-pressed="true" aria-label="音效開關">🔊</button><button id="back" type="button">離開</button></div>
+  <div class="next" id="next"></div>
+  <div class="board">
+    <div class="sec">這一波的菜（黃框必做、灰底可加點）</div>
+    <div class="dishes" id="dishes"></div>
+    <div class="keep" id="keep"><div class="slot" id="keepSlot">　</div><div>留一張火到下一波<br><span class="muted" style="color:#E9CFAE">只能留一張，只多活一波</span></div></div>
+  </div>
+  <div class="hand" id="hand" aria-label="手上的火候牌"></div>
+  <div class="bar"><button id="undo" type="button">↩ 收回</button><button id="serve" type="button" disabled>出餐！</button></div>
+</div>
+<div id="tip" class="off"></div>
+<div class="card" id="intro"><div>
+  <h2>🏮 廟口備餐盤</h2>
+  <p>廟口夜市開張！手上的火候牌<b>每張只能用一次</b>，<br>放進菜的格子就會開始煮。</p>
+  <div class="howto"><b>🔥</b><span>小火・🔥🔥 中火・🔥🔥🔥 大火<br>每道菜只吃標示的火候</span><b>⭐</b><span>黃框必做，做完才能出餐；灰底是加點，多做多賺</span><b>🫙</b><span>剩下的火可以留一張給下一波（看上面預告再決定）</span></div>
+  <p class="muted">灰盒試作：不計分、不存檔。</p>
+  <div class="row"><button type="button" id="go">開張！</button></div>
+</div></div>
+<div class="card" id="done" hidden><div>
+  <h2>收攤囉！</h2>
+  <div class="stars" id="stars"></div>
+  <p id="sum"></p>
+  <p class="muted">灰盒試作：不計分、不存檔。</p>
+  <div class="row"><button type="button" id="same">同一題再試</button><button type="button" id="again">換一題</button></div>
+  <div class="row"><button type="button" class="alt" id="out">回小鳶樂園</button></div>
+</div></div>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const HEAT = { 1: '🔥', 2: '🔥🔥', 3: '🔥🔥🔥' }, HN = { 1: '小火', 2: '中火', 3: '大火' };
+const MENU = {      /* acc：吃哪些火候 */
+  tea: { em: '🍵', nm: '熱茶', acc: [1] },
+  soup: { em: '🍲', nm: '魚丸湯', acc: [2, 3] },
+  squid: { em: '🦑', nm: '烤小卷', acc: [3] },
+  veg: { em: '🥬', nm: '炒青菜', acc: [1, 2] },
+  tempura: { em: '🍤', nm: '天婦羅', acc: [2, 3] },
+  dbc: { em: '🍜', nm: '鼎邊趖', acc: [2] },
+  rice: { em: '🍚', nm: '滷肉飯', acc: [1] },
+  crab: { em: '🦀', nm: '蒸螃蟹', acc: [3] }
+};
+/* 教學局（依 GPT 回合 2 紙上原型改）：第 1 波大火沒菜可用→留到第 2 波蒸螃蟹；不留最多 2 道、留了 3 道。 */
+const TUTOR = [
+  { chips: [1, 2, 3], must: ['tea', 'dbc'], opt: ['rice'] },      /* 大火這波用不到 → 教「留起來」 */
+  { chips: [1, 2, 2], must: ['tea', 'soup'], opt: ['veg', 'crab'] },      /* 留的大火正好蒸螃蟹 */
+  { chips: [1, 2, 3], must: ['tea', 'soup'], opt: ['squid'] }
+];
+let busy = false, seed = 1, tutor = true, waves = [], wi = 0, chips = [], kept = null, keepNext = null, sel = -1, place = {}, keepPick = -1, score = 0, sound = true, ac = null, hist = [], gameSeed = 1;
+const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+const pick = (a) => a[Math.floor(rnd() * a.length)];
+
+/* ---------- 出題＋驗算 ---------- */
+function fits(k, h) { return MENU[k].acc.includes(h); }
+/* 一波能不能做完必做：把 chips 分給 must（每張一次） */
+function assign(chs, dishes) {      /* 回傳所有「必做全滿」的分配（dish->chip index），chs 小陣列直接窮舉 */
+  const out = []; const n = chs.length;
+  function rec(i, used, m) { if (i === dishes.length) { out.push(m.slice()); return; } for (let j = 0; j < n; j++) if (!(used & (1 << j)) && fits(dishes[i], chs[j])) { m.push(j); rec(i + 1, used | (1 << j), m); m.pop(); } }
+  rec(0, 0, []); return out;
+}
+/* 整局最多加點數：DP over 每波帶進來的留牌 */
+function best(ws) {
+  let states = new Map([[0, 0]]);      /* kept heat(0=none) -> best opt so far */
+  for (const w of ws) {
+    const nx = new Map();
+    for (const [kh, sc] of states) {
+      const chs = w.chips.concat(kh ? [kh] : []), n = chs.length;
+      const all = [...w.must, ...w.opt];
+      /* 窮舉每張牌去哪：must 必須滿 */
+      const dest = Array(n).fill(-1);
+      (function rec(j) {
+        if (j === n) {
+          const fill = {}; let ok = true, keepH = 0, optN = 0, keeps = 0;
+          for (let a = 0; a < n; a++) { const d = dest[a]; if (d === -1) continue; if (d === -2) { keeps++; keepH = chs[a]; continue; } if (fill[d] !== undefined || !fits(all[d], chs[a])) { ok = false; break; } fill[d] = a; }
+          if (!ok || keeps > 1) return; for (let m = 0; m < w.must.length; m++) if (fill[m] === undefined) return;
+          for (let o = w.must.length; o < all.length; o++) if (fill[o] !== undefined) optN++;
+          if (kh && dest[n - 1] === -2) return;      /* 帶進來的那張不能再留 */
+          const v = sc + optN; if (!nx.has(keepH) || nx.get(keepH) < v) nx.set(keepH, v); return;
+        }
+        for (const d of [-1, -2, ...all.map((_, i) => i)]) { dest[j] = d; rec(j + 1); }
+      })(0);
+    }
+    states = nx;
+  }
+  return Math.max(...states.values());
+}
+function bestNoKeep(ws) { return ws.reduce((s, w) => s + best([w]), 0); }
+function makeGame() {
+  for (let t = 0; t < 3000; t++) {
+    const ws = [];
+    for (let i = 0; i < 3; i++) {
+      const n = rnd() < 0.5 ? 3 : 4, chips = Array.from({ length: n }, () => 1 + Math.floor(rnd() * 3));
+      const keys = Object.keys(MENU); const must = [pick(keys), pick(keys)]; const opt = [pick(keys)]; if (rnd() < 0.6) opt.push(pick(keys));
+      if (new Set([...must, ...opt]).size < must.length + opt.length) { i--; continue; }
+      if (!assign(chips, must).length) { i--; continue; }      /* 必做一定能用當波的牌做完 */
+      ws.push({ chips: chips.sort(), must, opt });
+    }
+    const b = best(ws), b0 = bestNoKeep(ws);
+    if (b >= 3 && b > b0) return ws;      /* 要「留牌才拿得到滿分」，留牌這個決定才有意義 */
+  }
+  return TUTOR;
+}
+
+/* ---------- 畫面 ---------- */
+function tone(f, d, type, g, slide) { if (!sound) return; try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); const o = ac.createOscillator(), a = ac.createGain(), n = ac.currentTime; o.type = type || 'sine'; o.frequency.setValueAtTime(f, n); if (slide) o.frequency.exponentialRampToValueAtTime(slide, n + d); a.gain.setValueAtTime(g || 0.1, n); a.gain.exponentialRampToValueAtTime(0.001, n + d); o.connect(a); a.connect(ac.destination); o.start(n); o.stop(n + d); } catch (e) {} }
+function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+let tipT = 0; function tip(t, ms) { const e = $('tip'); e.textContent = t; e.classList.remove('off'); clearTimeout(tipT); tipT = setTimeout(() => e.classList.add('off'), ms || 2400); }
+function fx(el, txt) { const r = el.getBoundingClientRect(), d = document.createElement('div'); d.className = 'fx'; d.textContent = txt; d.style.left = (r.left + r.width / 2 - 30) + 'px'; d.style.top = (r.top + 8) + 'px'; document.body.appendChild(d); setTimeout(() => d.remove(), 1000);
+  if (!calm) for (let i = 0; i < 6; i++) { const s = document.createElement('div'); s.className = 'steam'; s.style.left = (r.left + r.width / 2 + (Math.random() - 0.5) * 40) + 'px'; s.style.top = (r.top + 30) + 'px'; s.style.setProperty('--dx', ((Math.random() - 0.5) * 30) + 'px'); document.body.appendChild(s); setTimeout(() => s.remove(), 900); } }
+function wave() { return waves[wi]; }
+function allDishes() { const w = wave(); return [...w.must.map((k) => ({ k, must: true })), ...w.opt.map((k) => ({ k, must: false }))]; }
+function render() {
+  const w = wave();
+  $('wv').textContent = '第 ' + (wi + 1) + '／3 波'; $('sc').textContent = '加點 ' + score;
+  const nw = waves[wi + 1];
+  $('next').innerHTML = nw ? '<span>下一波預告：</span>' + nw.opt.map((k) => '<span class="mini">' + MENU[k].em + ' ' + MENU[k].nm + ' <small>' + MENU[k].acc.map((h) => HEAT[h]).join('／') + '</small></span>').join(' ') + '<span class="muted" style="color:#E9CFAE">（加點）</span>' : '<b>最後一波！</b>留的火到這裡就用掉';
+  const ds = allDishes();
+  $('dishes').innerHTML = ds.map((d, i) => { const m = MENU[d.k], c = place[i]; const can = sel >= 0 && c === undefined && fits(d.k, chips[sel].h); return '<div class="dish ' + (d.must ? 'must' : 'opt') + (c !== undefined ? ' filled' : '') + (sel >= 0 ? (can ? ' can' : ' no') : '') + '" data-i="' + i + '" role="button" aria-label="' + m.nm + (d.must ? '（必做）' : '（加點）') + '，吃' + m.acc.map((h) => HN[h]).join('或') + '"><span class="tag">' + (d.must ? '必做' : '加點') + '</span><div class="em">' + m.em + '</div><div class="nm">' + m.nm + '</div><div class="acc">' + m.acc.map((h) => '<span>' + HEAT[h] + '</span>').join('') + '</div><div class="slot">' + (c !== undefined ? HEAT[chips[c].h] : '') + '</div></div>'; }).join('');
+  const last = wi === 2;
+  $('keep').style.display = last ? 'none' : '';
+  $('keep').classList.toggle('can', sel >= 0 && keepPick < 0 && !chips[sel].carried);
+  $('keepSlot').textContent = keepPick >= 0 ? HEAT[chips[keepPick].h] : '　';
+  $('hand').innerHTML = chips.map((c, i) => { const used = Object.values(place).includes(i) || keepPick === i; return '<button type="button" class="chip' + (c.carried ? ' kept' : '') + (sel === i ? ' sel' : '') + (used ? ' used' : '') + '" data-c="' + i + '" aria-label="' + HN[c.h] + (c.carried ? '（上一波留的）' : '') + '">' + HEAT[c.h] + '<small>' + (c.carried ? '留的' : HN[c.h]) + '</small></button>'; }).join('');
+  const mustOk = ds.every((d, i) => !d.must || place[i] !== undefined);
+  $('serve').disabled = !mustOk || busy;
+  $('serve').textContent = mustOk ? '出餐！' : '必做還沒做完';
+  $('hand').querySelectorAll('.chip').forEach((b) => (b.onclick = () => { if (busy) return; const i = +b.dataset.c; sel = sel === i ? -1 : i; tone(520, 0.05, 'triangle', 0.05); render(); }));
+  $('dishes').querySelectorAll('.dish').forEach((b) => (b.onclick = () => putDish(+b.dataset.i, b)));
+}
+function putDish(i, el) {
+  if (busy) return;
+  if (sel < 0) { if (place[i] !== undefined) { hist.push({ k: 'dish', i, c: place[i] }); delete place[i]; tone(300, 0.08, 'sine', 0.05); render(); } else tip('先點下面一張火候牌，再點菜'); return; }
+  const d = allDishes()[i];
+  if (place[i] !== undefined) return tip('這道已經在煮了');
+  if (!fits(d.k, chips[sel].h)) { tone(140, 0.14, 'square', 0.05); buzz(30); el.animate && !calm && el.animate([{ transform: 'translateX(-6px)' }, { transform: 'translateX(6px)' }, { transform: 'none' }], { duration: 220 }); return tip(MENU[d.k].nm + '只吃' + MENU[d.k].acc.map((h) => HN[h]).join('或')); }
+  place[i] = sel; hist.push({ k: 'dish', i }); sel = -1; tone(660, 0.1, 'triangle', 0.08, 880); buzz(10); render();
+  const nel = $('dishes').querySelector('[data-i="' + i + '"]'); if (nel) fx(nel, '滋～');
+}
+$('keep').onclick = () => {
+  if (busy || wi === 2) return;
+  if (keepPick >= 0 && sel < 0) { hist.push({ k: 'keep', c: keepPick }); keepPick = -1; render(); return; }
+  if (sel < 0) return tip('點一張剩下的火，再點這裡留到下一波');
+  if (chips[sel].carried) return tip('上一波留的火不能再留，這波要用掉');
+  if (keepPick >= 0) return tip('只能留一張');
+  keepPick = sel; hist.push({ k: 'keep' }); sel = -1; tone(440, 0.12, 'sine', 0.07, 330); render();
+};
+$('undo').onclick = () => { if (busy) return; const h = hist.pop(); if (!h) return; if (h.k === 'dish') { if (h.c !== undefined) place[h.i] = h.c; else delete place[h.i]; } else { if (h.c !== undefined) keepPick = h.c; else keepPick = -1; } sel = -1; render(); };
+$('serve').onclick = () => {
+  if (busy) return; busy = true;      /* 出餐到換波之間鎖住所有操作，不會重複出餐（Codex 審） */
+  const ds = allDishes(); let opt = 0; ds.forEach((d, i) => { if (!d.must && place[i] !== undefined) opt++; });
+  const unused = chips.filter((c, i) => !Object.values(place).includes(i) && keepPick !== i);
+  score += opt;
+  $('dishes').querySelectorAll('.dish.filled').forEach((el, n) => setTimeout(() => { el.classList.add('done'); fx(el, '+1'); tone(660 + n * 90, 0.12, 'triangle', 0.08); }, n * 120));
+  buzz(18);
+  keepNext = keepPick >= 0 ? chips[keepPick].h : null;
+  const msg = opt ? '加點做了 ' + opt + ' 道！' : '必做都出餐了'; tip(msg + (keepNext ? '　留了一張' + HN[keepNext] + '到下一波' : unused.length ? '　（剩下的火熄掉了）' : ''), 1800);
+  $('serve').disabled = true;
+  setTimeout(() => { if (wi < 2) { wi++; startWave(); } else finish(); }, calm ? 400 : 1100);
+};
+function startWave() {
+  const w = wave(); chips = w.chips.map((h) => ({ h })); if (keepNext) chips.push({ h: keepNext, carried: true }); keepNext = null;
+  busy = false; place = {}; keepPick = -1; sel = -1; hist = []; render();
+  if (tutor && wi === 0) tip('第一波：小火給熱茶、中火給鼎邊趖。大火這波沒菜用——看上面預告，留起來？', 4200);
+  else if (tutor && wi === 1) tip('看上面預告，想想要不要留一張火', 2600);
+}
+function finish() {
+  const b = best(waves), st = score >= b ? 3 : score >= b - 1 ? 2 : 1;
+  $('stars').innerHTML = [0, 1, 2].map((i) => '<i class="' + (i < st ? 'on' : '') + '">★</i>').join('');
+  $('sum').innerHTML = '加點做了 <b>' + score + '</b> 道（這題最多 <b>' + b + '</b> 道）<br><span class="muted">' + (st === 3 ? '每張火都用在刀口上！' : '提示：有時候這波先忍住，把大火留給下一波的加點更划算') + '</span>';
+  $('done').hidden = false; tone(523, 0.14, 'triangle', 0.1); setTimeout(() => tone(659, 0.14, 'triangle', 0.1), 120); setTimeout(() => tone(784, 0.24, 'triangle', 0.11), 240);
+}
+function startGame(sameSeed) {
+  if (!sameSeed) { if (tutor) waves = TUTOR; else { gameSeed = (Date.now() & 0xffffff) | 1; seed = gameSeed; waves = makeGame(); } }
+  wi = 0; score = 0; keepNext = null; $('intro').hidden = true; $('done').hidden = true; startWave();
+}
+$('go').onclick = () => startGame();
+$('same').onclick = () => startGame(true);
+$('again').onclick = () => { tutor = false; startGame(); };
+$('snd').onclick = () => { sound = !sound; $('snd').textContent = sound ? '🔊' : '🔇'; $('snd').setAttribute('aria-pressed', String(sound)); };
+function leave() { if (history.length > 1) history.back(); else location.href = '../../line/index.html'; }
+$('back').onclick = leave; $('out').onclick = () => (location.href = '../../line/index.html');
+waves = TUTOR; chips = TUTOR[0].chips.map((h) => ({ h })); render();
+window.__cook = { best, bestNoKeep, makeGame, assign, get waves() { return waves; }, get wi() { return wi; }, get score() { return score; }, get chips() { return chips; }, setSeed: (s) => (seed = s) };      /* 測試掛勾 */
+</script>
+</body></html>
