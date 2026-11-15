@@ -270,6 +270,19 @@ h3{font-size:15px;margin:14px 16px 6px}
 .cardth .new{position:absolute;right:3px;top:3px;width:8px;height:8px;border-radius:50%;background:var(--red)}
 .modal{position:fixed;inset:0;max-width:430px;margin:0 auto;background:rgba(30,40,44,.92);z-index:40;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px}
 .modal.on{display:flex}
+/* D520：同地三張札記。sb＝背面朝上而且下面有另外兩張，內容比畫面高就在視窗裡上下捲 */
+.modal.sb{justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.modal.sb>:first-child{margin-top:auto}.modal.sb>:last-child{margin-bottom:auto}
+.modal.sb>*{flex-shrink:0}
+.sibs{width:min(340px,86vw);margin-top:14px;padding:10px 12px 4px;border-radius:12px;background:#FFFDF8;color:var(--ink);box-sizing:border-box;animation:sibin .35s .25s ease-out both}
+.sibs[hidden]{display:none}
+.sibs h5{margin:0 0 8px;font-size:13px;color:#8A5A2B}.sibs h5 small{font-weight:400;color:var(--muted);font-size:11px;margin-left:4px;white-space:nowrap}
+.sibr{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1.5px dashed #E2D6C6}
+.sibt{flex:0 0 96px;width:96px;border-color:#D9B36A;cursor:pointer;box-shadow:0 2px 5px rgba(0,0,0,.18)}
+.sibt::after{content:'看照片';position:absolute;right:3px;bottom:3px;font-size:10px;font-weight:800;color:#5A3A24;background:rgba(255,253,246,.92);border-radius:999px;padding:0 6px}
+.sibx{flex:1;min-width:0;font-size:13px;line-height:1.6}.sibx b{display:block;font-size:13px;color:#5A3A24;margin-bottom:1px}
+@keyframes sibin{from{opacity:0;transform:translateY(10px)}}
+@media (prefers-reduced-motion:reduce){.sibs{animation:none}}
 .sheet2{background:var(--paper);border-radius:18px;padding:18px 16px;width:min(340px,88vw);font-size:14px;line-height:1.7}
 .sheet2 p{margin:0 0 6px}
 /* 紀念品櫃 */
@@ -400,7 +413,7 @@ header .back,.letter .skip{min-height:44px;min-width:44px;display:inline-flex;al
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '1.07',
+  version: '1.08',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 0,      // D80：遠行便當改用點數換，不再每 3 趟送 1 份（0＝關閉）
@@ -1438,12 +1451,19 @@ function renderAlbum() {
   }
   else body.innerHTML = '<p class="pad muted">合照館的照片請先下載到手機保存；收進收藏冊的功能之後再做。</p>';
 }
+/* D520（GPT 1625 Q1 b）：同一個地方三張常設卡都有了，翻到背面時下面接著另外兩張的小圖、卡名和原札記；點小圖在同一個視窗換到那張的正面。
+   只看見另外兩段不算已讀，點小圖才照原本逐張開卡算已讀。限定卡、沒集滿的地點照原本單張 */
 function showCardModal(l, i, lim) {
   const hid = lim ? '' : cardId(l, i), hung = !!hid && hang === hid;      /* D500：常設卡多一顆「掛到客廳牆上」 */
-  const m = $('modal'); m.innerHTML = cardHTML(l, i, { lim }) + '<div class="row" style="width:min(340px,86vw);margin-top:14px"><button class="btn ghost" id="mf" style="color:#fff;border-color:#fff">看背面</button><button class="btn gold" id="mc">回收藏冊</button></div>' + (hid ? '<div class="row" style="width:min(340px,86vw);margin-top:8px"><button class="btn" id="mh" type="button">' + (hung ? '已掛在客廳・拿下來' : '🖼 掛到客廳牆上') + '</button></div>' : ''); m.classList.add('on');
-  if (hid) $('mh').onclick = () => { if (hung) { hang = null; m.classList.remove('on'); toast('拿下來了，牆上換回最近的三張'); } else hangSet(l, i); };
-  $('mf').onclick = () => { const p = $('pc'); p.classList.toggle('flip'); $('mf').textContent = p.classList.contains('flip') ? '看正面' : '看背面'; };
-  $('mc').onclick = () => m.classList.remove('on');
+  const sib = !lim && l.cards.every((c, j) => S.cards[cardId(l, j)]) ? l.cards.map((c, j) => j).filter((j) => j !== i) : [];
+  const m = $('modal'); m.classList.remove('sb'); m.scrollTop = 0;
+  m.innerHTML = cardHTML(l, i, { lim }) + '<div class="row" style="width:min(340px,86vw);margin-top:14px"><button class="btn ghost" id="mf" style="color:#fff;border-color:#fff">看背面</button><button class="btn gold" id="mc">回收藏冊</button></div>' + (hid ? '<div class="row" style="width:min(340px,86vw);margin-top:8px"><button class="btn" id="mh" type="button">' + (hung ? '已掛在客廳・拿下來' : '🖼 掛到客廳牆上') + '</button></div>' : '') +
+    (sib.length ? '<div class="sibs" id="sibs" hidden><h5>' + l.name + '・小鳶還寫了這兩張 <small>點小圖看照片</small></h5>' + sib.map((j) => '<div class="sibr"><button class="cardth sibt" type="button" data-j="' + j + '" aria-label="看「' + l.cards[j][0] + '」的照片">' + sceneHTML(l, j) + '</button><div class="sibx"><b>' + l.cards[j][0] + '</b>' + l.cards[j][1] + '</div></div>').join('') + '</div>' : '');
+  m.classList.add('on');
+  if (hid) $('mh').onclick = () => { m.classList.remove('sb'); if (hung) { hang = null; m.classList.remove('on'); toast('拿下來了，牆上換回最近的三張'); } else hangSet(l, i); };
+  $('mf').onclick = () => { const p = $('pc'), f = p.classList.toggle('flip'); $('mf').textContent = f ? '看正面' : '看背面'; if (sib.length) { $('sibs').hidden = !f; m.classList.toggle('sb', f); if (!f) m.scrollTop = 0; } };
+  if (sib.length) $('sibs').querySelectorAll('.sibt').forEach((b) => (b.onclick = () => { const j = +b.dataset.j; S.seen[cardId(l, j)] = 1; save(); showCardModal(l, j); if ($('album') && $('album').classList.contains('on')) renderAlbum(); }));
+  $('mc').onclick = () => { m.classList.remove('on'); m.classList.remove('sb'); };
 }
 /* D469：紀念品詳情卡——大圖、名字、從哪裡帶回來、哪一天、小鳶的話。來源直接用紀念品的鍵（＝目的地 id，只有那一趟旅行會入帳），不推定 */
 function showSvModal(id, from, back) {
@@ -1684,10 +1704,10 @@ function travelBgmSync() { if (travelBgmOn) BGM.play('travel_' + ({ ranch: 'scho
   document.addEventListener('pointerdown', () => { if (travelBgmOn) travelBgmSync(); }, { passive: true });
 })();
 </script>
-<script src="cook.js?v=1.07"></script>
+<script src="cook.js?v=1.08"></script>
 <script src="boat.js?v=0.90"></script>
 <script src="wipe.js?v=0.98"></script>
-<script src="home.js?v=1.07"></script>
+<script src="home.js?v=1.08"></script>
 <script src="../shared/back_line.js?v=2"></script>
 <script>/* D104：旅行排行榜（明信片收藏數） */ if (window.KiteLB) { KiteLB.button(document.getElementById('lbSlot'), { title: '小鳶旅行收藏排行', travel: true }); setTimeout(function () { try { pushTravelStat(); } catch (e) {} }, 1500); }</script>
 </body>
