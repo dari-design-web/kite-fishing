@@ -81,6 +81,11 @@ header h1{font-size:20px;margin:0;flex:1}
 .svcard .from{display:inline-block;margin:8px 0 0;padding:4px 12px;border-radius:999px;background:#E6F3F1;color:#1F5A5F;font-size:14px;font-weight:700}
 .svcard .when{margin:6px 0 0;font-size:12px;color:#7A8A8C}
 .svcard .q{margin:10px 0 0;font-size:15px;line-height:1.6}
+/* D523：紀念品詳情「擺上層／擺下層」兩顆鈕（在卡片下面那排上方） */
+.svpin{display:flex;gap:8px;width:min(320px,86vw);margin-top:12px}
+.svpin .btn{flex:1;padding:10px 6px;font-size:15px;background:rgba(255,255,255,.14);color:#fff;border:2px solid rgba(255,255,255,.8)}
+.svpin .btn[aria-pressed="true"]{background:#FFD45E;color:#4A3426;border-color:#FFD45E}
+.svpin .btn.rs{flex:.8;font-size:13px}
 @keyframes svpop{from{transform:scale(.86);opacity:0}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.svcard,.shelfitems img.new{animation:none}}      /* 三格改成左邊上下排（G-47） */
 .bird{position:absolute;left:35.2%;top:55.6%;width:34%;aspect-ratio:1;background:center/contain no-repeat;cursor:pointer;z-index:2;transform-origin:50% 92%;will-change:left,top,transform}
@@ -413,7 +418,7 @@ header .back,.letter .skip{min-height:44px;min-width:44px;display:inline-flex;al
 <script>
 /* 小鳶去旅行 原型 v0.8（工作單 11 v4 P1）。規則與數值全部是建議，等 Dari（U-29）；改這裡的設定即可 */
 const CFG = {
-  version: '1.08',
+  version: '1.09',
   fast: /[?&]fast=1/.test(location.search),      // 測試用：一小時變 10 秒
   dev: /[?&](fast|dev)=1/.test(location.search),
   firstMin: 3, walkMin: 30, farEvery: 0,      // D80：遠行便當改用點數換，不再每 3 趟送 1 份（0＝關閉）
@@ -645,7 +650,7 @@ function rollTrip(bentoKey, items, forced) {
 function pickFriend() { const p = readJSON('kiteFlyProgress1'); const pool = ['小卷', '海龜']; if (p && p.stars && p.stars[2] && p.stars[2][0]) pool.push('基隆黑輪'); if (flyCleared(4)) pool.push('豆腐君'); return pool[Math.floor(rnd() * pool.length)]; }
 
 /* ====== 畫面 ====== */
-function go(id) { WIND.clear(); for (const s of document.querySelectorAll('.screen')) s.classList.toggle('on', s.id === id); const sc = $(id); if (sc) sc.scrollTop = 0; if (id === 'home') renderHome(); if (id === 'pack') renderPack(); if (id === 'album') renderAlbum(); if (id === 'shelf') renderShelf(); }
+function go(id) { WIND.clear(); if (id !== 'home' && id !== 'shelf') SVPIN = null; for (const s of document.querySelectorAll('.screen')) s.classList.toggle('on', s.id === id); const sc = $(id); if (sc) sc.scrollTop = 0; if (id === 'home') renderHome(); if (id === 'pack') renderPack(); if (id === 'album') renderAlbum(); if (id === 'shelf') renderShelf(); }
 document.querySelectorAll('[data-go]').forEach((b) => (b.onclick = () => go(b.dataset.go)));
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => (e.style.display = 'none'), 2200); }
 function fmtTime(ms) { const d = new Date(ms); return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'); }
@@ -810,6 +815,32 @@ try { let q = 0; const ro = new ResizeObserver(() => { if (!q) q = requestAnimat
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitRoom);
 ['pointerdown', 'touchstart', 'wheel'].forEach((ev) => $('roomview').addEventListener(ev, () => (roomUserT = performance.now()), { passive: true }));
 $('roomview').addEventListener('scroll', () => { const v = $('roomview'); $('hintL').classList.toggle('off', v.scrollLeft < 6); $('hintR').classList.toggle('off', v.scrollLeft > v.scrollWidth - v.clientWidth - 6); }, { passive: true });
+/* D523（GPT 1925 Q1 b「紀念品擺上層或下層」，新圖 0）：紀念品詳情多兩顆「擺上層／擺下層」，把這一件放到客廳木架最上或最下那格；
+   其他格照原本「最近帶回來」的順序補上，每件只出現一次。只記在這次進小屋（記憶體，不存檔）；離開小屋（打包、相簿、信…任何不是客廳／紀念品櫃的畫面）就回到原排列。
+   同一件再按另一層就換位置；按「恢復原樣」回原排列。畫面上真的換了位置才讓小鳶回一句：上層＝在架前小跳，下層＝走近架前看（只在客廳、小鳶在家時）。 */
+let SVPIN = null;      /* { id, slot: 0 上層 | 2 下層 } */
+const SHELF_Y = [48.3, 54.3, 60.1];      // v0.15：架上三格改成上下排，中心 x 16%（G-47 JSON）
+function shelfSlots() {
+  const ids = Object.entries(S.souvenirs).sort((a, b2) => b2[1] - a[1]).map((e) => e[0]);
+  const pin = SVPIN && S.souvenirs[SVPIN.id] ? SVPIN : null, out = [null, null, null];
+  if (pin) out[pin.slot] = pin.id;
+  const rest = ids.filter((k) => !pin || k !== pin.id); let n = 0;
+  for (let k = 0; k < 3 && n < rest.length; k++) if (!out[k]) { if (!pin && k >= ids.length) break; out[k] = rest[n++]; }
+  return out;
+}
+function renderMiniShelf() {
+  $('miniShelf').innerHTML = shelfSlots().map((k, n) => !k ? '' : '<img src="assets/sv_' + k + '.png" alt="' + LOCS.find((l) => l.id === k).souvenir + '" class="' + (Date.now() - S.souvenirs[k] < 864e5 ? 'new' : '') + '" style="left:16%;top:' + SHELF_Y[n] + '%"><button class="svhit" type="button" data-sv="' + k + '" aria-label="' + LOCS.find((l) => l.id === k).souvenir + '，從' + LOCS.find((l) => l.id === k).name + '帶回來的，點開看" style="top:' + (SHELF_Y[n] - (n ? 3 : 5.5)) + '%;height:' + (n === 1 ? 6 : 8.5) + '%"></button>').join('');
+  $('miniShelf').querySelectorAll('.svhit').forEach((b) => (b.onclick = () => showSvModal(b.dataset.sv, 'home', b)));
+}
+function svPin(id, slot) {      /* slot：0 上層、2 下層、null 恢復原樣 */
+  const before = shelfSlots().join(',');
+  SVPIN = slot === null ? null : { id, slot };
+  const moved = shelfSlots().join(',') !== before;
+  if ($('home').classList.contains('on')) renderMiniShelf(); else go('home');
+  if (moved && slot !== null) PET.shelf(slot);
+  { const f = $('miniShelf').querySelector('.svhit[data-sv="' + id + '"]'); try { if (f) f.focus({ preventScroll: true }); } catch (e) {} }      /* Codex 審：架子重畫後焦點跟著這一件 */
+  return moved;
+}
 function renderHome() {
   WIND.mount(null);      /* D514：重畫小屋先收掉紙上的風 */
   tick();
@@ -836,9 +867,7 @@ function renderHome() {
   $('wall').innerHTML = ''; recent.forEach((id, n) => { const s = document.createElement('span'); if (hp && !n) { s.className = 'hung'; if (S.seen['pk_' + hp.l.id]) s.innerHTML = '<i></i>'; } const [loc, i] = id.split('-'); const l = LOCS.find((x) => x.id === loc), c = l.cards[+i]; s.style.left = WALL_X[n] + '%'; s.style.backgroundImage = c[2] ? 'url(assets/' + c[2] + ')' : 'linear-gradient(' + l.tone[0] + ',' + l.tone[1] + ')'; $('wall').appendChild(s); });
   $('wallHit').onclick = () => go('album');
   { const hh = $('hangHit'); hh.hidden = !hp; if (hp) { hh.setAttribute('aria-label', '你掛的明信片：' + hp.l.name + '「' + hp.c[0] + '」，點一下聽小鳶說'); hh.onclick = openHang; } }
-  const SHELF_Y = [48.3, 54.3, 60.1];      // v0.15：架上三格改成上下排，中心 x 16%（G-47 JSON）
-  $('miniShelf').innerHTML = Object.entries(S.souvenirs).sort((a, b2) => b2[1] - a[1]).slice(0, 3).map(([k], n) => '<img src="assets/sv_' + k + '.png" alt="' + LOCS.find((l) => l.id === k).souvenir + '" class="' + (Date.now() - S.souvenirs[k] < 864e5 ? 'new' : '') + '" style="left:16%;top:' + SHELF_Y[n] + '%"><button class="svhit" type="button" data-sv="' + k + '" aria-label="' + LOCS.find((l) => l.id === k).souvenir + '，從' + LOCS.find((l) => l.id === k).name + '帶回來的，點開看" style="top:' + (SHELF_Y[n] - (n ? 3 : 5.5)) + '%;height:' + (n === 1 ? 6 : 8.5) + '%"></button>').join('');
-  $('miniShelf').querySelectorAll('.svhit').forEach((b) => (b.onclick = () => showSvModal(b.dataset.sv, 'home', b)));
+  renderMiniShelf();
   $('shelfHit').onclick = () => go('shelf');
   const nb = (S.bento.far || 0) + (S.bento.squid || 0) + (S.bento.hair || 0) + (S.bento.special || 0) + riceLeft();
   $('hCards').textContent = ownedCount() + '/24'; $('hBento').textContent = nb;
@@ -965,6 +994,7 @@ const PET = (() => {
   }
   function go(x, y) { p.sx = p.x; p.sy = p.y; p.tx = Math.max(AREA.x0, Math.min(AREA.x1, x)); p.ty = Math.max(AREA.y0, Math.min(AREA.y1, y)); p.face = p.tx >= p.x ? 1 : -1; p.act = 'walk'; p.t = 0; p.dur = Math.max(0.6, Math.hypot(p.tx - p.x, (p.ty - p.y) * 2) / 14); }
   function next() {
+    if (p.after) { const f = p.after; p.after = null; p.t = 0; f(); return; }
     p.t = 0; p.pose = S.state === 'back' ? 'back' : !S.firstDone ? 'wave' : 'home';
     const r = Math.random();
     if (S.state === 'back') {      // 拿著信，想讓你快點拆
@@ -1132,6 +1162,13 @@ const PET = (() => {
     tidyInfo() { return { q: tidyQ ? +tidyQ.t.toFixed(2) : 0, on: !!tidy, k: tidy ? tidy.k : '', st: tidy ? tidy.st : -1, t: tidy ? +tidy.t.toFixed(2) : 0, n: tidyN, got: tidyGot, act: p.act, x: p.x, y: p.y, say: p.say }; },      /* D508 測試掛勾 */
     freeze(sec) { stayEnd(); p.act = 'idle'; p.t = 0; p.dur = sec || 30; p.then = null; },
     tell(t, sec) { stayEnd(); if (pr) preenEnd(false); go(62, 77); p.then = () => { p.face = 1; p.act = 'look'; p.dur = Math.max(2.6, (sec || 3.4) - .4); emote('heart'); say(t, sec || 3.4); }; },      /* D500：走到明信片牆前說一句 */
+    shelf(slot) {      /* D523：紀念品換了層。上層＝走到架前小跳；下層＝走近架前停住看。不在客廳／不在家／信或返家演出蓋著時不演，只換架位 */
+      if (S.state !== 'home' || !S.firstDone || ROOM().id !== 'living' || document.hidden || $('keptC')) return false;
+      stayEnd(); if (pr) preenEnd(false); roomUserT = 0; p.after = null;
+      if (slot === 0) { go(24, 80); p.then = () => { p.face = -1; p.act = 'jump'; p.dur = 0.75; emote('spark', true); say('放高高，一眼就看到！', 2.6); p.after = () => { p.face = -1; p.act = 'idle'; p.dur = 1.9; }; };      /* 跳完在架前站一下，台詞不被下一個隨機動作蓋掉 */ }
+      else { go(19, 78); p.then = () => { p.face = -1; p.act = 'look'; p.dur = 2.6; emote('heart'); say('放這裡，我走近看！', 2.6); }; }
+      return true;
+    },
     hide() { stayEnd(); $('sayBox').classList.add('off'); $('emote').hidden = true; p.sayT = 0; p.emoT = 0; },
     center() { const v = $('roomview'); v.scrollLeft = Math.max(0, p.x / 100 * ROOMDIM.w - v.clientWidth / 2); v.dispatchEvent(new Event('scroll')); },
     enter() {      // 換房間：小鳶從房間中間出來，說一句這個房間的話
@@ -1470,12 +1507,17 @@ function showSvModal(id, from, back) {
   const l = LOCS.find((x) => x.id === id), ts = S.souvenirs[id]; if (!l || !ts) return;
   const d = new Date(ts), when = ts > 16e11 ? (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日帶回來' : '';
   const m = $('modal');
-  m.innerHTML = '<div class="svcard" role="dialog" aria-modal="true" aria-label="' + l.souvenir + '"><img src="assets/sv_' + id + '.png" alt=""><h2>' + l.souvenir + '</h2><div class="from">從「' + l.name + '」帶回來的</div>' + (when ? '<p class="when">' + when + '</p>' : '') + '<p class="q">「' + l.sv + '」</p></div><div class="row" style="width:min(320px,86vw);margin-top:14px">' + (from === 'home' ? '<button class="btn ghost" id="mAll" type="button" style="color:#fff;border-color:#fff">看全部紀念品</button>' : '') + '<button class="btn gold" id="mc" type="button">' + (from === 'home' ? '回到客廳' : '回紀念品櫃') + '</button></div>';
+  m.innerHTML = '<div class="svcard" role="dialog" aria-modal="true" aria-label="' + l.souvenir + '"><img src="assets/sv_' + id + '.png" alt=""><h2>' + l.souvenir + '</h2><div class="from">從「' + l.name + '」帶回來的</div>' + (when ? '<p class="when">' + when + '</p>' : '') + '<p class="q">「' + l.sv + '」</p></div>' + svPinRow(id) + '<div class="row" style="width:min(320px,86vw);margin-top:14px">' + (from === 'home' ? '<button class="btn ghost" id="mAll" type="button" style="color:#fff;border-color:#fff">看全部紀念品</button>' : '') + '<button class="btn gold" id="mc" type="button">' + (from === 'home' ? '回到客廳' : '回紀念品櫃') + '</button></div>';
   m.classList.add('on');
   const close = () => { m.classList.remove('on'); m.onclick = null; try { if (back && back.isConnected) back.focus({ preventScroll: true }); } catch (e) {} };
   $('mc').onclick = close; m.onclick = (e) => { if (e.target === m) close(); };
   if ($('mAll')) $('mAll').onclick = () => { close(); go('shelf'); };
+  m.querySelectorAll('[data-pin]').forEach((b) => (b.onclick = () => { const v = b.dataset.pin; close(); svPin(id, v === 'x' ? null : +v); }));
   try { $('mc').focus({ preventScroll: true }); } catch (e) {}
+}
+function svPinRow(id) {
+  const cur = SVPIN && SVPIN.id === id ? SVPIN.slot : -1;
+  return '<div class="svpin" role="group" aria-label="擺在客廳木架哪一層"><button class="btn" type="button" data-pin="0" aria-pressed="' + (cur === 0) + '">擺上層</button><button class="btn" type="button" data-pin="2" aria-pressed="' + (cur === 2) + '">擺下層</button>' + (cur >= 0 ? '<button class="btn rs" type="button" data-pin="x">恢復原樣</button>' : '') + '</div>';
 }
 function renderShelf() {
   const g = $('shelfGrid'); g.innerHTML = '';
@@ -1704,10 +1746,10 @@ function travelBgmSync() { if (travelBgmOn) BGM.play('travel_' + ({ ranch: 'scho
   document.addEventListener('pointerdown', () => { if (travelBgmOn) travelBgmSync(); }, { passive: true });
 })();
 </script>
-<script src="cook.js?v=1.08"></script>
+<script src="cook.js?v=1.09"></script>
 <script src="boat.js?v=0.90"></script>
 <script src="wipe.js?v=0.98"></script>
-<script src="home.js?v=1.08"></script>
+<script src="home.js?v=1.09"></script>
 <script src="../shared/back_line.js?v=2"></script>
 <script>/* D104：旅行排行榜（明信片收藏數） */ if (window.KiteLB) { KiteLB.button(document.getElementById('lbSlot'), { title: '小鳶旅行收藏排行', travel: true }); setTimeout(function () { try { pushTravelStat(); } catch (e) {} }, 1500); }</script>
 </body>
