@@ -294,6 +294,29 @@ function drawDual(g) {      /* D447：GPT 0920 固定隔板（64×512，木身 x
 /* D507（GPT 2042 Q1）「再瞄一下」：一般玩法第 6 關起、整局一次。池子亮琥珀快滿警示、還沒過紅線、小鳶還抓著這一顆而且還沒排定放手時，
    「下一顆」框正下方出現一顆「再瞄一下」；按下去，這一顆的手持倒數加 1.25 遊戲秒（倒數圈跟著補滿），照樣可以滑、可以提早放手，時間到照原流程自動落下。
    過線失敗計時照常跑；不給分、不改供給、合成、水波、借背、升關；每日與四個試玩沒有。資格讀 update 裡同一次算出的 g.nearU／g.over（不讀繪製用的 g.nearK） */
+/* D510（GPT 2335 Q1）同一對，選兩側落點：一般玩法第 3 關起。金線已對到池裡一隻落穩的同類時，牠的左右各亮一個短刻度（SIDE.k 倍手持半徑）；
+   兩個刻度都要在池框內、都是先碰到同一隻、而且和下一個會碰到的夥伴至少差 SIDE.gap px 才顯示。滑到刻度上（±SIDE.tol）刻度變金色；這時放手、第一下只碰到牠而且合起來，冒「合在左邊！／合在右邊！」。
+   只是瞄準資訊：投放、碰撞、合成、連鎖、計分都不變、不給分。快滿警示、過線、借背箭頭、升關橫幅、新發現、慶典時不顯示；每日與四個試玩沒有。 */
+const SIDE = { lv: 3, k: 1.1, tol: 4, gap: 6, age: 1.2, len: 11 };
+function sideFirst(g, x, r, y0) { let gy = BOX.floor - r, hit = null, g2 = 1e9; for (const b of g.balls) { if (b.dead) continue; const dx = Math.abs(b.x - x), rr = b.r + r - 1; if (dx < rr && b.y > y0) { const yy = b.y - Math.sqrt(rr * rr - dx * dx); if (yy < gy) { g2 = gy; gy = yy; hit = b; } else if (yy < g2) g2 = yy; } } return { hit, gy, gap: g2 - gy }; }
+function sideTick(g) {
+  const f = g.fall, plain = !DS && !g.ferry && !g.net && !g.dual && !g.swp, was = g.sd ? g.sd.on : 0; g.sd = null;
+  if (!plain || g.done || state !== 'play' || g.lv < SIDE.lv || !f || !f.held || g.dropAt != null || g.bk || g.nearK > 0 || g.nearU > 0 || g.over > 0 || g.bannerT > 0 || g.found || festPF() < 1) return;
+  const c = sideFirst(g, f.x, f.r, f.y), b = c.hit; if (!b || b.lv !== f.lv || b.age < SIDE.age || Math.abs(b.vy) > 40 || Math.abs(b.vx) > 30) return;
+  for (const o of g.balls) if (o !== b && !o.dead && (o.age < 0.6 || Math.abs(o.vy) > 60) && Math.abs(o.x - b.x) < b.r + o.r + f.r * 2) return;
+  const xs = [], ys = []; for (const sgn of [-1, 1]) { const x = b.x + sgn * SIDE.k * f.r; if (x < BOX.l + f.r || x > BOX.r - f.r) return; const q = sideFirst(g, x, f.r, f.y); if (q.hit !== b || q.gap < SIDE.gap) return; if (q.gy - f.r - 4 - SIDE.len < BOX.line + 6) return; xs.push(x); ys.push(q.gy); }
+  const on = Math.abs(f.x - xs[0]) <= SIDE.tol ? -1 : Math.abs(f.x - xs[1]) <= SIDE.tol ? 1 : 0; g.sd = { b, xs, ys, on };
+  if (on && on !== was) { beep(740, 0.04, 'triangle', 0.035, 80); buzz(6); }
+  if (!g.sdSaid && !(g.sayT > 0)) { g.sdSaid = true; g.say = '同一對，也能選左邊或右邊合！'; g.sayT = 2.8; }
+}
+function drawSide(g, f) {
+  const q = g.sd; if (!q || !f || !f.held) return; ctx.save(); ctx.lineCap = 'round';
+  for (let i = 0; i < 2; i++) { const on = q.on === (i ? 1 : -1), x = q.xs[i], y1 = q.ys[i] - f.r - 4, y0 = y1 - SIDE.len - (on ? 4 : 0);
+    ctx.strokeStyle = 'rgba(16,41,61,.85)'; ctx.lineWidth = on ? 8 : 6; ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke();
+    ctx.strokeStyle = on ? '#FFD23A' : '#E8FBFF'; ctx.lineWidth = on ? 4.5 : 2.5; ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke();
+    if (on) { ctx.globalAlpha = 0.5; drawSea(f.lv, x, q.ys[i], f.r, 0); ctx.globalAlpha = 1; ctx.strokeStyle = '#FFD23A'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(x, q.ys[i], f.r + 3, 0, 6.283); ctx.stroke(); } }
+  ctx.restore();
+}
 const AIM = { lv: 6, add: 1.25, w: 80, h: 36 }; let aimTold = false;
 const BACK = { lv: 5, still: 0.25, vx: 150, k0: 0.3, k1: 0.96, move: 5, fx: 0.55 };
 function backSpace(g, b, side, r, skip) { const x = b.x + side * (b.r + r + 1), y = b.y - b.r * 0.3; if (x < BOX.l + r || x > BOX.r - r) return false;
@@ -405,8 +428,8 @@ function makeMerge() {
     g.fall = { lv, x, y, r, held: true, hold: g.holdT(), hold0: g.holdT(), vy: 0, fast: false };
     if (g.pendingDrop != null) { g.dropAt = g.pendingDrop; g.pendingDrop = null; }      // 海鮮還在掉時先點的位置，下一隻出來就照那裡放
   };
-  g.release = () => { const f = g.fall; if (!f || !f.held) return; f.bk = g.bk && g.bk.on ? { b: g.bk.b, side: g.bk.side } : null; g.bk = null;      /* D504：放手當下鎖定借背的那一隻和方向 */ f.held = false; g.chain = 0; g.chainT = 0;      /* D173：連鎖只算同一隻放下去引發的連續合成（原本 1.3 秒比放一隻還久，亂點也能 ×5） */ f.vy = 80; f.fast = true; beep(520, 0.06, 'triangle', 0.05, -120); };
-  g.lock = (f, hs) => { const sd = f.x >= DV.x ? 1 : 0; if (g.dual && f.lv > g.topS[sd]) g.topS[sd] = f.lv; g.balls.push({ side: sd, lv: f.lv, x: f.x, y: f.y, vx: 0, vy: f.fast ? 260 : g.spd(), r: f.r, age: 0, rot: 0, sq: 0.18, sd: Math.random() * 10, hap: 0 }); if (g.tq && g.tq.st === 1) { g.tq.id++; g.tq.n = 0; g.balls[g.balls.length - 1].tq = { id: g.tq.id, n: 0 }; }      /* D498：從這一顆重新算 */ { const q = f.bk, t = hs && hs.length === 1 ? hs[0] : null;      /* D504 借背滑落：第一下只碰到鎖定的那一隻、同一側、不同階、沒有快滿警示、空位還在 → 給這顆一筆橫向速度，用掉這一次 */
+  g.release = () => { const f = g.fall; if (!f || !f.held) return; f.bk = g.bk && g.bk.on ? { b: g.bk.b, side: g.bk.side } : null; g.bk = null; f.sd = g.sd && g.sd.on ? { b: g.sd.b, side: g.sd.on } : null; g.sd = null;      /* D510 */      /* D504：放手當下鎖定借背的那一隻和方向 */ f.held = false; g.chain = 0; g.chainT = 0;      /* D173：連鎖只算同一隻放下去引發的連續合成（原本 1.3 秒比放一隻還久，亂點也能 ×5） */ f.vy = 80; f.fast = true; beep(520, 0.06, 'triangle', 0.05, -120); };
+  g.lock = (f, hs) => { const sd = f.x >= DV.x ? 1 : 0; if (g.dual && f.lv > g.topS[sd]) g.topS[sd] = f.lv; g.balls.push({ side: sd, lv: f.lv, x: f.x, y: f.y, vx: 0, vy: f.fast ? 260 : g.spd(), r: f.r, age: 0, rot: 0, sq: 0.18, sd: Math.random() * 10, hap: 0 }); if (g.tq && g.tq.st === 1) { g.tq.id++; g.tq.n = 0; g.balls[g.balls.length - 1].tq = { id: g.tq.id, n: 0 }; }      /* D498：從這一顆重新算 */ { const q = f.bk, t = hs && hs.length === 1 ? hs[0] : null; if (f.sd && t && t === f.sd.b && !t.dead && t.lv === f.lv) g.balls[g.balls.length - 1].sdm = f.sd;      /* D510：放在刻度上、第一下只碰到那一隻 */      /* D504 借背滑落：第一下只碰到鎖定的那一隻、同一側、不同階、沒有快滿警示、空位還在 → 給這顆一筆橫向速度，用掉這一次 */
       if (q && t && t === q.b && !t.dead && t.lv !== f.lv && (f.x - t.x) * q.side > 0 && !g.bkUsed && !(g.nearK > 0) && !(g.over > 0) && backSpace(g, t, q.side, f.r, g.balls[g.balls.length - 1])) { const nb = g.balls[g.balls.length - 1]; nb.vx = q.side * BACK.vx; g.bkUsed = true; g.bkN = (g.bkN || 0) + 1; g.bkFx = { b: nb, t0: g.t, side: q.side }; pop('借背滑過去！', clamp(nb.x, 70, W - 70), Math.max(BOX.line + 24, nb.y - nb.r - 14), '#E8FBFF', false); beep(660, 0.09, 'triangle', 0.05, 260); buzz(12); } }
     g.fall = null; g.wait = 0.18; beep(220 + f.lv * 30, 0.07, 'sine', 0.05, -60); };
   g.discover = (lv) => { if (mdex[lv] || g.dual) return; mdex[lv] = Date.now(); store.set('kiteMiniDex1', mdex); g.newFound.push(lv); g.found = { lv, t: 2.4 }; jingle([784, 988, 1175], 80); };
@@ -432,6 +455,7 @@ function makeMerge() {
     if (g.dual && g.drops <= 0 && !g.fall && !g.done) {      /* D447：24 顆放完——等全部海鮮停好（沒有在掉、沒有剛合出來）再 1.2 秒才結算，合成連鎖先跑完 */
       const calm = !g.balls.some((b) => Math.abs(b.vy) > 40 || b.age < 0.6) && !(g.chainT > 0); g.outT = calm ? g.outT + dt : 0; if (g.outT > 1.2) { g.done = true; g.fEnd = 'drops'; g.say = '24 顆都放完了！'; g.sayT = 2; } }
     backTick(g, dt);      /* D504 */
+    sideTick(g);      /* D510 */
     const f = g.fall;
     { const r = f && f.held ? f.r : 20, wantX = clamp(g.tx, BOX.l + r, BOX.r - r), mv = MF.steer * dt; g.kx += clamp(wantX - g.kx, -mv, mv); }
     if (f && f.held) { f.x = g.dual ? dvX(g.kx >= DV.x, g.kx, f.r) : clamp(g.kx, BOX.l + f.r, BOX.r - f.r); if (!g.anyReady) f.hold -= dt;      /* D420：有接駁單可以接時，小鳶先抓著不自己放手，按接船不用趕 */ if (f.hold <= 0) { g.dropAt = null; g.release(); } else if (g.dropAt != null && Math.abs(g.kx - clamp(g.dropAt, BOX.l + f.r, BOX.r - f.r)) < 1.5) { g.dropAt = null; g.release(); } }      // D124：手放開（或點一下）後，小鳶飛到那個位置自動放手
@@ -484,6 +508,7 @@ function makeMerge() {
   };
   g.merge = (a, b) => {
     const lv = a.lv + 1, x = (a.x + b.x) / 2, y = (a.y + b.y) / 2;
+    { const m = a.sdm && a.sdm.b === b ? a.sdm : b.sdm && b.sdm.b === a ? b.sdm : null; if (m && !g.done) { g.sdN = (g.sdN || 0) + 1; g.sdLast = { side: m.side, x }; pop(m.side < 0 ? '合在左邊！' : '合在右邊！', clamp(x, 70, W - 70), Math.max(BOX.line + 24, y - a.r - 30), '#FFE6A6', false); } }      /* D510 */
     const wqOk = !!(g.wq && g.wq.st === 1 && a.wv && b.wv && a.wv.id === b.wv.id && (a.wv.p || b.wv.p) && g.t - a.wv.t <= WAVEQ.win);      /* D501 借浪合一對：這一對都在同一次水波前就在池裡、至少一隻被推到、在時限內合起來 */
     g.chain = g.chainT > 0 ? g.chain + 1 : 1; g.chainT = 1.3; g.bestChain = Math.max(g.bestChain, g.chain); const mul = g.chain >= 2 ? Math.min(5, g.chain) : 1; if (window.KiteBoard && !g.ferry && !g.net && !g.swp && !g.dual) KiteBoard.ev('merge', { chain: g.chain });      // QA：連鎖倍數最多 ×5，亂丟快丟不會比用心放分數高
     /* D474（GPT 1730 Q2 推薦 B）：一般玩法裡，同一組連鎖第一次到 ×3 的那一下，合成點旁邊最多兩隻已經落穩、沒參與合成的成品朝合成點歪一下頭再回正（0.3 秒、最多 6 度，只改畫的角度）。
@@ -568,7 +593,7 @@ function makeMerge() {
       const pf = festPF(); ctx.globalAlpha = pf; ctx.strokeStyle = aim ? 'rgba(255,210,58,.95)' : 'rgba(255,255,255,.7)'; ctx.lineWidth = aim ? 3 : 2; ctx.setLineDash([3, 6]); ctx.beginPath(); ctx.moveTo(f.x, f.y + f.r); ctx.lineTo(f.x, gy); ctx.stroke(); ctx.setLineDash([]);
       ctx.globalAlpha = (aim ? 0.6 : 0.3) * pf; drawSea(f.lv, f.x, gy, f.r, 0); ctx.globalAlpha = 1;
       if (aim) { ctx.globalAlpha = ap * pf; ctx.strokeStyle = '#FFD23A'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(f.x, gy, f.r + 3, 0, 6.283); ctx.stroke(); ctx.beginPath(); ctx.arc(aim.x, aim.y, aim.r + 3, 0, 6.283); ctx.stroke(); ctx.globalAlpha = 1; }
-      g.aim = !!aim; drawBack(g, f, gy);      /* D504 */
+      g.aim = !!aim; drawBack(g, f, gy);      /* D504 */ if (aim) drawSide(g, f);      /* D510 */
       g.netAim = null; if (g.net && aim) { const mx = (f.x + aim.x) / 2, my = (gy + aim.y) / 2, rr = SEAF[Math.min(9, f.lv + 1)][1]; let hd = 1e9; for (const n of g.netLive()) { const d = netDist(n, mx, my); if (d <= rr + NETR.reach && d < hd) { hd = d; g.netAim = n; } } }      /* D431：瞄準會合成、而且合成會碰到網束 → 那束網框亮金色 */
       drawSea(f.lv, f.x, f.y, f.r, 0);
     }
@@ -1194,7 +1219,7 @@ const AQ = (() => {
   return { add, save, ui, open, data: d };
 })();
 window.__aq = AQ;
-window.__mini = { get G() { return G; }, BACK, BERTH, TWO, WAVEQ, PUSH, get waves() { return waves; }, AIMCALM, SWEAT, PUFF,      /* D482 測試掛勾 */ plain: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = false; dualMode = false; newGame(); state = 'play'; }, THUD, LEAN, BOAT,      /* D476、D474、D464 測試掛勾 */ pop, get floats() { return floats; }, mixHex,      /* D462 測試掛勾 */ get state() { return state; }, FY, DV, dual: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = false; dualMode = true; newGame(); state = 'play'; dualHow(); }, swap: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = true; dualMode = false; newGame(); state = 'play'; swapHow(); }, ferry: () => { mode = 'merge'; ferryMode = true; netMode = false; swapMode = false; dualMode = false; newGame(); state = 'play'; }, net: (pi) => { mode = 'merge'; ferryMode = false; netMode = true; swapMode = false; dualMode = false; if (pi != null) netStore.set({ ...netStore.get(), c: pi }); newGame(); state = 'play'; netHow(); }, NETR, netStore, setMode, seaFace, finish, IMG, SEAF, get fest() { return { pf: festPF(), n: fests.length, txt: !!festTxt, y: festTxt && festTxt.y, k: festTxt && festTxt.k }; }, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; }, get hudChip() { return hudChip; } };      /* D263：測試掛勾加 pop／floats；D306 加 finish */      /* D254：測試掛勾，固定亂數 */
+window.__mini = { get G() { return G; }, SIDE, BACK, BERTH, TWO, WAVEQ, PUSH, get waves() { return waves; }, AIMCALM, SWEAT, PUFF,      /* D482 測試掛勾 */ plain: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = false; dualMode = false; newGame(); state = 'play'; }, THUD, LEAN, BOAT,      /* D476、D474、D464 測試掛勾 */ pop, get floats() { return floats; }, mixHex,      /* D462 測試掛勾 */ get state() { return state; }, FY, DV, dual: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = false; dualMode = true; newGame(); state = 'play'; dualHow(); }, swap: () => { mode = 'merge'; ferryMode = false; netMode = false; swapMode = true; dualMode = false; newGame(); state = 'play'; swapHow(); }, ferry: () => { mode = 'merge'; ferryMode = true; netMode = false; swapMode = false; dualMode = false; newGame(); state = 'play'; }, net: (pi) => { mode = 'merge'; ferryMode = false; netMode = true; swapMode = false; dualMode = false; if (pi != null) netStore.set({ ...netStore.get(), c: pi }); newGame(); state = 'play'; netHow(); }, NETR, netStore, setMode, seaFace, finish, IMG, SEAF, get fest() { return { pf: festPF(), n: fests.length, txt: !!festTxt, y: festTxt && festTxt.y, k: festTxt && festTxt.k }; }, rng: (f) => { gR = f || Math.random; }, pop, get floats() { return floats; }, get hudChip() { return hudChip; } };      /* D263：測試掛勾加 pop／floats；D306 加 finish */      /* D254：測試掛勾，固定亂數 */
 })();
 </script>
 <script>(function () { var b = document.getElementById('backBtn'); b.addEventListener('click', function (e) { if (window.__mini && window.__mini.state === 'play' && !confirm('這局還在進行，確定要離開嗎？（分數不會記錄）')) e.preventDefault(); }); /* QA：遊戲中按返回先確認 */ /* D161：一律回小鳶樂園（遊戲大廳），不再回舊版測試首頁 */ })();</script>
