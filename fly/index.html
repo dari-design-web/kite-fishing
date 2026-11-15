@@ -18,6 +18,10 @@
 html,body{height:100%}
 body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 #stage{position:relative;width:360px;height:640px;background:#BFE3F0;overflow:hidden}
+/* D525：高手機上下（寬螢幕左右）的空白不再是深藍底——把遊戲畫面縮成小圖、放大模糊鋪滿整個螢幕當背景，看起來像畫面延伸出去 */
+#amb{position:fixed;left:-40px;top:-40px;width:calc(100% + 80px);height:calc(100% + 80px);z-index:0;filter:blur(16px) saturate(1.15) brightness(.78);pointer-events:none}
+#amb[hidden]{display:none}
+#stage{z-index:1}
 #world{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
@@ -210,6 +214,7 @@ body:not(.qa) #ask, body:not(.qa) #copyBtn{display:none!important}
 @media (prefers-reduced-motion:reduce){#kiteWait img,#kiteWait span{animation:none}}</style>
 <script>(function(){var w=document.getElementById('kiteWait');function off(){if(!w||w.classList.contains('done'))return;w.classList.add('done');setTimeout(function(){if(w.parentNode)w.parentNode.removeChild(w);},250);}if(document.readyState==='complete')off();else{window.addEventListener('load',off);setTimeout(off,8000);}})();</script>
 <!-- LOADER-END -->
+<canvas id="amb" width="72" height="128" aria-hidden="true" hidden></canvas>
 <div id="stage">
   <canvas id="world" aria-label="小鳶飛行冒險遊戲畫面"></canvas>
 
@@ -509,7 +514,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '1.54',
+  version: '1.55',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -671,6 +676,14 @@ function fit() {
   ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
 }
 addEventListener('resize', fit); fit();
+(() => {      /* D525：背景延伸。只有畫面四周真的空出來（> 8px）才開；每 3 格畫一次 72×128 小圖，手機負擔很小；減少動態時改成每 30 格 */
+  const amb = $('amb'), ax = amb.getContext('2d'), calmA = matchMedia('(prefers-reduced-motion: reduce)').matches; let n = 0;
+  function need() { const vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight, r = stage.getBoundingClientRect(); return vh - r.height > 8 || vw - r.width > 8; }
+  function tick() { if (!amb.hidden && n++ % (calmA ? 30 : 3) === 0 && cv.width) { try { ax.drawImage(cv, 0, 0, 72, 128); } catch (e) {} } requestAnimationFrame(tick); }
+  function upd() { amb.hidden = !need(); }
+  addEventListener('resize', upd); upd(); requestAnimationFrame(tick);
+  window.__amb = () => ({ on: !amb.hidden });
+})();
 
 function beep(f, d, type, g, slide) {
   if (!soundOn) return;
