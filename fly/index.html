@@ -509,7 +509,7 @@ const SND_ICON = (() => {
 'use strict';
 /* ====== 可調數值：改這裡就能調整手感、碰撞與難度（對應說明文件的事件表） ====== */
 const CONFIG = {
-  version: '1.49',
+  version: '1.50',
   openAll: true,      // 測試期間四關都開放，不用一關一關過（Dari 10/8 22:33）。正式上線前再決定要不要改回
   W: 360, H: 640,
   scroll: 70,                    // 原本程式底圖的捲動速度（每秒邏輯像素）；ChatGPT 整張底圖不在時才用
@@ -714,6 +714,7 @@ function buildScript() {
   side(37, true, 3); add(39, 'sprayer', 70); gate(42, 180); add(45, 'chaser', 340); side(47, false, 3); add(49, 'log', 180); gate(53, 280); side(55.5, true, 3); add(58, 'chaser', 20); add(60.5, 'sprayer', 290); gate(62, 90); side(64, false, 3); gate(66, 200);
   add(CONFIG.boss.at, 'boss', 180);
   if (ST().theme === 'harbor' && !daily) { const q = E.find((e) => e.t === OC.at && e.type === 'sprayer' && e.x === 70); if (q) { q.x = OC.x; q.oc = true; } }      /* D505：第 1 關王前 39 秒那隻漏油桶可以打斷首發；x 從 70 改到 180（原位置正下方有蛇形長隊、泡泡牆、漂流木擋住羽毛，實測打不到；180 是 42 秒漂流木缺口的正中，要走的路和要打的方向同一條）；同一隻、同怪種、出生秒數不變 */
+  if (ST().theme === 'market' && !daily) { const q = E.find((e) => e.t === PG.at && e.type === 'battery' && e.x === PG.x0), r = E.find((e) => e.t === PG.ringAt && e.type === 'barrel' && e.ring && e.x === PG.ringX); if (q && r) { q.x = PG.x; q.pg = 'g'; r.pg = 'b'; } }      /* D509（GPT 2335 Q2）：第 2 關王前 47.5 秒那隻黃色燈籠守衛 x 從 200 改到 130，從爆米香圈左緣後面移到圈外左側（離圈心 110，超過爆炸半徑 78＋守衛半徑），玩家要選「站右邊先炸爆米香清一圈」還是「滑到左邊先打守衛」；同一隻、同怪種、出生秒數不變；爆米香圈原位 */
   add(24, 'dive', 0, { fromLeft: true }); add(30, 'split', 180); add(39.5, 'dive', 0, { fromLeft: false }); add(52, 'split', 110); add(59, 'dive', 0, { fromLeft: true, n: 4 });      // D109／G79：小怪新軌跡（弧線俯衝、編隊分流）
   if (ST().theme === 'market' || ST().theme === 'pier') {      /* D458（GPT 2030 Q1）：第 2、3 關把 18.5 秒那排 4 隻瓶罐改成「左兩隻先、右兩隻後」錯峰：同 4 隻、同怪種，只改出生秒數與 x；x 沿原排附近，避開 19.2 秒塑膠袋與 20.5 秒泡泡怪 */
     const q = E.filter((e) => e.t === 18.5 && e.type === 'bottle').sort((a, b) => a.x - b.x), SL = [[0, 70], [0.5, 130], [1.5, 230], [2, 290]];
@@ -911,6 +912,7 @@ function spawn(e) {
   if (e.eb && !daily) f.eb = { st: 0, dir: 0, u: 0, from: 0, to: 0 };      /* D494 */
   if (e.tp && !daily) { f.tp = { st: 0, cut: 0, cx: 0 }; f.x0 = f.x = TP.x; }      /* D497 */
   if (e.oc && !daily && TH() === 'harbor') f.oc = { st: 0, t: 0 };      /* D505 */
+  if (e.pg && !daily && TH() === 'market') f.pg = e.pg;      /* D509 */
   if (e.sn !== undefined) { f.sn = e.sn; f.si = e.si; f.sl = e.sl; if (e.head && SBURN_ON()) { f.hp = SBURN.hp; f.aim = true; } if (!e.head && SBURN_ON() && stats.burnSn && stats.burnSn[e.sn]) f.burn = { t: SBURN.step, n: e.sl, last: e.si === e.sl - 1, late: true }; }      /* D491 */
   if (e.mascot) { f.mascot = e.mascot; if (!stats.toldBound && !newHold()) { stats.toldBound = true; banner(MASCOT_NAME[e.mascot] + '被綁住了！打斷它'); } }
   if (RM() && (e.type === 'can' || e.type === 'butt')) { f.x = f.x0 = RAIL_X() + R(-4, 4); f.vx = 0; f.rail = true; f.vy *= 1.25; }      // 鐵軌刺蝟只沿著鐵軌滾
@@ -937,6 +939,31 @@ function addPick(kind, x, y) { picks.push({ kind, x, y, first: !seenPick[kind] }
 /* D505（GPT 1825 Q1）打斷漏油桶首發：一般玩法第 1 關王前那隻漏油桶（39 秒），第一顆油滴噴出前 pre 秒，噴口兩旁亮兩筆暖色短線；
    這段時間內被普通風之羽打中而且還活著 → 這一顆油滴噴不出來（原本的發射計時照樣歸零，之後照原節奏噴）。墨汁、大招、爆炸不算；不另計分；每日與試玩沒有。
    st：0 還沒預告、1 預告中、2 已打斷（等原首發時點略過）、3 打斷完成、4 沒打斷照常噴。 */
+/* D509（GPT 2335 Q2）：第 2 關王前「先炸爆米香，還是先打燈籠」。
+   守衛（pg＝'g'）從上方資訊列下面露出來、爆米香（pg＝'b'）也還在時，兩個目標下方各亮一個往上指的小箭頭約 2.4 秒，小鳶問一句（每局一次）。
+   爆米香還在時用普通羽先打掉守衛 → 冒「先打燈籠！」；守衛還在時先把爆米香打爆 → 冒「炸開一圈！」。箭頭還沒亮就先打掉也算；只是畫面與一句話，不另計分、不發獎；
+   怪數、血量、出招、掉落、計分照舊。每日與試玩沒有。st：0 還沒出現、1 箭頭亮著、2 箭頭收掉等結果、3 結束。 */
+const PG = { at: 47.5, x0: 200, x: 130, ringAt: 46, ringX: 240, ringR: 46, showY: 64, mark: 2.4, top: 122 };
+function pgStep(dt) {
+  if (daily || !NM()) return; const o = stats.pg || (stats.pg = { st: 0, t: 0, res: '' }); if (o.st === 3) return; o.t += dt;
+  const g = foes.find((f) => f.pg === 'g'), b = foes.find((f) => f.pg === 'b');
+  if (o.st === 0) { if (g && b && g.y > PG.showY) { o.st = 1; o.t = 0; beep(660, 0.06, 'triangle', 0.03, 120); if (cine <= 0) say('先炸爆米香，還是先打燈籠？', (g.x + b.x) / 2, Math.max(PG.top, b.y + PG.ringR + 74), '#FFFFFF', false, '#1F3A4D'); } else if (t > PG.at + 6) o.st = 3; return; }
+  if (o.st === 1 && o.t >= PG.mark) o.st = 2;
+  if (!g || !b) o.st = 3;
+}
+function pgClear(f, how) {      /* 在 clearFoe 裡：看誰先被處理掉 */
+  const o = stats.pg; if (!o || o.st > 2 || how || kite.hurtAt === clock) return;
+  const other = foes.find((q) => q.pg && q.pg !== f.pg); if (!other) return;
+  o.st = 3; o.res = f.pg; stats.pgRes = f.pg; jingle([587, 880], 80);
+  if (f.pg === 'g') say('先打燈籠！', f.x, Math.max(PG.top, f.y + 40), '#FFE9A8', false, '#1F3A4D'); else say('炸開一圈！', f.x, Math.max(PG.top, f.y + PG.ringR + 30), '#FFE9A8', false, '#1F3A4D');
+}
+function drawPG() {
+  const o = stats.pg; if (!o || o.st !== 1) return; const k = Math.min(1, o.t / 0.2) * Math.min(1, (PG.mark - o.t) / 0.3), bob = calm ? 0 : Math.sin(clock * 9) * 2.5;
+  ctx.save(); ctx.globalAlpha = Math.max(0, k); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  for (const f of foes) { if (!f.pg) continue; const y = f.y + (f.pg === 'b' ? PG.ringR + 22 : f.r + 14) + bob;
+    for (const pass of [0, 1]) { ctx.strokeStyle = pass ? '#FFE9A8' : '#1F3A4D'; ctx.lineWidth = pass ? 3 : 6; ctx.beginPath(); ctx.moveTo(f.x - 9, y + 9); ctx.lineTo(f.x, y); ctx.lineTo(f.x + 9, y + 9); ctx.stroke(); } }
+  ctx.restore();
+}
 const OC = { at: 39, x: 180, pre: 2, sayY: 204 };
 function ocStep(f, d, dt) {
   const o = f.oc; o.t += dt;
@@ -1042,6 +1069,7 @@ function clearFoe(f, how) {      // how：'' 羽毛或墨汁、'blast' 被炸到
   const i = foes.indexOf(f); if (i < 0) return; foes.splice(i, 1);
   if (f.team && how !== 'sweep') teamHit(f);      /* D382：GPT 1352 整隊 PERFECT（只是畫面，分數、集氣、掉落不變） */
   const d = T[f.type];
+  if (f.pg) pgClear(f, how);      /* D509 */
   if (f.head && !calmClear) snakeBurn(f); if (f.burnt && f.burn) snakeBurnt(f);      /* D491 */
   if (!f.noCount) { stats.cleared++; stats.byType[f.type] = (stats.byType[f.type] || 0) + 1; } if (!f.fill) stats.score += d.score;
   if (!calmClear && f.type !== 'boss' && pops.length < 12) pops.push({ f, life: 0.2, big: f.elite || f.type === 'minib' || d.score >= 2 });      /* D455 */
@@ -1422,6 +1450,7 @@ function update(dt) {
   if (cine > 0) cine -= real; if (slowmo > 0) { slowmo -= real; dt *= 0.3; }      // 演出字卡；最後一擊的慢動作      // 鯨鯊登場的前半秒是慢動作
   t += dt; if (daily) dailyTick(dt);
   while (si < script.length && script[si].t <= t) spawn(script[si++]);
+  pgStep(dt);      /* D509 */
   if (!daily && !boss && !bossWarned && t >= CONFIG.boss.at - 1.5 && t < CONFIG.boss.at) { bossWarned = true; bossWarnT = 1.5; say('魔王來了，找空隙！', W / 2, 200, '#FFD0C4', true, '#5A1A12'); beep(110, 0.5, 'sawtooth', 0.04, -30); }      /* D348：GPT 1920 B——魔王出場前 1.5 秒四角紅框＋提示，不加道路時間 */
   for (const k of pops) k.life -= real; if (pops.length) pops = pops.filter((k) => k.life > 0);      /* D455 */
   if (bossWarnT > 0) bossWarnT -= real; for (const k of sparks) k.life -= real; if (sparks.length) sparks = sparks.filter((k) => k.life > 0); for (const k of pings) k.life -= real; if (pings.length) pings = pings.filter((k) => k.life > 0); if (frag) { frag.life -= real; if (frag.life <= 0) frag = null; }
@@ -3869,7 +3898,7 @@ function draw() {
   if (daily && daily.fork) drawForks();      /* D421 */
   if (daily && daily.salv) drawSalv();      /* D432 */
   drawBulTrails();
-  drawPhaseArcs(); for (const f of foes) drawFoe(f); for (const f of foes) if (f.roll && !f.roll.done) drawTireRollTell(f); for (const f of foes) if (f.oc && (f.oc.st === 1 || f.oc.st === 2)) drawOilCut(f);      /* D505 */
+  drawPhaseArcs(); for (const f of foes) drawFoe(f); for (const f of foes) if (f.roll && !f.roll.done) drawTireRollTell(f); for (const f of foes) if (f.oc && (f.oc.st === 1 || f.oc.st === 2)) drawOilCut(f);      /* D505 */ drawPG();      /* D509 */
   for (const k of pops) { const a = k.life / 0.2, s = 1 + (1 - a) * (k.big ? 0.75 : 0.55), f = k.f; ctx.save(); ctx.translate(f.x, f.y); ctx.scale(s, s); ctx.translate(-f.x, -f.y); ctx.globalAlpha = a * a; f.hitT = CANF ? 1 : 0; f.jit = 0; drawFoe(f); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a * 0.7; drawFoe(f); ctx.restore(); }      /* D455：清掉的小怪白閃、放大、淡出 */
   if (NEWT()) drawNewOver();
   drawClouds(); drawMinionTells(); drawTaotieZones(); drawVents(); drawMarketUI(); if (PM()) { drawBoats(); drawEscort(); drawAgenorZones(); } if (RM()) { drawSmokeClouds(); for (const f of foes) drawRailFoeState(f); drawTunnelDark(); drawRushes(); drawMascots(); drawJianjiZones(); } drawBossFx(); drawSparks(); drawPings(); drawFrag();
@@ -4465,6 +4494,7 @@ window.__flyGame.hop = () => foes.filter((q) => q.type === 'chip').map((q) => ({
 window.__flyGame.pop = () => foes.filter((q) => q.type === 'foam').map((q) => ({ x: +q.x.toFixed(1), y: +q.y.toFixed(1), hp: q.hp, k: foamPopK(q), hit: foamHit(q) && !!img.n_ice_hit, p: q.pop ? { t: +q.pop.t.toFixed(2), n: q.pop.n, up: +q.pop.up.toFixed(1) } : null }));      /* D478 測試掛勾 */
 window.__flyGame.roll = () => foes.filter((q) => q.type === 'tire').map((q) => ({ x: +q.x.toFixed(1), y: +q.y.toFixed(1), hp: q.hp, r: q.roll ? { t: +(q.roll.t || 0).toFixed(2), e: +q.roll.e.toFixed(2), dir: q.roll.dir, done: q.roll.done } : null }));      /* D475 測試掛勾 */
 window.__flyGame.fc = () => ({ on: !!(kite.fc && kite.fc.on), t: kite.fc ? +kite.fc.t.toFixed(2) : 0, a: kite.fc ? +kite.fc.a.toFixed(2) : 0, n: stats.fcN || 0, told: toldFocus, xs: shots.filter((q) => q.fc).map((q) => [+(q.x - kite.x).toFixed(1), q.vx]) });      /* D502 測試掛勾 */
+window.__flyGame.pg = () => ({ t: +t.toFixed(2), st: stats.pg ? stats.pg.st : -1, res: stats.pgRes || '', f: foes.filter((q) => q.pg).map((q) => ({ pg: q.pg, x: +q.x.toFixed(1), y: +q.y.toFixed(1), hp: q.hp })) });      /* D509 測試掛勾 */
 window.__flyGame.oc = () => ({ t: +t.toFixed(2), n: stats.ocN || 0, hit: stats.ocHit || 0, told: !!stats.toldOc, f: foes.filter((q) => q.oc).map((q) => ({ x: +q.x.toFixed(1), y: +q.y.toFixed(1), hp: q.hp, st: q.oc.st, acc: +(q.shootAcc || 0).toFixed(2), leave: !!q.leave })), drops: foes.filter((q) => q.aimed).length });      /* D505 測試掛勾 */
 window.__flyGame.salv = { open: salvOpen, st: () => ({ mode, daily, kite, stats }) };      /* D432 測試掛勾 */
 window.__flyGame.fork = { open: forkOpen, map: toMap, st: () => ({ mode, t, daily, kite, foes, stats, sc: scoreFinal(), pings: pings.length }), ping: (x, y) => { pings.push({ x, y, life: 0.12, max: 0.12 }); return !!img.fx_blocked_ping; } };      /* D451：測試掛勾加 ping */      /* D421 測試掛勾 */
