@@ -6,7 +6,7 @@
    D532：換上 GPT 1200 美術——小鳶動作 v2 動畫（撲擊 6 格、滑行 4 格、待機 4 格、勝利 4 格、受擊 3 格，每格對齊同一基準點）、
    6 種海漂（小木箱、大木箱完整／裂開、寶特瓶、漁網、保麗龍、漂流木）＋各自 4 片碎片、基隆外海背景、正式圖示；
    加 GPT C 首批三項：連續撲擊（1.4 秒內接著撲中就連擊，滿 3 連撲有大回饋）、破箱追擊（大箱第一下被撞退換裂箱，第二下才碎）、洋流漂帶（先出箭頭預告，一排海漂橫著漂過）。
-   玩法：按住拖，小鳶跟著手指滑行；靠近海漂時那一個亮框，放手就撲過去撞開。5 段約 2 分鐘。不存檔、不回報點數。 */
+   玩法：按住拖，小鳶跟著手指滑行；靠近海漂時那一個亮框，放手就撲過去撞開。8 段約 3 分鐘（D541 加海鷗、漁網、漂物島）。不存檔、不回報點數。 */
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;overflow:hidden;background:#0F3442;font-family:'Zen Maru Gothic',system-ui,sans-serif;user-select:none;touch-action:none}
 #cv{position:fixed;inset:0;width:100%;height:100%;display:block}
@@ -37,7 +37,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0F3442;font-family:'Z
 @media (prefers-reduced-motion:reduce){.card>div{animation:none}}
 </style></head><body>
 <canvas id="cv" aria-label="海面：按住拖動小鳶，靠近海漂放手撲擊"></canvas>
-<div class="top"><h1>撲擊海漂</h1><span class="pill" id="st">第 1／5 段</span><span class="pill" id="sc">🧹 0</span><span class="sp"></span><button id="snd" type="button" aria-pressed="true" aria-label="音效開關">🔊</button><button id="back" type="button">離開</button></div>
+<div class="top"><h1>撲擊海漂</h1><span class="pill" id="st">第 1／8 段</span><span class="pill" id="sc">🧹 0</span><span class="sp"></span><button id="snd" type="button" aria-pressed="true" aria-label="音效開關">🔊</button><button id="back" type="button">離開</button></div>
 <div id="combo" aria-hidden="true"><i></i><i></i><i></i><span id="cbt"></span></div>
 <div id="tip" class="off"></div>
 <div class="card" id="intro"><div>
@@ -63,9 +63,10 @@ const cv = $('cv'), ctx = cv.getContext('2d');
 const load = (s) => { const i = new Image(); i.src = 'assets/' + s; return i; };
 /* 小鳶動畫：每格 192×192（原圖 384 縮半），對齊點 (96, 106.5)，頭朝右 */
 const ANIM = { pounce: { img: load('kite_pounce.webp'), n: 6 }, glide: { img: load('kite_glide.webp'), n: 4, fps: 10, loop: true }, idle: { img: load('kite_idle.webp'), n: 4, fps: 7, loop: true }, win: { img: load('kite_win.webp'), n: 4, fps: 8 }, hurt: { img: load('kite_hurt.webp'), n: 3, fps: 8 } };
-const OBJ = { crate: { r: 30, frag: 'crate' }, big: { r: 44, frag: 'crate_large', hp: 2 }, bottles: { r: 28, frag: 'bottles' }, net: { r: 32, frag: 'net' }, foam: { r: 28, frag: 'foam' }, wood: { r: 30, frag: 'driftwood' } };
-const OIMG = { crate: load('obj_crate.webp'), big: load('obj_crate_large.webp'), bigc: load('obj_crate_large_cracked.webp'), bottles: load('obj_bottles.webp'), net: load('obj_net.webp'), foam: load('obj_foam.webp'), wood: load('obj_driftwood.webp') };
-const FRAG = {}; for (const f of ['crate', 'crate_large', 'bottles', 'net', 'foam', 'driftwood']) FRAG[f] = [0, 1, 2, 3].map((i) => load('frag_' + f + '_' + i + '.webp'));
+const OBJ = { crate: { r: 30, frag: 'crate' }, big: { r: 44, frag: 'crate_large', hp: 2 }, bottles: { r: 28, frag: 'bottles' }, net: { r: 32, frag: 'net' }, foam: { r: 28, frag: 'foam' }, wood: { r: 30, frag: 'driftwood' }, netwall: { r: 40, frag: 'netwall', hp: 2, heavy: true }, island: { r: 96, frag: 'island', hp: 6, heavy: true }, gull: { r: 30 } };      /* D541：漁網攔路、漂物島、海鷗 */
+const OIMG = { crate: load('obj_crate.webp'), big: load('obj_crate_large.webp'), bigc: load('obj_crate_large_cracked.webp'), bottles: load('obj_bottles.webp'), net: load('obj_net.webp'), foam: load('obj_foam.webp'), wood: load('obj_driftwood.webp'), netwall: load('obj_netwall.webp'), netwallT: load('obj_netwall_torn.webp'), island: [0, 1, 2].map((i) => load('obj_island_' + i + '.webp')) };
+const GULL = { fly: load('gull_fly.webp'), grab: load('gull_grab.webp'), hit: load('gull_hit.webp') };
+const FRAG = {}; for (const f of ['crate', 'crate_large', 'bottles', 'net', 'foam', 'driftwood', 'netwall', 'island']) FRAG[f] = (f === 'island' ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3]).map((i) => load('frag_' + f + '_' + i + '.webp'));
 const BG = load('bg_sea.webp');
 /* D540：打擊感特效（GPT 1505）：撞擊爆圈 4 格（基準 128,128）、大水花 4 格（基準 128,184）、速度線（基準 240,64 向左拉長） */
 const FX = { impact: { img: load('fx_impact.webp'), n: 4, ax: 0.5, ay: 0.5 }, splash: { img: load('fx_splash_big.webp'), n: 4, ax: 0.5, ay: 184 / 256 } }, SPEED = load('fx_speedline.webp');
@@ -78,9 +79,12 @@ const STAGES = [
   { tip: '會漂的！追上去再放手', items: [{ k: 'bottles', x: 0.2, y: 0.3, vx: 0.09, vy: 0.02 }, { k: 'foam', x: 0.75, y: 0.5, vx: -0.05 }] },
   { tip: '三個靠很近——撞開一個馬上撲下一個，接成連撲！', items: [{ k: 'wood', x: 0.3, y: 0.34 }, { k: 'crate', x: 0.5, y: 0.3 }, { k: 'foam', x: 0.7, y: 0.36 }] },
   { tip: '大木箱要撲兩下：第一下撞裂，追上去再一下！', items: [{ k: 'big', x: 0.55, y: 0.36 }, { k: 'net', x: 0.22, y: 0.5, vx: 0.04 }, { k: 'bottles', x: 0.8, y: 0.25, vy: 0.03 }] },
-  { tip: '看箭頭！洋流要帶一排海漂過來', belt: { dir: 1, y: 0.33, ks: ['crate', 'bottles', 'foam', 'wood', 'net'], speed: 0.09 }, items: [{ k: 'big', x: 0.5, y: 0.55 }] }
-];
-let flashT = 0, W = 0, H = 0, dpr = 1, si = 0, items = [], kite = null, touch = null, parts = [], rings = [], floats = [], shake = 0, stop = 0, sound = true, ac = null, playing = false, cleared = 0, pounces = 0, misses = 0, t0 = 0, combo = 0, comboT = 0, bestCombo = 0, belt = null, nid = 0, clearing = false;
+  { tip: '看箭頭！洋流要帶一排海漂過來', belt: { dir: 1, y: 0.33, ks: ['crate', 'bottles', 'foam', 'wood', 'net'], speed: 0.09 }, items: [{ k: 'big', x: 0.5, y: 0.55 }] },
+  { tip: '海鷗要來搶海漂！先撲海鷗把牠趕走', gulls: [1.2, 4.5, 8], items: [{ k: 'crate', x: 0.25, y: 0.3 }, { k: 'bottles', x: 0.7, y: 0.34 }, { k: 'foam', x: 0.5, y: 0.52, vx: 0.04 }] },
+  { tip: '漁網擋在前面！撲過去會先撞破網', items: [{ k: 'netwall', x: 0.5, y: 0.5 }, { k: 'crate', x: 0.3, y: 0.27 }, { k: 'wood', x: 0.7, y: 0.3 }, { k: 'bottles', x: 0.5, y: 0.22, vx: 0.05 }] },
+  { tip: '漂物島！撞一下會噴出海漂，連撲把它撞散', gulls: [7], items: [{ k: 'island', x: 0.5, y: 0.34 }] }
+];      /* D541：第 6～8 段（Dari 11/16 核可方向；GPT 1505 美術） */
+let flashT = 0, gullQ = [], stT = 0, gullsHit = 0, lost = 0, W = 0, H = 0, dpr = 1, si = 0, items = [], kite = null, touch = null, parts = [], rings = [], floats = [], shake = 0, stop = 0, sound = true, ac = null, playing = false, cleared = 0, pounces = 0, misses = 0, t0 = 0, combo = 0, comboT = 0, bestCombo = 0, belt = null, nid = 0, clearing = false;
 function fit() { dpr = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
 addEventListener('resize', fit); fit();
 function tone(f, d, type, g, slide) { if (!sound) return; try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); const o = ac.createOscillator(), a = ac.createGain(), n = ac.currentTime; o.type = type || 'sine'; o.frequency.setValueAtTime(f, n); if (slide) o.frequency.exponentialRampToValueAtTime(slide, n + d); a.gain.setValueAtTime(g || 0.1, n); a.gain.exponentialRampToValueAtTime(0.001, n + d); o.connect(a); a.connect(ac.destination); o.start(n); o.stop(n + d); } catch (e) {} }
@@ -88,44 +92,80 @@ function noise(d, g) { if (!sound) return; try { ac = ac || new (window.AudioCon
 function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
 let tipT = 0; function tip(t, ms) { const e = $('tip'); e.textContent = t; e.classList.remove('off'); clearTimeout(tipT); tipT = setTimeout(() => e.classList.add('off'), ms || 2600); }
 function hud() { $('st').textContent = '第 ' + (si + 1) + '／' + STAGES.length + ' 段'; $('sc').textContent = '🧹 ' + cleared; const on = Math.min(3, combo); $('combo').querySelectorAll('i').forEach((e, i) => e.classList.toggle('on', i < on)); $('cbt').textContent = combo >= 2 ? '連撲 ×' + combo : ''; }
-function mk(it) { const o = OBJ[it.k]; return { k: it.k, id: nid++, x: it.x, y: it.y, vx: it.vx || 0, vy: it.vy || 0, hp: o.hp || 1, max: o.hp || 1, r: o.r, rot: (Math.random() - 0.5) * 0.4, vr: 0, wob: Math.random() * 6, gone: false, flash: 0 }; }
-function loadStage() { const S = STAGES[si]; items = S.items.map((it) => mk({ ...it, x: it.x * W, y: it.y * H + 40, vx: (it.vx || 0) * W, vy: (it.vy || 0) * H })); belt = S.belt ? { ...S.belt, t: 0, sent: 0 } : null; clearing = false; tip(S.tip, 3400); hud(); }
-function start() { fxs = []; flashT = 0; si = 0; cleared = 0; pounces = 0; misses = 0; combo = 0; comboT = 0; bestCombo = 0; t0 = performance.now(); playing = true; $('intro').hidden = true; $('done').hidden = true; kite = { x: W / 2, y: H * 0.78, vx: 0, vy: 0, face: 1, anim: 'idle', at: 0, dash: null, tilt: 0 }; loadStage(); }
+function mk(it) { const o = OBJ[it.k]; return { k: it.k, id: nid++, x: it.x, y: it.y, vx: it.vx || 0, vy: it.vy || 0, hp: o.hp || 1, max: o.hp || 1, r: o.r, heavy: !!o.heavy, st: it.st, at: 0, carry: null, rot: o.heavy || it.k === 'gull' ? 0 : (Math.random() - 0.5) * 0.4, vr: 0, wob: Math.random() * 6, gone: false, flash: 0 }; }
+function loadStage() { const S = STAGES[si]; items = S.items.map((it) => mk({ ...it, x: it.x * W, y: it.y * H + 40, vx: (it.vx || 0) * W, vy: (it.vy || 0) * H })); belt = S.belt ? { ...S.belt, t: 0, sent: 0 } : null; gullQ = (S.gulls || []).slice(); stT = 0; clearing = false; tip(S.tip, 3400); hud(); }
+function start() { fxs = []; flashT = 0; gullsHit = 0; lost = 0; si = 0; cleared = 0; pounces = 0; misses = 0; combo = 0; comboT = 0; bestCombo = 0; t0 = performance.now(); playing = true; $('intro').hidden = true; $('done').hidden = true; kite = { x: W / 2, y: H * 0.78, vx: 0, vy: 0, face: 1, anim: 'idle', at: 0, dash: null, tilt: 0 }; loadStage(); }
 function setAnim(a) { if (kite.anim !== a) { kite.anim = a; kite.at = 0; } }
-function nearest() { let best = null, bd = CFG.range; for (const it of items) { if (it.gone) continue; const d = Math.hypot(it.x - kite.x, it.y - kite.y) - it.r * 0.4; if (d < bd) { bd = d; best = it; } } return best; }
+function nearest() { let best = null, bd = CFG.range; for (const it of items) { if (it.gone || it.st === 'hit') continue; const d = Math.hypot(it.x - kite.x, it.y - kite.y) - it.r * (it.k === 'island' ? 0.8 : 0.4); if (d < bd) { bd = d; best = it; } } return best; }
 
 /* ---------- 輸入：按住拖 → 跟著手指；放手 → 撲擊範圍內最近的那個 ---------- */
 cv.addEventListener('pointerdown', (e) => { if (!playing || kite.dash) return; touch = { x: e.clientX, y: e.clientY }; tone(300, 0.08, 'sine', 0.04, 420); });
 cv.addEventListener('pointermove', (e) => { if (touch) { touch.x = e.clientX; touch.y = e.clientY; } });
 addEventListener('pointerup', () => { if (!touch) return; touch = null; if (!playing || kite.dash) return; const t = nearest();
+  let ex = null; if (t && t.k !== 'netwall') { for (const n of items) { if (n.gone || n.k !== 'netwall' || n.hp < n.max) continue; const y0 = kite.y, y1 = t.y; if ((y0 - n.y) * (y1 - n.y) >= 0) continue; const ix = kite.x + (t.x - kite.x) * (n.y - y0) / (y1 - y0); if (Math.abs(ix - n.x) <= 108) { ex = { x: ix, y: n.y }; tip('漁網擋住了，先撞破它！', 1600); return void (kite.dash = { t: n, from: { x: kite.x, y: kite.y }, k: -0.35, ex }, setAnim('pounce'), kite.face = n.x >= kite.x ? 1 : -1, pounces++, tone(520, 0.12, 'sawtooth', 0.05, 900), noise(0.12, 0.05)); } } }      /* D541：路線穿過完整的漁網＝先撞網 */
   if (t) { kite.dash = { t, from: { x: kite.x, y: kite.y }, k: -0.35 }; setAnim('pounce'); kite.face = t.x >= kite.x ? 1 : -1; pounces++; tone(520, 0.12, 'sawtooth', 0.05, 900); noise(0.12, 0.05); }
   else { misses++; combo = 0; hud(); kite.vx *= 0.3; kite.vy *= 0.3; floats.push({ x: kite.x, y: kite.y - 60, s: '呼…再靠近一點', t: 0, c: '#FFFFFF' }); } });
 addEventListener('pointercancel', () => { touch = null; });
 
 function hit(it) {
+  if (it.k === 'gull') return gullHit(it);
   it.hp--; it.flash = 1; const dx = it.x - kite.dash.from.x, dy = it.y - kite.dash.from.y, d = Math.hypot(dx, dy) || 1, nx = dx / d, ny = dy / d;
   combo = comboT > 0 ? combo + 1 : 1; comboT = CFG.comboWin; bestCombo = Math.max(bestCombo, combo);
   const big = combo >= 3;
   stop = calm ? 0 : CFG.hitStop + (big ? 0.05 : 0); shake = calm ? 0 : (it.max > 1 ? 12 : 8) + (big ? 6 : 0); buzz(it.hp > 0 ? 25 : big ? [30, 30, 50] : 40);
   rings.push({ x: it.x, y: it.y, t: 0, big }); fx('impact', it.x, it.y, big ? 230 : it.hp > 0 ? 150 : 180, 0.32); fx('splash', it.x, it.y + it.r * 0.5, it.hp > 0 ? 130 : 170, 0.5); if (big && !calm) flashT = 0.12;
-  if (it.hp > 0) {      /* 大箱子第一下：被撞退、換裂箱，還要再撲一次 */
+  if (it.hp > 0 && it.k === 'island') {      /* D541：漂物島每撞一下震一下、掉一片大碎片、噴出一件小海漂 */
+    tone(120, 0.22, 'square', 0.1, 70); noise(0.22, 0.22); burst(it.x, it.y, '#C9A06A', 10, nx, ny); splash(it.x, it.y, 8); it.shk = 0.3;
+    const fr = FRAG.island[(it.max - it.hp - 1) % 6], a = Math.atan2(ny, nx) + (Math.random() - 0.5) * 0.8; parts.push({ k: 'img', im: fr, x: it.x, y: it.y, vx: Math.cos(a) * 320, vy: Math.sin(a) * 320, rot: 0, vr: (Math.random() - 0.5) * 10, t: 0, life: 0.8, s: 70 });
+    if (items.filter((q) => !q.gone && !q.heavy && q.k !== 'gull').length < 5) { const ks = ['bottles', 'foam', 'wood', 'crate'], b = Math.random() * 6.28, o = mk({ k: ks[Math.floor(Math.random() * 4)], x: it.x + Math.cos(b) * 110, y: it.y + Math.sin(b) * 70, vx: Math.cos(b) * 60, vy: Math.sin(b) * 40 }); items.push(o); }
+    floats.push({ x: it.x, y: it.y - 110, s: '還剩 ' + it.hp + ' 下！', t: 0, c: '#FFE17A', big: true });
+  } else if (it.hp > 0 && it.k === 'netwall') {      /* 漁網第一下：撕開（不再擋路），再撲一下清掉 */
+    tone(200, 0.16, 'square', 0.08, 110); noise(0.16, 0.2); burst(it.x, it.y, '#3E7B4E', 10, nx, ny); splash(it.x, it.y, 6); it.shk = 0.25;
+    floats.push({ x: it.x, y: it.y - 50, s: '網破了！', t: 0, c: '#FFE17A', big: true });
+  } else if (it.hp > 0) {      /* 大箱子第一下：被撞退、換裂箱，還要再撲一次 */
     it.vx += nx * 280; it.vy += ny * 280; it.vr = (Math.random() < 0.5 ? -1 : 1) * 5; tone(160, 0.18, 'square', 0.09, 90); noise(0.18, 0.18);
     floats.push({ x: it.x, y: it.y - 56, s: '裂開了！追上去！', t: 0, c: '#FFE17A', big: true }); burst(it.x, it.y, '#C9A06A', 8, nx, ny); splash(it.x, it.y, 6);
   } else {
     it.gone = true; cleared++; tone(240, 0.12, 'square', 0.1, 120); noise(0.25, 0.22); setTimeout(() => tone(880 + Math.min(combo, 6) * 110, 0.12, 'triangle', 0.08, 1320 + Math.min(combo, 6) * 110), 60);
-    const fr = FRAG[OBJ[it.k].frag]; fr.forEach((im, i) => { const a = Math.atan2(ny, nx) + (i - 1.5) * 0.55 + (Math.random() - 0.5) * 0.3, v = 280 + Math.random() * 220; parts.push({ k: 'img', im, x: it.x, y: it.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 14, t: 0, life: calm ? 0.4 : 0.9, s: it.r * 1.3 }); });
+    const fr = FRAG[OBJ[it.k].frag], isl = it.k === 'island'; if (isl) { shake = calm ? 0 : 22; stop = calm ? 0 : 0.18; flashT = calm ? 0 : 0.12; fx('impact', it.x, it.y, 320, 0.4); fx('splash', it.x, it.y + 40, 280, 0.6); } fr.forEach((im, i) => { const a = isl ? i / fr.length * 6.28 + Math.random() * 0.4 : Math.atan2(ny, nx) + (i - 1.5) * 0.55 + (Math.random() - 0.5) * 0.3, v = (isl ? 380 : 280) + Math.random() * 220; parts.push({ k: 'img', im, x: it.x, y: it.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 14, t: 0, life: calm ? 0.4 : isl ? 1.1 : 0.9, s: isl ? 90 : it.heavy ? 60 : it.r * 1.3 }); });
     burst(it.x, it.y, '#FFFFFF', calm ? 3 : 12, nx, ny); splash(it.x, it.y, calm ? 3 : 10);
-    floats.push({ x: it.x, y: it.y - 46, s: big ? '三連撲！' + (combo > 3 ? '×' + combo : '') : combo === 2 ? '連撲！' : it.max > 1 ? '大箱子撞開！' : '撞開！', t: 0, c: big ? '#FFB27A' : '#FFE17A', big: true });
+    floats.push({ x: it.x, y: it.y - 46, s: it.k === 'island' ? '漂物島撞散了！' : big ? '三連撲！' + (combo > 3 ? '×' + combo : '') : combo === 2 ? '連撲！' : it.k === 'netwall' ? '漁網清掉了！' : it.max > 1 ? '大箱子撞開！' : '撞開！', t: 0, c: big ? '#FFB27A' : '#FFE17A', big: true });
     if (big && !calm) for (let i = 0; i < 18; i++) { const a = Math.random() * 6.28; parts.push({ x: it.x, y: it.y, vx: Math.cos(a) * 420, vy: Math.sin(a) * 420, t: 0, life: 0.6, c: '#FFD45E', r: 3 }); }
   }
   hud();
 }
+function gullHit(g) {      /* D541：撲中海鷗：牠被撞飛（帶著的海漂掉回海裡），算連撲但不算清掉 */
+  combo = comboT > 0 ? combo + 1 : 1; comboT = CFG.comboWin; bestCombo = Math.max(bestCombo, combo); gullsHit++;
+  stop = calm ? 0 : CFG.hitStop; shake = calm ? 0 : 8; buzz(35); fx('impact', g.x, g.y, 170, 0.32); tone(900, 0.08, 'square', 0.07, 500); setTimeout(() => tone(620, 0.12, 'triangle', 0.06, 380), 50);
+  for (let i = 0; i < (calm ? 3 : 8); i++) { const a = Math.random() * 6.28; parts.push({ x: g.x, y: g.y, vx: Math.cos(a) * 160, vy: Math.sin(a) * 160 - 40, g: 120, t: 0, life: 0.9, c: '#F4F6F8', r: 3 }); }
+  if (g.carry) { const o = mk({ k: g.carry, x: g.x, y: Math.min(H * 0.68, g.y + 20) }); items.push(o); splash(o.x, o.y, 6); floats.push({ x: g.x, y: g.y - 70, s: '搶回來了！', t: 0, c: '#9FF0C8', big: true }); lost--; } else floats.push({ x: g.x, y: g.y - 50, s: '走開！', t: 0, c: '#FFE17A', big: true });
+  g.carry = null; g.st = 'hit'; g.at = 0; g.vx = (g.x < kite.x ? -1 : 1) * 260; g.vy = -220; hud();
+}
+function spawnGull() { const L = Math.random() < 0.5; items.push(mk({ k: 'gull', x: L ? -40 : W + 40, y: H * (0.16 + Math.random() * 0.1) + 40, st: 'in' })); tone(1100, 0.1, 'sine', 0.04, 1400); setTimeout(() => tone(1250, 0.12, 'sine', 0.04, 1500), 120); }
+function gullStep(g, dt) {
+  g.at += dt;
+  if (g.st === 'in') { let tg = g.tg && !g.tg.gone ? g.tg : null; if (!tg) { let bd = 1e9; for (const q of items) { if (q.gone || q.heavy || q.k === 'gull' || q.belt) continue; const d = Math.hypot(q.x - g.x, q.y - g.y); if (d < bd) { bd = d; tg = q; } } g.tg = tg; }
+    if (!tg) { g.st = 'out'; g.vx = (g.x < W / 2 ? -1 : 1) * 220; g.vy = -120; return; }
+    const dx = tg.x - g.x, dy = tg.y - 20 - g.y, d = Math.hypot(dx, dy); if (d < 14) { g.st = 'grab'; g.at = 0; g.vx = 0; g.vy = 0; } else { g.vx = dx / d * 150; g.vy = dy / d * 150; } }
+  else if (g.st === 'grab') { if (g.tg && !g.tg.gone) { g.x = g.tg.x; g.y = g.tg.y - 20; } if (g.at > 0.45) { if (g.tg && !g.tg.gone) { g.tg.gone = true; g.tg.lost = true; g.carry = g.tg.k; lost++; floats.push({ x: g.x, y: g.y - 50, s: '被叼走了！快撲海鷗！', t: 0, c: '#FFB0A0', big: true }); } g.st = 'out'; g.at = 0; g.vx = (g.x < W / 2 ? -1 : 1) * 120; g.vy = -70; } }
+  else if (g.st === 'out') { g.vx *= 1 + dt * 0.8; g.vy *= 1 + dt * 0.5; }
+  if (g.st !== 'grab') { g.x += g.vx * dt; g.y += g.vy * dt; }
+  if (g.st !== 'in' && g.st !== 'grab' && (g.x < -80 || g.x > W + 80 || g.y < -80)) g.gone = true;
+  if (g.vx) g.face = g.vx > 0 ? 1 : -1;
+}
+function drawGull(g, now, hl) {
+  const A = g.st === 'hit' ? GULL.hit : g.st === 'grab' || g.carry ? GULL.grab : GULL.fly; if (!A.complete || !A.naturalWidth) return;
+  const n = Math.round(A.naturalWidth / A.naturalHeight), fh = A.naturalHeight, f = g.st === 'hit' ? Math.min(n - 1, Math.floor(g.at * 7)) : g.st === 'grab' ? Math.min(n - 1, Math.floor(g.at / 0.45 * n)) : g.carry ? n - 1 : Math.floor(g.at * 10) % n, sz = 112;
+  ctx.fillStyle = 'rgba(0,30,40,.18)'; ctx.beginPath(); ctx.ellipse(g.x, g.y + 70, 24, 5, 0, 0, 6.28); ctx.fill();
+  ctx.save(); ctx.translate(g.x, g.y); ctx.scale(g.face || 1, 1); ctx.drawImage(A, f * fh, 0, fh, fh, -sz / 2, -sz / 2, sz, sz); ctx.restore();
+  if (hl) { ctx.strokeStyle = 'rgba(232,103,74,' + (0.75 + 0.25 * Math.sin(now / 90)) + ')'; ctx.lineWidth = 5; ctx.setLineDash([10, 6]); ctx.beginPath(); ctx.arc(g.x, g.y, 44, 0, 6.28); ctx.stroke(); ctx.setLineDash([]); }
+}
 function burst(x, y, c, n, nx, ny) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = 80 + Math.random() * 220; parts.push({ x, y, vx: Math.cos(a) * v + (nx || 0) * 160, vy: Math.sin(a) * v + (ny || 0) * 160, t: 0, life: 0.5 + Math.random() * 0.35, c, r: 2 + Math.random() * 4 }); } }
 function splash(x, y, n) { for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + (Math.random() - 0.5) * 1.6, v = 140 + Math.random() * 160; parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, g: 520, t: 0, life: 0.7, c: 'rgba(220,245,255,.95)', r: 3 + Math.random() * 3 }); } }
-function stageDone() { return items.every((i) => i.gone) && (!belt || belt.sent >= belt.ks.length); }
+function stageDone() { return items.every((i) => i.gone || (i.k === 'gull' && i.st !== 'in' && i.st !== 'grab' && !i.carry)) && (!gullQ.length || !items.some((i) => !i.gone && i.k !== 'gull')) && (!belt || belt.sent >= belt.ks.length); }      /* 海鷗被趕走、空手飛走就不用等 */
 function stageClear() { if (clearing) return; clearing = true; setAnim('win'); kite.winT = 0.9; tone(523, 0.14, 'triangle', 0.1); setTimeout(() => tone(659, 0.14, 'triangle', 0.1), 110); setTimeout(() => tone(784, 0.24, 'triangle', 0.11), 220);
   if (si + 1 < STAGES.length) { setTimeout(() => { si++; loadStage(); }, calm ? 500 : 1100); } else { playing = false; setTimeout(finish, 1000); } }
-function finish() { const sec = Math.round((performance.now() - t0) / 1000); $('sum').innerHTML = '撞開 <b>' + cleared + '</b> 件海漂，最多 <b>' + bestCombo + '</b> 連撲<br>撲了 ' + pounces + ' 次（放空 ' + misses + ' 次），用了 ' + sec + ' 秒'; $('done').hidden = false; }
+function finish() { const sec = Math.round((performance.now() - t0) / 1000); $('sum').innerHTML = '撞開 <b>' + cleared + '</b> 件海漂，最多 <b>' + bestCombo + '</b> 連撲' + (gullsHit ? '，趕走海鷗 <b>' + gullsHit + '</b> 次' : '') + (lost > 0 ? '（被叼走 ' + lost + ' 件）' : '') + '<br>撲了 ' + pounces + ' 次（放空 ' + misses + ' 次），用了 ' + sec + ' 秒'; $('done').hidden = false; }
 
 /* ---------- 畫面 ---------- */
 function drawKite(now) {
@@ -140,14 +180,16 @@ function drawKite(now) {
 }
 function drawFx(k) { for (const e of fxs) { if (e.k !== k) continue; const F = FX[k]; if (!F.img.complete || !F.img.naturalWidth) continue; const fh = F.img.naturalHeight, f = Math.min(F.n - 1, Math.floor(e.t / e.dur * F.n)); ctx.drawImage(F.img, f * fh, 0, fh, fh, e.x - e.size * F.ax, e.y - e.size * F.ay, e.size, e.size); } }
 function drawObj(it, now, hl) {
-  const im = it.k === 'big' && it.hp < it.max ? OIMG.bigc : OIMG[it.k], bob = calm ? 0 : Math.sin(now / 400 + it.wob) * 4, s = it.r * 2.6;
+  if (it.k === 'gull') return drawGull(it, now, hl);
+  const im = it.k === 'big' && it.hp < it.max ? OIMG.bigc : it.k === 'netwall' && it.hp < it.max ? OIMG.netwallT : it.k === 'island' ? OIMG.island[it.hp > 4 ? 0 : it.hp > 2 ? 1 : 2] : OIMG[it.k], bob = calm ? 0 : Math.sin(now / 400 + it.wob) * (it.heavy ? 2 : 4), s = it.r * 2.6, sk = it.shk > 0 && !calm ? (it.shk -= 1 / 60, Math.sin(now / 18) * 6 * it.shk / 0.3) : 0;
   if (it.flash > 0) it.flash = Math.max(0, it.flash - 1 / 30);
   ctx.fillStyle = 'rgba(0,30,40,.28)'; ctx.beginPath(); ctx.ellipse(it.x + 4, it.y + it.r * 0.75, it.r * 1.15, it.r * 0.32, 0, 0, 6.28); ctx.fill();
-  ctx.save(); ctx.translate(it.x, it.y + bob); ctx.rotate(it.rot + (calm ? 0 : Math.sin(now / 600 + it.wob) * 0.08));
-  if (im.complete && im.naturalWidth) ctx.drawImage(im, -s / 2, -s / 2, s, s); else { ctx.fillStyle = '#C9A06A'; ctx.fillRect(-it.r, -it.r, it.r * 2, it.r * 2); }
+  ctx.save(); ctx.translate(it.x + sk, it.y + bob); ctx.rotate(it.rot + (calm || it.heavy ? 0 : Math.sin(now / 600 + it.wob) * 0.08));
+  if (it.heavy && im.complete && im.naturalWidth) { const w = it.k === 'island' ? 300 : 224, h = w * im.naturalHeight / im.naturalWidth; ctx.drawImage(im, -w / 2, -h / 2, w, h); }      /* 網 384×128、島 512×384，依原比例 */
+  else if (im.complete && im.naturalWidth) ctx.drawImage(im, -s / 2, -s / 2, s, s); else { ctx.fillStyle = '#C9A06A'; ctx.fillRect(-it.r, -it.r, it.r * 2, it.r * 2); }
   if (it.flash > 0) { ctx.globalAlpha = it.flash * 0.6; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, it.r * 1.1, 0, 6.28); ctx.fill(); ctx.globalAlpha = 1; }
   ctx.restore();
-  if (hl) { ctx.strokeStyle = 'rgba(232,103,74,' + (0.75 + 0.25 * Math.sin(now / 90)) + ')'; ctx.lineWidth = 5; ctx.setLineDash([10, 6]); ctx.beginPath(); ctx.arc(it.x, it.y + bob, it.r * 1.35, 0, 6.28); ctx.stroke(); ctx.setLineDash([]); }
+  if (hl) { ctx.strokeStyle = 'rgba(232,103,74,' + (0.75 + 0.25 * Math.sin(now / 90)) + ')'; ctx.lineWidth = 5; ctx.setLineDash([10, 6]); ctx.beginPath(); if (it.k === 'netwall') ctx.ellipse(it.x, it.y + bob, 120, 44, 0, 0, 6.28); else ctx.arc(it.x, it.y + bob, it.r * (it.k === 'island' ? 1.6 : 1.35), 0, 6.28); ctx.stroke(); ctx.setLineDash([]); }
 }
 function drawBG(now) {
   if (BG.complete && BG.naturalWidth) { const s = Math.max(W / BG.naturalWidth, H / BG.naturalHeight), w = BG.naturalWidth * s, h = BG.naturalHeight * s; ctx.drawImage(BG, (W - w) / 2, (H - h) / 2, w, h); }
@@ -167,18 +209,19 @@ function frame(now) {
     if (belt && playing) { belt.t += dt; const y = belt.y * H + 40, ax = belt.dir > 0 ? 30 : W - 30;
       if (belt.t < 1.4) { ctx.globalAlpha = 0.5 + 0.5 * Math.sin(now / 120); ctx.fillStyle = '#FFE17A'; ctx.beginPath(); ctx.moveTo(ax + belt.dir * 34, y); ctx.lineTo(ax - belt.dir * 6, y - 20); ctx.lineTo(ax - belt.dir * 6, y + 20); ctx.fill(); ctx.fillRect(Math.min(ax - belt.dir * 6, ax - belt.dir * 40), y - 6, 34, 12); ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fillRect(0, y - 26, W, 52); }
       else if (belt.sent < belt.ks.length && belt.t > 1.4 + belt.sent * 0.75) { items.push(mk({ k: belt.ks[belt.sent], x: belt.dir > 0 ? -30 : W + 30, y: y + (belt.sent % 2 ? 14 : -14), vx: belt.dir * belt.speed * W * 1.6 })); items[items.length - 1].belt = true; belt.sent++; } }
+    if (playing && !clearing) { stT += dt; while (gullQ.length && stT >= gullQ[0]) { gullQ.shift(); spawnGull(); } }
     /* 小鳶移動 */
     kite.at += dt;
-    if (kite.dash) { const D = kite.dash; D.k += dt / CFG.dash; if (D.k > 0) { const k = Math.min(1, D.k), e = 1 - Math.pow(1 - k, 3); kite.x = D.from.x + (D.t.x - D.from.x) * e; kite.y = D.from.y + (D.t.y - D.from.y) * e;
+    if (kite.dash) { const D = kite.dash; D.k += dt / CFG.dash; if (D.k > 0) { const k = Math.min(1, D.k), e = 1 - Math.pow(1 - k, 3); const tx = D.ex ? D.ex.x : D.t.x, ty = D.ex ? D.ex.y : D.t.y; kite.x = D.from.x + (tx - D.from.x) * e; kite.y = D.from.y + (ty - D.from.y) * e;
         if (!calm && Math.random() < 0.9) parts.push({ x: kite.x - kite.face * 34, y: kite.y + (Math.random() - 0.5) * 22, vx: -kite.face * 60, vy: 0, t: 0, life: 0.25, c: 'rgba(255,255,255,.9)', r: 3 }); }
-      if (D.k >= 1) { hit(D.t); kite.dash = null; kite.at = 0; kite.vx = -kite.face * 140; kite.vy = 60; if (playing && stageDone()) stageClear(); } }
+      if (D.k >= 1) { if (D.t.gone || D.t.st === 'hit') { misses++; combo = 0; hud(); floats.push({ x: kite.x, y: kite.y - 60, s: '被搶先了…', t: 0, c: '#FFFFFF' }); } else hit(D.t); kite.dash = null;      /* D541：撲到一半目標被海鷗叼走＝落空 */ kite.at = 0; kite.vx = -kite.face * 140; kite.vy = 60; if (playing && stageDone()) stageClear(); } }
     else if (touch) { const dx = touch.x - kite.x, dy = touch.y - 40 - kite.y, d = Math.hypot(dx, dy); const sp = Math.min(CFG.glide, d * 5); if (d > 2) { kite.vx += ((dx / d) * sp - kite.vx) * Math.min(1, dt * 8); kite.vy += ((dy / d) * sp - kite.vy) * Math.min(1, dt * 8); } if (Math.abs(kite.vx) > 20) kite.face = kite.vx > 0 ? 1 : -1; if (kite.anim !== 'pounce' || kite.at > 0.3) setAnim('glide'); }
     else { kite.vx *= Math.pow(0.04, dt); kite.vy *= Math.pow(0.04, dt); if (kite.anim === 'win' && kite.at < 0.9) {} else if (kite.anim !== 'pounce' || kite.at > 0.3) setAnim(Math.hypot(kite.vx, kite.vy) > 50 ? 'glide' : 'idle'); }
     if (!kite.dash) { kite.x = Math.max(40, Math.min(W - 40, kite.x + kite.vx * dt)); kite.y = Math.max(110, Math.min(H - 70, kite.y + kite.vy * dt)); }
     kite.tilt += ((kite.dash ? 0 : Math.max(-0.3, Math.min(0.3, kite.vx / 1000))) - kite.tilt) * 0.2;
     /* 海漂 */
     const tgt = !kite.dash && touch ? nearest() : null;
-    for (const it of items) { if (it.gone) continue; it.x += it.vx * dt; it.y += it.vy * dt; if (it.max > 1 && it.hp < it.max) { it.vx *= Math.pow(0.3, dt); it.vy *= Math.pow(0.3, dt); } it.rot += it.vr * dt; it.vr *= Math.pow(0.2, dt);
+    for (const it of items) { if (it.gone) continue; if (it.k === 'gull') { gullStep(it, dt); if (!it.gone) drawObj(it, now, it === tgt); continue; } if (it.heavy) { it.vx = 0; it.vy = 0; } it.x += it.vx * dt; it.y += it.vy * dt; if (it.max > 1 && it.hp < it.max) { it.vx *= Math.pow(0.3, dt); it.vy *= Math.pow(0.3, dt); } it.rot += it.vr * dt; it.vr *= Math.pow(0.2, dt);
       if (it.belt) { if (it.x < -60 || it.x > W + 60) { it.gone = true; it.lost = true; } }      /* 漂帶沒撲到的會漂走（不扣分） */
       else { if (it.x < it.r || it.x > W - it.r) it.vx = -it.vx; if (it.y < 120 || it.y > H * 0.7) it.vy = -it.vy; it.x = Math.max(it.r, Math.min(W - it.r, it.x)); it.y = Math.max(120, Math.min(H * 0.7, it.y)); }
       drawObj(it, now, it === tgt); }
@@ -203,6 +246,6 @@ $('go').onclick = start; $('again').onclick = start;
 $('snd').onclick = () => { sound = !sound; $('snd').textContent = sound ? '🔊' : '🔇'; $('snd').setAttribute('aria-pressed', String(sound)); };
 function leave() { if (history.length > 1) history.back(); else location.href = '../../line/index.html'; }
 $('back').onclick = leave; $('out').onclick = () => (location.href = '../../line/index.html');
-window.__pc = { get kite() { return kite; }, get items() { return items; }, get si() { return si; }, get cleared() { return cleared; }, get playing() { return playing; }, get bestCombo() { return bestCombo; }, get belt() { return belt; } };      /* 測試掛勾 */
+window.__pc = { get kite() { return kite; }, get items() { return items; }, get si() { return si; }, get cleared() { return cleared; }, get playing() { return playing; }, get bestCombo() { return bestCombo; }, get belt() { return belt; }, set si(v) { si = v; }, loadStage, get gullsHit() { return gullsHit; } };      /* 測試掛勾 */
 </script>
 </body></html>
