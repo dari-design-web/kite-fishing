@@ -788,7 +788,7 @@ function buildScript() {
 
 function reset() {
   fests = []; festTxt = null; festAcc = 0; hudFly = []; hudPops = [];
-  pops = []; seed = CONFIG.seed; cine = 0; slowmo = 0; rushes = []; t = 0; si = 0; fireAcc = 0; gauge = 0; ult = null; cut = null; flash = 0; shake = 0; boss = null; sparks = []; pings = []; frag = null; bossWarnT = 0; bossWarned = false; endTimer = 0; firstMove = false; toldUlt = false; toldBarrel = false; toldGate = false; toldRing = false; guide = null; won = false; seenPick = {};
+  ujReset(); pops = []; seed = CONFIG.seed; cine = 0; slowmo = 0; rushes = []; t = 0; si = 0; fireAcc = 0; gauge = 0; ult = null; cut = null; flash = 0; shake = 0; boss = null; sparks = []; pings = []; frag = null; bossWarnT = 0; bossWarned = false; endTimer = 0; firstMove = false; toldUlt = false; toldBarrel = false; toldGate = false; toldRing = false; guide = null; won = false; seenPick = {};
   kite = { x: W / 2, y: 520, tx: W / 2, ty: 520, jetT: 0, ringT: 0, slowT: 0, homeT: 0, drumT: 0, drumAcc: 0, hearts: LV().hearts, safe: 0, power: 1, powerT: 0, galeT: 0, shield: false, drag: false, lx: 0, ly: 0 };
   T = stageTypes(); vents = []; clouds = []; boats = []; mascots = []; beatDemo = null; menu = null; escort = null;
   foes = []; shots = []; picks = []; parts = []; floats = []; friends = []; pals = []; rings = []; warns = []; booms = []; script = buildScript();
@@ -1234,7 +1234,7 @@ function clearFoe(f, how) {      // how：'' 羽毛或墨汁、'blast' 被炸到
   if (!how && !calm && f.type !== 'boss' && f.type !== 'minib' && f.type !== 'midb' && !f.elite && !d.rescue && !d.friend) for (let k = p0; k < p0 + 2; k++) { const q = parts[k]; if (q && q.kind === 'star') { q.shard = Math.min(q.size * 2, Math.max(4, W * 0.016)); q.sa = Math.atan2(q.vy, q.vx); } }      /* D463（GPT 0930 Q2）：普通射擊打掉一般小怪，那 6 顆星裡前 2 顆改畫成順著飛行方向的小短條（長 ≤ 原直徑、短邊一半），位移、顏色、淡出照舊；魔王、小團、精英、救援、鯨鯊、爆炸、收尾、減少動態都不換 */      // D123：第 5～8 關不冒泡泡
   if (how === 'ult') { if (booms.filter((b) => b.mini).length < 6) booms.push({ t: 0, x: f.x, y: f.y, mini: true, done: true }); stats.ultCleared++;      // G93：命中火花最多同時 6 個、不逐隻震動      // D127 命中爆點
   }
-  if (how === 'ult') { if (ult) ult.count++; beep(520 + Math.min(18, ult ? ult.count : 0) * 40, 0.1, 'triangle', 0.05, 200); }
+  if (how === 'ult') { ujKill(f.x, f.y); if (ult) ult.count++; beep(520 + Math.min(18, ult ? ult.count : 0) * 40, 0.1, 'triangle', 0.05, 200); }
   else if (how !== 'sweep') beep(Math.min(1300, 600 + Math.min(stats.combo, 14) * 45), 0.1, 'triangle', 0.055, 180);
   if (d.split && !calmClear) { const sd = f.ss ? ssSide(f, how) : 0; for (let k = 0; k < d.split; k++) mk('drop', f.x + (k ? 16 : -16), f.y, sd ? { x0: f.x + sd * ((k ? 1 : -1) === sd ? SS.far : SS.near), ssd: sd } : { x0: f.x + (k ? 44 : -44) }); }      /* D512：側擊時兩塊碎殼都滑向同一側；出生點不變 */
   if (d.shatter && !calmClear) { const hop = f.type === 'foam' && !daily && NM() && !boss && !calm; for (let k = 0; k < d.shatter; k++) mk('chip', f.x, f.y, hop ? { vx: (k - 1) * 75, hop: { t: 0 } } : { vx: (k - 1) * 75 }); }      /* D478：第 2 關泡泡冰怪破掉時，三顆小冰泡先往上彈開再落下 */
@@ -1281,7 +1281,7 @@ function hurt(by) {
 }
 function useUlt() {
   if (mode !== 'play' || gauge < CONFIG.ult.need || ult || cut || endTimer > 0) return;
-  gauge = 0; stats.ultUsed++; const k = ULT2[TH()];
+  gauge = 0; stats.ultUsed++; const k = ULT2[TH()]; ujReset((CUTS[k ? k[0] : NM() ? 'jiao' : 'whale'] || [])[2]);
   startCut(k ? k[0] : NM() ? 'jiao' : 'whale', () => { if (NM()) startJiao(); else if (k) startUlt2(k[0]); else startWhale(); });      // D123：先演動漫開場，再出招
 }
 function startWhale() {
@@ -1788,8 +1788,8 @@ function update(dt) {
   if (ult && ult.jiao) updateJiao(real);
   else if (ult) {
     const u = ult; u.t += real;
-    if (u.t >= 0.5) {
-      const p = Math.min(1, (u.t - 0.5) / 1.7), e = p * p * (3 - 2 * p);
+    if (u.t >= 0.35) {      /* D549：起手 0.5→0.35 秒、掃過 1.7→1.3 秒、結算 3.1→2.4 秒，中間不空等 */
+      const p = Math.min(1, (u.t - 0.35) / 1.3), e = p * p * (3 - 2 * p);
       const ox = u.sx, oy = u.sy; if (RM()) { u.sx = W / 2; u.sy = H + 80 - e * (H + 260); } else { u.sx = -170 + e * (W + 340); u.sy = 480 - e * 250 - Math.sin(p * Math.PI) * 50; } if (u.sx - ox > 0.5) u.hd = Math.atan2(u.sy - oy, u.sx - ox);   /* hd：鯨鯊前進的方向 */ u.waveY = H + 60 - e * (H + 200);
       if (p < 0.7) shake = Math.max(shake, 0.12);
       for (const f of foes.slice()) if (f.y > u.waveY) { if (T[f.type].solid) { foes.splice(foes.indexOf(f), 1); bubbles(f.x, f.y, 6); guide = null; continue; } if (f.type === 'minib' || f.type === 'midb') { if (!f.ultHit) { f.ultHit = true; f.hp -= Math.ceil(f.maxHp * 0.5); f.hitT = 0.1; } continue; } if (f.type === 'boss') { if (f.hidden) continue; if (!u.hitBoss) { u.hitBoss = true; if (f.phased) bossDamage(f, CONFIG.ult.bossDamage, null); else f.hp -= CONFIG.ult.bossDamage; burst(f.x, f.y, 20, '#FFE08A', 160); say(RM() ? '鐵道車撞散了一大塊！' : PM() ? '光刃撕開了一大塊！' : '鯨鯊撞散了一大塊！', f.x, f.y + 74, '#FFE08A'); } } else clearFoe(f, 'ult'); }
@@ -1797,7 +1797,7 @@ function update(dt) {
       if (!calm && p < 1) for (let i = 0; i < 3; i++) { part('star', u.sx - rand(40, 150), u.sy + rand(-40, 40), { vx: rand(-60, -10), vy: rand(-20, 30), size: rand(3, 8), color: Math.random() < 0.4 ? '#FFFFFF' : '#FFE08A', fade: 1.4 }); part('bubble', rand(0, W), u.waveY + rand(0, 40), { vy: rand(-90, -40), size: rand(2, 5), fade: 1.1 }); }
       if (p >= 1 && !u.chimed) { u.chimed = true; jingle([784, 988, 1175, 1568], 70); }
     }
-    if (u.t > 3.1) { say((PM() ? '彩虹鏡海' : ULTN()) + '清掉 ' + u.count + ' 件！', W / 2, 330, '#FFE08A', true); hearts(W / 2, 350, 6); ult = null; }      // 演出結束才宣布，最後幾件也算進去
+    if (u.t > 2.4) { ujFin((PM() ? '彩虹鏡海' : ULTN()) + '大掃除', '件'); hearts(W / 2, 350, 6); ult = null; }      // 演出結束才宣布，最後幾件也算進去
   }
   for (const r of rings) { if (r.clr) { r.age += real; const p = Math.min(1, r.age / r.clr), pk = 0.08 / r.clr; r.r = r.max * (1 - Math.pow(1 - p, 3)); r.life = p >= 1 ? 0 : p < pk ? 0.6 + 0.4 * p / pk : 1 - (p - pk) / (1 - pk); continue; } r.life -= real * (r.zap ? 3.2 : 1.9); r.r = r.max * (1 - Math.max(0, r.life)) + 8; } rings = rings.filter((r) => r.life > 0);      /* D343：清除圈（clr）先快速撐開、0.08 秒最亮、0.3 秒內淡完 */
   for (const q of parts) { q.x += q.vx * real; q.y += q.vy * real; q.life -= real * q.fade; } parts = parts.filter((q) => q.life > 0);
@@ -2130,7 +2130,7 @@ function updateJiao(real) {
     u.ringAcc += real; if (u.ringAcc > 0.25 && u.rad < 820) { u.ringAcc = 0; rings.push({ x: cx, y: cy, r: 20, max: 200, life: 1, color: '255,236,160' }); }
   }
   if (u.t >= 1.5 && !u.gift) { u.gift = true; if (u.res === 'holy') kite.shield = true; else if (u.res === 'laugh') { kite.power = Math.min(3, kite.power + 1); kite.powerT = CONFIG.feather.powerTime; stats.maxPower = Math.max(stats.maxPower, kite.power); } stats.jiao[u.res]++; }
-  if (u.t > 3.1) { say('祈福淨化 ' + u.count + ' 隻！', W / 2, 360, '#FFE08A', true); hearts(W / 2, 380, 6); if (u.res === 'yin') gauge = CONFIG.ult.need / 2; ult = null; }
+  if (u.t > 3.1) { ujFin('祈福淨化', '隻'); hearts(W / 2, 380, 6); if (u.res === 'yin') gauge = CONFIG.ult.need / 2; ult = null; }
 }
 function drawJiao() {
   const u = ult, cx = W / 2, cy = CONFIG.jiao.y, a = Math.min(1, u.t / 0.4) * Math.min(1, Math.max(0, (3.1 - u.t) / 0.5));
@@ -3732,6 +3732,24 @@ let cut = null;
 const CUTS = { squid: ['小卷王', '墨浪千觸', '179,139,224', ['ult_squidking', 'ult_squid'], '🦑'], dolphin: ['海豚群', '浪花衝鋒', '110,195,232', ['ult_dolphin'], '🐬'], turtle: ['海龜', '玄甲潮湧', '127,211,154', ['ult_turtle'], '🐢'], dragons: ['黑潮逆命', '雙龍破', '58,123,213', ['ult_dragons'], '🐉'], whale: ['鯨鯊', '全海大掃除', '255,214,110', ['shark_top'], '🦈'], jiao: ['擲筊', '祈福淨化', '255,190,120', ['jiao_flat'], '🙏'] };
 const ULT5 = { 1: ['鯨鯊', '星斑淨海嘯'], 2: ['擲筊', '聖筊天光降'], 3: ['彩虹鏡海', '虹彩鏡海陣'], 4: ['鐵道車', '極軌天音破'], 5: ['小卷王', '墨潮千手鎖'], 6: ['海豚群', '萬豚破浪擊'], 7: ['海龜', '玄甲震海波'], 8: ['黑潮逆命', '逆命雙龍破'] };      // G91 與 GPT 討論後定案（第 4 關依 Dari 對 GPT 的更正：鐵道車・極軌天音破）      // D125（Dari 10/19 15:09）：每關絕招五個字、帥氣中二
 function cutInfo(kind) { const c = CUTS[kind] || CUTS.whale, n = ULT5[stageNo] || [c[0], c[1]], icons = RM() ? ['ult_icon_rail', 'rail_ult'] : PM() ? ['ult_icon_pier', 'pier_ult'] : c[3], col = RM() ? '232,103,74' : PM() ? '255,170,200' : c[2]; return [n[0], n[1], col, icons, RM() ? '🦀' : PM() ? '🌈' : c[4]]; }
+/* D549（Dari 11/18：飛行絕招表現普通，要重新檢討）：所有絕招共用的打擊層——
+   ① 清掉的每一隻依序冒撞擊爆圈＋碎片（連鎖爆破感），第一隻命中頓一下、震一下；② 上方即時跳動的「清掉 ×N」；③ 結束時全畫面白閃＋大衝擊波＋停頓＋正中央大印章（數字滾上去）。各關原本的招式不動。 */
+const UJI = Object.assign(new Image(), { src: 'assets/fx_impact_u.webp' });
+let ujT = 0;      /* Codex：特效用自己的時間，只在遊玩中前進（暫停時不跑） */
+const UJ = { q: [], act: [], n: 0, pop: 0, fin: null, col: '255,224,138' };
+function ujReset(col) { UJ.q = []; UJ.act = []; UJ.n = 0; UJ.pop = 0; UJ.fin = null; UJ.col = col || '255,224,138'; }
+function ujKill(x, y) { UJ.n++; UJ.pop = 1; UJ.q.push({ x, y, at: ujT + Math.min(0.55, UJ.q.length * 0.035) }); if (UJ.n === 1 && !calm) { hitStop = Math.max(hitStop, 0.08); shake = Math.max(shake, 0.35); } }
+function ujFin(label, unit) { UJ.fin = { t0: ujT, txt: label, n: UJ.n, unit: unit || '件' }; if (!calm) { hitStop = Math.max(hitStop, 0.14); shake = Math.max(shake, 0.6); } flash = Math.max(flash, 0.85); if (!calm) { rings.push({ x: W / 2, y: H * 0.45, r: 20, max: 760, life: 1, color: UJ.col }); rings.push({ x: W / 2, y: H * 0.45, r: 10, max: 480, life: 1, color: '255,255,255' }); } beep(55, 0.7, 'square', 0.11, -20); jingle([523, 659, 784, 1047, 1319, 1568], 70); try { if (navigator.vibrate) navigator.vibrate([40, 30, 80]); } catch (e) {} }
+function drawUJ() {
+  for (let i = UJ.q.length - 1; i >= 0; i--) { const e = UJ.q[i]; if (ujT < e.at) continue; UJ.q.splice(i, 1); if (UJ.act.length < 14 && !calm) UJ.act.push({ x: e.x, y: e.y, t0: ujT, s: 58 + Math.random() * 30 }); if (!calm) for (let k = 0; k < 4; k++) { const a = Math.random() * 6.28, v = 110 + Math.random() * 120; part('star', e.x, e.y, { vx: Math.cos(a) * v, vy: Math.sin(a) * v, shard: 5 + Math.random() * 5, sa: a, color: 'rgb(' + UJ.col + ')', fade: 2.2 }); } }
+  if (UJI.complete && UJI.naturalWidth) { const fh = UJI.naturalHeight; for (let i = UJ.act.length - 1; i >= 0; i--) { const e = UJ.act[i], k = (ujT - e.t0) / 0.3; if (k >= 1) { UJ.act.splice(i, 1); continue; } ctx.drawImage(UJI, Math.floor(k * 4) * fh, 0, fh, fh, e.x - e.s / 2, e.y - e.s / 2, e.s, e.s); } } else UJ.act = [];
+  const font = (sz) => "900 " + sz + "px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif";
+  const txt = (s0, x, y, sz, fill, k, a) => { ctx.save(); ctx.globalAlpha = a; ctx.translate(x, y); ctx.scale(k, k); ctx.font = font(sz); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.lineWidth = sz * 0.24; ctx.strokeStyle = '#10293D'; ctx.strokeText(s0, 0, 0); ctx.fillStyle = fill; ctx.fillText(s0, 0, 0); ctx.restore(); };
+  if (ult && UJ.n > 0 && !UJ.fin) { UJ.pop = Math.max(0, UJ.pop - 0.08); txt('清掉 ×' + UJ.n, W / 2, 150, 30, '#FFE08A', calm ? 1 : 1 + UJ.pop * 0.45, 1); }
+  if (UJ.fin) { const e = ujT - UJ.fin.t0; if (e > 1.9) { UJ.fin = null; return; } const a = e > 1.5 ? 1 - (e - 1.5) / 0.4 : 1, k1 = calm ? 1 : e < 0.14 ? 1.7 - e / 0.14 * 0.7 : 1 + Math.max(0, 0.08 * Math.sin((e - 0.14) * 18) * Math.exp(-(e - 0.14) * 5)), n = Math.round(UJ.fin.n * Math.min(1, Math.max(0, (e - 0.1) / 0.5)));
+    ctx.save(); ctx.globalAlpha = a; ctx.translate(W / 2, H * 0.4 + 26); ctx.rotate(-0.05); ctx.scale(1, Math.min(1, e / 0.12)); ctx.fillStyle = 'rgba(16,41,61,.72)'; ctx.beginPath(); ctx.roundRect(-W * 0.46, -62, W * 0.92, 124, 22); ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = 'rgb(' + UJ.col + ')'; ctx.stroke(); ctx.restore();      /* 深色帶＋絕招代表色外框 */
+    txt(UJ.fin.txt + '！', W / 2, H * 0.4, 40, '#FFF8EA', k1, a); txt('×' + n + ' ' + UJ.fin.unit, W / 2, H * 0.4 + 54, 46, '#FFE08A', calm || e >= 0.24 ? 1 : 0.6 + e / 0.24 * 0.4, a * Math.min(1, e / 0.12)); }
+}
 function startCut(kind, go) { cut = { t: 0, dur: calm ? 0.6 : 1.3, kind, go, b1: false, b2: false }; $('banner').hidden = true; beep(1200, 0.08, 'square', 0.04, -600); }
 function updateCut(dt) {
   const c = cut; c.t += dt;
@@ -3743,8 +3761,8 @@ function stampK(t, t0) { if (t < t0) return 0; const u = Math.min(1, (t - t0) / 
 function drawCut() {
   const c = cut, C = cutInfo(c.kind), inA = Math.min(1, c.t / 0.12), out = Math.max(0, (c.t - (c.dur - 0.18)) / 0.18);
   ctx.save();
-  ctx.globalCompositeOperation = 'saturation'; ctx.globalAlpha = inA * (1 - out); ctx.fillStyle = 'hsl(0,0%,50%)'; ctx.fillRect(-10, -10, W + 20, H + 20);
-  ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = 'rgba(246,244,238,' + 0.42 * inA * (1 - out) + ')'; ctx.fillRect(-10, -10, W + 20, H + 20);
+  ctx.fillStyle = 'rgba(10,20,36,' + 0.62 * inA * (1 - out) + ')'; ctx.fillRect(-10, -10, W + 20, H + 20);      /* D549：原本整片灰階＋白霧（看起來悶、手機也吃效能）→ 暗下來＋旋轉集中線 */
+  if (!calm) { const cx = W * 0.62, cy = H * 0.36 + 70; ctx.save(); ctx.globalAlpha = 0.5 * inA * (1 - out); ctx.fillStyle = 'rgba(' + C[2] + ',1)'; for (let i = 0; i < 44; i++) { const an = i * 0.1428 + c.t * 0.6 + (i % 3) * 0.03, r0 = 150 + ((i * 53) % 70), w0 = 0.012 + (i % 4) * 0.006; ctx.beginPath(); ctx.moveTo(cx + Math.cos(an) * r0, cy + Math.sin(an) * r0); ctx.lineTo(cx + Math.cos(an - w0) * 900, cy + Math.sin(an - w0) * 900); ctx.lineTo(cx + Math.cos(an + w0) * 900, cy + Math.sin(an + w0) * 900); ctx.closePath(); ctx.fill(); } ctx.restore(); }
   const jit = (c.t > 0.28 && c.t < 0.4) || (c.t > 0.58 && c.t < 0.72) ? 5 : 0; if (jit && !calm) ctx.translate(rand(-jit, jit), rand(-jit, jit));
   const slide = c.t < 0.18 ? Math.pow(1 - c.t / 0.18, 3) : 0, ox = -W * 1.2 * slide + W * 1.3 * out * out, y0 = H * 0.36;
   ctx.save(); ctx.translate(ox, 0);
@@ -3754,9 +3772,9 @@ function drawCut() {
   ctx.save(); ctx.clip(); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineCap = 'round';
   for (let i = 0; i < 16; i++) { const yy = y0 - 20 + ((i * 37) % 190), len = 40 + (i * 29) % 90, xx = W + 60 - ((c.t * 1400 + i * 113) % (W + 220)); ctx.lineWidth = 1.5 + (i % 3); ctx.beginPath(); ctx.moveTo(xx, yy); ctx.lineTo(xx + len, yy - len * 0.14); ctx.stroke(); }
   ctx.restore();
-  const icon = C[3].map((k) => img[k]).find(Boolean), px = W - 92 + Math.max(0, 0.25 - c.t) * 400;
+  const icon = C[3].map((k) => img[k]).find(Boolean), px = W - 100 + Math.max(0, 0.22 - c.t) * 520 - (c.t > 0.22 && c.t < 0.42 ? Math.sin((c.t - 0.22) / 0.2 * Math.PI) * 16 : 0);      /* D549：衝進來會彈一下 */
   ctx.save(); ctx.translate(px, y0 + 64); ctx.rotate(-0.08); ctx.globalAlpha = 0.35; glow(110, '255,255,255', 0.9); ctx.globalAlpha = 1;
-  if (icon) { const s = 150 / Math.max(icon.width, icon.height); ctx.drawImage(icon, -icon.width * s / 2, -icon.height * s / 2, icon.width * s, icon.height * s); } else { ctx.font = '90px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(C[4], 0, 0); }
+  if (icon) { const s = 210 / Math.max(icon.width, icon.height) * (1 + (calm ? 0 : 0.035 * Math.sin(c.t * 22))); ctx.drawImage(icon, -icon.width * s / 2, -icon.height * s / 2, icon.width * s, icon.height * s); } else { ctx.font = '90px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(C[4], 0, 0); }
   ctx.restore();
   const word = (txt, x, y, size, k, fill) => { if (!k) return; ctx.save(); ctx.translate(x, y); ctx.rotate(-0.08); ctx.scale(k, k); ctx.font = "900 " + size + "px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif"; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.lineWidth = size * 0.22; ctx.strokeStyle = '#10293D'; ctx.strokeText(txt, 0, 0); ctx.fillStyle = fill; ctx.fillText(txt, 0, 0); ctx.restore(); };
   word(C[0], 22, y0 + 44, 30, stampK(c.t, 0.28), '#FFF8EA');
@@ -3923,7 +3941,7 @@ function updateUlt2(real) {
     if (t2 > U2.dragons.meet && !u.spun) { u.spun = true; beep(110, 0.9, 'sawtooth', 0.06, 200); }
     if (t2 > U2.dragons.boom && !u.boomed) { u.boomed = true; flash = 1; shake = 0.7; beep(55, 0.8, 'square', 0.12, -20); rings.push({ x: u.tx, y: u.ty, r: 20, max: 760, life: 1, color: '160,215,255' }); rings.push({ x: u.tx, y: u.ty, r: 10, max: 520, life: 1, color: '30,40,60' }); burst(u.tx, u.ty, 50, '#BFE3FF', 260); for (const f of foes.slice()) ultHitFoe(u, f, '雙龍咬碎了鯨龍！'); }
   }
-  if (u.t > U2[u.kind].dur) { say(ULTN() + '清掉 ' + u.count + ' 件！', W / 2, 330, '#FFE08A', true); hearts(W / 2, 350, 6); ult = null; }
+  if (u.t > U2[u.kind].dur) { ujFin(ULTN() + '大爆發', '件'); hearts(W / 2, 350, 6); ult = null; }
 }
 function drawDragon(u, i) {
   const segs = 26, col = i ? ['#2F8BD8', '#9ED4FF', '#FFD86A'] : ['#1D2836', '#4E6E86', '#7FF3FF'], tt = u.t, fade = Math.max(0, Math.min(1, (U2.dragons.dur - tt) / 0.6)) * (tt > U2.dragons.boom ? Math.max(0, 1 - (tt - U2.dragons.boom) * 1.4) : 1);
@@ -4106,6 +4124,7 @@ function draw() {
   if (hzRects.length) for (const p of picks) if (pickInHazard(p)) drawPick(p);      /* D247：GPT 2250 A②——掉落道具和第一次說明字被紅警示條（鐵軌亮紅等）蓋住，碰到紅區的道具在紅區上面再畫一次；紅區、時間、判定、遮罩照明都不動，怪獸路障不上提 */
   if (guide) { const a = 0.35 + 0.25 * Math.sin(clock * 10); if (img.wind_r) { const gr = ctx.createLinearGradient(guide.x - guide.half, 0, guide.x + guide.half, 0); gr.addColorStop(0, 'rgba(191,240,208,0)'); gr.addColorStop(0.5, 'rgba(191,240,208,' + a + ')'); gr.addColorStop(1, 'rgba(191,240,208,0)'); ctx.fillStyle = gr; ctx.fillRect(guide.x - guide.half, guide.y - 22, guide.half * 2, 44); ctx.save(); ctx.translate(guide.x, guide.y - 4 - Math.abs(Math.sin(clock * 5)) * 6); ctx.rotate(-Math.PI / 2); ctx.globalAlpha = 0.95; ctx.drawImage(img.wind_r, -26, -13, 52, 26); ctx.restore(); } else { ctx.fillStyle = 'rgba(191,240,208,' + a + ')'; ctx.fillRect(guide.x - guide.half, guide.y - 16, guide.half * 2, 32); for (const dx of [-26, 0, 26]) poly([guide.x + dx - 7, guide.y + 6, guide.x + dx, guide.y - 6, guide.x + dx + 7, guide.y + 6], 'rgba(255,255,255,.95)'); }      /* D353：缺口提示改淡綠光帶＋往上的風筆觸 */ }      // 第一個缺口：亮起來並標出往前的箭頭
   if (ult) { if (ult.t < 0.75) drawUltAura(ult); if (ult.kind) drawUlt2(); else if (ult.jiao) drawJiao(); else drawUlt(); }
+  if (ult || UJ.fin || UJ.act.length || UJ.q.length) drawUJ();
   for (const s of shots) drawShot(s);
   for (const p of pals) drawPal(p);
   drawRing(); if (PM()) drawPierFriendFx(); drawKite(); drawFocus(); drawNetOnKite(); drawParts(); if (booms.length) drawBooms();
@@ -4120,7 +4139,7 @@ function draw() {
   ctx.globalAlpha = 1; drawBossWarn(); drawCine(); if (dailyFade) dailyDraw();
 }
 function frame(now) {
-  const dt = Math.min(0.05, (now - last) / 1000 || 0); last = now; clock += dt; perfWatch(dt);
+  const dt = Math.min(0.05, (now - last) / 1000 || 0); last = now; clock += dt; perfWatch(dt); if (mode === 'play') ujT += dt;
   if (mode === 'play') { if (cut) updateCut(dt); else if (hitStop > 0) { hitStop -= dt; } else update(dt); }      /* D346：打擊停頓 */
   if (kite) { draw(); if (cut) drawCut(); } requestAnimationFrame(frame);
 }
