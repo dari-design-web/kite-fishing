@@ -1137,7 +1137,10 @@ const PET = (() => {
       if (calm) { bob = 0; rot = 0; sq = 1; }
       const scale = 0.86 + (p.y - AREA.y0) / (AREA.y1 - AREA.y0) * 0.16, w = 34 * scale;
       const rid = ROOM().pet || ROOM().id, key = rid !== 'living' ? 'kite_' + rid + '_' + (p.act === 'nap' ? 'nap' : p.pose === 'wave' ? 'wave' : 'home') : p.act === 'nap' ? 'kite_nap' : p.act === 'preen' && preenImg.ok ? 'kite_home_preen' : p.pose === 'wave' ? 'kite_wave' : p.pose === 'pack' ? 'kite_pack' : p.pose === 'back' ? 'kite_back' : 'kite_home';      // v0.16：其他四間用 G-47 第二批換裝圖      // v0.14：打瞌睡換閉眼圖
-      if (b.dataset.k !== key) { b.style.backgroundImage = 'url(assets/' + key + '.png)'; b.dataset.k = key; }
+      let sh = null;      /* D536：客廳換上小鳶統一 v3 Q 版序列（GPT 1405）：走路、跳、睡、待機眨眼、揮手；換裝房間與順羽／打包／返家照舊 */
+      if (rid === 'living' && !calm) { if (key === 'kite_nap') sh = ['sleep', 2, Math.floor(p.t * 1.2) % 2]; else if (key === 'kite_wave') sh = ['wave', 4, Math.floor(p.t * 6) % 4]; else if (key === 'kite_home') { if (p.act === 'walk') sh = ['walk', 4, Math.floor(p.t * 8) % 4]; else if (p.act === 'jump') { const u = Math.min(1, p.t / p.dur); sh = ['jump', 4, u < 0.2 ? 0 : u < 0.45 ? 1 : u < 0.8 ? 2 : 3]; } else sh = ['idle', 4, [0, 0, 0, 0, 1, 1, 0, 0, 0, 2, 3, 0][Math.floor(p.t * 4) % 12]]; } }
+      if (sh) { if (sh[0] === 'jump') bob = 0; if (sh[0] === 'walk') rot *= 0.3; if (sh[0] === 'sleep') rot = 0; const K = 'kh_' + sh[0], S3 = 1.17; if (b.dataset.k !== K) { b.style.backgroundImage = 'url(assets/kite_home_' + sh[0] + '.webp)'; b.style.backgroundSize = sh[1] * S3 * 100 + '% ' + S3 * 100 + '%'; b.dataset.k = K; } b.style.backgroundPosition = (S3 * sh[2] + (S3 - 1) / 2) / (sh[1] * S3 - 1) * 100 + '% 53%'; }      // 新圖角色占格 68%、腳在 0.865：放大 1.17 倍、往上 9% 對齊舊圖腳底
+      else if (b.dataset.k !== key) { b.style.backgroundImage = 'url(assets/' + key + '.png)'; b.style.backgroundSize = ''; b.style.backgroundPosition = ''; b.dataset.k = key; }
       const hPct = w * ROOMDIM.w / ROOMDIM.h;      // 舞台實際寬高（fitRoom 算的），換算成高度的百分比
       b.style.width = w + '%'; b.style.left = (p.x - w / 2) + '%'; b.style.top = (p.y - hPct * 0.92) + '%';
       b.style.transform = 'translateY(' + (-bob) + '%) rotate(' + rot + 'deg) scale(' + p.face + ',' + sq + ')';
