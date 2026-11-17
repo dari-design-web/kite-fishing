@@ -648,6 +648,38 @@ function drawFxs(k) { for (const e of fxs) { if (e.k !== k) continue; const F = 
 /* D543：海鷗搶魚——每局 14、36 秒各飛來一隻海鷗，俯衝叼走靠近水面的魚；點海鷗，小鳶衝上去攔：趕走 +50 分，叼著魚就把魚搶回來（算抓到） */
 const GULLI = { fly: Object.assign(new Image(), { src: 'assets/gull_fly.webp' }), grab: Object.assign(new Image(), { src: 'assets/gull_grab.webp' }), hit: Object.assign(new Image(), { src: 'assets/gull_hit.webp' }) }, GULL_AT = [14, 36];
 let gulls = [], gullIdx = 0;
+/* D544：魚王——每關最後 15 秒出場（巡航不出），要俯衝撞 3 下才抓得到；分數＝這一關大物（稀有魚）的分數，不另加碼（點數經濟不變） */
+const KING_ID = { keelung: 'keelung', s2: 'badouzi', s3: 'heping', s4: 'keelungyu' }, KINGI = {}, KING_BANNER = Object.assign(new Image(), { src: 'assets/king_banner.webp' });
+for (const k of Object.values(KING_ID)) KINGI[k] = [0, 1, 2].map((i) => Object.assign(new Image(), { src: 'assets/king_' + k + '_' + i + '.webp' }));
+let king = null, kingDone = false;
+function kingSpawn() { const id = KING_ID[LVL().id]; if (!id) return; const L = Math.random() < 0.5; king = { id, x: L ? -90 : W + 90, y: CONFIG.surfaceY + 250, vx: L ? 70 : -70, hp: 3, hurt: 0, caught: 0, banner: 2.2, face: L ? 1 : -1, ph: 0 }; beep(196, 0.3, 'sawtooth', 0.06, 120); setTimeout(() => beep(262, 0.3, 'sawtooth', 0.06, 160), 180); }
+function kingUpdate(dt) {
+  if (!cr && !kingDone && !king && t >= CONFIG.duration - 15) { kingDone = true; kingSpawn(); }
+  if (!king) return; const k = king; k.ph += dt; if (k.banner > 0) k.banner -= dt; if (k.hurt > 0) k.hurt -= dt;
+  if (k.caught) { k.caught -= dt; k.y -= dt * 160; if (k.caught <= 0) king = null; return; }
+  const sp = k.hurt > 0 ? 170 : 70; k.vx = Math.sign(k.vx || 1) * sp; k.x += k.vx * dt; k.y += Math.sin(k.ph * 1.6) * 18 * dt;
+  if (k.x < 80 && k.vx < 0 && k.ph > 2) k.vx = sp; if (k.x > W - 80 && k.vx > 0 && k.ph > 2) k.vx = -sp; k.face = k.vx > 0 ? 1 : -1; k.y = Math.max(CONFIG.surfaceY + 150, Math.min(H - 90, k.y));
+}
+function kingHitTest(x, y) { return king && !king.caught && Math.abs(x - king.x) < 88 && Math.abs(y - king.y) < 46; }
+function kingHit() {
+  const k = king; k.hp--; const rr = LVL().rare || CONFIG.rare, def = CONFIG.fish[rr.type];
+  fxAdd('impact', k.x, k.y, k.hp > 0 ? 150 : 200, 0.34); hitStop = calm ? 0 : 0.14; camShake = k.hp > 0 ? 10 : 14; try { if (navigator.vibrate) navigator.vibrate(k.hp > 0 ? 40 : [40, 30, 70]); } catch (e) {}
+  stars(k.x, k.y, 10, 90, '#FFE08A'); bubbles(k.x, k.y, 10); beep(130, 0.25, 'square', 0.08, -60);
+  if (k.hp > 0) { k.hurt = 0.9; k.vx = (k.x < kite.x ? -1 : 1) * 170; k.y += (Math.random() < 0.5 ? -1 : 1) * 40; say('魚王 還差 ' + k.hp + ' 下！', k.x, k.y - 60, '#FFE08A'); return; }
+  k.caught = 1; kg += def.kg; stats.hits++; stats.counts[rr.type] = (stats.counts[rr.type] || 0) + 1; stats.king = 1; kite.carry = rr.type; flash = Math.max(flash, 0.5); jingle([523, 659, 784, 1047, 1319], 90);
+  const el = $('kg'); el.textContent = PTS(kg) + ' 分'; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+  say('👑 抓到魚王！+' + PTS(def.kg), W / 2, CONFIG.surfaceY + 70, '#FFE08A', true);
+}
+function drawKingBanner() { const k = king; if (!k) return;
+  if (k.banner > 0 && KING_BANNER.complete && KING_BANNER.naturalWidth) { const a = Math.min(1, k.banner / 0.4, (2.2 - k.banner) / 0.25), bw = Math.min(W - 30, 320), bh = bw / 4; ctx.globalAlpha = Math.max(0, a); ctx.drawImage(KING_BANNER, (W - bw) / 2, CONFIG.skyY - 20, bw, bh); ctx.fillStyle = '#FFE08A'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = "900 " + Math.round(bh * 0.3) + "px 'Noto Sans TC',sans-serif"; ctx.fillText('魚王來了！撞 3 下抓到牠', W / 2, CONFIG.skyY - 20 + bh * 0.57); ctx.globalAlpha = 1; ctx.textBaseline = 'alphabetic'; }
+}
+function drawKing() {
+  if (!king) return; const k = king, im = KINGI[k.id][k.caught ? 2 : k.hp < 3 ? 1 : 0]; if (!im.complete || !im.naturalWidth) return;
+  const w = 176, h = w * im.naturalHeight / im.naturalWidth, wob = calm ? 0 : Math.sin(k.ph * 5) * (k.hurt > 0 ? 0.12 : 0.04);
+  ctx.save(); ctx.translate(k.x + (k.hurt > 0.6 && !calm ? Math.sin(clock * 60) * 4 : 0), k.y); ctx.scale(k.face, 1); ctx.rotate(wob); ctx.drawImage(im, -w / 2, -h / 2, w, h); ctx.restore();
+  if (!k.caught && mode === 'play') { ctx.strokeStyle = 'rgba(255,224,138,' + (0.5 + 0.4 * Math.sin(clock * 8)) + ')'; ctx.lineWidth = 2.5; ctx.setLineDash([7, 5]); ctx.beginPath(); ctx.ellipse(k.x, k.y, 96, 50, 0, 0, 6.2832); ctx.stroke(); ctx.setLineDash([]);
+    for (let i = 0; i < 3; i++) { ctx.fillStyle = i < 3 - k.hp ? 'rgba(255,255,255,.35)' : '#FFE08A'; ctx.beginPath(); ctx.arc(k.x - 16 + i * 16, k.y - 58, 5, 0, 6.2832); ctx.fill(); } }
+}
 function gullSpawn() { const L = Math.random() < 0.5; gulls.push({ x: L ? -40 : W + 40, y: CONFIG.skyY + 24, vx: L ? 140 : -140, vy: 0, st: 'in', at: 0, tg: null, carry: null, face: L ? 1 : -1 }); if (!stats.gullTold) { stats.gullTold = 1; sayClear('海鷗來搶魚了！點海鷗，小鳶去攔', W / 2, CONFIG.skyY + 70, '#FFE08A', { slow: true }); } beep(1100, 0.1, 'sine', 0.04, 300); setTimeout(() => beep(1250, 0.12, 'sine', 0.04, 300), 120); }
 function gullUpdate(dt) {
   if (!cr && gullIdx < GULL_AT.length && t >= GULL_AT[gullIdx]) { gullIdx++; gullSpawn(); }
@@ -879,7 +911,7 @@ function reset() {
   ob = null;      /* D448：觀察點在 kite 建好後才設（obReset） */
   todStart = todIdx = cr ? 0 : Math.floor(Math.random() * CONFIG.sessions.length); session = SES().id; todFade = 0; prevBg = null; energy = 0;
   lamp = LVL().lamp ? { x: W / 2, vx: (Math.random() < 0.5 ? -1 : 1) * LVL().lamp.speed } : null; jumpAt = LVL().jump ? LVL().jump.first : 1e9; reefHintT = 0;
-  gulls = []; gullIdx = 0; fxs = []; hitStop = 0; camShake = 0; fcut = null; t = 0; spawnAcc = 0; kg = 0; things = []; floats = []; rings = []; parts = []; shark = null; firstCatchDone = false; rareIdx = 0; flash = 0; sparkAcc = 0;
+  king = null; kingDone = false; gulls = []; gullIdx = 0; fxs = []; hitStop = 0; camShake = 0; fcut = null; t = 0; spawnAcc = 0; kg = 0; things = []; floats = []; rings = []; parts = []; shark = null; firstCatchDone = false; rareIdx = 0; flash = 0; sparkAcc = 0;
   kite = { x: 80, y: CONFIG.skyY, face: 1, state: 'glide', tx: 0, ty: 0, wait: 0, carry: null, stunNext: false }; obReset();
   prevKiteY = kite.y;
   stats = { taps: 0, dives: 0, hits: 0, misses: 0, blocked: 0, skyTaps: 0, trash: 0, sharkTaps: 0, counts: {}, kgInEvent: 0, combo: 0, bestCombo: 0, comboBonus: 0, newDex: [] }; comboBadge();
@@ -942,6 +974,7 @@ function hearts(x, y) { for (let i = 0; i < 3; i++) part('heart', x + rand(-16, 
 
 /* ====== 俯衝結果 ====== */
 function resolveDive() {
+  if (kite.king) { kite.king = 0; if (king && !king.caught && Math.abs(king.x - kite.x) < 90 && Math.abs(king.y - kite.y) < 55) { kingHit(); kite.res = 'grab'; kite.riseT = clock; kite.state = 'rise'; return; } }
   if (kite.gull) { const g = kite.gull; kite.gull = null; if (gulls.includes(g) && g.st !== 'hit' && Math.hypot(g.x - kite.x, g.y - kite.y) < 50) { gullCaught(g); kite.res = 'grab'; kite.riseT = clock; kite.state = 'rise'; return; } }
   const { tx, ty } = kite; let best = null, bd = 1e9;
   for (const o of things) { if (o.hid || o.seen || o.jp === 'hint') continue; const d = Math.hypot(o.x - tx, o.y - ty); if (d < o.r + CONFIG.kite.hitPad && d < bd) { best = o; bd = d; } }
@@ -1066,7 +1099,7 @@ function update(dt) {
   while (spawnAcc >= p.every) { spawnAcc -= p.every; spawn(p); }
   if (cr) { const r = CRUISE.segs[cr.seg].routes[cr.pick[cr.seg] || 0]; if (r.rare && !cr.rareDone[cr.seg] && t >= cr.seg * CRUISE.segLen + r.rare.at) { cr.rareDone[cr.seg] = true; spawn(p, r.rare.type); } if (!cr.ripDone[cr.seg] && t >= cr.seg * CRUISE.segLen + RIP.at) { cr.ripDone[cr.seg] = 1; ripStart(); } ripUpdate(dt); }
   else { const rr = LVL().rare || CONFIG.rare; if (rareIdx < rr.at.length && t >= rr.at[rareIdx]) { rareIdx++; spawn(p, rr.type); } }
-  stageUpdate(dt); gullUpdate(dt);
+  stageUpdate(dt); gullUpdate(dt); kingUpdate(dt);
   /* D118：天色輪替。換段時舊底圖淡出、換配樂、跳一句提示 */
   { const ni = (todStart + Math.floor(t / CONFIG.todLen)) % CONFIG.sessions.length;
     if (ni !== todIdx) { prevBg = SES().bg; todIdx = ni; session = SES().id; todFade = 1; stage.classList.toggle('dark', !!SES().light);
@@ -1108,6 +1141,7 @@ function update(dt) {
     if (kite.x > W - 44) kite.face = -1; if (kite.x < 44) kite.face = 1;
     kite.y = CONFIG.skyY + Math.sin(clock * 2.2) * 5;
   } else if (kite.state === 'dive') {
+    if (kite.king) { if (king && !king.caught) { kite.tx = king.x; kite.ty = Math.min(H - 30, king.y); } else kite.king = 0; }
     if (kite.gull) { if (gulls.includes(kite.gull) && kite.gull.st !== 'hit') { kite.tx = kite.gull.x; kite.ty = Math.max(CONFIG.skyY + 8, Math.min(H - 30, kite.gull.y)); } else kite.gull = null; }
     if (kite.lock) { if (things.includes(kite.lock)) { kite.tx = kite.lock.x; kite.ty = Math.min(H - 30, kite.lock.y); } else kite.lock = null; }      // 瞄準小幫手：追著鎖定的魚
     const dx = kite.tx - kite.x, dy = kite.ty - kite.y, d = Math.hypot(dx, dy), step = K.diveSpeed * dt;
@@ -1565,9 +1599,9 @@ function draw() {
     ctx.stroke();
   }
   if (kite.state === 'dive') { ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.arc(kite.tx, kite.ty, 14, 0, 6.2832); ctx.stroke(); ctx.setLineDash([]); }
-  drawObDecks(); drawGulls(); drawFxs('splash');
+  drawObDecks(); drawKing(); drawGulls(); drawFxs('splash');
   if (kite.state === 'dive' && !calm && SPEEDI.complete && SPEEDI.naturalWidth && kite.d0) { const dx = kite.tx - kite.x, dy = kite.ty - kite.y, L = Math.min(110, kite.d0 - Math.hypot(dx, dy)); if (L > 16) { ctx.save(); ctx.translate(kite.x, kite.y); ctx.rotate(Math.atan2(dy, dx)); ctx.globalAlpha = 0.75; ctx.drawImage(SPEEDI, -(L + 20), -16, L + 26, 32); ctx.restore(); ctx.globalAlpha = 1; } }      /* D542：俯衝速度線 */
-  drawKite(); drawFxs('impact');
+  drawKite(); drawFxs('impact'); drawKingBanner();
   drawParts(true);
   const lkPut = [];      /* D290（GPT 1130 B②）：兩條幸運魚靠近時小圓會疊；照固定順序，後面那顆往上移到剛好分開（圓徑 22＋間距 6），不移魚、不改加成 */
   for (const o of luckyAt) { let by = o.y - o.r - 12; for (let i = 0; i < 4; i++) { const c = lkPut.find((p) => Math.abs(p.x - o.x) < 28 && Math.abs(p.y - by) < 28); if (!c) break; by = c.y - 28; } by = Math.max(64, by); lkPut.push({ x: o.x, y: by }); o.lkY = by; }
@@ -1796,6 +1830,7 @@ cv.addEventListener('pointerdown', (e) => {
   const b = cv.getBoundingClientRect(), x = (e.clientX - b.left) / b.width * W, y = (e.clientY - b.top) / b.height * H;
   stats.taps++;
   { const g = gullHitTest(x, y); if (g) { if (kite.state !== 'glide' || kite.wait > 0) { kite.queued = { x, y, t: performance.now(), g }; return; } diveTo(g.x, g.y); kite.gull = g; kite.lock = null; return; } }      /* D543：點海鷗＝小鳶去攔 */
+  if (kingHitTest(x, y)) { if (kite.state !== 'glide' || kite.wait > 0) { kite.queued = { x, y, t: performance.now(), king: 1 }; return; } diveTo(king.x, king.y); kite.king = 1; kite.lock = null; return; }      /* D544：點魚王＝追著撞 */
   const airFish = RULE() === 'jump' && things.some((o) => o.jp === 'air' && Math.hypot(o.x - x, o.y - y) < o.r + CONFIG.kite.hitPad + 6);      // D119 第 4 關：跳起來的飛魚可以在水面上點
   if (ob && obSky(y) && (y < CONFIG.surfaceY + 12 || !things.some((o) => Math.hypot(o.x - x, o.y - y) < o.r + CONFIG.kite.hitPad))) { const j = obCol(x); if (j !== ob.st) { ob.pv = j; beep(660, 0.06, 'sine', 0.03); } else if (kite.state === 'glide') say('小鳶就在' + OBN[j] + '，點這一區的魚', x, CONFIG.surfaceY + 44, '#fff'); return; }      /* D448：點上面的觀察點＝按住預覽、放開換站 */
   if (y < CONFIG.surfaceY + 12 && !airFish) { stats.skyTaps++; say(RULE() === 'jump' ? '等飛魚跳起來再點' : '點水面下的魚', x, CONFIG.surfaceY + 30, '#fff'); return; }
@@ -1807,12 +1842,12 @@ cv.addEventListener('pointerdown', (e) => {
   diveTo(x, y);
 });
 function diveTo(x, y) {
-  stats.dives++; kite.gull = null; kite.tx = x; kite.ty = Math.max(CONFIG.skyY + 8, Math.min(H - 30, y)); kite.state = 'dive'; kite.res = ''; kite.d0 = Math.max(1, Math.hypot(kite.tx - kite.x, kite.ty - kite.y)); kite.lock = null; kite.knockTrip = false; kite.knockSaid = false; floats = floats.filter((f) => !f.busy); /* D298：新的一趟受理（或又去敲沉船）只收這句 */
+  stats.dives++; kite.gull = null; kite.king = 0; kite.tx = x; kite.ty = Math.max(CONFIG.skyY + 8, Math.min(H - 30, y)); kite.state = 'dive'; kite.res = ''; kite.d0 = Math.max(1, Math.hypot(kite.tx - kite.x, kite.ty - kite.y)); kite.lock = null; kite.knockTrip = false; kite.knockSaid = false; floats = floats.filter((f) => !f.busy); /* D298：新的一趟受理（或又去敲沉船）只收這句 */
   { let bd = 1e9; for (const o of things) { if (!CONFIG.fish[o.type] || o.hid || o.seen || o.jp === 'hint') continue; const d = Math.hypot(o.x - x, o.y - y); if (d < o.r + 4 && d < bd) { bd = d; kite.lock = o; } } }      /* D173：直接點在魚身上就追那條魚（深水魚游得快，原本小鳶飛到時魚早就走了，白帶魚、赤鯮幾乎抓不到）；瞄準小幫手的「附近也算」仍照 ?assist=1 */
   if (CONFIG.assist.on && !kite.lock) { let bd = CONFIG.assist.radius; for (const o of things) { if (!CONFIG.fish[o.type] || o.hid || o.seen || o.jp === 'hint') continue; const d = Math.hypot(o.x - x, o.y - y); if (d < bd) { bd = d; kite.lock = o; } } } beep(700, 0.18, 'sawtooth', 0.03, -420);
 }
 setInterval(() => { if (mode !== 'play' || !kite.queued) return; const q = kite.queued, ready = kite.state === 'glide' && !(kite.wait > 0), old = performance.now() - q.t >= 500;
-  if (old) { kite.queued = null; busyMiss(); return; } if (!ready) return; kite.queued = null; if (q.g && gulls.includes(q.g) && q.g.st !== 'hit') { diveTo(q.g.x, q.g.y); kite.gull = q.g; kite.lock = null; } else diveTo(q.x, q.y); }, 40);      /* D543：排隊中的點海鷗，回到空中照樣去攔 */
+  if (old) { kite.queued = null; busyMiss(); return; } if (!ready) return; kite.queued = null; if (q.g && gulls.includes(q.g) && q.g.st !== 'hit') { diveTo(q.g.x, q.g.y); kite.gull = q.g; kite.lock = null; } else if (q.king && king && !king.caught) { diveTo(king.x, king.y); kite.king = 1; kite.lock = null; } else diveTo(q.x, q.y); }, 40);      /* D543：排隊中的點海鷗，回到空中照樣去攔 */
 /* D298：GPT 1930 A②——回到可受理的空中，同一筆提示改「可以再點喔」，先停 0.6 秒再淡（hold 也算進 sayClear） */
 function busyBack() { kite.backAt = performance.now(); const f = floats.find((g) => g.busy); if (!f) return; floats = floats.filter((g) => g !== f); sayBack(); }
 /* D299：GPT 2030 A②——「可以再點喔」移到小鳶下方 48px 為基準（原本留在水下原位，離小鳶約 100px），整框避開倒數、飛魚弧線與水花、其他浮字 */
