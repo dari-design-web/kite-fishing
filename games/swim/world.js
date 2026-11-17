@@ -10,7 +10,7 @@ export async function makeWorld(THREE, base, onProgress) {
     'shipwreck_buried', 'cargo_decor', 'tire_decor', 'anchor_decor', 'fishing_boat_broken', 'harbor_buoy', 'harbor_signal', 'bg_harbor',
     'jellyfish_glow', 'coral_glow', 'anglerfish', 'deep_rock', 'tube_sponge_glow', 'shells_glow', 'bg_deep',
     'ob_net', 'ob_net_vertical', 'ob_reef_pillar', 'ob_reef_arch', 'ob_bottle', 'ob_plastic_bag', 'ob_tire', 'ob_oil_barrel', 'ob_cargo', 'ob_harpoon', 'ob_jellyfish_group',
-    'food_plankton', 'food_krill', 'food_roe', 'food_small_fish', 'item_speed_ring', 'item_bubble_shield', 'kite_dive_v1', 'item_dash_lightning', 'item_frenzy_flame', 'dive_curtain_full', 'dive_curtain_open', 'dive_zone_marker'];
+    'food_plankton', 'food_krill', 'food_roe', 'food_small_fish', 'item_speed_ring', 'item_bubble_shield', 'kite_dive_v1', 'item_dash_lightning', 'item_frenzy_flame', 'dive_curtain_full', 'dive_curtain_open', 'dive_zone_marker', 'gate_coral', 'gate_kelp', 'gate_wreck', 'gate_deep', 'gold_bubble'];      /* D547：區域守門員（GPT 1620） */
   const TX = {}, AR = {}, loader = new THREE.TextureLoader(); let done = 0;
   await Promise.all(NAMES.map((n) => loader.loadAsync(base + n + '.webp').then((t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; TX[n] = keep(t); AR[n] = t.image.width / t.image.height; done++; onProgress && onProgress(done / NAMES.length); })));
 
@@ -74,6 +74,9 @@ export async function makeWorld(THREE, base, onProgress) {
     container(l) { const g = new THREE.Group(); g.add(at(spr('ob_cargo', 5, true), Lx[l], FLOOR)); return { g, lanes: [l], y: [-2, 3.3], tip: '貨櫃！左右閃或往上游', hit: '撞到貨櫃！' }; },
     harpoon() { const g = new THREE.Group(), s = spr('ob_harpoon', 1.6); g.add(at(s, 9, 1.9)); const laser = new THREE.Mesh(new THREE.BoxGeometry(9, 0.06, 0.06), new THREE.MeshBasicMaterial({ color: '#FF3B30', transparent: true, opacity: 0.8, fog: false })); laser.position.y = 1.9; g.add(laser); const sg = warn('updown', 0, 4.4); sg.material = sg.material.clone(); g.add(sg); g.userData.sign = sg; g.userData.harpoon = s; g.userData.laser = laser; return { g, lanes: ALL, y: MID, tip: '魚叉！往上或往下閃', hit: '被魚叉擦到！' }; },
     jelly(lanes) { const g = new THREE.Group(); lanes.forEach((l) => { const s = spr('ob_jellyfish_group', 2.9); s.userData.float = rnd(0, 6); g.add(at(s, Lx[l], 1.9)); }); return { g, lanes, y: MID, tip: '水母群！換水道或上下閃', hit: '被水母螫到！' }; },
+    gate(a) { const open = a.open, cov = ALL.filter((i) => i !== open), g = new THREE.Group(), key = { reef: 'gate_coral', kelp: 'gate_kelp', wreck: 'gate_wreck', deep: 'gate_deep' }[a.th] || 'gate_coral', cx = (Lx[cov[0]] + Lx[cov[1]]) / 2, w = Math.abs(Lx[cov[1]] - Lx[cov[0]]) + 2.6;
+      if (open === 1 && key !== 'gate_kelp') cov.forEach((l) => { const q = spr(key, 3.4, true); q.scale.set(3.4, 3.4, 1); g.add(at(q, Lx[l] + (l ? 0.3 : -0.3), FLOOR)); });      /* Codex：中間是活路時，左右各一隻，不蓋住中間（海草拱門本身中間就是洞） */
+      else { const s = spr(key, w * 0.95, true); s.scale.set(w, w, 1); g.add(at(s, cx, FLOOR)); } g.add(gap(Lx[open])); g.add(warn('lane', Lx[open], 5.4)); return { g, lanes: cov, y: FULL, tip: '區域守門員！從缺口游過去', hit: '撞上守門員！', gate: 1 }; },      /* D547：守門員擋住兩條水道，只留一條生路 */
     kelpwall(open) { const g = new THREE.Group(), cov = ALL.filter((i) => i !== open); cov.forEach((l) => { for (let k = -1; k <= 1; k++) g.add(at(spr('seagrass_tall', 6.6, true), Lx[l] + k * 0.75, FLOOR)); }); g.add(gap(Lx[open])); g.add(warn('lane', Lx[open], 5.2)); return { g, lanes: cov, y: FULL, tip: '海草牆！找缺口', hit: '被海草纏住！' }; }
   };
   return { keep, TX, AR, THEMES, deco, bigCreature, O, spr, smat, bendMaterial, bendAll, bend, tex, Lx };
