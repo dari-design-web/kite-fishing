@@ -670,7 +670,7 @@ const LV = () => CONFIG.levels[level], LVF = (k) => (LV()[k] === undefined ? 1 :
 
 let LOWQ = false; try { LOWQ = localStorage.getItem('fly_lowq') === '1'; } catch (e) {}
 const PERF = { n: 0, sum: 0 };
-function perfWatch(dt) { if (LOWQ) return; if (mode !== 'play' || cut || cine > 0 || dailyFade || dt <= 0 || dt >= 0.05) { PERF.n = 0; PERF.sum = 0; return; }      /* Codex：暫停、過場、魔王字卡、每日換段時中斷取樣並歸零 */ PERF.n++; PERF.sum += dt; if (PERF.n >= 120) { const avg = PERF.sum / PERF.n; PERF.n = 0; PERF.sum = 0; if (avg > 0.026) { LOWQ = true; try { localStorage.setItem('fly_lowq', '1'); } catch (e) {} fit(); } } }      /* D548：連續 120 幀平均低於約 38fps 就降解析度，記住下次直接用 */
+function perfWatch(dt, raw) { if (LOWQ) return; if (mode !== 'play' || cut || cine > 0 || dailyFade || dt <= 0 || raw > 0.25) {      /* Codex：切背景／暫停後回來的大間隔不算 */ PERF.n = 0; PERF.sum = 0; PERF.slow = 0; return; }      /* 嚴重卡頓（≥50ms）也要算進去，不再當成切分頁略過 */      /* Codex：暫停、過場、魔王字卡、每日換段時中斷取樣並歸零 */ PERF.n++; PERF.sum += dt; if (dt > 0.033) PERF.slow = (PERF.slow || 0) + 1; if (PERF.n >= 120) { const avg = PERF.sum / PERF.n, sl = (PERF.slow || 0) / PERF.n; PERF.n = 0; PERF.sum = 0; PERF.slow = 0; if (avg > 0.026 || sl > 0.15) {      /* D552：平均偏慢，或超過 15% 的幀卡頓（>33ms）都降 */ LOWQ = true; try { localStorage.setItem('fly_lowq', '1'); } catch (e) {} fit(); } } }      /* D548：連續 120 幀平均低於約 38fps 就降解析度，記住下次直接用 */
 function fit() {
   const vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
   const w = Math.max(240, Math.min(vw, vh * W / H, 480)), h = w * H / W;
@@ -1806,16 +1806,15 @@ function update(dt) {
   if (shake > 0) shake = Math.max(0, shake - real);
   // 畫面資訊
   const total = CONFIG.boss.at + 14, sb = $('stageBar');      // v0.20：魔王出場後，上方長條改成魔王血量（D51：第 4 關血量顯示和上方長條疊在一起）
-  const sbT = $('stageBarT'), br = boss && !won ? Math.max(0, Math.min(1, barRatio(boss))) : 1; sb.parentNode.classList.toggle('boss', !!(boss && !won)); if (sbT) { sbT.r = sbT.r === undefined || br > sbT.r ? br : sbT.r + (br - sbT.r) * Math.min(1, real * 2.2); sbT.style.transform = 'scaleX(' + sbT.r + ')'; }      /* D346：魔王血條加粗＋黃色殘影慢慢追上 */
-  if (boss && !won) { sb.classList.add('hp'); sb.style.transform = 'scaleX(' + br + ')'; } else { sb.classList.remove('hp'); sb.style.transform = 'scaleX(' + Math.min(1, daily ? daily.rt / dLen() : t / total) + ')'; }
+  const sbT = $('stageBarT'), br = boss && !won ? Math.max(0, Math.min(1, barRatio(boss))) : 1; { const bb = !!(boss && !won); if (sb.parentNode.__boss !== bb) { sb.parentNode.__boss = bb; sb.parentNode.classList.toggle('boss', bb); } } if (sbT) { sbT.r = sbT.r === undefined || br > sbT.r ? br : sbT.r + (br - sbT.r) * Math.min(1, real * 2.2); domSet(sbT, 'transform', 'scaleX(' + sbT.r.toFixed(3) + ')'); }      /* D346：魔王血條加粗＋黃色殘影慢慢追上 */
+  if (boss && !won) { if (!sb.__hp) { sb.__hp = 1; sb.classList.add('hp'); } domSet(sb, 'transform', 'scaleX(' + br.toFixed(3) + ')'); } else { if (sb.__hp !== 0) { sb.__hp = 0; sb.classList.remove('hp'); } domSet(sb, 'transform', 'scaleX(' + Math.min(1, daily ? daily.rt / dLen() : t / total).toFixed(3) + ')'); }
   /* D244：GPT 1830 B 窄版（寬度不到 375）魔王標籤只留名字，血量數字不顯示（原本被截成「阿根納 22…」），血條照舊 */
   const goal = boss && boss.phased ? bossGoalText(boss) : null, secs = boss ? Math.max(0, Math.ceil(BTIME() - (t - boss.born))) + ' 秒' : '';
-  $('stageText').classList.toggle('two', Array.isArray(goal));
-  $('stageText').textContent = Array.isArray(goal) ? goal[0] + '\n' + (goal[1] ? (innerWidth < 375 ? goal[1].replace('礦石 ', '') + ' ' : goal[1] + '　') : '') + secs : goal ? goal + '　' + secs : boss ? (innerWidth < 375 ? (T.boss.short || T.boss.name) : (T.boss.short || T.boss.name) + ' ' + Math.max(0, Math.ceil(boss.hp)) + ' / ' + boss.maxHp) : '分數 ' + scoreNow();      /* D453：連清改在左上徽章顯示，頂端只留分數（SE 不再被截成…） */
-  if (daily && daily.salv && !boss) $('stageText').textContent = salvHud();      /* D432 */
-  const ub = $('ultBtn'), full = gauge >= CONFIG.ult.need; ub.disabled = !full || !!ult; ub.style.setProperty('--fill', Math.round(gauge / CONFIG.ult.need * 100) + '%'); ub.classList.toggle('ready', full && !ult); const tag = $('ultTag'), word = full && !ult ? (NM() ? '祈福！' : '出動！') : ULTN(); if (tag.textContent !== word) tag.textContent = word;
+  { const st = $('stageText'), two = Array.isArray(goal); if (st.__two !== two) { st.__two = two; st.classList.toggle('two', two); } }
+  domSet($('stageText'), 'text', daily && daily.salv && !boss ? salvHud() : Array.isArray(goal) ? goal[0] + '\n' + (goal[1] ? (innerWidth < 375 ? goal[1].replace('礦石 ', '') + ' ' : goal[1] + '　') : '') + secs : goal ? goal + '　' + secs : boss ? (innerWidth < 375 ? (T.boss.short || T.boss.name) : (T.boss.short || T.boss.name) + ' ' + Math.max(0, Math.ceil(boss.hp)) + ' / ' + boss.maxHp) : '分數 ' + scoreNow());      /* D453：連清改在左上徽章顯示，頂端只留分數（SE 不再被截成…） */
+  const ub = $('ultBtn'), full = gauge >= CONFIG.ult.need; { const dz = !full || !!ult; if (ub.disabled !== dz) ub.disabled = dz; } domSet(ub, '--fill', Math.round(gauge / CONFIG.ult.need * 100) + '%'); { const rd = full && !ult; if (ub.__rd !== rd) { ub.__rd = rd; ub.classList.toggle('ready', rd); } } const tag = $('ultTag'), word = full && !ult ? (NM() ? '祈福！' : '出動！') : ULTN(); if (tag.textContent !== word) tag.textContent = word;
   if (full && !toldUlt && !ult) { toldUlt = true; banner(ULTN() + '準備好了！按右下角'); jingle([659, 880], 120); }
-  $('hint').hidden = firstMove || t > 8;
+  { const hz = firstMove || t > 8, he = $('hint'); if (he.hidden !== hz) he.hidden = hz; }
   // 結束條件：大垃圾團清掉或漂走、體力歸零；保險：事件表跑完且畫面清空
   if (daily && daily.rt >= dLen() && !ult && !cut && kite.hearts > 0 && endTimer <= 0) { daily.done = true; return finish(); } /* D225：只有這裡算「三段都飛完」 */
   if (endTimer > 0) { endTimer -= real; if (endTimer <= 0) return finish(); }
@@ -3821,7 +3820,10 @@ function festBurst(x, y, sc) { const kinds = ['fw_radial', 'fw_fan', 'fw_star'];
 /* D376（主動待辦①，GPT 2348 選 A＋B）：清掉垃圾時，一顆金色小光點直線約 0.5 秒飛進右下角的集氣圈，到達時 GPT 單星（sticker_11）亮一次 16→24px；
    0.1 秒內清掉的合成一顆、旁邊寫 ×N（N＝這批顆數，不是倍率）；集氣在清掉當下就入帳，飛的只是畫面；減少動態時不飛；用 Math.random 不動關卡亂數 */
 const HUD_FLY = { dur: 0.5, merge: 0.1, max: 8 };
-function hudTarget() { const ub = $('ultBtn'); if (!ub || ub.hidden) return null; const b = cv.getBoundingClientRect(), r = ub.getBoundingClientRect(); if (!b.width || !r.width) return null; return [(r.left + 40 - b.left) / b.width * W, (r.top + 3 - b.top) / b.height * H]; }      /* 集氣圈頂端：圈是蓋在畫布上的按鈕，光點停在圈的上緣才看得到 */
+/* D552（Dari 11/19：小怪多時還是卡）：每幀寫 DOM 只在值改變時寫，絕招按鈕位置快取（原本掉落物飛向按鈕時每幀都在寫完樣式後讀位置，強迫整頁重排） */
+const domSet = (el, k, v) => { if (el && el['__' + k] !== v) { el['__' + k] = v; if (k === 'text') el.textContent = v; else if (k[0] === '-') el.style.setProperty(k, v); else el.style[k] = v; } };
+let hudRect = null; addEventListener('resize', () => { hudRect = null; }); try { visualViewport.addEventListener('resize', () => { hudRect = null; }); } catch (e) {} addEventListener('orientationchange', () => { hudRect = null; });
+function hudTarget() { const ub = $('ultBtn'); if (!ub || ub.hidden) return null; if (!hudRect || clock - hudRect.at > 1) { hudRect = { b: cv.getBoundingClientRect(), r: ub.getBoundingClientRect(), at: clock }; } const b = hudRect.b, r = hudRect.r; if (!b.width || !r.width) { hudRect = null; return null; } return [(r.left + 40 - b.left) / b.width * W, (r.top + 3 - b.top) / b.height * H]; }      /* 集氣圈頂端：圈是蓋在畫布上的按鈕，光點停在圈的上緣才看得到 */
 function hudSend(x, y) {
   if (calm || mode !== 'play') return; const last = hudFly[hudFly.length - 1];
   if (last && last.t < HUD_FLY.merge) { last.n++; return; }
@@ -4146,7 +4148,7 @@ function draw() {
   ctx.globalAlpha = 1; drawBossWarn(); drawCine(); if (dailyFade) dailyDraw();
 }
 function frame(now) {
-  const dt = Math.min(0.05, (now - last) / 1000 || 0); last = now; clock += dt; perfWatch(dt); if (mode === 'play') ujT += dt;
+  const rawDt = (now - last) / 1000 || 0, dt = Math.min(0.05, rawDt); last = now; clock += dt; perfWatch(dt, rawDt); if (mode === 'play') ujT += dt;
   if (mode === 'play') { if (cut) updateCut(dt); else if (hitStop > 0) { hitStop -= dt; } else update(dt); }      /* D346：打擊停頓 */
   if (kite) { draw(); if (cut) drawCut(); } requestAnimationFrame(frame);
 }
