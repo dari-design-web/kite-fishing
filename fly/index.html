@@ -214,7 +214,7 @@ body:not(.qa) #ask, body:not(.qa) #copyBtn{display:none!important}
 @media (prefers-reduced-motion:reduce){#kiteWait img,#kiteWait span{animation:none}}</style>
 <script>(function(){var w=document.getElementById('kiteWait');function off(){if(!w||w.classList.contains('done'))return;w.classList.add('done');setTimeout(function(){if(w.parentNode)w.parentNode.removeChild(w);},250);}if(document.readyState==='complete')off();else{window.addEventListener('load',off);setTimeout(off,8000);}})();</script>
 <!-- LOADER-END -->
-<canvas id="amb" width="72" height="128" aria-hidden="true" hidden></canvas>
+<canvas id="amb" width="144" height="256" aria-hidden="true" hidden></canvas>
 <div id="stage">
   <canvas id="world" aria-label="小鳶飛行冒險遊戲畫面"></canvas>
 
@@ -657,7 +657,9 @@ for (const k of ['tt_lampL', 'tt_lampL_b', 'tt_lampR', 'tt_lampR_b', 'ag_cable',
 for (const k of ['fw_radial', 'fw_fan', 'fw_star']) ASSET_FILES[k] = 'fest/' + k + '.png'; ASSET_FILES.hud_star = 'fest/hud_star.png'; for (const k of ['txt_pretty', 'txt_done', 'txt_clean']) ASSET_FILES[k] = 'fest/' + k + '.webp';      /* D370：GPT 1830 最後一擊慶典素材（煙火白色、程式上色；大字） */
 for (const k of ['wind_col', 'wind_tip', 'sign_dodge', 'sign_clear', 'debris']) ASSET_FILES['fk_' + k] = 'fork/' + k + '.webp';      /* D423：GPT D421 風道分流五張 */
 for (const k of ['berth', 'bundle']) ASSET_FILES['sv_' + k] = 'salv/' + k + '.webp';      /* D433：GPT 1220 回收航次兩張（泊位取主體框 252×144） */
-for (const k in ASSET_FILES) { const im = new Image(); im.onload = () => { img[k] = im; }; im.src = 'assets/' + ASSET_FILES[k]; }
+const WARM = [];      /* D553：小圖（怪、子彈、碎片）先解碼並送進顯示卡，第一次出場不再臨時解碼卡一下 */
+for (const k in ASSET_FILES) { const im = new Image(); im.onload = () => { img[k] = im; if (im.width * im.height <= 150000) { WARM.push(im); try { if (im.decode) im.decode().catch(() => {}); } catch (e) {} } };      /* Codex：只對小圖預先解碼，大圖不動 */ im.src = 'assets/' + ASSET_FILES[k]; }
+function warmStep() { if (!WARM.length || !ctx) return; ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 0.01; ctx.beginPath(); ctx.rect(0, 0, 1, 1); ctx.clip(); for (let i = 0; i < 3 && WARM.length; i++) { try { ctx.drawImage(WARM.shift(), 0, 0); } catch (e) {} } ctx.restore(); }      /* 每幀 3 張；用原尺寸畫（Codex：1×1 縮圖可能暖到別的縮放快取），但只裁出左上 1 像素、幾乎透明，下一幀背景就蓋掉 */
 
 let stageNo = 1, progress = { unlocked: 1, stars: {}, best: {} };
 let mode = 'map', control = 'relative', level = 'normal', t = 0, last = 0, clock = 0, soundOn = (() => { try { return localStorage.getItem('kiteBgm') !== '0'; } catch (e) { return true; } })(), ac = null, seed = 1;
@@ -683,7 +685,7 @@ addEventListener('resize', fit); fit();
 (() => {      /* D525：背景延伸。只有畫面四周真的空出來（> 8px）才開；每 3 格畫一次 72×128 小圖，手機負擔很小；減少動態時改成每 30 格 */
   const amb = $('amb'), ax = amb.getContext('2d'), calmA = matchMedia('(prefers-reduced-motion: reduce)').matches; let n = 0;
   function need() { const vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight, r = stage.getBoundingClientRect(); return vh - r.height > 8 || vw - r.width > 8; }
-  function tick() { if (!amb.hidden && n++ % (calmA ? 30 : 12) === 0 && cv.width) { try { ax.drawImage(cv, 0, 0, 72, 128); } catch (e) {} } requestAnimationFrame(tick); }
+  function tick() { if (!amb.hidden && n++ % (calmA ? 40 : 20) === 0 && cv.width) { try { ax.drawImage(cv, 0, 0, 144, 256); }      /* D553：72×128 太小，Android Chrome 會改用 CPU 畫，每次複製都要把整張遊戲畫面從顯示卡讀回來，怪越多越卡；放大到 144×256 留在顯示卡上，並改每 20 格一次 */ catch (e) {} } requestAnimationFrame(tick); }
   function upd() { amb.hidden = !need(); }
   addEventListener('resize', upd); upd(); requestAnimationFrame(tick);
   window.__amb = () => ({ on: !amb.hidden });
@@ -4150,7 +4152,7 @@ function draw() {
 function frame(now) {
   const rawDt = (now - last) / 1000 || 0, dt = Math.min(0.05, rawDt); last = now; clock += dt; perfWatch(dt, rawDt); if (mode === 'play') ujT += dt;
   if (mode === 'play') { if (cut) updateCut(dt); else if (hitStop > 0) { hitStop -= dt; } else update(dt); }      /* D346：打擊停頓 */
-  if (kite) { draw(); if (cut) drawCut(); } requestAnimationFrame(frame);
+  if (kite) { draw(); if (cut) drawCut(); } if (WARM.length) warmStep(); requestAnimationFrame(frame);
 }
 
 /* ====== 流程與操作 ====== */
