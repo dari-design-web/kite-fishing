@@ -25,6 +25,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0F3442;font-family:'Z
 #tip.off{opacity:0}
 .card{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:rgba(10,30,40,.55);padding:20px}
 .card[hidden]{display:none}
+.stars{display:flex;justify-content:center;gap:6px;margin:2px 0 4px}.stars i{font-style:normal;font-size:38px;line-height:1;color:#D9D2C2;transform:scale(.2);opacity:0;animation:starIn .42s cubic-bezier(.3,1.7,.5,1) forwards}.stars i.on{color:#F4BB42;text-shadow:0 2px 0 #C98A1A}.stars i:nth-child(2){animation-delay:.25s}.stars i:nth-child(3){animation-delay:.5s}@keyframes starIn{to{transform:scale(1);opacity:1}}#best b{color:#D9480F}      /* D554 結算星等 */
 .card>div{width:min(340px,92vw);background:#FFFDF6;border-radius:22px;padding:20px 18px 16px;text-align:center;box-shadow:0 12px 34px rgba(0,0,0,.4);animation:pop .3s cubic-bezier(.3,1.5,.5,1);color:#24343A}
 .card h2{margin:4px 0 6px;font-size:23px}
 .card p{margin:6px 0;line-height:1.6;font-size:15px}
@@ -51,8 +52,10 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0F3442;font-family:'Z
 <div class="card" id="done" hidden><div>
   <img src="assets/kite_win_one.webp" alt="">
   <h2>海面乾淨了！</h2>
+  <div class="stars" id="stars"></div>
   <p id="sum"></p>
-  <p class="muted">灰盒試作：不計分、不存檔。</p>
+  <p class="muted" id="best"></p>
+  <p class="muted" id="how"></p>
   <div class="row"><button type="button" id="again">再玩一次</button><button type="button" class="alt" id="out">回小鳶樂園</button></div>
 </div></div>
 <script>
@@ -165,7 +168,16 @@ function splash(x, y, n) { for (let i = 0; i < n; i++) { const a = -Math.PI / 2 
 function stageDone() { return items.every((i) => i.gone || (i.k === 'gull' && i.st !== 'in' && i.st !== 'grab' && !i.carry)) && (!gullQ.length || !items.some((i) => !i.gone && i.k !== 'gull')) && (!belt || belt.sent >= belt.ks.length); }      /* 海鷗被趕走、空手飛走就不用等 */
 function stageClear() { if (clearing) return; clearing = true; setAnim('win'); kite.winT = 0.9; tone(523, 0.14, 'triangle', 0.1); setTimeout(() => tone(659, 0.14, 'triangle', 0.1), 110); setTimeout(() => tone(784, 0.24, 'triangle', 0.11), 220);
   if (si + 1 < STAGES.length) { setTimeout(() => { si++; loadStage(); }, calm ? 500 : 1100); } else { playing = false; setTimeout(finish, 1000); } }
-function finish() { const sec = Math.round((performance.now() - t0) / 1000); $('sum').innerHTML = '撞開 <b>' + cleared + '</b> 件海漂，最多 <b>' + bestCombo + '</b> 連撲' + (gullsHit ? '，趕走海鷗 <b>' + gullsHit + '</b> 次' : '') + (lost > 0 ? '（被叼走 ' + lost + ' 件）' : '') + '<br>撲了 ' + pounces + ' 次（放空 ' + misses + ' 次），用了 ' + sec + ' 秒'; $('done').hidden = false; }
+function finish() { const sec = Math.round((performance.now() - t0) / 1000); $('sum').innerHTML = '撞開 <b>' + cleared + '</b> 件海漂，最多 <b>' + bestCombo + '</b> 連撲' + (gullsHit ? '，趕走海鷗 <b>' + gullsHit + '</b> 次' : '') + (lost > 0 ? '（被叼走 ' + lost + ' 件）' : '') + '<br>撲了 ' + pounces + ' 次（放空 ' + misses + ' 次），用了 ' + sec + ' 秒'; $('done').hidden = false;
+  /* D554（主動補強：撲擊沒有重玩動力）：結算給 1～3 星＋本機最佳紀錄。只存在這支手機，不換點數 */
+  const st = 1 + (misses <= 3 && lost === 0 ? 1 : 0) + (misses <= 1 && lost === 0 && bestCombo >= 3 ? 1 : 0);
+  $('stars').innerHTML = [0, 1, 2].map((i) => '<i class="' + (i < st ? 'on' : '') + '">★</i>').join('');
+  [0, 1, 2].forEach((i) => { if (i < st) setTimeout(() => tone(660 + i * 220, 0.14, 'triangle', 0.08), 250 + i * 250); });
+  let B = null; try { B = JSON.parse(localStorage.getItem('pounce_best') || 'null'); } catch (e) {} if (!B || !(B.st >= 1) || !(B.sec >= 0)) B = null;      /* Codex：舊資料格式不對就當沒有 */
+  const better = !B || st > B.st || (st === B.st && sec < B.sec);
+  if (better) { B = { st, sec, combo: bestCombo }; try { localStorage.setItem('pounce_best', JSON.stringify(B)); } catch (e) {} }
+  $('best').innerHTML = better && B ? '<b>新紀錄！</b> ' + '★'.repeat(B.st) + '・' + B.sec + ' 秒' : '最佳紀錄：' + '★'.repeat(B.st) + '・' + B.sec + ' 秒';
+  $('how').textContent = st >= 3 ? '三星！手感一流' : st === 2 ? '下一顆星：放空不超過 1 次、接出 3 連撲' : '下一顆星：放空不超過 3 次、不讓海鷗叼走'; }
 
 /* ---------- 畫面 ---------- */
 function drawKite(now) {
