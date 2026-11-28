@@ -101,6 +101,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 @keyframes hiswim{from{transform:translateX(-40px);opacity:0}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.fact .hi img{animation:none}}
 .headline{display:flex;align-items:center;justify-content:center;gap:10px}
+.kface{width:58px;height:58px;object-fit:contain;margin:-8px -2px -8px -6px;animation:kfPop .5s cubic-bezier(.3,1.7,.5,1) both}@keyframes kfPop{from{transform:scale(.2) rotate(-12deg);opacity:0}to{transform:none;opacity:1}}@media (prefers-reduced-motion:reduce){.kface{animation:none}}      /* D555 結算小鳶表情 */
 .seal{align-self:center;font-size:12px;font-weight:700;color:var(--coral);border:2px solid var(--coral);border-radius:8px;padding:0 8px;transform:rotate(-3deg)}
 .dex{display:flex;flex-wrap:wrap;gap:4px;justify-content:center}
 .dex button{border:1.5px solid var(--ink);border-radius:12px;background:#fff;padding:3px 3px 2px;font-size:11.5px;display:inline-flex;flex-direction:column;align-items:center;gap:1px;min-width:44px}.dex button img{height:20px;max-width:40px;object-fit:contain}.dex button img.sil{filter:brightness(0);opacity:.35}
@@ -295,7 +296,7 @@ body:not(.qa) #ask, body:not(.qa) #copyBtn{display:none!important}
 
   <div class="panel" id="resultPanel" hidden>
     <div class="card result">
-      <div class="headline"><h2>時間到</h2><div class="rank" id="rank"></div></div>
+      <div class="headline"><img class="kface" id="kface" alt="" hidden><h2>時間到</h2><div class="rank" id="rank"></div></div>
       <div class="seal" id="seal" hidden>六種漁獲收藏章</div>
       <div class="total"><span id="totalKg">0</span> <small>分</small></div>
       <div class="rows" id="rows"></div>
@@ -1786,6 +1787,8 @@ function updateHome(dt) { cr.home += dt;
 function finish() { BGM.stop(); if (window.KiteBoard) KiteBoard.ev('run_end', { game: 'fish' });
   mode = 'result'; ultUI(); $('hud').hidden = true; $('crGoal').hidden = true; $('banner').hidden = true; $('hint').hidden = true; jingle([523, 659, 784], 110);
   $('totalKg').textContent = '0'; $('rank').textContent = rankOf(kg);
+  { const ri = CONFIG.ranks.reduce((a, r, i) => (kg >= r[0] ? i : a), 0), f = !stats.hits ? 'hungry' : ['cheer', 'happy', 'laugh', 'ok'][Math.min(3, ri)], im = $('kface');      /* D555（定稿表情包上場）：結算時小鳶依稱號換表情；沒抓到魚就是肚子餓 */
+    if (im) { im.hidden = false; im.src = 'assets/face/kite_face_' + f + '.webp'; im.style.animation = 'none'; void im.offsetWidth; im.style.animation = ''; } }
   { const tgt = PTS(kg), el = $('totalKg'), t0 = performance.now(), dur = Math.min(1100, 350 + tgt / 4); let lastTick = 0;      // 玩家角度：結算分數從 0 往上跳（跟飛行、合成港一致），最後彈一下
     const step = (now) => { if (mode !== 'result') { el.textContent = tgt; return; } const k = Math.min(1, (now - t0) / dur), v = Math.round(tgt * (1 - Math.pow(1 - k, 3))); el.textContent = v;
       if (now - lastTick > 70 && k < 1) { lastTick = now; beep(660 + k * 500, 0.03, 'triangle', 0.025); }
